@@ -1,0 +1,75 @@
+﻿@{
+    ViewBag.Title = "ReservationForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+@using Newtouch.Infrastructure;
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 55px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>预约日期：</th>
+                <td class="formValue">
+                    <input id="yyrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>预约时间：</th>
+                <td class="formValue">
+                    <select id="yysj"  style="width:50px" class="form-control required">
+                        <option value="1">上午</option>
+                        <option value="2">下午</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">预约人电话：</th>
+                <td class="formValue">
+                    <input id="yylxfs" type="text" class="form-control" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    };
+    var mzh = $.request("mzh");
+    $(function () {
+        $.najax({
+            url: "/MedicalRecord/GetReservationData",
+            data: { mzh: mzh},
+            dataType: "json",
+            success: function (data) {
+                $("#form1").formSerialize(data);
+            }
+        });
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid(valOptions)) {
+            $.modalAlert("必填信息未完善", 'warning');
+            return;
+        }
+        if ($('#yyrq').val() < $.getDate()) {
+            $.modalAlert("预约日期必须大于当前日期！", 'warning');
+            return;
+        }
+        var obj = new Object();
+        obj.yyrq = $('#yyrq').val();
+        obj.yysj = $('#yysj').val();
+        obj.yylxfs = $('#yylxfs').val();
+        return obj;
+    }
+</script>
+

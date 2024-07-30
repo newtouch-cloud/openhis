@@ -1,0 +1,272 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "配货单获取验收";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+
+<style>
+    /*.inline {
+        width: 80%;
+        display: inline;
+    }
+
+    .PriceInline {
+        width: 70%;
+        display: inline;
+    }
+
+    #dv-detail table th {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail .ui-jqgrid-labels, #dv-detail .jqgrow .ui-row-ltr {
+        height: 30px;
+        vertical-align: middle;
+    }
+
+
+    #dv-detail table td {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail input[role=textbox] {
+        padding: 2px 2px;
+    }
+
+    #gridList .ckbox label {
+        margin-top: 24px;
+    }*/
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">配送信息</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle "><span class="required">*</span>供应商：</th>
+                <td class="formValue">
+                    <input type="text" id="yq" name="yq" class="form-control" placeholder="请选择供应商" autocomplete="off" style="width:60%" />
+                    <input type="hidden" id="yqbm" />
+                </td>
+
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="获取明细" />
+                    <input type="button" id="btn_accept" class="btn btn-md btn-primary" value="明细验收" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        InitFloat();
+
+        //gridList();
+    });
+
+
+    //初始化浮层
+    function InitFloat() {
+        //物资供应商
+        $("#yq").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            url: '/Storage/GetSupplierList',
+            height: 300,
+            width: 400,
+            caption: "物资供应商",
+            ajaxparameters: function () {
+                return "key=" + $("#yq").val();
+            },
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '编码', name: 'py', widthratio: 45 },
+                { label: '供应商', name: 'name', widthratio: 55 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#yqbm").val($thistr.attr('data-py'));
+                $("#yq").val($thistr.attr('data-name'));
+            }
+        });
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetDeliveryGridJson",
+            height: $(window).height() - 200,
+            postData: { qybm: $("#yqbm").val(), psmxbhcxtj: '' },
+            colModel: [
+                //{ label: 'PSYSLXXXXXXX', name: 'PSYSLXXXXXXX', editwidth: '', align: 'center', editable: true, hidden: true },
+                //{
+                //    label: '<span class="required">*</span>验收类型', name: 'PSYSLX', width: 120, align: 'center', editable: true, editwidth: "100%", edittype: "select", editoptions: {
+                //        dataEvents: [
+                //            {
+                //                type: 'change',
+                //                fn: function (e) {
+                //                    var row = $(e.target).closest('tr.jqgrow');
+                //                    var rowid = row.attr('id');
+                //                    var $thisval = $(this).val();
+
+                //                    $("#" + rowid + "_PSYSLXXXXXXX").val($thisval);
+                //                }
+                //            }
+                //        ]
+                //    }
+                //},
+                //{ label: "验收通过数", name: "YSTGS", width: 75, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: "验收不过数", name: "YSBGS", width: 75, align: 'center', editable: true, editwidth: "100%" },
+                { label: '配送单编号', name: 'PSDBH', width: 80, align: 'left', key: true, },
+                { label: '配送点编码', name: 'PSDBM', width: 80, align: 'left'},
+                { label: '配送明细编号', name: 'PSMXBH', width: 80, align: 'left' },
+                { label: '配送单号', name: 'PSDH', width: 60, align: 'left' },
+                { label: '企业编码', name: 'QYBM', width: 60, align: 'left' },
+                { label: '配送明细条码类型', name: 'PSMXTMLX', width: 100, align: 'left' },
+                { label: '配送明细条码', name: 'PSMXTM', width: 80, align: 'left' },
+                { label: '采购单明细编号', name: 'DDMXBH', width: 80, align: 'left' },
+                { label: '医院计划单号', name: 'YYJHDH', width: 80, align: 'left' },
+                { label: '顺序号', name: 'SXH', width: 60, align: 'left' },
+                { label: '仓位信息', name: 'CWXX', width: 60, align: 'left' },
+                { label: '销售订单号', name: 'XSDDH', width: 60, align: 'left' },
+                { label: '耗材统编代码', name: 'HCTBDM', width: 80, align: 'left' },
+                { label: '耗材细分代码', name: 'HCXFDM', width: 60, align: 'left' },
+                { label: '医院本地代码', name: 'YYBDDM', width: 60, align: 'left' },
+                { label: '品名', name: 'PM', width: 60, align: 'left' },
+                { label: '规格', name: 'GG', width: 60, align: 'left' },
+                { label: '型号', name: 'XH', width: 60, align: 'left' },
+                { label: '规格型号说明', name: 'GGXHSM', width: 80, align: 'left' },
+                { label: '单位', name: 'DW', width: 60, align: 'left' },
+                { label: '生产企业名称', name: 'SCQY', width: 80, align: 'left' },
+                { label: '生产批号', name: 'SCPH', width: 60, align: 'left' },
+                { label: '生产日期', name: 'SCRQ', width: 60, align: 'left' },
+                { label: '有效日期', name: 'YXRQ', width: 60, align: 'left' },
+                { label: '配送数量', name: 'PSL', width: 60, align: 'left' },
+                
+            ],
+
+            multiselect: false,
+
+            pager: "#gridPager",
+            sortname: 'PSDBH',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            },
+            gridComplete: function () {
+                var ids = $("#gridList").getDataIDs();
+                var num = ids.length - 1;
+                for (i = 0; i <= num; i++) {
+                    //var lastRowoid = ids[ids.length - 1];
+                    var lastRowoid = ids[i];
+                    EnableInlineEditBox(lastRowoid);
+                }
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: { qybm: $("#yq").val(), psmxbhcxtj: ''  },
+            }).trigger('reloadGrid');
+        });
+    }
+
+
+    //启用行内编辑
+    function EnableInlineEditBox(rowid) {
+        $("#gridList").jqGrid('editRow', rowid, false, initInlineFunc);//打开编辑模式
+        $("#jqg_gridList_" + rowid).trigger("click");
+    }
+
+    //初始化 浮层
+    function initInlineFunc(rowid) {
+        $("#" + rowid + "_PSYSLXXXXXXX").parent().next().children('select').append('<option value="1">预验收</option><option value="2">实验收</option>');//验收类型
+    }
+
+    //获取明细
+    $('#btn_search').click(function () {
+        if ($("#yq").val() == "" || $("#yq").val() == null) {
+            $.modalAlert("请选择供应商", 'warning');
+            return ;
+        }
+        gridList();
+    });
+
+    //明细验收
+    $('#btn_accept').click(function () {
+        var rowData = $("#gridList").jqGridRowValue();
+        if (rowData == null ) {
+            $.modalAlert("请选择需要验收的单据", 'warning');
+            return;
+        }
+        //var psmxbh = rowData.PSMXBH;
+        //var hctbdm = rowData.HCTBDM;
+        //var scph = rowData.SCPH;
+        //var pssl = rowData.PSSL
+        $.modalOpen({
+            id: "Form",
+            title: "配货单验收",
+            url: "/PurchaseManage/Purchase/DeliveryForm?psmxbh=" + rowData.PSMXBH + "&hctbdm=" + rowData.HCTBDM + "&scph=" + rowData.SCPH + "&psl=" + rowData.PSL,
+            width: "25%",
+            height: "50%",
+            callBack: function (iframeId) {
+                top.frames[iframeId].SubmitForm();
+                //$.modalClose("Form");
+                //$('#btn_search').trigger('click');
+            }
+        });
+    });
+
+    ////明细验收
+    //$('#btn_accept').click(function () {
+    //    //var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+    //    var rowData = $("#gridList").jqGridRowValue();
+    //    if (rowData == null ) {
+    //        $.modalAlert("请选择需要验收的单据", 'warning');
+    //        return;
+    //    }
+    //    var main = {
+    //        "PSYSLX": rowData.PSYSLX,
+    //        "JLS":1,
+    //    }
+    //    var obj = {
+    //        "PSMXBH": rowData.PSMXBH,
+    //        "HCTBDM": rowData.HCTBDM,
+    //        "SCPH": rowData.SCPH,
+    //        "PSL": rowData.PSL,
+    //        "YSTGS": rowData.YSTGS,
+    //        "YSBGS": rowData.YSBGS,
+    //        "YSBZSM": rowData.YSBZSM,
+    //    }
+    //    var st = new Array();
+    //    st.push(obj);
+    //    $.najax({
+    //        type: "POST",
+    //        url: "/Purchase/DeliveryAccept",
+    //        data: { main: main,st:st },
+    //        dataType: "json",
+    //        success: function (res) {
+    //            if (res.state == "success") {
+    //                $('#btn_search').trigger('click');
+    //                $.modalAlert("单据验收成功！", 'success');
+    //            } else {
+    //                $.modalAlert("单据验收失败：" + res.message, 'warning');
+    //            }
+    //        }
+    //    });
+    //});
+
+</script>
+
+

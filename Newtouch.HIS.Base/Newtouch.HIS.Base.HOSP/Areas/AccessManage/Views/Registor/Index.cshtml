@@ -1,0 +1,135 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "RegistorIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-trash-o"></i>删除</a>
+        </div>
+        @*<div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_users()"><i class="fa fa-pencil-square-o"></i>角色用户</a>
+            </div>*@
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+<script>
+    $(function () {
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/AccessManage/Registor/GetRegistorList",
+            height: $(window).height() - 120,
+            postData: { keyword: $("#txt_keyword").val(), org: $("#OrganizeId").val() },
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '名称', name: 'RegName', width: 150, align: 'left' },
+                { label: "编码", name: "RegCode", width: 150, align: 'left' },
+                {
+                    label: '权限等级', name: 'AuthorizedLev', width: 100, align: 'left', formatter: function (cellvalue) {
+                        //var val = $.enum.getDescByValue("EnumAuthorizedLev", cellvalue);
+                        if (cellvalue ==@((int)EnumAuthorizedLev.imitatelogin)) {
+                            return "模拟登录";
+                        }
+                        else if (cellvalue ==@((int)EnumAuthorizedLev.saltaccess)) {
+                            return "授权登录";
+                        }else if (cellvalue ==@((int)EnumAuthorizedLev.tokenaccess)) {
+                            return "口令登录";
+                        }return "";
+                    }
+                },
+                {
+                    label: '授权期限', name: 'AuthorizedPeriod', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue ==@((int)EnumAuthorizedPeriod.longtime)) {
+                            return "永久有效";
+                        }
+                        else if (cellvalue ==@((int)EnumAuthorizedPeriod.month)) {
+                            return "一个月";
+                        }else if (cellvalue ==@((int)EnumAuthorizedPeriod.partyear)) {
+                            return "半年";
+                        }else if (cellvalue ==@((int)EnumAuthorizedPeriod.year)) {
+                            return "一年";
+                        }return "";                    }
+                },
+                { label: '备注', name: 'Memo', width: 200, align: 'left' },
+                { label: "有效", name: "zt", width: 60, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '排序', name: 'px', width: 40, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), org: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "申请注册",
+            url: "/AccessManage/Registor/Form" + "?org=" + $("#OrganizeId").val(),
+            width: "600px",
+            height: "520px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改注册申请",
+            url: "/AccessManage/Registor/Form?keyValue=" + keyValue + "&org=" + $("#OrganizeId").val(),
+            width: "600px",
+            height: "520px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+</script>

@@ -1,0 +1,120 @@
+﻿
+@{
+    ViewBag.Title = "门诊就诊详情";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">日期：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <td class="formValue" style="width:8px;float:left;">-</td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle">门诊卡号/姓名/科室：</th>
+                <td class="formValue">
+                    <input id="keyword" type="text" class="form-control" placeholder="门诊卡号/姓名/科室" />
+                </td>
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                    <input type="button" id="btn_print" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="打印" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        //查询列表
+        gridList();
+    });
+    //门诊挂号结算查询
+    function gridList() {
+        var $gridJsList = $("#gridList");
+        $gridJsList.dataGrid({
+            postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val(), keyword: $("#keyword").val()},
+            height: $(window).height() - 160,
+            url: "/DoctorManage/OutpatientQuery/GetConsultDetailGridJson",
+            colModel: [
+                { label: '门诊号码', name: 'mzh', width: 100, align: 'left' },
+                { label: '患者姓名', name: 'xm', align: 'left', width: 110 },
+                { label: '性别', name: 'xb', align: 'center', width: 50 },
+                { label: '年龄', name: 'nl', align: 'right', width: 50 },
+                { label: '就诊科室', name: 'ks', width: 80, align: 'left' },
+                { label: '就诊医生', name: 'ys', width: 80, align: 'left' },
+                { label: '就诊类型', name: 'jzlx', align: 'center', width: 50 },
+                { label: '初诊', name: 'cz', align: 'center', width: 50 },
+                { label: '开始时间', name: 'zlkssj', align: 'left', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '结束时间', name: 'zljssj', align: 'left', width: 120, formatter: function (val) { return val != "" && val != undefined ? $.getTime({ date: val }) : ""; } },
+                { label: '就诊状态', name: 'jzzt', align: 'center', width: 50 },
+                { label: '主要诊断名称', name: 'zdmc', width: 150, align: 'left' },
+                { label: '就诊卡号', name: 'jzkh', align: 'left', width: 70 },
+                { label: '复诊日期', name: 'fzrq', align: 'left', width: 80 },
+                { label: '出生年月', name: 'csny', align: 'left', width: 60, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '身份证号', name: 'zjh', align: 'left', width: 120 },
+                { label: '病人性质', name: 'brxzmc', align: 'center', width: 70 },
+                //{ label: '医疗证号', name: 'ylzh', align: 'center', width: 50 },
+                { label: '职业', name: 'zy', align: 'left', width: 50 },
+                { label: '民族', name: 'mz', align: 'left', width: 50 },
+                //{ label: '血型', name: 'xx', align: 'center', width: 50 },
+                { label: '初诊日期', name: 'czrq', align: 'left', width: 80 },
+                { label: '家庭电话', name: 'dh', align: 'left', width: 50 },
+                { label: '家庭地址', name: 'xian_dz', align: 'left', width: 50 },
+                { label: '单位名称', name: 'dwmc', align: 'left', width: 50 },
+                { label: '单位电话', name: 'dwdh', align: 'left', width: 50 },
+                { label: '陪伴者关系', name: 'lxrgx', align: 'left', width: 65 },
+                { label: '陪伴者姓名', name: 'lxr', align: 'left', width: 65 },
+                { label: '陪伴者电话', name: 'lxrdh', align: 'center', width: 65 },
+                { label: '陪伴者单位', name: 'lxrdw', align: 'left', width: 65 },
+                { label: '陪伴者地址', name: 'jjlxr_dz', align: 'left', width: 65 },
+            ],
+            pager: "#gridPager",
+            sortname: " zlkssj asc",
+            rownumbers: true,  //是否显示序号
+            viewrecords: true
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val(), keyword: $("#keyword").val() },
+                url: "/DoctorManage/OutpatientQuery/GetConsultDetailGridJson",
+            }).trigger('reloadGrid');
+        });
+    }
+
+
+    $("#btn_print").click(function () {
+        var uri = '@Html.Raw(reportUrl)' + "?tempCode=1244" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&kssj=" + $('#kssj').val() + "&jssj=" + $('#jssj').val() + "&jzys=" + '@curOpr.rygh' + "&keyword=" + $('#keyword').val();
+        if (uri) {
+            window.open(uri);
+        }
+    })
+
+
+
+</script>

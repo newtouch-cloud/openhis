@@ -1,0 +1,259 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+
+<div style="float:left;width:17.4%; border:solid 1px #ddd;">
+    <table id="gridList"></table>
+</div>
+<div class="panel panel-default" style="width:80.5%; float:right; margin-right: 10px; border:solid 1px #ddd;">
+    <div class="panel-heading">
+        模板信息
+    </div>
+    <div style="padding:2px;padding-right:20px;">
+        <form id="form1">
+            <table class="form">
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>名称：</th>
+                    <td class="formValue">
+                        <input id="mbId" type="text" hidden />
+                        <input id="mbmc" name="mbmc" type="text" class="form-control required" value="" placeholder="请输入模板名称" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>大类：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="dlCode" name="dlCode" class="form-control required">
+                            <option>==请选择==</option>
+                        </select>
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>执行科室：</th>
+                    <td class="formValue">
+                        <input id="zxks" name="zxks" type="text" class="form-control required" value="" placeholder="请输入执行科室" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">选项：</th>
+                    <td class="formValue" style="padding-top: 1px;">
+                        <div class="ckbox">
+                            <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                        </div>
+                    </td>
+                    <th class="formTitle"><b>添加组套：</b></th>
+                    <td class="formValue">
+                        <input id="txtZutaoSel" type="text" class="form-control" placeholder="请输入组套名称或编码" />
+                    </td>
+                    <td>
+                        &nbsp;&nbsp;&nbsp;
+                        <i class="fa fa-minus-circle fa-lg" id="btn_Remove" style="cursor:pointer;" onclick="btn_removeItem()"></i>
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+        <div style="background-color: #fff; width: 90%; margin:2% 0 0 5%; border:solid 1px #ddd">
+            <table id="groupPackageListGridList"></table>
+        </div>
+
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+    {
+        ShowKeyList = new int[] { 3, 4, 6, 8 },
+        F3Text = "新增模板",
+        F6Text = "删除"
+    })
+</div>
+
+
+<script>
+    var type = $.request("type")=="jy"?@((int)EnumjyjcmbLx.jy):$.request("type")=="jc"?@((int)EnumjyjcmbLx.jc):"";
+    $(function () {
+        if (type) {
+            var $gridList = $("#gridList");
+            $gridList.dataGrid({
+                url: "/TemplateManage/InspectionTemplate/SelectGridList?type=" + type,
+                height: $(window).height() - 50,
+                colModel: [
+                    { label: 'mbId', name: 'mbId', width: 100, align: 'left',hidden:true },
+                    { label: '名称', name: 'mbmc', width: 100, align: 'left' },
+                ],
+                sortname: 'mbmc asc',
+                viewrecords: true,
+                rowNum: 50,
+                onSelectRow: function (rowid) {
+                    var rowdata = $("#gridList").getRowData(rowid);
+                    if (!rowdata || !rowdata.mbId) {
+                        return;
+                    }
+                    $.ajax({
+                        url: "/TemplateManage/InspectionTemplate/GetTemplateDetail",
+                        data: { mbId: rowdata.mbId },
+                        dataType: "json",
+                        async: false,
+                        success: function (data) {
+                            $("#form1").formSerialize(data.mbEntity);   //文本赋值
+                            $('#zxks').attr('data-code', data.mbEntity.zxks).val(data.mbEntity.zxksmc);
+                            $('#kdks').attr('data-code', data.mbEntity.kdks).val(data.mbEntity.zxksmc);
+
+                            $("#groupPackageListGridList").clearGridData();
+                            initGroupPackageGrid(data.mbztList);    //收费项目
+                        }
+                    });
+                }
+            });
+        }
+
+        //加载大类
+        $("#dlCode").bindSelect({
+            url: "/TemplateManage/InspectionTemplate/GetCategoryList",
+            id: "dlCode",
+            text: "dlmc"
+        });
+
+        //只为改变样式
+        $("#dlCode").select2({
+            minimumResultsForSearch: -1
+        });
+
+        initGroupPackageGrid([]);
+    })
+
+    //执行科室浮层
+    $('#zxks').ksFloatingSelector({
+        itemdbclickhandler: function ($this) {
+            $('#zxks').attr('data-code', $this.attr('data-Code'))
+                      .val($this.attr('data-Name'));
+        },
+    });
+    
+    //组套浮层
+    $('#txtZutaoSel').zutaoFloatingSelector({
+        type: type,
+        itemdbclickhandler: function ($thistr) {
+            var returnFlag = false;
+            var allData = $("#groupPackageListGridList").getRowData_AllLine(undefined, true);
+            $.each(allData, function () {
+                if(!returnFlag){
+                    var ztId = this["ztId"];
+                    if (ztId && ztId == $thistr.attr('data-ztId')) {
+                        returnFlag = true;
+                        return;
+                    }
+                }
+            });
+            if (returnFlag) {
+                $.modalAlert("不可重复添加", 'warning');
+                return;
+            }
+            btn_addItem($thistr);
+        }
+    });
+
+    //jGrid声明
+    function initGroupPackageGrid(data) {
+        $('#groupPackageListGridList').newtouchLocalDataGrid({
+            height: 280,
+            unwritten: false,
+            caption: "组套信息",
+            colModel: [
+                { label: 'ztId', name: 'ztId', width: 120, hidden: true, align: 'left' },
+                { label: '类型', name: 'Type', width: 100, align: 'left',hidden:true },
+                { label: '组套名称', name: 'ztmc', width: 200, align: 'left' },
+                { label: '描述', name: 'Description', width: 120, align: 'left' },
+                { label: '注意事项', name: 'Remark', width: 120, align: 'left' }
+            ]
+        }, data);
+    }
+
+
+    //添加项目
+    function btn_addItem($thistr) {
+        $('#groupPackageListGridList').newtouchLocalDataGrid(null, [{
+            ztId: $thistr.attr('data-ztId'),
+            ztmc: $thistr.attr('data-ztmc'),
+            Type: $thistr.attr('data-Type'),
+            Description: $thistr.attr('data-Description'),
+            Remark: $thistr.attr('data-Remark')
+        }]);
+    }
+
+    //删除项目
+    function btn_removeItem() {
+        var rowid = $("#groupPackageListGridList").jqGrid("getGridParam", "selrow");
+        $('#groupPackageListGridList').jqGrid("delRowData", rowid);
+    }
+
+
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    }
+
+    //保存
+    function newtouch_event_f8() {
+        //必填信息验证  （主诉、发病时间）
+        if (!$('#form1').formValid(valOptions)) {
+            $.modalAlert("必填信息尚未完善", 'warning');
+            return;
+        }
+
+        //模板
+        var mbobj = {
+            mbId: $('#mbId').val(),
+            Type: type,
+            mbmc: $('#mbmc').val(),
+            dlCode: $('#dlCode').val(),
+            zxks: $('#zxks').attr('data-Code'),
+            zt:$('#zt').val()
+        }
+
+        //组套
+        var mbztlist = $("#groupPackageListGridList").jqGrid('getRowData_AllLine', null, true);
+
+        $.najax({
+            url: "/TemplateManage/InspectionTemplate/SaveData",
+            dataType: "json",
+            data: { mbobj: mbobj, mbztlist: mbztlist },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'warning');
+                //清空
+                newtouch_globalevent_f4();
+                $("#groupPackageListGridList").clearGridData();
+                //刷新
+                $("#gridList").jqGrid('setGridParam', {
+                    page: 1,
+                }).trigger('reloadGrid');
+            }
+        });
+    }
+    
+    //新增组套
+    function newtouch_event_f3()
+    {
+        newtouch_globalevent_f4();
+        $("#groupPackageListGridList").clearGridData();
+    }
+
+    //删除
+    function newtouch_event_f6()
+    {
+        var mbId = $('#mbId').val();
+        if(mbId){
+            $.najax({
+                url: "/TemplateManage/InspectionTemplate/DeleteData",
+                dataType: "json",
+                data: { mbId: mbId},
+                type: "POST",
+                success: function (data) {
+                    $("#gridList").trigger('reloadGrid');
+                    $.modalAlert("删除成功", 'warning');
+                }
+            });
+        }
+    }
+
+</script>
+

@@ -1,0 +1,475 @@
+﻿
+@{
+    Layout = null;
+}
+<style>
+    .divtab {
+        padding-top: 50px;
+        height: 510px;
+        border-bottom: 2px double #f3a517;
+        border-bottom-left-radius: 20px;
+        border-bottom-right-radius: 20px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .newgridrow{
+        background-color:#d4e220;
+    }
+</style>
+<form id="frm_edit">
+    <div id="dv_edit" style="background-color:#ffffff;">
+        <ul class="nav nav-tabs navb-bg" id="myTab" style="position:fixed;top:0;z-index:100009;width:100%;">
+            <li role="presentation"><a href="#linkpat" role="tab" data-toggle="tab">患者信息</a></li>
+            <li role="presentation"><a href="#linkzyinfo" role="tab" data-toggle="tab">住院信息</a></li>
+            <li role="presentation"><a href="#linkfee" role="tab" data-toggle="tab">费用信息</a></li>
+            <li role="presentation"><a href="#linkzd" role="tab" data-toggle="tab">诊断列表</a></li>
+            <li role="presentation"><a href="#linkop" role="tab" data-toggle="tab">手术列表</a></li>
+
+
+        </ul>
+        <div class="tab-content">
+            <div id="dv-pat" class="divtab" style="display: none;">
+                @Html.Partial("MainPatInfo")
+            </div>
+            <div id="dv-zd" class="divtab" style="display: none;">
+                @Html.Partial("MainDiag")
+            </div>
+            <div id="dv-op" class="divtab" style="display: none;">
+                @Html.Partial("MainOplist")
+            </div>
+            <div id="dv-zyinfo" class="divtab" style="display: none;">
+                @Html.Partial("MainZyInfo")
+            </div>
+            <div id="dv-fee" class="divtab" style="display: none;">
+                @Html.Partial("MainFeeInfo")
+            </div>
+            <div style="margin-top:5px;margin-bottom:3px;width:100%;height:30px; float:right;position: fixed;bottom:6px;">
+                @*<a class='btn btn-default' style='width:80px;background:#c1958f;color:#eee;height:20px;font-size:13px;padding-top:5px;margin-right:15px;float:right;' onclick="submitArrange();"><span class="glyphicon glyphicon-remove">重置</span></a>
+            <a class='btn btn-default' style='width:80px;background:#00CD66;color:#eee;height:20px;font-size:13px;padding-top:5px;margin-right:15px;float:right;' onclick="submitArrange();"><span class="glyphicon glyphicon-ok">保存首页</span></a>*@
+                @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+           {
+               ShowKeyList = new int[] { 2, 3, 6, 7,9 },
+               F2Text="保存基本信息",
+               F3Text = "保存诊断",
+               F6Text = "保存手术",
+               F7Text = "完整病案保存",
+               F9Text = "同步费用"
+           })
+            </div>
+        </div>
+
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    var zyh = $.request("zyh");
+    //var savedata = {};
+    $(function () {
+        $.ajax({
+            url: "/MRHomePage/MainRecord/GetFormJson",
+            data: { keyValue: keyValue,zyh:zyh },
+            dataType: "json",
+            success: function (data) {
+                $("#frm_edit").formSerialize(data);
+                if (data != null) {
+                    $("#GJ").attr("data-code", data.R_GJ);
+                    $("#MZ").attr("data-code", data.R_MZ);
+                    $("#ZY").attr("data-code", data.R_ZY);
+                    $("#HY").attr("data-code", data.R_HY);
+                    $("#GX").attr("data-code", data.R_GX);
+                    $("#CYKB").attr("data-code", data.R_CYKB);
+                    $("#ZKKB").attr("data-code", data.R_ZKKB);
+                    $("#RYKB").attr("data-code", data.R_RYKB);
+                    $("#CYBF").attr("data-code", data.R_CYBF);
+                    $("#RYBF").attr("data-code", data.R_RYBF);
+                    getcitycode(data);
+                    SyncFee(JSON.stringify(data));
+                }
+            }
+        });
+        tabInit();
+        $("td span[role=combobox]").each(function () {
+            $(this).attr("style", "border:none");
+        });
+    });
+
+    function getcitycode(data) {
+        $("div[id*='citylist_']").each(function (i, e) {
+            //debugger
+            var sncode = "";
+            var sicode = "";
+            var qxcode = "";
+            if (e.id.indexOf('_XZZ') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.XZZ_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.XZZ_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.XZZ_QX + "')").val();
+                //$(this).find(" select[name='area']").val(qxcode).trigger("change");
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+            }
+            else if (e.id.indexOf('_CSD') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.CSD_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.CSD_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.CSD_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+            }
+            else if (e.id.indexOf('_HKDZ') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.HKDZ_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.HKDZ_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.HKDZ_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+
+            }
+            else if (e.id.indexOf('_LXRDZ') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.LXRDZ_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.LXRDZ_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.LXRDZ_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger(" change");
+            }
+        });
+    }
+
+    function savecitycode(savedata) {
+        $("div[id*='citylist_']").each(function (i, e) {
+            //debugger
+            if (e.id.indexOf('_XZZ') != -1) {
+                //$('#citylist_CSD select[name="province"] option:selected').text()
+                savedata.XZZ_SN = $(this).find(" select[name='province'] option:selected ").text();
+                savedata.XZZ_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.XZZ_QX = $(this).find(" select[name='area'] option:selected").text();        
+            }
+            else if (e.id.indexOf('_CSD') != -1) {
+                savedata.CSD_SN = $(this).find(" select[name='province'] option:selected").text();
+                savedata.CSD_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.CSD_QX = $(this).find(" select[name='area'] option:selected").text();
+            }
+            else if (e.id.indexOf('_HKDZ') != -1) {
+                savedata.HKDZ_SN = $(this).find(" select[name='province'] option:selected").text();
+                savedata.HKDZ_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.HKDZ_QX = $(this).find(" select[name='area'] option:selected").text();
+            }
+            else if (e.id.indexOf('_LXRDZ') != -1) {
+                savedata.LXRDZ_SN = $(this).find(" select[name='province'] option:selected").text();
+                savedata.LXRDZ_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.LXRDZ_QX = $(this).find(" select[name='area'] option:selected").text();
+            }
+        });
+
+        return savedata;
+    }
+
+
+    function tabInit() {
+        $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+            switch ($(this).attr('href')) {
+                case "#linkpat":
+                    $("#dv-pat").show();
+                    $("#dv-op").hide();
+                    $("#dv-zd").hide();
+                    $("#dv-zyinfo").hide();
+                    $("#dv-fee").hide();
+                    break;
+                case "#linkop":
+                    $("#dv-pat").hide();
+                    $("#dv-op").show();
+                    $("#dv-zd").hide();
+                    $("#dv-zyinfo").hide();
+                    $("#dv-fee").hide();
+                    OpListGrid();
+                    break;
+                case "#linkzd":
+                    $("#dv-pat").hide();
+                    $("#dv-zd").show();
+                    $("#dv-op").hide();
+                    $("#dv-zyinfo").hide();
+                    $("#dv-fee").hide();
+                    //debugger
+                    ZdListGrid();
+
+                    break;
+                case "#linkzyinfo":
+                    $("#dv-zyinfo").show();
+                    $("#dv-op").hide();
+                    $("#dv-pat").hide();
+                    $("#dv-zd").hide();
+                    $("#dv-fee").hide();
+                    break;
+                case "#linkfee":
+                    $("#dv-zyinfo").hide();
+                    $("#dv-op").hide();
+                    $("#dv-pat").hide();
+                    $("#dv-zd").hide();
+                    $("#dv-fee").show();
+                    break;
+            }
+
+        });
+
+        $('#myTab a:first').trigger('click');
+    }
+
+    function amountcheck(str) {
+        //金额 只允许正数
+        //var exp = /(^[1-9]([0-9]+)?(\.[0-9]{1,2})?$)|(^(0){1}$)|(^[0-9]\.[0-9]([0-9])?$)/; 
+        //金额 允许正（+）负数
+        //var exp = /(^([+-]?)[1-9]([0-9]+)?(\.[0-9]{1,2})?$)|(^([+-]?)(0){1}$)|(^([+-]?)[0-9]\.[0-9]([0-9])?$)/; 
+
+        //金额 允许正负数
+        var exp = /(^([-]?)[1-9]([0-9]+)?(\.[0-9]{1,4})?$)|(^([-]?)(0){1}$)|(^([-]?)[0-9]\.[0-9]([0-9])?$)/;
+        if (exp.test(str)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    //费用格式校验
+    function amtCheck() {
+        var jecheck = "";
+        $("#dv_fee input[attr-desc]").each(
+            function () {
+               // debugger
+                var fee = $(this).val();
+                if (fee != "" && fee != undefined) {
+                    if (!amountcheck(fee)) {
+                        jecheck += $(this).attr('attr-desc') + "格式有误；";
+                    }
+                }
+            }
+        );
+
+        return jecheck;
+    }
+    //患者信息参数
+    function getfromPara() {
+        var para = $("#frm_edit").formSerialize();
+        savecitycode(para);
+        $("input[data-code]").each(function () {
+            var code = $(this).attr("data-code");
+            var name = "R_" + $(this).attr("name");
+            para[name] = code;
+        }
+        );
+        $("input[data-staffgh]").each(function () {
+            var code = $(this).attr("data-staffgh");
+            var name = "R_" + $(this).attr("name");
+            para[name] = code;
+        }
+        );
+
+        return para;
+    }
+
+    //功能键操作区
+    function newtouch_event_f2() {
+        if (!$('#frm_edit').formValid()) {
+            return false;
+        }
+
+        var jecheck = amtCheck();
+        if (jecheck!="") {
+            $.modalAlert(jecheck, 'warning');
+            return false
+        }
+        
+        var para = getfromPara();
+        $.submitForm({
+            url: "/MRHomePage/MainRecord/SubmitPatBasic?keyValue=" + keyValue,
+            param: para,
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalAlert("患者信息保存成功", 'success');
+                } else {
+                    $.modalAlert(data.message, 'warning');
+                }
+            }
+        })
+    }
+    //诊断保存
+    function newtouch_event_f3() {
+      //debugger
+        var msg = "";
+        var ids = $("#gridzdList").getDataIDs();
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridzdList").getRowData(ids[i]));
+            }
+        }
+
+        $.ajax({
+            url: "/MRHomePage/MainRecord/SubmitZdList",
+            data: { dto: rows, zyh: $("#ZYH").val(), "Code": "DiagnosticSave" },
+            type: "post",
+            loading: "正在提交数据...",
+            success: function (data) {
+                var obj = JSON.parse(data);
+                if (obj.data == "") {
+                    $.modalAlert("诊断信息保存成功", 'success');
+                }
+                else {
+                    window.setTimeout(function () {
+                        //var obj = JSON.stringify(data); 
+                        console.info(obj); console.info(data);
+                        if (obj.data == "诊断信息保存成功") {
+                            $.modalAlert(obj.data, 'success');
+                            jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+                        }
+                        else {
+                            $.modalAlert(obj.data, 'warning');
+                        }
+                        //if (obj.state == "success") {
+                        //    $.modalAlert("诊断信息保存成功", 'success');
+                        //    jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+                        //}
+                        //else {
+                        //    $.modalAlert(obj.message, 'warning');
+                        //}
+                    }, 10);
+                }
+            }
+        });
+        
+    }
+    //手术列表
+    function newtouch_event_f6() {
+        //debugger
+        var msg = "";
+        var ids = $("#gridopList").getDataIDs();
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridopList").getRowData(ids[i]));
+            }
+        }
+        $.ajax({
+            url: "/MRHomePage/MainRecord/SubmitOpList",
+            data: { dto: rows },
+            loading: "正在提交数据...",
+            type: "post",
+            success: function (data) {
+                window.setTimeout(function () {
+                    var obj = JSON.parse(data);
+                    if (obj.state == "success") {
+                        $.modalAlert("手术信息保存成功", 'success');
+                        jQuery("#gridopList").jqGrid().trigger('reloadGrid');
+                    }
+                    else {
+                        $.modalAlert(obj.message, 'warning');
+                    }
+                }, 10);
+
+            }
+        });
+    }
+
+    function getzdGrid() {
+        var ids = $("#gridzdList").getDataIDs();
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridzdList").getRowData(ids[i]));
+            }
+        }
+        return rows;
+    }
+    function getopGrid() {
+        var ids = $("#gridopList").getDataIDs();
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridopList").getRowData(ids[i]));
+            }
+        }
+        return rows;
+    }
+
+    function newtouch_event_f7() {
+        //患者基本信息
+        if (!$('#frm_edit').formValid()) {
+            return false;
+        }
+
+        var jecheck = amtCheck();
+        if (jecheck != "") {
+            $.modalAlert(jecheck, 'warning');
+            return false
+        }
+
+        var para = getfromPara();
+
+        $.submitForm({
+            url: "/MRHomePage/MainRecord/SubmitPatBasic?keyValue=" + keyValue,
+            param: para,
+            success: function (data) {
+                if (data.state == "success") {
+                    var zdrows = getzdGrid();
+                    var oprows = getopGrid();
+                    $.ajax({
+                        url: "/MRHomePage/MainRecord/SubmitMR?keyValue=" + keyValue,
+                        data: { zddto: zdrows, opdto: oprows, zyh: $("#ZYH").val(), "Code": "DiagnosticSave" },
+                        loading: "正在提交数据...",
+                        type: "post",
+                        success: function (data) {
+                            window.setTimeout(function () {
+                                var obj = JSON.parse(data);
+                                if (obj.state == "success") {
+                                    $.modalAlert("保存成功", 'success');
+                                    jQuery("#gridopList").jqGrid().trigger('reloadGrid');
+                                    jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+                                }
+                                else {
+                                    $.modalAlert(obj.message, 'warning');
+                                }
+                            }, 10);
+
+                        }
+                    });
+
+                } else {
+                    $.modalAlert(data.message, 'warning');
+                }
+            }
+        })
+
+    }
+
+    function newtouch_event_f9() {
+        $.modalConfirm("同步数据会重置页面，请确认是否重置？", function (flag) {
+            if (flag) {
+                $.ajax({
+                    url: "/MRHomePage/MainRecord/GetFormJsonFee?keyValue=" + keyValue,
+                    data: { zyh: zyh },
+                    loading: "正在同步数据...",
+                    type: "post",
+                    success: function (data) {
+                        SyncFee(data);
+                        $.modalAlert("同步完成", 'success');
+                    }
+                });
+
+            };
+        });
+    }
+
+    function SyncFee(data)
+    {
+        var jsonObj = JSON.parse(data);
+        for (var item in jsonObj) {
+            if ($("#dv_fee input[id=" + item + "]").length > 0 && !!jsonObj[item]) {
+                $("#dv_fee input[id=" + item + "]").val(parseFloat(jsonObj[item]).toFixed(2));
+            }
+        }
+    }
+</script>

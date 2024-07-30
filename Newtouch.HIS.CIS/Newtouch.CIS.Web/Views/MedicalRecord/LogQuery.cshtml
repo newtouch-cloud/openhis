@@ -1,0 +1,191 @@
+﻿
+@{
+    ViewBag.Title = "LogQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+@*<style>
+	.form .formTitle {
+		position: relative;
+		left: 0px;
+		text-align: right;
+		white-space: nowrap;
+		font-weight: normal;
+		width: 60px;
+		padding-right: 10px;
+		padding-left: 5px;
+	}
+</style>*@
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+	        <tr>
+		        
+		        <th class="formTitle">病例号/姓名：</th>
+		        <td class="formValue">
+			        <input type="text" class="form-control" id="txtxm" name="txtxm"/>
+		        </td>
+		        <td class="formTitle">医生姓名：</td>
+		        <td class="formValue">
+			        <input id="txt_doctor" name="txt_doctor" type="text" class="form-control required"/>
+		        </td>
+		        <td style="width: 20px"></td>
+		        <th class="formTitle" id="thCZRQ">操作日期：</th>
+		        <td class="formValue" colspan="3">
+			        <input id="txtCreateTimestart" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 42%; float: left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"/>
+			        <span style="margin-left: 2%; float: left;">—</span>
+			        <input id="txtCreateTimeEnd" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 41%; float: left; margin-left: 2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"/>
+		        </td>
+		        <td class="formValue" colspan="2">
+			        <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询"/>
+			        <input type="button" id="btn_export" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="导出"/>
+		        </td>
+	        </tr>
+            <tr><th class="formTitle">患者年龄：</th>
+	            <td class="formValue">
+		            <select class="form-control" id="hznl">
+			            <option value="" selected>全部</option>
+			            <option value="1">大于35周岁</option>
+		            </select>
+	            </td>
+	            <th class="formTitle">血糖血压：</th>
+	            <td class="formValue">
+		            <select class="form-control" id="xtxy">
+			            <option value="" selected>全部</option>
+			            <option value="1">有值</option>
+		            </select>
+	            </td>
+	            <td style="width: 20px"></td>
+	            <th class="formTitle">导出全部：</th>
+	            <td class="formValue">
+		            <select class="form-control" id="qbdc">
+			            <option value="" selected>否</option>
+			            <option value="1">是</option>
+		            </select>
+	            </td>
+			</tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridJSList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        //结算主记录
+        gridJSListData();
+    });
+    $("#txt_doctor").dutyStaffFloatingSelector({
+        dutyCode: 'Doctor'
+    });
+    //门诊挂号结算查询
+    function gridJSListData() {
+        var $gridJsList = $("#gridJSList");
+        $gridJsList.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 160,
+            url: "@Url.Action("OutpatientPatientQuery")",
+            colModel: [
+                { label: 'jzId', name: 'jzId', hidden: true, align: 'left' },
+                { label: '就诊日期', name: 'jzsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                //{ label: '日期', name: 'createtime', width: 140, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '门诊号', name: 'mzh', width: 100, align: 'left' },
+                { label: '姓名', name: 'xm', align: 'center', width: 80 },
+                { label: '家长姓名', name: 'jzxm', align: 'center', width: 80 },
+                { label: '电话号码', name: 'dhhm', align: 'center', width: 80 },
+                {
+                    label: '性别', name: 'xb', align: 'center', width: 50, formatter: function (val) {
+                        return $.getGender(val);
+                    }
+                },
+                { label: '年龄', name: 'nlshow', align: 'center', width: 50 },
+                { label: '职业', name: 'zy', width: 80, align: 'left' },
+                { label: '地址', name: 'dz', width: 80, align: 'left' },
+                { label: '发病日期', name: 'fbsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                 { label: '体温', name: 'tiwen', width: 80, align: 'left' },
+                { label: '血压', name: 'xueya', width: 80, align: 'left' },
+                { label: '初复诊', name: 'cfz', width: 80, align: 'left' },
+                { label: '主要症状', name: 'zs', width: 80, align: 'left' },
+                { label: '诊断名称', name: 'zdmc', width: 80, align: 'left' },
+                { label: '处理', name: 'clfa', width: 80, align: 'left' },
+                { label: '医生签名', name: 'jzys', width: 80, align: 'left' },
+                { label: '有效证件号', name: 'sfzh', width: 130, align: 'left' },
+                { label: '电话', name: 'ContactNum', width: 100, align: 'left' },
+                { label: '科别', name: 'ghksmc', width: 80, align: 'left' },
+                { label: '血糖', name: 'xuetang', width: 80, align: 'left' },
+                { label: '现病史', name: 'xbs', width: 80, align: 'left' },
+                { label: '备注', name: 'bz', width: 100, align: 'left' },
+            ],
+            pager: "#gridPager",
+            sortname: " jzsj asc",
+            viewrecords: true
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridJSList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                url: '@Url.Action("OutpatientPatientQuery")'
+            }).trigger('reloadGrid');
+        });
+    }
+    function clearData() {
+        $("#txt_doctor").val("");
+        $("#txt_doctor").attr("data-StaffGh", "");
+    }
+    var jszbList = null;
+
+    function getSearchPostData() {
+        var xm = $("#txtxm").val();
+        var sfrqTimestart = $("#txtCreateTimestart").val();
+        var sfrqTimeEnd = $("#txtCreateTimeEnd").val();
+        var ysgh="";// = $("#txt_doctor").attr("data-StaffGh");
+        if (!!$("#txt_doctor").attr("data-StaffGh") && !!$("#txt_doctor").val()) {
+            ysgh = $("#txt_doctor").attr("data-StaffGh");
+        }
+        var hznl1 = $("#hznl").val();
+        var xtxy1 = $("#xtxy").val();
+	    var qbdc1 = $("#qbdc").val();
+        return {
+        	keyword: xm, kssj: sfrqTimestart, jssj: sfrqTimeEnd, jzysgh: ysgh, hznl: hznl1, xtxy: xtxy1, qbdc: qbdc1
+        };
+    };
+
+
+    
+    $("#btn_export").click(function () {
+    	var ysgh = "";
+	    var hznl1 = $("#hznl").val();
+	    var xtxy1 = $("#xtxy").val();
+	    var qbdc1 = $("#qbdc").val();
+        if (!!$("#txt_doctor").attr("data-StaffGh") && !!$("#txt_doctor").val()) {
+            ysgh = $("#txt_doctor").attr("data-StaffGh");
+        }
+	    var uri = "/MedicalRecord/Export?" +
+		    "keyword=" +
+		    $("#txtxm").val() +
+		    "&kssj=" +
+		    $("#txtCreateTimestart").val() +
+		    "&jssj=" +
+		    $("#txtCreateTimeEnd").val() +
+		    "&jzysgh=" +
+		    ysgh +
+		    "&hznl=" +
+		    hznl1 +
+		    "&xtxy=" +
+		    xtxy1 +
+		    "&qbdc=" +
+		    qbdc1;
+        if (uri) {
+            window.open(uri);
+        }
+    })
+
+</script>

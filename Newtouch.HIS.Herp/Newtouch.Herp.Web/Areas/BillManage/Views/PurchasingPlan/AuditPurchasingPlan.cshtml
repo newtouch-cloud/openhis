@@ -1,0 +1,247 @@
+﻿@model dynamic
+@using Newtouch.Herp.Infrastructure.Enum
+@using Newtouch.Tools
+@{
+    ViewBag.Title = "审核采购计划";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .dv-remarks {
+        line-height: 25px;
+        margin-top: 10px;
+    }
+
+    #remarks {
+        width: 300px;
+        border: 0;
+        border-bottom: 1px solid #ccc;
+        background-color: transparent;
+        padding: 0 10px;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" id="dv-search">
+        <div class="panel-heading">筛选条件</div>
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <td class="formTitle">计划单：</td>
+                    <td class="formValue" s>
+                        <input type="text" id="cgdh" class="form-control" placeholder="计划单号" />
+                    </td>
+                    <td class="formTitle">审核状态：</td>
+                    <td class="formValue formDdlSelectorTd" style="width: 90px;">
+                        @Html.DropDownList("auditState", EnumAuditState.Waiting.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>提交时间：</th>
+                    <td class="formValue">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-01 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle" style="width: 50px;">至：</th>
+                    <td class="formValue">
+                        <input id="jssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridMxList"></table>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+    {
+        ShowKeyList = new[] { 6, 7},
+        F6Text = "审核通过",
+        F7Text = "不通过"
+    })
+    <div class="dv-remarks"><span>批语：</span><input type="text" id="remarks" value="" /></div>
+</form>
+<script type="text/javascript">
+    var $gridList = $("#gridList");
+    var $gridMxList = $("#gridMxList");
+    var gridListhigh = ($(window).height() - 65) / 2 - 120;
+    var gridMxListhigh = ($(window).height() - 65) / 2 - 40;
+    $(".toolbar").width(200);
+    $(function () {
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        $('#auditState').val('@((int)EnumAuditState.Waiting)').trigger("change");
+        gridList();
+        gridMxList();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //主表信息
+    function gridList() {
+        $gridList.dataGrid({
+            url: "/BillManage/PurchasingPlan/GetPurchasingPlanInfo",
+            postData: assembleParam(),
+            height: gridListhigh,
+            colModel: [
+                {
+                    label: '审核状态', name: 'auditState', width: 100, align: 'center', formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumAuditState.Waiting):
+                            return "@EnumAuditState.Waiting.GetDescription()";
+                        case @((int)EnumAuditState.Adopt):
+                            return "@EnumAuditState.Adopt.GetDescription()";
+                        case @((int)EnumAuditState.Cancelled):
+                            return "@EnumAuditState.Cancelled.GetDescription()";
+                        case @((int)EnumAuditState.Refuse):
+                            return "@EnumAuditState.Refuse.GetDescription()";
+                        case @((int)EnumAuditState.Temporary):
+                            return "@EnumAuditState.Temporary.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                { label: '采购计划单号', name: 'cgdh', width: 180 },
+                { label: '采购部门', name: 'rkbmmc', width: 110 },
+                { label: '备注', name: 'remark', width: 250, align: 'left' },
+                { label: '创建人', name: 'CreatorName', width: 150 },
+                { label: '创建时间', name: 'CreateTime', width: 150, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: 'rkbmCode', name: 'rkbmCode', width: 110, hidden: true}
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                $gridMxList.jqGrid('setGridParam',
+                    {
+                        url: "/BillManage/PurchasingPlan/GetPurchasingPlanDetail",
+                        postData: { cgdh: $gridList.getRowData(rowid).cgdh }
+                    }).trigger('reloadGrid');
+            },
+            gridComplete: function () {
+                $gridMxList.jqGrid("clearGridData");
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: assembleParam()
+                }).trigger('reloadGrid');
+        });
+        $("#gridPager_left").html("<span onclick='shrinkGridList(this)' style='cursor: pointer;margin-right: 250px;font-size: 1.3rem;padding: 0 20px;'><i class='fa fa-angle-up'></i></span>");
+    }
+
+    //收缩主信息
+    function shrinkGridList(obj) {
+        var t = $(".ui-jqgrid-bdiv")[0];
+        if ($(t).is(':hidden')) {
+            $(obj).html("<i class='fa fa-angle-up'></i>");
+            $(t).show(500);
+            $gridList.setGridHeight(gridListhigh);
+            $gridMxList.setGridHeight(gridMxListhigh);
+
+        } else {
+            $(obj).html("<i class='fa fa-angle-down'></i>");
+            $(t).hide(200);
+            $gridList.setGridHeight(0);
+            $gridMxList.setGridHeight(gridMxListhigh + gridListhigh);
+        }
+    }
+
+    //组装搜索条件
+    function assembleParam() {
+        var auditState = $("#auditState").val() === "" ? -1 : $("#auditState").val();
+        return {
+            cgdh: $("#cgdh").val(),
+            kssj: $("#kssj").val(),
+            jssj: $("#jssj").val(),
+            auditState: auditState
+        };
+    }
+
+    //明细信息
+    function gridMxList() {
+        $gridMxList.dataGrid({
+            height: gridMxListhigh,
+            colModel: [
+                { label: '物资', name: 'wzmc', width: 200 },
+                { label: '计划数量', name: 'slStr', width: 110 },
+                { label: '实际数量', name: 'sjslStr', width: 110 },
+                { label: '规格', name: 'gg', width: 150 },
+                { label: '品牌', name: 'brand', width: 200 },
+                { label: '生产厂家', name: 'sccj', width: 200 },
+                { label: 'productId', name: 'productId', hidden: true}
+            ],
+            viewrecords: true
+        });
+    }
+
+    //审核通过
+    function newtouch_event_f6() {
+        var id = $gridList.jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalAlert("请选择采购计划！", 'warning');
+            return false;
+        }
+        var rowData = $gridList.jqGrid('getRowData', id);
+        if (!rowData) {
+            $.modalAlert("选中的采购计划信息不完整，请联系管理员！", 'warning');
+            return false;
+        }
+        if (rowData.auditState !== "@EnumAuditState.Waiting.GetDescription()") {
+            $.modalAlert("审核只针对待处理采购计划单！", 'warning');
+            return false;
+        }
+        SubmitAuditPurchasingPlan(rowData.cgdh, @((int)EnumAuditState.Adopt));
+    }
+
+    //审核不通过
+    function newtouch_event_f7() {
+        var id = $gridList.jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalAlert("请选择采购计划！", 'warning');
+            return false;
+        }
+        var rowData = $gridList.jqGrid('getRowData', id);
+        if (!rowData) {
+            $.modalAlert("选中的采购计划信息不完整，请联系管理员！", 'warning');
+            return false;
+        }
+        if (rowData.auditState === "@EnumAuditState.Adopt.GetDescription()") {
+            $.modalAlert("采购计划单已审核通过，不能继续操作！", 'warning');
+            return false;
+        }
+        if (rowData.auditState !== "@EnumAuditState.Waiting.GetDescription()") {
+            $.modalAlert("审核只针对待处理采购计划单！", 'warning');
+            return false;
+        }
+        SubmitAuditPurchasingPlan(rowData.cgdh, @((int)EnumAuditState.Refuse));
+    }
+
+    //提交审核
+    function SubmitAuditPurchasingPlan(cgdh, auditState) {
+        $.najax({
+            type: "POST",
+            url: "/BillManage/PurchasingPlan/SubmitAuditPurchasingPlan",
+            data: { cgdh: cgdh, auditState: auditState, remarks: $("#remarks").val()},
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('操作成功', 'success', 2000);
+                    $("#btn_search").trigger("click");
+                    $("#remarks").val("");
+                }
+            }
+        });
+    }
+
+</script>

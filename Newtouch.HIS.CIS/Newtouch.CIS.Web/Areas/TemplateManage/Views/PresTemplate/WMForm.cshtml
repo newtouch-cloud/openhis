@@ -1,0 +1,472 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "WMForm";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/wmgridmenu.css", false)" rel="stylesheet" />
+
+
+<div id="linkxycf" style="width:100%;">
+    <table id="gridxycf"></table>
+    @Html.Partial("_TemplateFooterAmt")
+</div>
+
+<script>
+    var mbId = $.request("mbId");
+    var localdata = [];
+    //var zje = [];
+    $(function () {
+        gridxycf();
+
+        $("#mblx").bindSelect({
+            url: "/MedicalRecord/GetMbqxSelectJson",
+        });
+
+        if (mbId) {
+            $.najax({
+                url: "/TemplateManage/PresTemplate/SelectPresTemplateDetailByMbId",
+                dataType: "json",
+                data: { mbId: mbId },
+                type: "POST",
+                success: function (data) {
+                    localdata = data.mbmxList;
+                    $.each(localdata, function () {
+                        this.action = getWMActionStr();
+                    });
+                    $("#gridxycf").jqGrid('setGridParam', {
+                        datatype: 'local',
+                        data: localdata
+                    }).trigger("reloadGrid");
+                    $('#mblx').val(data.mblx).trigger("change");
+                    $('#mbmc').val(data.mbmc);
+                    var ids = $("#gridxycf").getDataIDs();
+                    $.each(ids, function () {
+                        var sl = $("#" + this + "_je").val();
+                        zje[this] = parseFloat(sl);
+                    });
+                    getgridTotalAmt("gridxycf");
+                }
+            });
+        }
+    });
+
+    function Delete() {
+        if (mbId == null || mbId == "") {
+            $.modalAlert("缺少模板", "warning");
+            return;
+        }
+        $.najax({
+            url: "@Url.Action("Delete")",
+            dataType: "json",
+            data: { mbId: mbId },
+            type: "POST",
+            loadingtext: "套餐数据删除中，请稍后...",
+            success: function (data) {
+                $.modalMsg("删除成功", 'success');
+                $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                location.href = "/TemplateManage/PresTemplate/WMForm?mbId=";
+            }
+        });
+    }
+
+    //处方列表
+    function gridxycf() {
+        var $gridxycf = $("#gridxycf");
+        $gridxycf.jqGrid({
+            datatype: 'local',
+            data: localdata,
+            height: $(window).height() - 130,
+            //altRows: true,//隔行换色
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                {
+                    label: 'mbId', name: 'mbId', width: 120, editwidth: '81%', align: 'center', hidden: true
+                },
+                { label: '组号', name: 'zh', width: 40, editwidth: '100%', align: 'center', editoptions: {
+                    dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    MatchWMZuhaoInfo(rowid);   //同一组号需匹配用法、频次、天数、截止日期
+                                }
+                            }
+                    ]
+                }, editable: true },
+                {
+                    label: '<span class="required">*</span>名称', name: 'ypmc', width: 110, editwidth: '100%', align: 'center', editable: true, editrules: { required: true }
+                },
+                { label: 'ypCode', name: 'ypCode', width: 100, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: 'cls', name: 'cls', width: 120, editwidth: '100%', align: 'center', editable: true, hidden: true, editrules: { required: true } },
+                { label: '<span class="required">*</span>规格', name: 'ypgg', width: 80, editwidth: '100%', align: 'center', editable: true, editrules: { required: true } },
+                {
+                    label: '<span class="required">*</span>单价', name: 'dj', readonly:'true', width: 60, editwidth: '100%', align: 'center', editable: true, editrules: { required: true }
+                },
+                { label: '<span class="required">*</span>剂量', name: 'mcjl', width: 40, editwidth: '100%', align: 'center', editable: true, editoptions: {
+                    dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var cellval = $(this).val();
+                                    if(cellval.replace(/(^\s*)|(\s*$)/g, "") == ""){
+                                        $.modalAlert("剂量为空，请确认。", 'warning');
+                                        return;
+                                    }
+                                    if(isNaN(cellval)){
+                                        $.modalAlert("剂量：请填写数字", 'warning');
+                                        $(this).val('')
+                                        return;
+                                    }
+                                }
+                            }
+                    ]
+                }, editrules: { required: true } },
+                {
+                    label: '<span class="required">*</span>单位', name: 'mcjldw', width: 65, editwidth: '60%', align: 'center', editable: true, edittype: "select", editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+
+                                        $("#" + rowid + "_selected_jldw").val($(this).val());   //selected_jldw：用作保存处方回到病历页，又从病历页回来时，计算上次选中的mcjldw的值
+                                        $("#" + rowid + "_mcjldwwwwwww").val($(this).val());
+                                    }
+                                }
+                        ]
+
+                    }, editrules: { required: true }   //注意：剂量单位必须定位在剂量下面，因为下方是根据这个机构来找剂量单位的。（因为select没有id的属性）
+                },
+                { label: 'redundant_jldw', name: 'redundant_jldw', width: 40, editwidth: '', align: 'center', editable: true, hidden: true },  //不可去掉
+                { label: 'selected_jldw', name: 'selected_jldw', width: 40, editwidth: '', align: 'center', editable: true, hidden: true },   //不可去掉
+                { label: 'mcjldwwwwwww', name: 'mcjldwwwwwww', width: 40, editwidth: '', align: 'center', editable: true, hidden: true },  //不可去掉
+                { label: '<span class="required">*</span>用法', name: 'yfmc', width: 75, editwidth: '100%', align: 'center', editable: true, editrules: { required: true } },
+                { label: 'yfCode', name: 'yfCode', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '<span class="required">*</span>频次', name: 'pcmc', width: 75, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: 'pcCode', name: 'pcCode', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                {
+                    label: '<span class="required">*</span>数量', name: 'sl', width: 40, editwidth: '100%', align: 'center', editable: true, editrules: { integer: true, minValue: 0 }, editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if(cellval.replace(/(^\s*)|(\s*$)/g, "") == ""){
+                                            $.modalAlert("数量为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if(isNaN(cellval)){
+                                            $.modalAlert("数量：请填写数字", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+
+                                        CalculateWMJe(rowid);   //计算明细金额和处方金额
+                                    }
+                                }
+                        ]
+                    }, editrules: { required: true }
+                },
+                { label: '<span class="required">*</span>单位', name: 'dw', width: 50, editwidth: '100%', align: 'center', editable: true, editrules: { required: true } },
+                { label: '<span class="required">*</span>金额', name: 'je', width: 60, editwidth: '100%', align: 'center', editable: true, editrules: { required: true } },
+                { name: 'zxks', width: 50, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '操作', name: 'action', width: 110, editwidth: '81%', align: 'center' }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            loadComplete: function () {
+                if (localdata && localdata.length == 0) {
+                    newWMPresData();
+                }
+            },
+            gridComplete: function () {
+                var ids = $("#gridxycf").getDataIDs();
+                $.each(ids, function () {
+                    $gridxycf.jqGrid('editRow', this, true, initWMInlineFunc);  //editRow：打开编辑模式 initWMInlineFunc:初始化浮层
+
+                    //给每次剂量单位填充option  （只能这么写简单，虽然我也知道这样写不好）
+                    var jldw = $("#" + this + "_redundant_jldw").val();    //剂量单位
+                    var dw = $("#" + this + "_dw").val();     //门诊单位
+                    if (!!dw) {
+                        //这种找元素的方法不可取，但由于select没有id属性
+                        $("#" + this + "_mcjl").parent().next().children('select').html('');
+                        if (jldw == dw) {
+                            $("#" + this + "_mcjl").parent().next().children('select').append('<option>' + jldw + '</option>');
+                        }
+                        else {
+                            if(!!jldw){
+                                $("#" + this + "_mcjl").parent().next().children('select').append('<option>' + jldw + '</option>');
+                            }
+                            if(!!dw){
+                                $("#" + this + "_mcjl").parent().next().children('select').append('<option>' + dw + '</option>');
+                            }
+                        }
+                        selectedjldw = !!jldw ? jldw : dw;
+                        if (selectedjldw) {
+                            $($("#" + this + "_mcjl").parent().next().children('select')).val(selectedjldw).trigger('change')
+                        }
+                    }
+
+                    CalculateWMJe(this);   //计算明细里的数量和金额
+                });
+
+            }
+        });
+
+        //二级菜单
+        $gridxycf.jqGrid('setGroupHeaders', {
+            useColSpanStyle: true,
+            groupHeaders: [
+            {
+                startColumnName: 'ypmc',
+                numberOfColumns: 5,
+                titleText: '基本信息'
+            }, {
+                startColumnName: 'mcjl',
+                numberOfColumns: 2,
+                titleText: '每次剂量'
+            }, {
+                startColumnName: 'yf',
+                numberOfColumns: 5,
+                titleText: '药品用法'
+            }, {
+                startColumnName: 'sl',
+                numberOfColumns: 2,
+                titleText: '药品总量'
+            }, ]
+        });
+    }
+
+    //同一组号需匹配用法、频次、天数、截止日期
+    function MatchWMZuhaoInfo(rowid) {
+        var currRowZh = $("#" + rowid + "_zh").val();
+        if (currRowZh) {
+            var allData = $("#gridxycf").jqGrid('getRowData_AllLine', null, true);
+            $.each(allData, function () {
+                var objId = $(this.zh).attr('rowid');
+                var objzh = $("#" + objId + "_zh").val();
+
+                if (objzh == currRowZh && objId != rowid) {
+                    var objyfmc = $("#" + objId + "_yfmc").val();
+                    var objyfCode = $("#" + objId + "_yfCode").val();
+                    var objpcmc = $("#" + objId + "_pcmc").val();
+                    var objpcCode = $("#" + objId + "_pcCode").val();
+
+                    $("#" + rowid + "_yfmc").val(objyfmc)        //用法
+                    $("#" + rowid + "_yfCode").val(objyfCode)
+                    $("#" + rowid + "_pcmc").val(objpcmc)        //频次
+                    $("#" + rowid + "_pcCode").val(objpcCode)
+                }
+            });
+        }
+    }
+
+    //初始化 浮层
+    function initWMInlineFunc(rowid) {
+        //部分列只读
+        $("#" + rowid + "_dj").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_ypgg").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_dw").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_pcmc").attr('readonly','true');
+        $("#" + rowid + "_je").css('background-color','#f6f7fb').attr('readonly','true');
+
+        //药品浮层
+        $("#" + rowid + "_ypmc").sfxmFloatingSelector({
+            djDecimalPlaces: 4,
+            //leftshift:150,
+            searchType: 'yp.kc',
+            ajaxparameters : function($thisinput) {
+                return "mzzybz=1&dllb=1&sfdllx=WM&keyword=" + $.trim($thisinput.val());
+            },
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_ypmc").val($this.attr('data-sfxmmc'));
+                $("#" + rowid + "_ypCode").val($this.attr('data-sfxmCode'));
+                $("#" + rowid + "_ypgg").val($this.attr('data-gg'));
+                $("#" + rowid + "_dj").val($this.attr('data-dj'));
+                $("#" + rowid + "_dw").val($this.attr('data-dw'));
+                $("#" + rowid + "_cls").val($this.attr('data-cls'));
+                $("#" + rowid + "_zxks").val($this.attr('data-yfbmCode'));
+                var jldw = $this.attr('data-jldw');    //剂量单位
+                var dw = $this.attr('data-dw');     //门诊单位
+                //这种找元素的方法不可取，但由于select没有id属性
+                if (jldw == dw) {
+                    $("#" + rowid + "_mcjl").parent().next().children('select').append('<option>' + jldw + '</option>');
+                }
+                else {
+                    if(!!jldw){
+                        $("#" + rowid + "_mcjl").parent().next().children('select').append('<option>' + jldw + '</option>');
+                    }
+                    if(!!dw){
+                        $("#" + rowid + "_mcjl").parent().next().children('select').append('<option>' + dw + '</option>');
+                    }
+                }
+
+                CalculateWMJe(rowid);   //计算明细里的数量和金额
+            }
+        });
+
+        //频次浮层
+        $("#" + rowid + "_pcmc").pcFloatingSelector({
+            showtext: 'yzpcmc',
+            attrcols: ['yzpcmc', 'yzpcCode', 'zxcs', 'zxzq', 'zxzqdw'],
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_pcmc").val($this.attr('data-yzpcmc'))
+                $("#" + rowid + "_pcCode").val($this.attr('data-yzpcCode'))
+            },
+        });
+
+        //用法浮层
+        $("#" + rowid + "_yfmc").yfFloatingSelector({
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_yfmc").val($this.attr('data-yfmc'));
+                $("#" + rowid + "_yfCode").val($this.attr('data-yfCode'));
+            }
+        });
+    }
+
+    //计算明细里的数量和金额
+    function CalculateWMJe(rowid) {
+        var currRowZe = 0;
+
+        var currRowDj = $('#' + rowid + '_dj').val();
+        var currRowSl = $('#' + rowid + '_sl').val();
+
+        if (currRowDj && parseFloat(currRowSl) > 0) {
+            //单价 数量 不为空
+            currRowZe = roundingBy4she6ru5chengshuang(parseFloat(currRowDj) * parseFloat(currRowSl),2);
+        }
+
+        $('#' + rowid + '_je').val(currRowZe)   //赋值
+        if (parseFloat(currRowZe) > 0) {
+            zje[rowid] = currRowZe;
+            getgridTotalAmt("gridxycf");
+        }
+    }
+
+    //新处方 按钮
+    function newWMPresData() {
+        var dataRow = {
+            zh: '',
+            ypmc: '',
+            ypgg: '',
+            dj: '',
+            mcjl: '',
+            mcjldw: '',
+            yf: '',
+            pc: '',
+            sl: '',
+            dw: '',
+            action: getWMActionStr()
+        };
+        $("#gridxycf").jqGrid("addRowData", undefined, dataRow, "first");
+
+    }
+
+    //新增明细
+    function addWMRowData(selRowId) {
+        var dataRow = {
+            zh: '',
+            ypmc: '',
+            ypgg: '',
+            dj: '',
+            mcjl: '',
+            mcjldw: '',
+            yf: '',
+            pc: '',
+            sl: '',
+            dw: '',
+            action: getWMActionStr()
+        };
+        $("#gridxycf").jqGrid("addRowData", undefined, dataRow, "first");
+    }
+
+    //删除明细
+    function deleteWMRowData(selRowId) {
+        if (!!selRowId) {
+            $("#gridxycf").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    function getWMActionStr() {
+        return "<input class='btn btn-default btn-md btn_add' type='button' value='Add' onclick='addWMRowData($(this).parent().parent().attr(\"id\"))'/><input class='btn btn-default btn-md btn_del' type='button' value='Delete' onclick='deleteWMRowData($(this).parent().parent().attr(\"id\"))'/>";
+  }
+
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    }
+
+    //保存
+    function Save() {
+        //必填信息验证  （主诉、发病时间）
+        if (!$('#form1').formValid(valOptions)) {
+            $.modalAlert("必填信息尚未完善", 'warning');
+            return;
+        }
+
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridxycf").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#gridxycf").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+            if (!saveResult) {
+                return;   //保存失败，则return
+            }
+        }
+        var gridxycfData = $("#gridxycf").jqGrid('getRowData_AllLine', null, true);
+        if(!gridxycfData || gridxycfData.length==0){
+            $.modalAlert("模板明细不能为空", 'warning');
+            return;
+        }
+
+        var gridxycfData = $("#gridxycf").jqGrid('getRowData_AllLine', null, true);
+        $.each(gridxycfData, function () {    //去掉action
+            for (var i = 0; i < $(this).length; i++) {
+                delete $(this)[i].action;
+            }
+        });
+
+        //模板表
+        var mbObj = {
+            mbId: mbId,
+            mblx: $('#mblx').val(),//$.currentWindow().$('#current').attr('data-type'),
+            //ksCode: '',   //根据type 后台赋值
+            cflx: @Html.Raw(((int)EnumCflx.WMPres).ToString()),
+            mbmc: $('#mbmc').val(),
+            //ysgh: ''    //根据type 后台赋值
+        }
+
+        //保存数据
+        $.najax({
+            url: "/TemplateManage/PresTemplate/SaveData",
+            dataType: "json",
+            data: { mbObj: mbObj, mxList: gridxycfData },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'warning');
+                //window.$("#gridxycf").clearGridData();
+                //newWMPresData();
+                //$('#mbmc').val('');
+                if(!mbId && data.data){
+                    mbId = data.data;
+                    $.currentWindow().expandCflx = @Html.Raw(((int)EnumCflx.WMPres).ToString());
+                }
+                $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                location.href = "/TemplateManage/PresTemplate/WMForm?mbId=" + mbId;
+            }
+        });
+
+    }
+
+</script>

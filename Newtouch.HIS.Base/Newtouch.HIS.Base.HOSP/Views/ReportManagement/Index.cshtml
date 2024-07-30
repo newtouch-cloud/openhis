@@ -1,0 +1,382 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 300px;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        height:20px;
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    /*.dv-left-title {
+        width: 100%;
+        height: 30px;
+        line-height: 30px;
+        background-color: #00a0e9;
+        text-align: center;
+        color: white;
+    }*/
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+
+    .dv-grid {
+        width: 100%;
+    }
+</style>
+
+<div class="dv-body">
+    <div id="dv-hidden" class="dv-left">
+        <span style="position:absolute;left:140px;">
+            <select id="ReportType" name="ReportType" onchange="ReportType()" style="width: 70px;height:18px;" class="form-control required">
+                <option value="">==全部==</option>
+                <option value="1" selected="selected">程序报表</option>
+                <option value="2">查询报表</option>
+            </select>
+        </span>
+        <span style="position:absolute;">
+            <input id="txt_keyword" type="text" class="form-control" onblur="txt_keyword();" placeholder="报表名称" style="width: 100px;height:18px;">
+        </span>
+
+
+            <div class="dv-left-title">
+                <button id="btn_search" onclick="btn_hidden()" type="button" style="float:right;" class="btn btn-primary">隐藏</button>
+            </div>
+            <table id="gridList"></table>
+            @*<div class="dv-left-tree" id="BBTreeList"></div>*@
+    </div>
+    <div class="dv-right">
+        <div class="dv-right-order">
+
+        </div>
+    </div>
+    <button id="btn_blick" onclick="btn_blick()" style="position:absolute;left:10px;top:5px;" type="button" class="btn btn-primary">显示</button>
+</div>
+<script>
+    var iframeurl = "@(Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl"))";
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    var rightWidth = $(window).width() - $(".dv-left").width() - 20;
+    var rightheight = $(window).height() - 20;
+    document.getElementById("btn_blick").style.display = "none";
+    //$(".dv-left-tree").height($(window).height() - 70);
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body").width($(window).width());
+        });
+        gridList();
+        $(".dv-right-order").append('<iframe id="mainIframe" style="width:100%;height:100%;" name="mainIframe" src="'+ iframeurl+'" frameborder="0" scrolling="auto"></iframe>');
+        $(".dv-right").height(rightheight);
+        $(".dv-right-order").height(rightheight);
+        $(".dv-right").width(rightWidth);
+        $(".dv-right-order").width(rightWidth);
+        //getBBTreeList();
+    });
+    function btn_hidden() {
+        document.getElementById("dv-hidden").style.display = "none";
+        document.getElementById("btn_blick").style.display = "block";
+        var rightWidth = $(window).width()- 20;
+        $(".dv-right").width(rightWidth);
+        $(".dv-right-order").width(rightWidth);
+
+    }
+    function ReportType() {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { keyword: $('#txt_keyword').val(), ReportType: $("#ReportType").val() },
+        }).trigger('reloadGrid');
+    };
+    function txt_keyword() {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { keyword: $('#txt_keyword').val(), ReportType: $("#ReportType").val()},
+        }).trigger('reloadGrid');
+        //$gridList.jqGrid('setGridParam', {
+        //    postData: { keyword: $('#txt_keyword').val() }, url: "/ReportManagement/GetReportTree"
+        //}).trigger('reloadGrid');
+    }
+    function btn_blick() {
+        document.getElementById("dv-hidden").style.display = "block";
+        document.getElementById("btn_blick").style.display = "none";
+        var rightWidth = $(window).width() - $(".dv-left").width() - 50;
+        $(".dv-right").width(rightWidth);
+        $(".dv-right-order").width(rightWidth);
+
+    }
+    //window.addEventListener('message', function (e) {
+    //    console.log('a.html 接收到的消息:', e.data)
+    //});
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Blzt",
+            url: "/ReportManagement/GetReportTree",
+            postData: { keyword: "", ReportType: $("#ReportType").val()},
+            height: $(window).height() - 80,
+            width: $(".dv-left").width(),
+            colModel: [
+                { label: "报表ID", name: "Id", hidden: true, key: true },
+                { label: "ReportName", name: "ReportName", hidden: true },
+                { label: "ismx", name: "ismx", hidden: true },
+                {
+                    label: '报表名称', name: 'ReportName', width: 255, align: 'left',
+                    formatter: function (cellvalue, options, rowobject) {
+                        if (rowobject) {
+                            if (rowobject.parentId == null) {
+                                return rowobject.ReportName + '<i id="addMainCircle"  onclick="ReportMainAdd(' + rowobject.Id + ')" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color:#6ff3ad; font-size: small;"></i>';
+                            }
+                            else if (rowobject.ReportName != null && rowobject.ismx != '0') {
+                                if (rowobject.isty == '0') {
+                                    return '<span class="glyphicon glyphicon-file" style="color:#6ff3ad; font-size: 13px;"></span> <span style="color:red;">[停]</span>' + rowobject.ReportName + '<i id="DelCircle"  onclick="ReportDel(' + rowobject.ismx + ')" class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color:#6ff3ad; font-size: small;"></i>' + '<span style="color:blue;float:right;pading-left:10px;"><a onclick="ReportON(' + rowobject.ismx + ')"  style="color:blue;margin-right:10px;"> 启用</a ><a  onclick="ReportUpdate(' + rowobject.ismx + ')"  style="color:blue;margin-right:10px;">修改</a><a  onclick="ReportSJ(' + rowobject.ismx + ')"  style="color:blue;">设计</a></span>';
+                                } else
+                                    return '<span class="glyphicon glyphicon-file" style="color:#6ff3ad; font-size: 13px;"></span> ' + rowobject.ReportName + '<i id="DelCircle"  onclick="ReportDel(' + rowobject.ismx + ')" class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color:#6ff3ad; font-size: small;"></i>' + '<span style="color:blue;float:right;pading-left:10px;"><a onclick="ReportStop(' + rowobject.ismx + ')"  style="color:blue;margin-right:10px;">停用</a ><a  onclick="ReportUpdate(' + rowobject.ismx + ')"  style="color:blue;margin-right:10px;">修改</a><a  onclick="ReportSJ(' + rowobject.ismx + ')"  style="color:blue;">设计</a></span>';
+                            }
+                            else
+                                return rowobject.ReportName + '<i id="addCircle"  onclick="ReportAdd(' + rowobject.Id + ')" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color:#6ff3ad; font-size: small;"></i>' + '<i id="DelCircle"  onclick="ReportDelMain(' + rowobject.Id + ')" class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color:#6ff3ad; font-size: small;"></i>';
+
+                        }
+                    }
+                }
+            ],
+            onSelectRow: function (rowid, status) {
+                if (status == true) {
+                    var rowData = $("#gridList").jqGrid('getRowData', rowid);
+                    if (rowData != null && rowData != "undefied") {
+                        if (rowData.ismx != null && rowData.ismx != "0") {//禁用条件
+                            //var d = "6,9bb029d0-5da0-4118-9d19-06b829eede46,报表";
+                            //window.sessionStorage["report_data"] = d;
+                            $.najax({
+                                url: "/ReportManagement/GetReportMXData",
+                                data: { ReportId: rowData.ismx },
+                                dataType: "json",
+                                success: function (data) {
+                                    //var Data = {
+                                    //    "templateId": data.ReportCode,
+                                    //    "hospitalCode": data.ReportCode,
+                                    //    "reportdec": data.ReportName,
+                                    //}
+                                    document.getElementById("mainIframe").remove();
+                                    $(".dv-right-order").append('<iframe id="mainIframe" style="width:100%;height:100%;" name="mainIframe" src="' + iframeurl + '" frameborder="0" scrolling="auto"></iframe>');
+                                    setTimeout(function () {
+                                    var childWindow = $("#mainIframe")[0].contentWindow;
+                                        childWindow.postMessage(data, iframeurl);
+                                    }, 500)
+                                }
+                            });
+                            
+                           
+                            ////*表示任何域都可以监听。    }      
+                            ////当我监听到message事件的时候，我就知道有人向我发送数据了，我获得了数据就可以做对应的事情。内部对消息做实现    
+                           
+                             
+                            //var childWindow = $("#mainIframe")[0].contentWindow;
+                            //childWindow.populateReports();
+                            //var url = "http://10.0.5.160:8032?";
+                            
+                        }
+                    }
+
+                }
+            },
+            onRightClickRow: function (rowid, irow, icol, e) {
+                    var rowData = $("#gridList").jqGrid('getRowData', rowid);
+                    initrightMenu(rowData);
+            }
+        });
+    }
+    //function getBBTreeList() {
+    //    $("#BBTreeList").treeview({
+    //        height: $(window).height() - 40,
+    //        slimscroll: false,
+    //        url: "/ReportManagement/GetReportTree",
+    //        param: {},
+    //    });
+    //    var nodeid = $("#BBTreeList").attr('data-nodeid');
+    //    alert(nodeid);
+    //    $(".bbit-tree-node-ct .bbit-tree-node div").append('<a onclick="ReportAdd()" style="color:red;float:right;">' + "新增&nbsp;&nbsp;" + '</a>');
+    //}
+    function gridload() {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: {},
+        }).trigger('reloadGrid');
+    }
+    //新增报表列
+    function ReportAdd(ReportId) {
+        $.modalOpen({
+            id: "Form",
+            title: "新增报表",
+            url: "/ReportManagement/Form?" + "ReportId=" + ReportId,
+            width: "440px",
+            height: "440px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+        gridload();
+    }
+    //主报表新增
+    function ReportMainAdd(ReportId) {
+        $.modalOpen({
+            id: "Form",
+            title: "新增报表",
+            url: "/ReportManagement/MianForm?" + "ReportId=" + ReportId,
+            width: "440px",
+            height: "440px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+        gridload();
+    }
+    //报表删除
+    function ReportDel(ReportId) {
+        $.modalConfirm("是否删除当前报表?", function (flag) {
+            if (flag) {
+                $.najax({
+                    url: "/ReportManagement/ReportDel",
+                    data: { ReportId: ReportId },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.message != "") {
+                            $.modalAlert("报表删除失败：" + res.message, 'warning');
+                            gridload();
+                            return;
+                        } else {
+                            $.modalAlert("报表删除成功", 'success');
+                            gridload();
+                            return;
+                        }
+                    }
+                });
+
+            } else {
+                return false;
+            }
+
+        });
+        
+    }
+    //主报表删除
+    function ReportDelMain(ReportId) {
+        $.modalConfirm("是否删除当前报表?", function (flag) {
+            if (flag) {
+                $.najax({
+                    url: "/ReportManagement/ReportDelMain",
+                    data: { ReportId: ReportId },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.message != "") {
+                            $.modalAlert("报表删除失败：" + res.message, 'warning');
+                            gridload();
+                            return;
+                        } else {
+                            $.modalAlert("报表删除成功", 'success');
+                            gridload();
+                            return;
+                        }
+                    }
+                });
+
+            } else {
+                return false;
+            }
+
+        });
+
+    }
+    //报表停止
+    function ReportStop(ReportId) {
+        $.najax({
+            url: "/ReportManagement/ReportStopOrON",
+            data: { ReportId: ReportId, ReportStatus:"0"},
+            dataType: "json",
+            success: function (res) {
+                if (res.message != "") {
+                    $.modalAlert("报表停止失败：" + res.message, 'warning');
+                    gridload();
+                    return;
+                } else {
+                    $.modalAlert("报表停止成功", 'success');
+                    gridload();
+                    return;
+                }
+            }
+        });
+
+    }
+    //开启
+    function ReportON(ReportId) {
+        $.najax({
+            url: "/ReportManagement/ReportStopOrON",
+            data: { ReportId: ReportId, ReportStatus: "1" },
+            dataType: "json",
+            success: function (res) {
+                if (res.message != "") {
+                    $.modalAlert("报表开启失败：" + res.message, 'warning');
+                    gridload();
+                    return;
+                } else {
+                    $.modalAlert("报表开启成功", 'success');
+                    gridload();
+                    return;
+                }
+            }
+        });
+    }
+    function ReportUpdate(ReportId) {
+            $.modalOpen({
+                id: "Form",
+                title: "修改报表",
+                url: "/ReportManagement/Form?" + "ReportId=" + ReportId+"&Type=update",
+                width: "440px",
+                height: "440px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].submitForm();
+                }
+            });
+            gridload();
+    }
+    function ReportSJ(ReportId) {
+        var url = iframeurl+ "design/kyedit/";
+        $.najax({
+            url: "/ReportManagement/GetReportMXData",
+            data: { ReportId: ReportId },
+            dataType: "json",
+            success: function (data) {
+                url += data.ReportCode + "/";
+                url += ReportId + "_" + data.HospitalCode;
+                url += "_" + data.ReportName;
+                //alert(url);
+                //document.getElementById("mainIframe").src = url;
+                window.open(url);
+
+            }
+        });
+        //document.getElementById("mainIframe").src = "http://10.0.5.160:8032/design/kyedit/02/6_9bb029d0-5da0-4118-9d19-06b829eede46_%E6%8A%A5%E8%A1%A8";     
+    }
+</script>

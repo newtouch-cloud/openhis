@@ -1,0 +1,276 @@
+﻿@{
+    ViewBag.Title = "药品跟踪";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        .bk {
+            border-radius: 5px;
+            background-color: white;
+        }
+        .down_border {
+            border-bottom: 1px solid #e6e6e6;
+        }
+        .ui-jqgrid .ui-jqgrid-bdiv {
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+
+<div class="panel panel-default">
+    <input type="hidden" id="kssj" />
+    <input type="hidden" id="jssj" />
+    <table class="form">
+        <tr>
+            <th class="formTitle" id="xzsjtext">类型：</th>
+            <td class="formValue" style="width:150px">
+                <select id="dateType" class="form-control" onchange="updateSjType()">
+                    <option value="1">年</option>
+                    <option value="2">月</option>
+                    <option value="3">日</option>
+                </select>
+            </td>
+            <th class="formTitle" id="xzsjtext">时间：</th>
+            <td class="formValue" style="width:150px">
+                <input id="rSJ" type="text" class="form-control input-wdatepicker" @*onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"*@>
+            </td>
+
+            <td class="formValue" style="padding-left:20px;">
+                <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+            </td>
+
+        </tr>
+    </table>
+</div>
+
+<div id="main_div" style="display:flex;flex-wrap:wrap;align-content:space-between;">
+
+    <div style="display:flex;flex-direction:row;height:37%;width:100%;justify-content:space-between;">
+
+        <div class="bk" style="width:49.5%;height:100%">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>门诊医生工作量排名
+            </div>
+            <table id="gridJSListmzysgzl"></table>
+        </div>
+
+        <div class="bk" style="width:49.5%;height:100%">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>门诊科室收入排名
+            </div>
+            <table id="gridJSListmzkssr"></table>
+        </div>
+
+    </div>
+
+    <div style="width:100%;height:30%" class="bk">
+        <div class="panel-heading down_border">
+            <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>住院业务科室排名
+        </div>
+        <table id="gridJSListzyywks"></table>
+    </div>
+
+    <div style="width:100%;height:30%" class="bk">
+        <div class="panel-heading down_border">
+            <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>医生业务排名
+        </div>
+        <table id="gridJSListysyw"></table>
+    </div>
+
+</div>
+
+<script>
+    var myDate = new Date();
+    $(function () {
+
+        $('#main_div').height($(window).height() - 60);
+        init();
+        gridJSListData();
+    });
+
+    function submit() {
+        getSearchData();
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        var $gridJSListmzysgzl = $("#gridJSListmzysgzl");
+        $gridJSListmzysgzl.jqGrid('setGridParam', {
+            postData: { kssj: kssj, jssj: jssj},
+            url: '/DeanInquiryManage/BusinessRanking/GetMzysgzl',
+            page: 1,
+        }).trigger('reloadGrid');
+
+        var $gridJSListmzkssr = $("#gridJSListmzkssr");
+        $gridJSListmzkssr.jqGrid('setGridParam', {
+            postData: { kssj: kssj, jssj: jssj },
+            url: "/DeanInquiryManage/BusinessRanking/GetMzkssr",
+            page: 1,
+        }).trigger('reloadGrid');
+
+
+        var $gridJSListzyywks = $("#gridJSListzyywks");
+        $gridJSListzyywks.jqGrid('setGridParam', {
+            postData: { kssj: kssj, jssj: jssj },
+            url: "/DeanInquiryManage/BusinessRanking/GetZyywks",
+            page: 1,
+        }).trigger('reloadGrid');
+    }
+    function init() {
+        $("#dateType").val("2");
+        $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+        $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        getSearchData();
+    }
+    function gridJSListData() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        //var gridSort = 'mzl asc';
+        var $gridJsList = $("#gridJSListmzysgzl");
+        $gridJsList.dataGrid({
+            height: 230,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/BusinessRanking/GetMzysgzl",
+            postData: { kssj: kssj, jssj: jssj },
+            colModel: [
+                { label: '医生', name: 'ys',  align: 'left' },
+                { label: '门诊科室', name: 'mzks',align: 'left' },
+                { label: '门诊量', name: 'mzl', align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+
+        //var gridSort = 'ypzb desc,mzsr desc';
+        var $gridJsList = $("#gridJSListmzkssr");
+        $gridJsList.dataGrid({
+            height: 230,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/BusinessRanking/GetMzkssr",
+            postData: { kssj: kssj, jssj: jssj },
+            colModel: [
+                { label: '门诊科室', name: 'mzks',  align: 'center' },
+                { label: '门诊收入', name: 'mzsr', align: 'left' },
+                { label: '药品收入', name: 'ypsr', align: 'left' },
+                { label: '药品占比', name: 'ypzb',align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListzyywks");
+        $gridJsList.dataGrid({
+            height: 170,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/BusinessRanking/GetZyywks",
+            postData: { kssj: kssj, jssj: jssj },
+            colModel: [
+                { label: '住院科室', name: 'zyks', align: 'center' },
+                { label: 'bqCode', name: 'bqCode', align: 'center',hidden: true },
+                { label: '出院人数', name: 'cyrs', align: 'center' },
+                { label: '入院人数', name: 'ryrs', align: 'center' },
+                { label: '手术人数', name: 'ssrs', align: 'center' },
+                { label: '住院总费用（元）', name: 'zyzfy',align: 'center' },
+                { label: '次均费用', name: 'cjfy', align: 'center' },
+                { label: '平均住院天数', name: 'pjzyts',align: 'center' }
+            ],
+            sortname: gridSort,
+            viewrecords: true,
+            onCellSelect : function (row) {
+                var rowObj = $gridJsList.jqGrid('getRowData', row);
+                var $gridysListys = $("#gridJSListysyw");
+                $gridysListys.jqGrid('setGridParam', {
+                    postData: { kssj: kssj, jssj: jssj, bqCode: rowObj.bqCode },
+                    page: 1,
+                    url: "/DeanInquiryManage/BusinessRanking/GetYsyw",
+                }).trigger('reloadGrid');
+
+            },
+            loadComplete: function (data) {
+                if (data.length > 0)
+                {
+                    var firstRow = data[0];
+                    var $gridysListys = $("#gridJSListysyw");
+                    $gridysListys.jqGrid('setGridParam', {
+                        postData: { kssj: kssj, jssj: jssj, bqCode: firstRow.bqCode },
+                        page: 1,
+                        url: "/DeanInquiryManage/BusinessRanking/GetYsyw",
+                    }).trigger('reloadGrid');
+                }
+            }
+        });
+
+        var gridSort = 'CreateTime asc';
+        var $gridysListys = $("#gridJSListysyw");
+        $gridysListys.dataGrid({
+            height: 170,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "",
+            colModel: [
+                { label: '医生', name: 'ys', align: 'center' },
+                { label: '出院人数', name: 'cyrs', align: 'center' },
+                { label: '入院人数', name: 'ryrs', align: 'center' },
+                { label: '手术人数', name: 'ssrs', align: 'center' },
+                { label: '住院总费用（元）', name: 'zyzfy',align: 'center' },
+                { label: '次均费用', name: 'cjfy',align: 'center' },
+                { label: '平均住院天数', name: 'pjzyts', align: 'center' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+
+    }
+    //改变时间类型
+    function updateSjType() {
+        $('#rSJ').val("");
+        let dateType = $("#dateType").val();
+        if (dateType == "1") {//年
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy' })");
+            $('#rSJ').val(myDate.getFullYear());
+        }
+        if (dateType == "2") {//月
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        }
+        if (dateType == "3") {//日
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM-dd' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1) + "-" + myDate.getDate());
+        }
+        getSearchData();
+    }
+
+    //组装请求参数
+    function getSearchData() {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+
+        $('#kssj').val(ksrq);
+        $('#jssj').val(jsrq);
+    }
+
+    //根据年月获取月天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+</script>

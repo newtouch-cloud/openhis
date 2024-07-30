@@ -1,0 +1,95 @@
+﻿@{
+    ViewBag.Title = "AntibioticCFQuery";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    //报表链接
+    //var reportUrl = SysConfigReader.OrgReportLink();
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">统计年月：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an" style="width: 140px;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM'})" value="@(DateTime.Now.ToString("yyyy-MM"))" />
+                </td>
+                <th class="formTitle">门诊/住院：</th>
+                <td class="formValue">
+                    <select id="SelKss" name="SelKss" class="form-control">
+                        <option value="-1">全部</option>
+                        <option value="0">门诊</option>
+                        <option value="1">住院</option>
+
+                    </select>
+                </td>
+                <th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <input type="text" id="zxys" hidden="hidden" />
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+    function submit() {
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        var kssj = $('#kssj').val() + "-01 00:00:00";
+        var jssj = $('#kssj').val() + "-" + mGetDate($('#kssj').val().substring(0, 4), $('#kssj').val().substring(5, 7)) + " 23:59:59";
+        var selkss = $('#SelKss').val();
+        var head = "";
+        if (selkss=="0") {
+            head = "门诊";
+        }
+        if (selkss == "1") {
+            head = "住院";
+        }
+        head = kssj.substring(5, 7) + "月" + head;
+        
+        var url = getUrl();
+        //url += "&tjsj=" + kssj + "&jssj=" + jssj + "&mzorzy=" + selkss + "&OrganizeId=" + orgId + "&systemCode=PDS&czydm=wadmin&hospitalCode=" + orgId;
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+    function mGetDate(year, month) {
+        var d = new Date(year, month, 0);
+        return d.getDate();
+    }
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+      
+    });
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+    function getUrl() {
+
+        var orgId = "@ViewBag.OrgId";
+        var kssj = $('#kssj').val() + "-01 00:00:00";
+        var selkss = $('#SelKss').val();
+        var reportServerHOST = '@reportUrl' + "?tempCode=1211" + "&systemCode=" + '@reportSystemCode' + "&tjsj=" + kssj + "&orgId=" + orgId + "&czydm=wadmin&mzorzy=" + selkss;
+
+        return reportServerHOST;
+    }
+
+</script>

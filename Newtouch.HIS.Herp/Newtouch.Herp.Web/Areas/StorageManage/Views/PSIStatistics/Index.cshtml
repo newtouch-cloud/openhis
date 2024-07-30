@@ -1,0 +1,259 @@
+﻿@using Newtouch.Herp.Infrastructure;
+@using Newtouch.Herp.Infrastructure.Enum;
+@{
+    ViewBag.Title = "进销存统计";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+        margin: 0 10px;
+    }
+
+    #btn_print {
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:5px;">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">开始时间：</th>
+                    <td class="formValue" style="width:145px;">
+                        <select id="ddlKSSJ" class="form-control"></select>
+                    </td>
+                    <th class="formTitle">结束时间：</th>
+                    <td class="formValue" style="width:145px;">
+                        <select id="ddlJSSJ" class="form-control"></select>
+                    </td>
+                    <th class="formTitle">物资状态：</th>
+                    <td class="formValue " style="width: 60px;">
+                        @Html.DropDownList("ddlWZZT", Enumzt.Enable.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle">物资类别：</th>
+                    <td class="formValue formDdlSelectorTd" colspan="2" style="width:260px;">
+                        <select id="ddlWZLB" class="form-control">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">物资名称：</th>
+                    <td class="formValue">
+                        <input id="txtSrm" type="text" class="form-control" placeholder="物资名称/拼音" />
+                    </td>
+                    <td class="formValue" colspan="7" style="padding-left:20px;">
+                        <input id="chk_Show" type="checkbox" style="float:left;" />
+                        <label for="chk_Show" style="display: block;float: left; margin: 3px 0 0 2px;">显示未发生进销存物资</label>
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="统计" />
+                        <input type="button" id="btn_print" class="btn btn-md btn-primary" value="打印" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDrugsInfo"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div class="panel panel-default" style="margin-top:5px; margin-bottom: 0">
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">入库总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtRKLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">出库总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtCKLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">调价损益总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtTJSYZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">损溢总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtSYLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        initialddlYPLBList();//初始化物资类别
+        initialddljzsjList();//加载结转时间
+        gridDrugsInfoData();//加载物资明细
+        $("#btn_print").click(function () {
+            window.open('@reportUrl' + "?tempCode=1271" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&OrganizeId=@ViewBag.OrganizeId&warehouseId=@Constants.CurrentKf.currentKfId" +
+                "&shzt=@(((int) EnumAuditState.Adopt).ToString())"+
+                "&kssj=" + $('#ddlKSSJ').val() +
+                "&jssj=" + ($("#ddlJSSJ").val() === "" || $("#ddlJSSJ").val() == undefined ? "@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" : $("#ddlJSSJ").val()) +
+                "&keyWord=" + ($('#txtSrm').val() === "" ? "n" : $('#txtSrm').val()) +
+                "&lbId=" + ($('#ddlWZLB').val() === "" ? "n" : $('#ddlWZLB').val()) +
+                "&endOfToday=" + ($("#ddlJSSJ").val() === "" || $("#ddlJSSJ").val() == undefined ? "1" : "0") +
+                "&noPSI=" + ($("#chk_Show")[0].checked ? "1" : "0") +
+                "&zt=" + ($("#ddlWZZT").val() === "" ? "n" : $("#ddlWZZT").val()));
+        });
+    });
+
+    function initialddljzsjList() {
+        $("#ddlKSSJ").html("");
+        $("#ddlKSSJ").bindSelect({
+            url: "/StorageManage/StockCarryOver/GetlsjzDateTime",
+            id: "value",
+            text: "text"
+        });
+        $("#ddlJSSJ").html("");
+        $("#ddlJSSJ").bindSelect({
+            url: "/StorageManage/StockCarryOver/GetJzJssjDateTime",
+            id: "value",
+            text: "text"
+        });
+    }
+
+    //物资类别
+    function initialddlYPLBList() {
+        $("#ddlWZLB").bindSelect({
+            url: "/ProductManage/ProductType/GetPatientTreeSelectJson"
+        });
+    }
+
+    //单据主记录
+    function gridDrugsInfoData() {
+        var $gridDrugsInfoData = $("#gridDrugsInfo");
+        $gridDrugsInfoData.dataGrid({
+            height: $(window).height() - 230,
+            url: "/StorageManage/PSIStatistics/PSIStatisticsInfoList",
+            postData: getSearchPostData(),
+            colModel: [
+                { label: '类别', name: 'lbmc', width: 120, align: 'left' },
+                { label: '物资名称', name: 'wzmc', width: 120, align: 'left' },
+                { label: '规格', name: 'gg', width: 80, align: 'left' },
+                { label: '价格单位', name: 'bmdwmc', width: 60, align: 'center' },
+                { label: '期初数量', name: 'qcsl', width: 80, align: 'right' },
+                {
+                    label: '期初零售总额', name: 'qclsze', hidden: true,
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '入库数量', name: 'rksl', width: 90, align: 'right' },
+                {
+                    label: '入库零售总额', name: 'rklsze', width: 100, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '出库数量', name: 'cksl', width: 90, align: 'right' },
+                {
+                    label: '出库零售总额', name: 'cklsze', width: 100, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '损益数量', name: 'sysl', width: 90, align: 'right' },
+                {
+                    label: '损溢零售总额', name: 'sylsze', width: 100, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '期末数量', name: 'qmsl', width: 90, align: 'right' },
+                {
+                    label: '期末零售总额', name: 'qmlsze', hidden: true,
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                {
+                    label: '调价损溢总额', name: 'tjsyze', width: 100, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: 'productId', name: 'productId', hidden: true }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'wzmc desc',
+            viewrecords: true,
+            loadComplete: function (data) {
+                StatisticsZE();//统计总额
+            }
+        });
+
+        //统计
+        $("#btn_search").click(function () {
+            if ($("#ddlKSSJ").val() >= $("#ddlJSSJ").val() && $("#ddlJSSJ").val() !== "") {
+                $.modalAlert("结束结转时间需大于开始账期", 'warning');
+                return;
+            }
+            //清空Grid
+            $('#gridDrugsInfo').jqGrid("clearGridData");
+            $gridDrugsInfoData.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        return {
+            ksjzsj: $("#ddlKSSJ").val(),
+            jsjzsj: $("#ddlJSSJ").val(),
+            wzzt: $("#ddlWZZT").val(),
+            srm: $("#txtSrm").val(),
+            dl: $("#ddlWZLB").val(),
+            noPSI: $("#chk_Show")[0].checked ? "1" : "0"
+        };
+    };
+
+    //统计总额
+    function StatisticsZE() {
+        var statisticsRklsze = 0;  //入库零售总额
+        var statisticsCklsze = 0;  //出库零售总额
+        var statisticsTjsyze = 0;  //调价损益总额
+        var statisticsSylsze = 0;  //损益零售总额
+        var count = $("#gridDrugsInfo").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridDrugsInfo").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowRklsze = $("#gridDrugsInfo").getRowData(rowIds[i]).rklsze;
+                var getRowCklsze = $("#gridDrugsInfo").getRowData(rowIds[i]).cklsze;
+                var getRowTjsyze = $("#gridDrugsInfo").getRowData(rowIds[i]).tjsyze;
+                var getRowSylsze = $("#gridDrugsInfo").getRowData(rowIds[i]).sylsze;
+                statisticsRklsze = statisticsRklsze + parseFloat(getRowRklsze);//入库零售总额
+                statisticsCklsze = statisticsCklsze + parseFloat(getRowCklsze);//出库零售总额
+                statisticsTjsyze = statisticsTjsyze + parseFloat(getRowTjsyze);//调价损益总额
+                statisticsSylsze = statisticsSylsze + parseFloat(getRowSylsze);//损益零售总额
+            }
+            statisticsRklsze = roundingBy4she6ru5chengshuang(statisticsRklsze, 2);//入库零售总额
+            statisticsCklsze = roundingBy4she6ru5chengshuang(statisticsCklsze, 2);//出库零售总额
+            statisticsTjsyze = roundingBy4she6ru5chengshuang(statisticsTjsyze, 2);//调价损益总额
+            statisticsSylsze = roundingBy4she6ru5chengshuang(statisticsSylsze, 2);//损益零售总额
+        }
+        $("#txtRKLSZE").val(statisticsRklsze);
+        $("#txtCKLSZE").val(statisticsCklsze);
+        $("#txtTJSYZE").val(statisticsTjsyze);
+        $("#txtSYLSZE").val(statisticsSylsze);
+    }
+
+</script>

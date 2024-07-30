@@ -1,0 +1,264 @@
+﻿@using Newtouch.Infrastructure
+@using Newtouch.Tools
+
+@{
+    ViewBag.Title = "分诊医生";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+
+<div style="width: 30%; float: left;">
+    <div class="topPanel">
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="科室名称/科室编码" style="width: 180px;">
+                            <span class="input-group-btn">
+                                <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</div>
+<div class="gridPanel" style=" margin-left: 0.5%; float: left; width: 65%;">
+    <table id="gridmxList"></table>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+ ShowKeyList = new int[] {  4,  8 },
+})
+</div>
+
+<script>
+    var $gridList = $("#gridList");
+    var $gridmxList = $("#gridmxList");
+    $(function () {
+        gridList();
+        gridmxList();
+        $("#gridPager_left").hide();
+        $("#gridPager_right").hide();
+        $("#gridPager_center").css("padding-right", 0);
+    });
+
+    function gridList() {
+        $gridList.dataGrid({
+            url: "/OutpatientConsult/GetDeptList",
+            height: $(window).height() - 120,
+            postData: { keyValue: $("#txt_keyword").val() },
+            colModel: [
+                { label: '科室编码', name: 'Code', width: 70, align: 'left' },
+                { label: "科室名称", name: "Name", width: 70, align: "left" },
+            ],
+            rownumbers:false,
+            pager: "#gridPager",
+            sortname: 'Name',
+            viewrecords: true,
+            rowNum: '10',
+            onSelectRow_page: function (rowid) {
+                var data = $gridList.jqGrid('getRowData', rowid);
+                $gridmxList.jqGrid('setGridParam', {
+                    postData: { ksCode: data.Code},
+                    url: "/OutpatientConsult/GetConsultDoctorByDept"
+                }).trigger('reloadGrid');
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyValue: $("#txt_keyword").val() }
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function gridmxList() {
+        $gridmxList.dataGrid({
+            //url: "/Consult/GetConsultListByDept",
+            //postData: { ksCode: data.Code },
+            caption: "诊室医生",
+            height: $(window).height() - 120,
+            colModel: [
+               // { label: "Id", name: "Id",hidden:true, key: true },
+                { label: "诊室编码", name: "zsCode", key: true   },
+                { label: '诊室名称', name: 'zsmc', width: 120, align: 'left' },
+                { label: '日期', name: 'rq', width: 120, align: 'left', hidden: true, formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' }},
+                { label: '医生工号', name: 'gh', width: 80, align: 'left', editable: true ,hidden:true },
+				{ label: '医生', name: 'ysxm', width: 80, align: 'left', editwidth: '93%', editable: true },
+				{ label: '诊室楼层数', name: 'zslc', width: 60, align: 'left', editwidth: '93%', editable: true },
+				{ label: '诊室房号', name: 'zsfh', width: 60, align: 'left', editwidth: '93%', editable: true },
+                {
+                    label: '操作', name: 'operate', width: 70, align: 'center', formatter: function (cellvalue, options, cell) {
+                        return '<span style="color:#ff0000" onclick=\'ConsultInfo("' + cell.zsCode + '")\'>分诊信息</span>';
+                    }
+                },
+            ],
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //newtouch_event_f8();
+            },
+            gridComplete: function () {
+                EnableInlineEditBox();
+            }
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function() {
+        $('#btn_search').trigger('click');
+    });
+
+    //行编辑
+    function EnableInlineEditBox() {
+        var ids = $("#gridmxList").getDataIDs();
+        $.each(ids, function () {
+            var rowid = String(this);
+            //打开编辑模式
+            $("#gridmxList").jqGrid('editRow', rowid, false, initInlineFunc);
+        })
+    }
+
+    //诊室行编辑
+    function initInlineFunc(rowid) {
+        //医生浮层
+        $("#" + rowid + "_ysxm").newtouchFloatingSelector({
+            url: '/SystemManage/SysStaff/GetStaffListByDutyCode',
+            width: 300,
+            height: 200,
+            clickautotrigger: true,
+            ajaxparameters: function ($thisinput) {
+                if ($thisinput.val() == "") { $("#" + rowid + "_gh").val(""); }
+                return "dutyCode=" + "Doctor" + "&keyword=" + $.trim($thisinput.val());
+            },
+            colModel: [
+                { label: 'StaffGh', name: 'StaffGh', hidden: true },
+                { label: 'ks', name: 'ks', hidden: true },
+                { label: '医生名称', name: 'StaffName', widthratio: 48 },
+                { label: '科室名称', name: 'ksmc', widthratio: 50 },
+            ],
+            itemdbclickhandler: function ($thistr, $thisinput) {
+                $("#" + rowid + "_ysxm").val($thistr.attr('data-StaffName'));
+                $("#" + rowid + "_gh").val($thistr.attr('data-StaffGh'));
+            }
+        });
+    }
+
+	
+    //保存
+    function newtouch_event_f8() {
+        var rowIds = $("#gridmxList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#gridmxList").saveRow(rowIds[i], null, null, null,  function (callbackRowId) { }, null);
+
+            if (!saveResult) {
+                EnableInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                return;   //保存失败，则return
+            }
+        }
+
+        //项目
+        var zsyslist = $("#gridmxList").jqGrid('getRowData_AllLine', null, true);
+
+        $.each(zsyslist, function (idx, val) {    //去掉action
+            //$("#txt_doctor").attr("data-StaffGh", "");
+            //$.each(top.window.clients.sysStaffDutyList, function (idx2, val2) {
+            //    if (val.ysxm == val2.StaffName) {
+            //        val.gh = val2.StaffGh;
+            //    }
+            //})
+            delete val.operate;
+            delete this.action;   //去掉action
+        })
+
+        //判断医生不重复
+        var flag = true;
+        $.each(zsyslist, function (idx, val) {
+            $.each(zsyslist, function (idx2, val2) {
+                if (val.zsCode != val2.zsCode && val.gh == val2.gh && val.gh!='') {
+                    flag = false;
+                    return;
+                }
+            })
+        })
+
+        //同科室医生重复
+        if (flag == false) {
+            $.modalAlert("医生不能分配多个诊室,请重新分配", 'warning');
+            EnableInlineEditBox();//重新编辑
+            ////清空
+            //newtouch_globalevent_f4();
+            //$("#gridmxList").clearGridData();
+            ////刷新
+            //$("#gridmxList").jqGrid('setGridParam', {
+            //    page: 1,
+            //}).trigger('reloadGrid');
+            //$('#btn_search').trigger('click');
+            return;
+        }
+        
+        $.najax({
+            url: "/NurseManage/OutpatientConsult/isDoctorRepeat",
+            dataType: "json",
+            data: { zsyslist: zsyslist },
+            type: "POST",
+            success: function (data) {
+                if (data.length == 0) {
+                    //更新
+                    console.log(gridmxList);
+                    $.najax({
+                        url: "/NurseManage/OutpatientConsult/SaveConsultDoctor",
+                        dataType: "json",
+                        data: { zsyslist: zsyslist },
+                        type: "POST",
+                        success: function (data) {
+                            $.modalAlert("保存成功", 'warning');
+                            //清空
+                            newtouch_globalevent_f4();
+                            $("#gridmxList").clearGridData();
+                            //刷新
+                            $("#gridmxList").jqGrid('setGridParam', {
+                                page: 1,
+                            }).trigger('reloadGrid');
+
+                            $('#btn_search').trigger('click');
+                        }
+                    });
+                } else {
+                    //医生与其他科室重复
+                    $.modalAlert("医生不能分配多个诊室,请重新分配", 'warning');
+                    EnableInlineEditBox();//重新编辑
+                    ////清空
+                    //newtouch_globalevent_f4();
+                    //$("#gridmxList").clearGridData();
+                    ////刷新
+                    //$("#gridmxList").jqGrid('setGridParam', {
+                    //    page: 1,
+                    //}).trigger('reloadGrid');
+                    //$('#btn_search').trigger('click');
+                    return;
+                   
+                }
+            }
+        });
+    }
+
+    //诊室信息弹出页（小屏）
+    function ConsultInfo(zsCode) {
+        
+        if (!zsCode) {
+            $.modalAlert("请选择诊室", 'warning');
+            return;
+        }
+        //if (!gh) {
+        //    $.modalAlert("请绑定医生", 'warning');
+        //    return;
+        //}
+        window.open("/NurseManage/OutpatientConsult/ConsultInfo?zsCode=" + zsCode, "_blank", "height = 500, width = 300, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+    }
+
+</script>
+

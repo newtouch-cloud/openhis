@@ -1,0 +1,157 @@
+﻿
+@{
+    ViewBag.Title = "用法联动维护";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="用法名称/费用名称" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        gridList();
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Code",
+            url: "/SystemManage/UsageLinkage/GetTreeGridJson",
+            height: $(window).height() - 120,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '用法名称', name: 'yfmc', width: 120, align: 'left' },
+                { label: '用法编码', name: 'yfCode', width: 120, align: 'left' },
+                { label: '项目名称', name: 'sfxmmc', width: 120, align: 'left' },
+                { label: '项目编码', name: 'sfxmCode', width: 120, align: 'left' },
+                { label: '项目大类', name: 'dlmc', width: 120, align: 'left' },
+                { label: "有效", name: "zt", width: 50, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 80, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 90, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 80, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 90, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: "dlCode", name: "dlCode", hidden: true }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            rowNum: '10',
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: {
+                    keyword: $("#txt_keyword").val(),
+                    yfCode: $("#selyf").attr("attr-yfCode"),
+                    xmCode: $("#selitem").attr("attr-xmCode")
+                },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增",
+            url: "/SystemManage/UsageLinkage/Form",
+            width: "700px",
+            height: "350px",
+            showleftlalbel: true,//新增时显示'确认并关闭按钮'
+            leftlalbelchecked: false,
+            leftlabeltext: "连续录入",
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId, isClose) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                    if (isClose == undefined || isClose === true) {
+                        top.frames[iframeId].$.modalClose();
+                    }
+                });
+            }
+        });
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "修改",
+            url: "/SystemManage/UsageLinkage/Form?keyValue=" + keyValue,
+            width: "700px",
+            height: "350px",
+            showleftlalbel: true,//新增时显示'确认并关闭按钮'
+            leftlalbelchecked: false,
+            leftlabeltext: "连续录入",
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId, isClose) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                    if (isClose == undefined || isClose === true) {
+                        top.frames[iframeId].$.modalClose();
+                    }
+                });
+            }
+        });
+    }
+
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/SystemManage/UsageLinkage/DeleteForm",
+            param: { keyValue: keyValue },
+            success: function () {
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+</script>

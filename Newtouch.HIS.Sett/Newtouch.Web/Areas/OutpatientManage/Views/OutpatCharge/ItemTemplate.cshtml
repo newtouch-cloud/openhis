@@ -1,0 +1,126 @@
+﻿
+@{
+    ViewBag.Title = "ItemTemplate";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="gridPanel">
+    <table id="parentGridList"></table>
+    <table id="childGridList"></table>
+</div>
+
+<script type="text/javascript">
+    var ks = $.request("ks");
+    var tempList = [], //模板列表
+        detailList = []; //模板下项目列表
+    $(function () {
+        tempInit();
+    })
+
+    function tempInit() {
+        $.loading(true);
+        $.ajax({
+            type: "POST",
+            url: "/OutpatientManage/OutpatCharge/GetChargeItemData?r=" + Math.random(),
+            data: { ks: ks },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state == 'success') { 
+                    tempList = ajaxresp.data.tempList;
+                    detailList = ajaxresp.data.tempDetailList;
+                    gridList(tempList); //绑定模板列表 
+
+                } else if (ajaxresp.state == 'error') {
+                    $.newtouchAlert(ajaxresp);
+                    return false;
+                }
+            },
+            error: function (err) {
+                funcDoPageClear(); //清除
+            },
+            complete: function () {
+                $.loading(false);
+            } 
+        });
+    }
+
+
+    function gridList(tempList) {
+        var $gridList = $("#parentGridList");
+        $gridList.dataNewGrid({  
+            height: 150,
+            caption: "模板列表",
+            colModel: [
+                { label: "主键", name: "sfmbbh", hidden: true, key: true },
+                { label: "模板代码", name: "sfmb", width: 80, align: 'left' },
+                { label: '模板名称', name: 'sfmbmc', width: 100, align: 'left' },
+                { label: '执行科室', name: 'ksmc', width: 50, align: 'left' },
+            ]
+        }, tempList);
+
+        if (tempList.length > 0) {
+            $('.ui-jqgrid-bdiv').find(".unwritten").remove();
+        }
+    }
+
+    function btn_selectrow(rowid) { 
+        $('#childGridList').jqGrid("clearGridData");
+        var sfmbbh = $("#parentGridList").jqGridRowValue().sfmbbh;
+        var tempDetail = [];
+        for (var i = 0; i < detailList.length; i++) {
+            if(detailList[i].ItemCode == sfmbbh){
+                tempDetail = detailList[i].tempDetailList;
+            }
+        } 
+        $("#childGridList").dataNewGrid({ 
+            height: 200,
+            caption: "项目列表",
+            colModel: [
+                { label: "主键", name: "sfmbbh", hidden: true, key: true },
+                { label: '数量', name: 'sl', width: 50, align: 'left' },
+                { label: '项目代码', name: 'py', width: 50, align: 'left' },
+                { label: '名称', name: 'sfxmmc', width: 50, align: 'left' },
+                { label: '单位', name: 'dw', width: 50, align: 'left' },
+                { label: '单价', name: 'dj', width: 50, align: 'left' },
+                { label: '医保代码', name: 'ybdm', width: 100, align: 'left' },
+                { label: '费用类别', name: 'dlmc', width: 50, align: 'left' },
+                { label: '规格', name: 'gg', width: 50, align: 'left' },
+                { label: '剂量', name: 'jl', width: 50, align: 'left' },
+                { label: '用法', name: 'yf', width: 50, align: 'left' },
+                { label: '频率', name: 'pl', width: 50, align: 'left' },
+                { label: '剂型', name: 'jx', width: 50, align: 'left' },
+                { label: 'dlmc', name: 'dlmc', hidden: true },
+                { label: 'dl', name: 'dl', hidden: true },
+                { label: 'sfxm', name: 'sfxm', hidden: true },
+                { label: 'sfxmbh', name: 'sfxmbh', hidden: true },
+                { label: 'zfxz', name: 'zfxz', hidden: true },
+                { label: 'zfbl', name: 'zfbl', hidden: true } 
+            ],
+            multiselect: true
+        }, tempDetail);
+
+        if (tempDetail.length > 0) {
+            $('.ui-jqgrid-bdiv').find(".unwritten").remove();
+        }
+    }
+
+    //多选
+    function grid_checkedit() {
+        
+    }
+
+    //ChargeIndex页面 调用
+    //在主页面进行调用
+    function submitForm() {
+        var rowid = $("#childGridList").jqGrid("getGridParam", "selarrrow");
+        var obj = [];
+        if (rowid) {
+            for (var i = 0; i < rowid.length; i++) {
+                obj[i] = new Object();
+                obj[i] = $('#childGridList').jqGrid('getRowData', rowid[i]);
+            }
+        } 
+        return obj;
+    }
+</script>
+

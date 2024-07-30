@@ -1,0 +1,190 @@
+﻿
+@{
+    ViewBag.Title = "DrugDelivery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<form id="form1">
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            筛选条件
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form" style="width:50%">
+                <tr>
+                    <th class="formTitle">关键字</th>
+                    <td class="formValue">
+                        <input type="text" id="txtINPUTCODE" class="form-control" placeholder="卡号 姓名 发票号" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<div class="gridPanel">
+    <div style="margin-bottom:10px; width:40%;float:left">
+        <table id="gridFYCF"></table>
+    </div>
+    <div style="width:59%;float:left; margin-left:10px">
+        <table id="gridFYCFInfo"></table>
+    </div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 7, 8 },
+    F7Text = "发药",
+    F8Text = "全部发药"
+})
+
+<script>
+    $(function () {
+        gridFYCF();
+        gridFYDetail([]);
+    });
+    //处方列表
+    function gridFYCF() {
+        var $gridCf = $("#gridFYCF");
+        $gridCf.dataGrid({
+            height: $(window).height() - 218,
+            caption: "处方列表",
+            url: "/OutPatientPharmacy/SearchCfList",
+            postData: { keyword: $("#txtINPUTCODE").val() },
+            colModel: [
+                { label: '发票号', name: 'fph', width: 100, align: 'center' },
+                { label: '姓名', name: 'xm', width: 80, align: 'center' },
+                { label: '年龄', name: 'nl', width: 40, align: 'center' },
+                { label: '卡号', name: 'CardNo', width: 100, align: 'center' },
+                { label: '处方号', name: 'cfh', width: 130, align: 'center' },
+                { label: '病人类型', name: 'brxzmc', width: 60, align: 'center' },
+                { label: '金额', name: 'je', width: 80, align: 'center' },
+                { label: '收费时间', name: 'sfsj', width: 120, align: 'center' }
+            ],
+            onSelectRow_page: function (rowid, status) {
+                $.najax({
+                    type: "Get",
+                    url: "/OutPatientPharmacy/SearchCfmx?cfh=" + $gridCf.jqGrid('getRowData', rowid).cfh,
+                    dataType: "json",
+                    success: function (res) {
+                        var detailData = [];
+                        if (res.length > 0) {
+                            for (var k = 0; k < res.length; k++) {
+                                detailData.push(res[k]);
+                            }
+                            $(".unwritten").hide();
+                        } else {
+                            $(".unwritten").show();
+                        }
+                        $("#gridFYCFInfo").resetSelection();
+                        $('#gridFYCFInfo').jqGrid("clearGridData");
+                        $("#gridFYCFInfo").newtouchLocalDataGrid(null, detailData);
+                    }
+                });
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridFYCF').jqGrid("clearGridData");
+            $("#gridFYCF").jqGrid('setGridParam', {
+                postData: { keyword: $("#txtINPUTCODE").val() }
+            }).trigger('reloadGrid');
+            $("#gridFYCFInfo").resetSelection();
+            $('#gridFYCFInfo').jqGrid("clearGridData");
+            $("#gridFYCFInfo").newtouchLocalDataGrid(null, detailData);
+        });
+    }
+
+    //处方明细
+    function gridFYDetail() {
+        var $gridCfInfo = $("#gridFYCFInfo");
+        $gridCfInfo.newtouchLocalDataGrid({
+            caption: "处方明细",
+            height: $(window).height() - 218,
+            //unwritten: false,
+            colModel: [
+                { label: '药品代码', name: 'ypCode', width: 70, align: 'center' },
+                { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+                { label: '规格', name: 'gg', width: 50, align: 'center' },
+                { label: '批号', name: 'ph', width: 90, align: 'center' },
+                { label: '批次', name: 'pc', width: 100, align: 'left' },
+                { label: '数量', name: 'sl', width: 50, align: 'center' },
+                { label: '单位', name: 'dw', width: 50, align: 'center' },
+                { label: '单价', name: 'dj', width: 60, align: 'center' },
+                { label: '金额', name: 'je', width: 60, align: 'left' },
+                { label: '剂量', name: 'jl', width: 50, align: 'center' },
+                { label: '剂量单位', name: 'jldw', width: 50, align: 'center' },
+                { label: '用法', name: 'yfmc', width: 60, align: 'center' },
+                { label: '医生嘱托', name: 'yszt', width: 120, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 120, align: 'left' },
+                { label: '药品分组', name: 'czh', width: 100, align: 'left' }
+            ]
+        });
+    }
+
+    //发药
+    function newtouch_event_f7() {
+        var id = $("#gridFYCF").jqGrid("getGridParam", "selrow");
+        if (id) {
+            var data = $("#gridFYCF").jqGrid('getRowData', id);
+            $.najax({
+                type: "POST",
+                url: "/OutPatientPharmacy/ExecDeliveryDrug?pCfh=" + data.cfh,
+                dataType: "json",
+                success: function (res) {
+                    if (res.state === "success") {
+                        $.modalMsg('发药成功', 'success', 1000);
+                        $("#gridFYCF").jqGrid("clearGridData");
+                        $("#gridFYCF").resetSelection();
+                        $("#gridFYCF").trigger("reloadGrid");
+                        $("#gridFYCFInfo").jqGrid("clearGridData");
+                        $("#gridFYCFInfo").resetSelection();
+                        $("#gridFYCFInfo").trigger("reloadGrid");
+                    } else {
+                        $.modalAlert(res.message, Error);
+                    }
+                },
+                error: function (res) {
+                    $.modalAlert(res.message, Error);
+                }
+            });
+        } else {
+            $.modalAlert("请选中处方信息！", 'warning');
+        }
+    }
+
+    //全部发药
+    function newtouch_event_f8() {
+        var ids = $("#gridFYCF").getDataIDs();
+        var cfh = [];
+        $.each(ids, function (idx, val) {
+            cfh.push($("#gridFYCF").jqGrid('getRowData', val)["cfh"]);
+        });
+        if (cfh.length <= 0) {
+            $.modalAlert("没有需要发药的处方！", 'warning');
+            return;
+        }
+        $.najax({
+            type: "POST",
+            url: "/OutPatientPharmacy/ExecAllDeliveryDrug",
+            data: { cfh: cfh },
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('发药成功', 'success', 1000);
+                    $("#gridFYCF").jqGrid("clearGridData");
+                    $("#gridFYCF").resetSelection();
+                    $("#gridFYCF").trigger("reloadGrid");
+                    $("#gridFYCFInfo").jqGrid("clearGridData");
+                    $("#gridFYCFInfo").resetSelection();
+                    $("#gridFYCFInfo").trigger("reloadGrid");
+
+                } else {
+                    $.modalAlert(res.message, Error);
+                }
+            },
+            error: function (res) {
+                $.modalAlert(res.message, Error);
+            }
+        });
+    }
+</script>

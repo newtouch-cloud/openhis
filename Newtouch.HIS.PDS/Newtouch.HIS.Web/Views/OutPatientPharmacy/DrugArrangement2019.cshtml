@@ -1,0 +1,317 @@
+﻿
+@{
+    ViewBag.Title = "门诊排药";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #dv_cfInfo {
+        height: 45px;
+    }
+
+        #dv_cfInfo ul {
+            list-style: none;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        #dv_cfInfo li {
+            white-space: nowrap;
+            display: inline-block;
+            margin: 3px 20px;
+        }
+</style>
+<form id="form1">
+    <div class="panel-default" style="float: left; width:27%;">
+        <table id="gridPatients"></table>
+        <div id="gridPatientsPager" rel="form1"></div>
+    </div>
+    <div id="dv_right" style="float: left; width: 72.5%; margin-left:0.5%;">
+        <div class="panel" id="dv_rightTop">
+            <div class="panel-default panel-heading">
+                <span style="font-weight: bold;">处方信息</span>
+                <span class="glyphicon glyphicon-menu-up" aria-hidden="true" style="float: right;"></span>
+            </div>
+            <div id="dv_cfInfo">
+                <ul>
+                    <li>
+                        <span class="formTitle">姓名：</span>
+                        <label id="lab_name" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">年龄：</span>
+                        <label id="lab_nl" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">医生：</span>
+                        <label id="lab_ysmc" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle ">卡号：</span>
+                        <label id="lab_cardNo" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">总金额：</span>
+                        <label id="lab_zje" type="text" value=""></label>
+                        <label id="lab_je" type="text" value="" style="display:none;"></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">病人性质：</span>
+                        <label id="lab_brxzmc" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">科室：</span>
+                        <label id="lab_ksmc" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">发票号：</span>
+                        <label id="lab_fph" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">处方号：</span>
+                        <label id="lab_cfh" type="text" value=""></label>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div id="dv_cfmx" style="overflow-x: auto; width: 100%; margin-top: 5px;">
+            <table id="gridCfmx"></table>
+        </div>
+        @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+       {
+           ShowKeyList = new[] { 7, 8 },
+           F8Text = "全部排药",
+           F7Text = "排药"
+       })
+    </div>
+</form>
+
+<script>
+    var cfsheight = $(window).height() - 60;
+    var cfxxwidth = $(window).width() - $("#dv_left").width() - 10;
+    var $gridPatients = $("#gridPatients");
+    var $gridCfmx = $("#gridCfmx");
+    $gridPatients.jqGrid("clearGridData");
+    $gridCfmx.jqGrid("clearGridData");
+
+    $(function () {
+        initLayout();
+        $(window).resize(function () {
+            initLayout();
+        });
+        gridPatients();
+        gridCfmx();
+        ShowOrClose();
+    });
+
+    //自适应
+    function initLayout() {
+        $("#dv_cfmx").height($(window).height() - $("#dv_cfInfo").height() - 90);
+        $("#gridCfmx").setGridHeight($(window).height() - $("#dv_cfInfo").height() - 160);
+    }
+
+    //处方信息展开合并
+    function ShowOrClose() {
+        $(".glyphicon").click(function () {
+            if ($(this).hasClass("glyphicon-menu-up")) {
+                $(this).removeClass("glyphicon-menu-up");
+                $(this).addClass("glyphicon-menu-down");
+                $("#dv_cfInfo").hide();
+            } else {
+                $(this).removeClass("glyphicon-menu-down");
+                $(this).addClass("glyphicon-menu-up");
+                $("#dv_cfInfo").show();
+            }
+            initLayout();
+        });
+    }
+
+    //获取处方信息
+    function gridPatients() {
+        $gridPatients.dataGrid({
+            height: cfsheight - 50,
+            url: "/OutPatientPharmacy/GetXmAndSfsj?r=" + Math.random(),
+            caption: "患者列表",
+            colModel: [
+                { label: '姓名', name: 'xm', width: 60, align: 'left' },
+                { label: '卡号', name: 'CardNo', width: 80, align: 'center' }
+            ],
+            beforeRequest: function () {
+                $("#gridPatientsPager_left").hide();
+                $("#gridPatientsPager_right").hide();
+            },
+            pager: "#gridPatientsPager",
+            sortname: 'xm asc',
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                var data = $gridPatients.jqGrid('getRowData', rowid);
+                $gridCfmx.jqGrid('setGridParam', {
+                    postData: { cardNo: data.CardNo, xm: data.xm },
+                    url: "/OutPatientPharmacy/RpDetailQuery"
+                }).trigger('reloadGrid');
+            },
+            gridComplete: function () {
+                $gridCfmx.jqGrid("clearGridData");
+                var ids = new Array();
+                //getDataIDs()返回当前grid里所有数据的id
+                ids = $gridPatients.getDataIDs();
+                if (ids == null || ids.length <= 0) return;
+                //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
+                $gridPatients.setSelection(ids[0], true);
+                var pdata = $gridPatients.jqGrid('getRowData', ids[0]);
+                if (pdata == null) return;
+                $gridCfmx.jqGrid('setGridParam', {
+                    url: "/OutPatientPharmacy/RpDetailQuery?r=" + Math.random(),
+                    postData: { cardNo: pdata.CardNo, xm: pdata.xm }
+                }).trigger('reloadGrid');
+            }
+        });
+    }
+
+    //获取处方明细
+    function gridCfmx() {
+        $gridCfmx.dataGrid({
+            url: "",
+            caption: "处方明细",
+            height: $(window).height() - $("#dv_cfInfo").height() - 160,
+            colModel: [
+                { label: '发票号', name: 'fph', align: 'left', width: 80 },
+                { label: '处方号', name: 'cfh', align: 'left', width: 120 },
+                { label: '药品名称', name: 'ypmc', align: 'left', width: 110 },
+                { label: '规格', name: 'gg', align: 'left', width: 50 },
+                { label: '数量', name: 'sl', align: 'right', width: 40 },
+                { label: '单位', name: 'dw', align: 'left', width: 55 },
+                {
+                    label: '单价', name: 'dj', align: 'right', width: 50,
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.0000";
+                    }
+                },
+                {
+                    label: '金额', name: 'je', align: 'right', width: 50,
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                { label: '生产厂家', name: 'ycmc', align: 'left', width: 110 },
+                { label: '剂量', name: 'jl', align: 'right', width: 60 },
+                { label: '剂量单位', name: 'jldw', align: 'left', width: 55 },
+                { label: '用法', name: 'yfmc', align: 'left', width: 60 },
+                { label: '医生嘱托', name: 'yszt', align: 'left', width: 100 },
+                { label: '执行医生', name: 'CreatorCode', align: 'center', width: 60 },
+                {
+                    label: '收费时间', name: 'sfsj', align: 'left', width: 100, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' }
+                },
+                { label: '药品分组', name: 'czh', align: 'left', width: 50 }
+            ],
+            loadComplete: function (e) {
+                var id = $gridPatients.jqGrid('getGridParam', 'selrow');
+                var data = $gridPatients.jqGrid('getRowData', id);
+                $.najax({
+                    type: "get",
+                    url: "/OutPatientPharmacy/GetCfInfo",
+                    data: { cardNo: data.CardNo, xm: data.xm },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res != null) {
+                            $("#lab_name").html(res.xm);
+                            $("#lab_cfh").html(res.cfh);
+                            $("#lab_cfh").attr("title", res.cfhComplete);
+                            $("#lab_cardNo").html(res.CardNo);
+                            $("#lab_fph").html(res.Fph);
+                            $("#lab_fph").attr("title", res.FphComplete);
+                            $("#lab_zje").html(res.Zje);
+                            $("#lab_je").html(res.je);
+                            $("#lab_sfsj").html(res.ShowSfsj);
+                            $("#lab_brxzmc").html(res.brxzmc);
+                            $("#lab_nl").html(res.nl);
+                            $("#lab_ysmc").html(res.ysmc);
+                            $("#lab_ksmc").html(res.ksmc);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    //全部排药
+    function newtouch_globalevent_f8() {
+        var pats = new Array();
+        var gridPatients = $gridPatients.jqGrid('getRowData_AllLine', null, true); //param2:默认所有行；param3：true返回object
+        $(gridPatients).each(function () {
+            pats.push({
+                "CardNo": this.CardNo,
+                "xm": this.xm
+            });
+        });
+        if (pats.length <= 0) return;
+        $.modalConfirm("确定全部配药吗？", function (flag) {
+            if (!flag) return;
+            $.najax({
+                url: "/OutPatientPharmacy/DrugArrangementV2",
+                dataType: "json",
+                type: "Post",
+                data: { patients: pats },
+                cache: false,
+                success: function (res) {
+                    if (res.state === "success") {
+                        $.modalMsg('配药成功！', 'success', 2000);
+                        $gridPatients.jqGrid("clearGridData");
+                        $gridPatients.trigger('reloadGrid');
+                        $("#gridCfmx").jqGrid("clearGridData");
+                        cleanCfInfo();
+                    } else {
+                        $.modalAlert(res.message, 'error');
+                    }
+                }
+            });
+        });
+    }
+
+    //单个人号排药
+    function newtouch_globalevent_f7() {
+        var id = $("#gridPatients").jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalAlert("请先选中药排药的患者", 'warning');
+            return;
+        }
+        var patient = new Array();
+        patient.push({
+            "CardNo": $("#gridPatients").jqGridRowValue().CardNo,
+            "xm": $("#gridPatients").jqGridRowValue().xm
+        });
+        $.najax({
+            url: "/OutPatientPharmacy/DrugArrangementV2",
+            dataType: "json",
+            type: "Post",
+            data: { patients: patient },
+            cache: false,
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('配药成功！', 'success', 2000);
+                    $gridPatients.jqGrid("clearGridData");
+                    $gridPatients.trigger('reloadGrid');
+                    $("#gridCfmx").jqGrid("clearGridData");
+                    cleanCfInfo();
+                } else {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+    //清理处方信息
+    function cleanCfInfo() {
+        $("#lab_name").html("");
+        $("#lab_cfh").html("");
+        $("#lab_cardNo").html("");
+        $("#lab_fph").html("");
+        $("#lab_zje").html("");
+        $("#lab_je").html("");
+        $("#lab_sfsj").html("");
+        $("#lab_brxzmc").html("");
+        $("#lab_nl").html("");
+        $("#lab_ysmc").html("");
+        $("#lab_ksmc").html("");
+    }
+</script>

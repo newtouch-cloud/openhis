@@ -1,0 +1,369 @@
+﻿@{
+    ViewBag.Title = "门诊效益";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<head>
+    <meta charset="utf-8">
+    <script src="~/Content/js/echarts.min.js"></script>
+    <style>
+        .bk {
+            border-radius: 10px;
+            background-color: white;
+        }
+        .selectbtn {
+            border: 0px;
+            background-color: white;
+        }
+        .down_border {
+            border-bottom: 1px solid #e6e6e6;
+        }
+        .ui-jqgrid .ui-jqgrid-bdiv {
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+
+<div class="panel panel-default">
+    <table class="form">
+        <tr>
+            <th class="formTitle" id="xzsjtext">类型：</th>
+            <td class="formValue" style="width:150px">
+                <select id="dateType" class="form-control" onchange="updateSjType()">
+                    <option value="1">年</option>
+                    <option value="2">月</option>
+                    <option value="3">日</option>
+                </select>
+            </td>
+            <th class="formTitle" id="xzsjtext">时间：</th>
+            <td class="formValue" style="width:150px">
+                <input id="rSJ" type="text" class="form-control input-wdatepicker"/>
+            </td>
+            <td class="formValue" style="padding-left:20px;">
+                <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+            </td>
+        </tr>
+    </table>
+</div>
+<div id="main_div" style="display:flex;flex-direction:column;justify-content:space-between;flex-wrap:wrap;">
+
+    <div style="display:flex;flex-direction:row;justify-content:space-between;flex-wrap:wrap;height:50%">
+        <div style="width:49.8%;display:flex;flex-direction:column" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-bar-chart fa-lg" style="margin-right:5px;"></i>科室效益排名
+            </div>
+            <div style="width:100%;height:25px;">
+                <input type="button" id="btn_zlrc" onclick="initEchartsByKSXYPM(1);" value="诊疗人次" style="height:100%;width:20%" class="selectbtn" />
+                <input type="button" id="btn_sjzlsr" onclick="initEchartsByKSXYPM(2);" value="实际诊疗收入" style="height:100%;width:20%" class="selectbtn" />
+                @*<input type="button" id="btn_rjzlfy" onclick="submitpm(3);" value="人均诊疗费用" style="height:100%;width:20%" class="selectbtn" />
+                <input type="button" id="btn_pjzlsc" onclick="subsubmitpmmit(4);" value="平均诊疗时长" style="height:100%;width:20%" class="selectbtn" />
+                <input type="button" id="btn_fzl" onclick="submitpm(5);" value="复诊率" style="height:100%;width:20%;" class="selectbtn" />*@
+            </div>
+            <div id="main1" style="width:100%;height:100%;"></div>
+        </div>
+        <div style="width:49.8%;display:flex;flex-direction:column" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-area-chart fa-lg" style="margin-right:5px;"></i>历史趋势
+            </div>
+            <div style="width:100%;height:19px;">
+                <input type="button" id="btn_zlrc" onclick="initEchartsByLSQS(1);" value="诊疗人次" style="height:100%;width:20%" class="selectbtn" />
+                <input type="button" id="btn_sjzlsr" onclick="initEchartsByLSQS(2);" value="实际诊疗收入" style="height:100%;width:20%" class="selectbtn" />
+                @*<input type="button" id="btn_rjzlfy" onclick="submit();" value="人均诊疗费用" style="height:100%;width:20%" class="selectbtn" />
+                <input type="button" id="btn_pjzlsc" onclick="submit();" value="平均诊疗时长" style="height:100%;width:20%" class="selectbtn" />
+                <input type="button" id="btn_fzl" onclick="submit();" value="复诊率" style="height:100%;width:20%;" class="selectbtn" />*@
+            </div>
+            <div id="main2" style="width:100%;height:100%;"></div>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:100%;height:24%" class="bk">
+
+        <div style="text-align:left;">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>门诊效益明细
+            </div>
+            <table id="gridJSListhzrjfyfx"></table>
+        </div>
+
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:100%;height:24%" class="bk">
+        <div class="panel-heading down_border">
+            <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>医生效益
+        </div>
+        <table id="gridJSListmzxyfx"></table>
+    </div>
+</div>
+
+<script>
+
+    var myDate = new Date();
+    $(function () {
+
+        $('#main_div').height($(window).height() - 60);
+        //默认设置时间类型为月
+        $("#dateType").val("2");
+        $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+        $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        initEchartsByKSXYPM(1);
+        initEchartsByLSQS(1);
+        gridJSListData();
+        
+    });
+
+    function submit() {
+        initEchartsByKSXYPM(1);
+        initEchartsByLSQS(1);
+
+        $("#gridJSListhzrjfyfx").jqGrid('setGridParam', {
+            postData: getSearchData(),
+        }).trigger('reloadGrid');
+        //$("#gridJSListmzxyfx").jqGrid('setGridParam', {
+        //    postData: getSearchData(),
+        //}).trigger('reloadGrid');
+    }
+    //根据年月获取月天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+    //改变时间类型
+    function updateSjType() {
+        $('#rSJ').val("");
+        let dateType = $("#dateType").val();
+        if (dateType == "1") {//年
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy' })");
+            $('#rSJ').val(myDate.getFullYear());
+        }
+        if (dateType == "2") {//月
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        }
+        if (dateType == "3") {//日
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM-dd' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1) + "-" + myDate.getDate());
+        }
+    }
+    //组装请求参数
+    function getSearchData() {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+        return { ksrq: ksrq, jsrq: jsrq, rtype: dateType };
+    }
+    function getSearchData(type) {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+        return { ksrq: ksrq, jsrq: jsrq, rtype: dateType, type: type};
+    }
+    //历史趋势
+    function initEchartsByLSQS(type) {
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/OutpatientBenefits/GetLsqs",
+            dataType: "json",
+            data: getSearchData(type),
+            success: function (ajaxresp) {
+
+                var myChart2 = echarts.init(document.getElementById('main2'));
+                var option2 = {
+                    legend: {},
+                    tooltip: {},
+                    dataset: {
+                        source: ajaxresp
+                        //    [
+                        //    { product: '2019', '2015': 43.3 },
+                        //    { product: '2020', '2015': 83.1 },
+                        //    { product: '2021', '2015': 86.4 },
+                        //    { product: '2022', '2015': 72.4 },
+                        //    { product: '2023', '2015': 72.4 }
+                        //]
+                    },
+                    xAxis: { type: 'category' },
+                    yAxis: {},
+                    series: [
+                        {
+                            type: 'bar',
+                            barWidth: '25%',
+                            encode: {
+                                //将"amount"列映射到X轴
+                                x: 'Name',
+                                //将"product"列映射到Y轴
+                                y: 'keyword'
+
+                            }
+                        }
+                    ]
+                };
+                myChart2.setOption(option2);
+            }
+        });
+    }
+    //科室效益排名
+    function initEchartsByKSXYPM(type) {
+        
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/OutpatientBenefits/GetKSXYPM",
+            dataType: "json",
+            data: getSearchData(type),
+            success: function (ajaxresp) {
+                var myChart1 = echarts.init(document.getElementById('main1'));
+                var option1 = {
+                    legend: {},
+                    tooltip: {},
+                    dataset: {
+                        source: ajaxresp
+                    },
+                    xAxis: { type: 'category' },
+                    yAxis: {},
+                    series: [
+                        {
+                            type: 'bar',
+                            barWidth: '25%',
+                            encode: {
+                                //将"amount"列映射到X轴
+                                x: 'Name',
+                                //将"product"列映射到Y轴
+                                y: 'keyword'
+
+                            }
+                        }
+                    ]
+                };
+                myChart1.setOption(option1);
+            }
+        });
+    }
+    function initEchartsByKSXYPM(type) {
+        
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/OutpatientBenefits/GetKSXYPM",
+            dataType: "json",
+            data: getSearchData(type),
+            success: function (ajaxresp) {
+                var myChart1 = echarts.init(document.getElementById('main1'));
+                var option1 = {
+                    legend: {},
+                    tooltip: {},
+                    dataset: {
+                        source: ajaxresp
+                    },
+                    xAxis: { type: 'category' },
+                    yAxis: {},
+                    series: [
+                        {
+                            type: 'bar',
+                            barWidth: '25%',
+                            encode: {
+                                //将"amount"列映射到X轴
+                                x: 'Name',
+                                //将"product"列映射到Y轴
+                                y: 'keyword'
+
+                            }
+                        }
+                    ]
+                };
+                myChart1.setOption(option1);
+            }
+        });
+    }
+    function gridJSListData() {
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListhzrjfyfx");
+        $gridJsList.dataGrid({
+            height: 100,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/OutpatientBenefits/GetMzxymx",
+            postData: getSearchData(),
+            colModel: [
+                { label: '门诊科室', name: 'mzks',align: 'left' },
+                { label: '门诊人次', name: 'mzzlrc',align: 'left' },
+                { label: '门诊收入（元）', name: 'mzsr',align: 'left' },
+                { label: '人均治疗费用（元）', name: 'rjfy', align: 'left' },
+                { label: '自费费用占比（%）', name: 'zffyzb', align: 'left' },
+                { label: '医保费用占比（%）', name: 'ybfyzb', align: 'left' },
+                { label: '平均治疗时长', name: 'pjzlsc',align: 'left' },
+                { label: '复诊率', name: 'fzl', align: 'left' },
+                { label: 'DeptmentCode', name: 'DeptmentCode', align: 'left', hidden: true }
+            ],
+            onSelectRow: function (rowid) {
+                var rowObj = $gridJsList.jqGrid('getRowData', rowid);
+                console.log("bqCode", rowObj.DeptmentCode)
+                var $gridysList = $("#gridJSListmzxyfx");
+                $gridysList.jqGrid('setGridParam', {
+                    postData: getSearchData(rowObj.DeptmentCode),
+                    url: "/DeanInquiryManage/OutpatientBenefits/GetYsxy",
+                }).trigger('reloadGrid');
+            },
+            sortname: gridSort,
+            viewrecords: true,
+            loadComplete: function () {
+                var ids = $('#gridJSListhzrjfyfx').getDataIDs();//返回数据表的ID数组["66","39"..] 
+                var rowData = $("#gridJSListhzrjfyfx").getRowData(ids[0]);
+                if (rowData != null) {
+                    if (rowData.rowData != "") {
+                        YSXY(rowData.DeptmentCode);
+                    }
+                }
+            }
+        });
+    }
+    //医生收益
+    function YSXY(dpCode) {
+
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListmzxyfx");
+        $gridJsList.dataGrid({
+            height: 100,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/OutpatientBenefits/GetYsxy",
+            postData: getSearchData(dpCode),
+            colModel: [
+                { label: '医生', name: 'mzks', align: 'left' },
+                { label: '门诊人次', name: 'mzzlrc', align: 'left' },
+                { label: '门诊收入（元）', name: 'mzsr', align: 'left' },
+                { label: '人均治疗费用（元）', name: 'rjzlfy', align: 'left' },
+                { label: '自费费用占比（%）', name: 'zffyzb', align: 'left' },
+                { label: '医保费用占比（%）', name: 'ybfyzb', align: 'left' },
+                { label: '平均治疗时长', name: 'pjzlsc', align: 'left' },
+                { label: '复诊率', name: 'fzl', align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+    }
+</script>

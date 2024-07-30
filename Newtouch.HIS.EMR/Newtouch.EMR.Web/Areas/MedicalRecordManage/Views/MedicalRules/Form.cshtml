@@ -1,0 +1,84 @@
+﻿@{
+    ViewBag.Title = "规则维护";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="widget-body">
+        <div class="step-content" id="wizard-steps" style="border-left: none; border-bottom: none; border-right: none;">
+            <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+                <div class="panel panel-default">
+                    <div class="panel-body" style="width: 98%; margin-left: -34px;">
+                        <table class="form">
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>病历类型名称：</th>
+                                <td class="formValue">
+                                    <input type="hidden" id="Bllx" name="Bllx" />
+                                    <input id="RulesType" name="RulesType" type="text" class="form-control required" readonly="readonly" />
+                                </td>
+                                <th class="formTitle"><span class="required">*</span>规则天：</th>
+                                <td class="formValue">
+                                    <input id="RulesDay" name="RulesDay" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>说明：</th>
+                                <td class="formValue">
+                                    <input id="Remark" name="Remark" type="text" class="form-control required" oninput="inputnum(this)" />
+                                </td>
+                                <th class="formTitle">排序：</th>
+                                <td class="formValue">
+                                    <input id="Px" name="Px" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+    debugger;
+    var bllx = $.request("bllx");
+    var bllxmc = $.request("bllxmc");
+    var czlx = $.request("czlx");
+    var Id = $.request("Id");
+
+    $(function () {
+        if (czlx == "update") {
+            $.najax({
+                url: "/MedicalRecordManage/MedicalRules/GetItemMXData",
+                data: { Id: Id },
+                dataType: "json",
+                asyns: false,
+                success: function (data) {
+                    debugger;
+                    $("#form1").formSerialize(data[0]);
+                }
+            });
+        }
+        else {
+            $("#Bllx").val(bllx);
+            $("#RulesType").val(bllxmc);
+        }
+    })
+    function submitForm() {
+        debugger;
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        postData["czlx"] = czlx;
+        postData["Id"] = Id;
+        $.submitForm({
+            url: "/MedicalRecordManage/MedicalRules/SubmitForm",
+            param: postData,
+            success: function (res) {
+
+                $.modalAlert("保存成功", 'warning');
+                $.currentWindow().$("#gridRightList").resetSelection();
+                $.currentWindow().$("#gridRightList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

@@ -1,0 +1,447 @@
+﻿@{
+    ViewBag.Title = "住院费用分析";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<head>
+    <meta charset="utf-8">
+    <script src="~/Content/js/echarts.min.js"></script>
+
+    <style>
+        .banner {
+            width: 16.3%;
+            height: 80px;
+            text-align: center;
+        }
+        .banner_title {
+            padding-top:5px;
+            height: 30%;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .banner_data {
+            width: 100%;
+            height: 30%;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .banner_down {
+            display: flex;
+            justify-content: space-around;
+            font-size: 15px;
+        }
+        /*边框*/
+        .bk {
+            background-color: #ffffff;
+        }
+        /*字体*/
+        .font {
+            font-weight: bold;
+            text-align: center;
+        }
+        .down_border {
+            border-bottom: 1px solid #e6e6e6;
+        }
+        .ui-jqgrid .ui-jqgrid-bdiv {
+            overflow-x: hidden;
+        }
+    </style>
+
+</head>
+
+<div>
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle" id="xzsjtext">类型：</th>
+                <td class="formValue" style="width:150px">
+                    <select id="dateType" class="form-control" onchange="updateSjType()">
+                        <option value="1">年</option>
+                        <option value="2">月</option>
+                        <option value="3">日</option>
+                    </select>
+                </td>
+                <th class="formTitle" id="xzsjtext">时间：</th>
+                <td class="formValue" style="width:150px">
+                    <input id="rSJ" type="text" class="form-control input-wdatepicker" @*onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"*@>
+                </td>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="main_div" style="display:flex;flex-direction:column;justify-content:space-between;flex-wrap:wrap;">
+        <div>
+            <div class="panel-heading down_border" style="background-color:#ffffff;">
+                <i class="fa fa-line-chart fa-lg" style="margin-right:5px;"></i>全部住院费用分析
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#ffffff;">
+                <div class="banner" style="background-color: #fc8675;">
+                    <div class="banner_title">住院总费用(元)</div>
+                    <div class="banner_data" id="zfy">
+                    </div>
+                    <div class="banner_down">
+                        <p id="zfy_tb">0</p>
+                        <p id="zfy_hb">0</p>
+                    </div>
+                </div>
+                <div class="banner" style="background-color: #65cea7;">
+                    <div class="banner_title">药品费(元)</div>
+                    <div class="banner_data" id="ypf">
+                        
+                    </div>
+                    @*<div  class="banner_down">
+                        <p ></p>
+                        <p ></p>
+                    </div>*@
+                </div>
+
+                <div class="banner" style="background-color: #f3ce85;">
+                    <div class="banner_title" >耗材费(元)</div>
+                    <div class="banner_data" id="hcf">
+                    </div>
+                    @*<div  class="banner_down">
+                        <p >+2.35%环比</p>
+                        <p >+1.22%同比</p>
+                    </div>*@
+                </div>
+
+                <div class="banner" style="background-color: #00c0ef">
+                    <div class="banner_title">诊疗费用(元)</div>
+                    <div class="banner_data" id="zlf">
+                    </div>
+                    @*<div  class="banner_down">
+                        <p >+2.35%环比</p>
+                        <p >+1.22%同比</p>
+                    </div>*@
+                </div>
+
+                <div class="banner" style="background-color: #60A7D0;">
+                    <div class="banner_title">出院人数</div>
+                    <div class="banner_data" id="cyrs">
+                    </div>
+                    <div  class="banner_down">
+                        <p id="cyrs_tb"></p>
+                        <p id="cyrs_hb"></p>
+                    </div>
+                </div>
+
+                <div class="banner" style="background-color:#72B63F">
+                    <div class="banner_title">次均住院费用</div>
+                    <div class="banner_data" id="jczyfy">
+                    </div>
+                    <div  class="banner_down">
+                        <p id="jczyfy_tb"></p>
+                        <p id="jczyfy_hb"></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div style="width:100%;height:30%" class="bk">
+            <div style="text-align:left;">
+                <div class="panel-heading down_border">
+                    <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>科室费用分析
+                </div>
+                <table id="gridJSListksfyfx"></table>
+            </div>
+
+        </div>
+        <div class="panel-heading down_border" style="background-color:#ffffff;">
+            <i class="fa fa-pie-chart fa-lg" style="margin-right:5px;"></i>出院患者费用分析
+        </div>
+        <div style="display:flex;flex-direction:row;justify-content: space-between;width:100%;height:50%">
+            <div style="width:49.8%;height:100%;margin-bottom:2px" class="bk">
+                <table id="gridJSListcyhzfyfx"></table>
+            </div>
+            <div id="main" style="width:49.8%;height:100%;" class="bk"></div>
+        </div>
+    </div>
+</div>
+<script>
+
+    var myDate = new Date();
+    $(function () {
+
+        $('#main_div').height($(window).height() - 60);
+        //默认设置时间类型为月
+        $("#dateType").val("2");
+        $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+        $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+
+        getData();//banner
+        gridJSListData();
+        initEcharts();
+    });
+    function submit() {
+        getData();//banner
+        $("#gridJSListksfyfx").jqGrid('setGridParam', {
+            postData: getSearchData(),
+        }).trigger('reloadGrid');
+        $("#gridJSListcyhzfyfx").jqGrid('setGridParam', {
+            postData: getSearchData(),
+        }).trigger('reloadGrid');
+        
+        initEcharts();
+    }
+    //改变时间类型
+    function updateSjType() {
+        $('#rSJ').val("");
+        let dateType = $("#dateType").val();
+        if (dateType == "1") {//年
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy' })");
+            $('#rSJ').val(myDate.getFullYear());
+        }
+        if (dateType == "2") {//月
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        }
+        if (dateType == "3") {//日
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM-dd' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1) + "-" + myDate.getDate());
+        }
+    }
+    //根据年月获取月天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+    //组装请求参数
+    function getSearchData() {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+        return { ksrq: ksrq, jsrq: jsrq, rtype: dateType };
+    }
+    //抬头
+    function getData() {
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/InpatientCostAnalysis/GetTitleData",
+            dataType: "json",
+            data: getSearchData(),
+            success: function (ajaxresp) {
+                if ($("#dateType").val() == "2") {
+                    document.getElementById('zfy').innerText = ajaxresp.zfy;
+                    document.getElementById('zfy_hb').innerText = "环比" + ajaxresp.zfy_hb;
+                    document.getElementById('zfy_tb').innerText = "同比" + ajaxresp.zfy_tb;
+                    document.getElementById('ypf').innerText = ajaxresp.ypf;
+                    document.getElementById('hcf').innerText = ajaxresp.hcf;
+                    document.getElementById('zlf').innerText = ajaxresp.zlf;
+                    document.getElementById('cyrs').innerText = ajaxresp.cyrs;
+                    document.getElementById('cyrs_hb').innerText = "环比" + ajaxresp.cyrs_hb;
+                    document.getElementById('cyrs_tb').innerText = "同比" + ajaxresp.cyrs_tb;
+                    document.getElementById('jczyfy').innerText = ajaxresp.jczyfy;
+                    document.getElementById('jczyfy_hb').innerText = "环比" + ajaxresp.jczyfy_hb;
+                    document.getElementById('jczyfy_tb').innerText = "同比" + ajaxresp.jczyfy_tb;
+                }
+                else {
+                    document.getElementById('zfy').innerText = ajaxresp.zfy;
+                    document.getElementById('zfy_hb').innerText = "";
+                    document.getElementById('zfy_tb').innerText = "";
+                    document.getElementById('ypf').innerText = ajaxresp.ypf;
+                    document.getElementById('hcf').innerText = ajaxresp.hcf;
+                    document.getElementById('zlf').innerText = ajaxresp.zlf;
+                    document.getElementById('cyrs').innerText = ajaxresp.cyrs;
+                    document.getElementById('cyrs_hb').innerText = "";
+                    document.getElementById('cyrs_tb').innerText = "";
+                    document.getElementById('jczyfy').innerText = ajaxresp.jczyfy;
+                    document.getElementById('jczyfy_hb').innerText = "";
+                    document.getElementById('jczyfy_tb').innerText = "";
+                }
+            }
+        });
+    }
+
+    function gridJSListData()
+    {
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListksfyfx");
+        $gridJsList.dataGrid({
+            height: 150,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/InpatientCostAnalysis/ZYFYFX_KSFYFXDTO",
+            postData: getSearchData(),
+            colModel: [
+                { label: '住院科室', name: 'zyks',align: 'left' },
+                { label: '总住院费用（元）', name: 'zfy',align: 'left' },
+                { label: '药品费（元）', name: 'ypf',align: 'left' },
+                { label: '药品占比（%）', name: 'ypf_zb',align: 'left' },
+                { label: '耗材费（元）', name: 'hcf',align: 'left' },
+                { label: '耗材占比（%）', name: 'hcf_zb',align: 'left' },
+                { label: '检验检查费（元）', name: 'jyjcf',align: 'left' },
+                { label: '治疗费（元）', name: 'zlf',align: 'left' },
+                { label: '其他（元）', name: 'qt',align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListcyhzfyfx");
+        $gridJsList.dataGrid({
+            height: $(window).height() * 0.5 - 100,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/InpatientCostAnalysis/GetCYHZFYFData",
+            postData: getSearchData(),
+            colModel: [
+                { label: '次均费用分类', name: 'cjfyfl', align: 'left' },
+                { label: '金额（元）', name: 'je', align: 'left' },
+                { label: '占比(%)', name: 'zb', align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+            },
+            gridComplete: function (gridJszbList) {
+
+            },
+            ondblClickRow: function (row) {
+            }
+        });
+
+    }
+
+
+    function initEcharts() {
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/InpatientCostAnalysis/GetCYHZFYFTJData",
+            data: getSearchData(),
+            dataType: "json",
+            success: function (ajaxresp) {
+                var arr = [];
+                arr.push('product')
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    arr.push(ajaxresp[i].nf);
+                }
+                //重新组装数据，处理不能映射饼图的问题
+                let stat1 = [];
+                stat1.push(arr)
+                if (ajaxresp.length > 0) {
+                    stat1.push(['次均总费用', ajaxresp[0].次均总费用, ajaxresp[1].次均总费用, ajaxresp[2].次均总费用, ajaxresp[3].次均总费用, ajaxresp[4].次均总费用, ajaxresp[5].次均总费用, ajaxresp[6].次均总费用]);
+                    stat1.push(['次均药费', ajaxresp[0].次均药费, ajaxresp[1].次均药费, ajaxresp[2].次均药费, ajaxresp[3].次均药费, ajaxresp[4].次均药费, ajaxresp[5].次均药费, ajaxresp[6].次均药费]);
+                    stat1.push(['次均耗材费', ajaxresp[0].次均耗材费, ajaxresp[1].次均耗材费, ajaxresp[2].次均耗材费, ajaxresp[3].次均耗材费, ajaxresp[4].次均耗材费, ajaxresp[5].次均耗材费, ajaxresp[6].次均耗材费]);
+                    stat1.push(['次均检验检查费', ajaxresp[0].次均检验检查费, ajaxresp[1].次均检验检查费, ajaxresp[2].次均检验检查费, ajaxresp[3].次均检验检查费, ajaxresp[4].次均检验检查费, ajaxresp[5].次均检验检查费, ajaxresp[6].次均检验检查费]);
+                    stat1.push(['次均治疗费', ajaxresp[0].次均治疗费, ajaxresp[1].次均治疗费, ajaxresp[2].次均治疗费, ajaxresp[3].次均治疗费, ajaxresp[4].次均治疗费, ajaxresp[5].次均治疗费, ajaxresp[6].次均治疗费]);
+                    stat1.push(['次均其他费', ajaxresp[0].次均其他费, ajaxresp[1].次均其他费, ajaxresp[2].次均其他费, ajaxresp[3].次均其他费, ajaxresp[4].次均其他费, ajaxresp[5].次均其他费, ajaxresp[6].次均其他费]);
+                }
+                var myChart = echarts.init(document.getElementById('main'));
+                window.addEventListener('resize', function () {
+                    myChart.resize();
+                });
+                option = {
+                    legend: {
+                        orient: 'vertical',
+                        bottom: 'bottom'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        showContent: false
+                    },
+                    dataset: {
+                        source: stat1
+                    },
+                    xAxis: { type: 'category' },
+                    yAxis: { gridIndex: 0 },
+                    grid: { top: '55%' },
+                    series: [
+                        {
+                            type: 'line',
+                            smooth: true,
+                            seriesLayoutBy: 'row',
+                            emphasis: { focus: 'series' }
+                           
+                        },
+                        {
+                            type: 'line',
+                            smooth: true,
+                            seriesLayoutBy: 'row',
+                            emphasis: { focus: 'series' }
+                        },
+                        {
+                            type: 'line',
+                            smooth: true,
+                            seriesLayoutBy: 'row',
+                            emphasis: { focus: 'series' }
+                        },
+                        {
+                            type: 'line',
+                            smooth: true,
+                            seriesLayoutBy: 'row',
+                            emphasis: { focus: 'series' }
+                        },
+                        {
+                            type: 'line',
+                            smooth: true,
+                            seriesLayoutBy: 'row',
+                            emphasis: { focus: 'series' }
+                        },
+                        {
+                            type: 'line',
+                            smooth: true,
+                            seriesLayoutBy: 'row',
+                            emphasis: { focus: 'series' }
+                        },
+                        {
+                            type: 'pie',
+                            id: 'pie',
+                            radius: '30%',
+                            center: ['50%', '25%'],
+                            emphasis: {
+                                focus: 'self'
+                            },
+                            label: {
+                                 //formatter: '{b}: {@("@")2012} ({d}%)'
+                                formatter: "{b}: {@('@')" + ajaxresp[0].nf+"} ({d}%)"
+                            },  
+                            encode: {
+                                itemName: 'product',
+                                value: ajaxresp[0].nf,
+                                tooltip: ajaxresp[0].nf
+                            }
+                        }
+                    ]
+                };
+                
+                myChart.on('updateAxisPointer', function (event) {
+                    const xAxisInfo = event.axesInfo[0];
+                    if (xAxisInfo) {
+                        const dimension = xAxisInfo.value + 1;
+                        myChart.setOption({
+                            series: {
+                                id: 'pie',
+                                label: {
+                                    formatter: '{b}: {@("@")[' + dimension + ']} ({d}%)'
+                                },
+                                encode: {
+                                    value: dimension,
+                                    tooltip: dimension
+                                }
+                            }
+                        });
+                    }
+                });
+                myChart.setOption(option);
+            }
+        })
+    }
+</script>

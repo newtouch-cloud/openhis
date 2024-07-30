@@ -1,0 +1,251 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    /**/
+
+    ViewBag.Title = "DeptMedicineApplyReturn";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //是否开启标签打印
+    var Inpatient_IsLablePrint = SysConfigReader.Bool("Inpatient_IsLablePrint");
+
+}
+<link href="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.css")" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.js")"></script>
+
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<style>
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+</style>
+<div style="float:left;width:20%; display: block;">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form" style="width:95%">
+            <tbody>
+                <tr>
+                    <th class="formTitle" style="width:50px">科室：</th>
+                    <td class="formValue">
+                        <select id="sel_inpatientArea" class="form-control">
+                            <option value="">==请选择==</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="dv-left-tree" id="BqTreeList"></div>
+</div>
+
+<div style="float:left;width:79.5%;margin-left:0.5%;">
+    <form id="form1">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                信息
+            </div>
+            <div style="padding: 2px;padding-right:20px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">退回单据号：</th>
+                        <td class="formValue">
+                            <input type="text" id="thdjh" name="thdjh" class="form-control" readonly="readonly" />
+                        </td>
+                        <th class="formTitle">退回原因：</th>
+                        <td class="formValue">
+                            <input type="text" id="thyy" name="thyy" class="form-control" readonly="readonly"/>
+                        </td>
+                        <th></th>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </form>
+    <div class="gridPanel">
+        <table id="dispenseMedicinGridList"></table>
+    </div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] {3,6},
+    F3Text = "确认",
+    F6Text = "退回"
+})
+
+<script type="text/javascript">
+    var IsLablePrint = '@Inpatient_IsLablePrint';
+    var ThisbrCode = "";//初始化病人Code
+    $(".toolbar").css("width", 500);
+    var $gridBRXXDrugsList = $("#dispenseMedicinGridList");
+    $(function () {
+        //绑定申请单树
+        bqGridList();
+        //绑定病人发药详细信息
+        dispenseMedicinGridList(null);
+        $("#autoRefresh").click(function() {
+            if ($("#autoRefresh").is(":checked")) {
+                //启动
+                startRefresh();
+            }
+        });
+        startRefresh();
+        $("#sel_inpatientArea").bindSelect({
+            url: "/SystemManage/BaseData/GetAuthedWardSelectJson",
+        });
+        $('#ksbyfydPrint').attr('checked',true);
+        $("#sel_inpatientArea").change(function(){
+            bqGridList();
+            ThisbrCode="";
+            $gridBRXXDrugsList.jqGrid("clearGridData");
+        });
+    });
+
+    // 开启定时任务，时间间隔为3000 ms。
+    function startRefresh() {
+        var sp =@ViewBag.refreshInterval;
+        if (sp > 0) {
+            var t = setInterval(function () {
+                bqGridList(t);
+            }, sp);
+        }
+    }
+
+    //停止刷新
+    function stopRefresh(t) {
+        clearInterval(t);
+    }
+
+    //绑定申请单树
+    function bqGridList(t) {
+
+        if (!$("#autoRefresh").is(":checked")) {
+            //停止
+            stopRefresh(t);
+        }
+        $("#BqTreeList").treeview({
+            height: $(window).height() - 95,
+            slimscroll: false,
+            showcheck: false,
+            url: "/HospitalizationPharmacy/DispenseApplySendInfoQuery?keyword=" + $('#sel_inpatientArea').val()+"&bylx="+"ty",
+            param: {},
+            onnodeclick: function (item) {
+                if (item.value && item.Ex1=="c"){
+                    $('#thdjh').val(item.value);
+                    $('#thyy').val(item.Ex6);
+                    ThisbrCode=item.value;
+                    $gridBRXXDrugsList.jqGrid('setGridParam', {
+                        postData: {
+                            SqdArr: item.value
+                        }
+                    }).trigger('reloadGrid');
+                }
+            }
+        });
+    }
+
+    //备药申请单详细信息
+    function dispenseMedicinGridList(Sqd) {
+        $gridBRXXDrugsList.dataGrid({
+            url: '/HospitalizationPharmacy/GetDeptApplyReturnList',
+            height: $(window).height() - document.getElementById('dispenseMedicinGridList').offsetTop - 120,
+            postData: { SqdArr: Sqd, },
+            colModel: [
+                { label: '科室', name: 'ksName', width: 80, align: 'center' },
+                { label: '病区', name: 'bqmc', width: 100, align: 'center' },
+                { label: '药品代码', name: 'ypdm', width: 80, align: 'center' },
+                { label: '药品名称', name: 'ypmc', width: 100, align: 'center' },
+                { label: '药品规格', name: 'ypgg', width: 100, align: 'center' },
+                { label: 'sl', name: 'sl', hidden: true },
+                { label: '退药数量', name: 'sqslStr', width: 80, align: 'center' },
+                { label: '有效期', name: 'yxq', width: 90, align: 'center',  formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '生成厂家', name: 'ycmc', width: 120, align: 'center' },
+                { label: "ksbm", name: 'ksbm', hidden: true },
+                { label: "bqbm", name: 'bqbm', hidden: true },
+                { label: "yfbmCode", name: 'yfbmCode', hidden: true },
+                { label: "bmdw", name: 'bmdw', hidden: true },
+                { label: "zhyz", name: 'zhyz', hidden: true },
+                { label: "bzdw", name: 'bzdw', hidden: true },
+                { label: "zxdw", name: 'zxdw', hidden: true },
+                { label: "pfj", name: 'pfj', hidden: true },
+                { label: "lsj", name: 'lsj', hidden: true },
+            ],
+            caption: "申请退药列表",
+            viewrecords: true
+        });
+
+    }
+
+    //确认 库存退还
+    function newtouch_event_f3() {
+        $.modalConfirm("确定发送申请列表全部药品吗？", function (flag) {
+            if (flag) {
+                var rowIds = $gridBRXXDrugsList.getDataIDs();
+                if (rowIds == null || rowIds.length === 0) {
+                    $.modalMsg('请选择需退药申请单', 'warning', 1500);
+                    return false;
+                }
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/KcApplyNoReturnDrugsConfirm",
+                    data: { Sqd: ThisbrCode },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state === "success") {
+                            ThisbrCode="";
+                            $.modalMsg('退药成功', 'success', 1000);
+                            bqGridList();
+                            $gridBRXXDrugsList.jqGrid("clearGridData");
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            } else
+                return false;
+        }, false);
+    }
+    //申请单退回
+    function newtouch_event_f6() {
+        var rowIds = $gridBRXXDrugsList.getDataIDs();
+        if (rowIds == null || rowIds.length === 0) {
+            $.modalMsg('请勾选申请单', 'warning', 1500);
+            return false;
+        }
+        $.modalConfirm("确定退回选中申请单？", function (flag) {
+            if(flag)
+            {
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/KcApplyNoReturnDrugs",
+                    data: { Sqd: ThisbrCode },
+                    dataType: "json",
+                    success: function (res) {
+                        debugger;
+                        if (res.state === "success") {
+                            ThisbrCode="";
+                            $.modalMsg('退回成功', 'success', 1000);
+                            bqGridList();
+                            $gridBRXXDrugsList.jqGrid("clearGridData");
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            }
+            else
+                return false;
+        }, false);
+    }
+</script>

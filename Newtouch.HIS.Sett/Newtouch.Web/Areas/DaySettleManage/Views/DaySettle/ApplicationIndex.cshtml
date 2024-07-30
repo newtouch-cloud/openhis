@@ -1,0 +1,314 @@
+﻿
+@{
+    ViewBag.Title = "ApplicationIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<form name="form1">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle" id="thCZRQ">结算日期：</th>
+                <td class="formValue" colspan="2">
+                    <input id="txtCreateTimestart" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:40%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:2%;float:left;">—</span>
+                    <input id="txtCreateTimeEnd" type="text" class="form-control input-wdatepicker formClearIgnore" style="width :40%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+
+
+                </td>
+                <th class="formTitle">清算类型：</th>
+                <td class="formValue">
+                    <select class="form-control" id="jslx" style="width:140px;">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <th class="formTitle">险种类型：</th>
+                <td class="formValue">
+                    <select class="form-control" id="xzlx" style="width:140px;">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_search_tj" class="btn btn-primary btn-md" style="margin-left:10px;width:40px;" value="统计" />
+                    <input type="button" id="btn_search_dzz" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" value="对总帐" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div style="background-color: #fff;">
+        <table id="gridJSList"></table>
+    </div>
+    <div style="background-color: #fff; margin-top:5px;">
+        <table id="gridJSMXList"></table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridJSList"></table>
+        <div id="gridPager"></div>
+    </div>
+    <div>
+        <table>
+            <tr>
+                <th class="formTitle" valign="top" style="padding-top: 0px;">
+                    对帐结果：
+                </th>
+                <td class="formValue" colspan="5">
+                    <textarea id="dzjg" name="dzjg" class="form-control" style="height: 100px; width:1000px; resize:none;"></textarea>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</form>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+
+		getclrtypeList();
+		getinsutypeList();
+        //结算主记录
+        gridJSListData();
+    });
+	function getclrtypeList() {
+
+		$.ajax({
+			type: "POST",
+			url: "/DaySettleManage/DaySettle/Getclr_type",
+			//data: { mllx: mzlx },
+			dataType: "json",
+			async: false,
+			success: function (ajaxresp) {
+
+				$.each(ajaxresp, function () {
+					var option = "<option value='" + this.value + "'>" + this.label + "</option>";
+					$("#jslx").append(option);
+				});
+			}
+		});
+	}
+
+	function getinsutypeList() {
+
+		$.ajax({
+			type: "POST",
+			url: "/DaySettleManage/DaySettle/Getinsutype",
+			//data: { mllx: mzlx },
+			dataType: "json",
+			async: false,
+			success: function (ajaxresp) {
+
+				$.each(ajaxresp, function () {
+					var option = "<option value='" + this.value + "'>" + this.label + "</option>";
+					$("#xzlx").append(option);
+				});
+			}
+		});
+	}
+
+    function gridJSListData() {
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSList");
+        $gridJsList.dataGrid({
+			postData: { ksrq: $("#txtCreateTimestart").val(), jsrq: $("#txtCreateTimeEnd").val(), qslx: $("#jslx").val(), xz: $("#xzlx").val()},
+            height: 250,
+			url: "/DaySettleManage/DaySettle/GetQszdd",
+            colModel: [
+				{ label: '清算类别', name: 'qslbmc', width: 100, align: 'left' },
+				{ label: '清算类别', name: 'qslb', width: 100, hidden: true, align: 'left' },
+				{ label: '险种', name: 'xzmc', width: 100, align: 'left' },
+				{ label: '险种', name: 'xz', width: 100, hidden: true, align: 'left' },
+                { label: '是否异地', name: 'sfyd', width: 100, align: 'left' },
+                { label: '开始日期', name: 'ksrq', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '结束日期', name: 'jsrq', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+				{ label: '总费用', name: 'zfy', width: 100, align: 'left' },
+				{ label: '基金支付金额', name: 'jjzfje', width: 100, align: 'left' },
+				{ label: '个帐支付', name: 'grzh', width: 100, align: 'left' },
+				{ label: '现金支付金额', name: 'xjzfje', width: 100, align: 'left' },
+                { label: '结算笔数', name: 'jsbs', width: 100, align: 'left' },
+				{ label: '是否退费', name: 'sftf', width: 100, align: 'left' },
+
+				{ label: '城镇职工基本医疗保险统筹基金', name: 'czzgtcjj', hidden: true, align: 'left' },
+				{ label: '城镇职工基本医疗保险统筹基金人次', name: 'czzgtcjjrc', hidden: true, align: 'left' },
+				{ label: '城镇职工基本医疗保险个人账户基金', name: 'czzgzhjj', hidden: true, align: 'left' },
+				{ label: '城镇职工基本医疗保险个人账户基金人次', name: 'czzgzhjjrc', hidden: true, align: 'left' },
+				{ label: '公务员医疗补助基金', name: 'gywbzjj', hidden: true, align: 'left' },
+				{ label: '公务员医疗补助基金人次', name: 'gywbzjjrc', hidden: true, align: 'left' },
+				{ label: '大额医疗费用补助基金', name: 'deylbzjj', hidden: true, align: 'left' },
+				{ label: '大额医疗费用补助基金人次', name: 'deylbzjjrc', hidden: true, align: 'left' },
+				{ label: '离休人员医疗保障基金', name: 'lxrybzjj', hidden: true, align: 'left' },
+				{ label: '离休人员医疗保障基金人次', name: 'lxrybzjjrc', hidden: true, align: 'left' },
+				{ label: '一至六级残疾军人医疗补助基金', name: 'cjbzjj', hidden: true, align: 'left' },
+				{ label: '一至六级残疾军人医疗补助基金人次', name: 'cjbzjjrc', hidden: true, align: 'left' },
+				{ label: '企业补充医疗保险基金', name: 'qybzyljj', hidden: true, align: 'left' },
+				{ label: '企业补充医疗保险基金人次', name: 'qybzyljjrc', hidden: true, align: 'left' },
+				{ label: '城乡居民基本医疗保险基金', name: 'cxjmjbyljj', hidden: true, align: 'left' },
+				{ label: '城乡居民基本医疗保险基金人次', name: 'cxjmjbyljjrc', hidden: true, align: 'left' },
+				{ label: '城乡居民大病医疗保险基金', name: 'cxjmdbyljj', hidden: true, align: 'left' },
+				{ label: '城乡居民大病医疗保险基金人次', name: 'cxjmdbyljjrc', hidden: true, align: 'left' },
+				{ label: '优抚基金', name: 'yfjj', hidden: true, align: 'left' },
+				{ label: '优抚基金人次', name: 'yfjjrc', hidden: true, align: 'left' },
+				{ label: '生育基金', name: 'syjj', hidden: true, align: 'left' },
+				{ label: '生育基金人次', name: 'syjjrc', hidden: true, align: 'left' },
+				{ label: '其他基金', name: 'qtjj', hidden: true, align: 'left' },
+				{ label: '其他基金人次', name: 'qtjjrc', hidden: true, align: 'left' },
+				{ label: '二乙基金', name: 'eyjj', hidden: true, align: 'left' },
+				{ label: '二乙基金人次', name: 'eyjjrc', hidden: true, align: 'left' },
+            ],
+            pager: "#gridPager",
+            sortname: gridSort,
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+                console.log(rowid);
+            },
+            gridComplete: function (gridJszbList) {
+                jszbList = null;
+                if (gridJszbList && gridJszbList.rows) {
+                    jszbList = gridJszbList.rows;
+                    console.log(jszbList);
+                }
+            }
+        });
+
+        //查询事件
+        $("#btn_search_tj").click(function () {
+            $('#gridJSMXList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+				postData: { ksrq: $("#txtCreateTimestart").val(), jsrq: $("#txtCreateTimeEnd").val(), qslx: $("#jslx").val(), xz: $("#xzlx").val()},
+				url: '/DaySettleManage/DaySettle/GetQszdd',
+                //page: 1,
+            }).trigger('reloadGrid');
+        });
+	}
+
+
+	$("#btn_search_dzz").click(function () {
+		var seleRowid = $("#gridJSList").jqGrid("getGridParam", "selrow");
+		if (!(seleRowid)) {
+			$.modalAlert("请选中一条信息", 'warning');
+			return;
+		}
+
+		var rowData = $("#gridJSList").jqGrid('getRowData', seleRowid);
+		var ksrq = $("#txtCreateTimestart").val();
+		var jsrq = $("#txtCreateTimeEnd").val();
+		var predata = {
+			hisId: "0",
+			operatorId: '@(opr.rygh)',
+			operatorName:'@(opr.UserName)',
+			insuplc_admdvs: "",
+			stmt_begndate: ksrq,
+			stmt_enddate: jsrq,
+			insutype: rowData.xz,
+			clr_type: rowData.qslb,
+			setl_optins: "",
+			medfee_sumamt: rowData.zfy,
+			fund_pay_sumamt: rowData.jjzfje,
+			acct_pay: rowData.grzh,
+			fixmedins_setl_cnt: rowData.jsbs,
+			refd_setl_flag:"",
+		};
+
+		$.ajax({
+			type: "POST",
+			url: "http://127.0.0.1:33333/api/YiBao/ReconciliationMain_3201",
+			data: predata,
+			dataType: "json",
+			async: false,
+			success: function (data) {
+			    var refinfo = eval('(' + data + ')');
+			    if (refinfo.infcode == "0" || refinfo.infcode == 0)
+			    {
+			        var msg = refinfo.output.stmtinfo.stmt_rslt == 1 ? "医保中心金额大于传入金额" : refinfo.output.stmtinfo.stmt_rslt == 0 ? "平帐" : "?";
+			        if (refinfo.output.stmtinfo.stmt_rslt == "0") {
+			            $("#dzjg").val(rowData.ksrq +"至"+ rowData.jsrq + "," + rowData.xzmc + "清算对总账：平帐");
+			            insertsqb(rowData);
+			        } else {
+			            $("#dzjg").val(refinfo.output.stmtinfo.stmt_rslt_dscr);
+			        }
+			    }else
+			        $.modalAlert("医保对总账失败：" + refinfo.err_msg, 'error');
+			},
+			error: function (request, error, ex) {
+			    $.modalAlert("医保服务【3201】(医保对总账)不可访问：[" + ex + "]", 'error');
+			}
+		});
+
+
+	});
+
+	function insertsqb(rowdata) {
+
+		var ksrq = $("#txtCreateTimestart").val();
+		var jsrq = $("#txtCreateTimeEnd").val();
+
+		var date = $("#txtCreateTimestart").val();
+		var datearr = date.split('-');
+
+		var qsny = datearr[0] + datearr[1];
+		var predata = {
+			qslb: rowdata.qslb,
+			xz: rowdata.xz,
+			sfyd: rowdata.sfyd,
+			ksrq:ksrq,
+			jsrq: jsrq,
+			zfy: rowdata.zfy,
+			jjzfje: rowdata.jjzfje,
+			grzh: rowdata.grzh,
+			ybrkfyze: rowdata.zfy,
+			xjzfze: rowdata.xjzfje,
+			qsrc: rowdata.jsbs,
+			qsny: qsny,
+			czzgtcjj: rowdata.czzgtcjj,/*城镇职工基本医疗保险统筹基金*/
+			czzgtcjjrc: rowdata.czzgtcjjrc,/*城镇职工基本医疗保险统筹基金人次*/
+			czzgzhjj: rowdata.czzgzhjj,/*城镇职工基本医疗保险个人账户基金*/
+			czzgzhjjrc: rowdata.czzgzhjjrc,/*城镇职工基本医疗保险个人账户基金*/
+			gywbzjj: rowdata.gywbzjj,/*公务员医疗补助基金*/
+			gywbzjjrc: rowdata.gywbzjjrc,/*公务员医疗补助基金*/
+			deylbzjj: rowdata.deylbzjj,/*大额医疗费用补助基金*/
+			deylbzjjrc: rowdata.deylbzjjrc,/*大额医疗费用补助基金*/
+			lxrybzjj: rowdata.lxrybzjj,/*离休人员医疗保障基金*/
+			lxrybzjjrc: rowdata.lxrybzjjrc,/*离休人员医疗保障基金*/
+			cjbzjj: rowdata.cjbzjj,/*一至六级残疾军人医疗补助基金*/
+			cjbzjjrc: rowdata.cjbzjjrc,/*一至六级残疾军人医疗补助基金*/
+			qybzyljj: rowdata.qybzyljj,/*企业补充医疗保险基金*/
+			qybzyljjrc: rowdata.qybzyljjrc,/*企业补充医疗保险基金*/
+			cxjmjbyljj: rowdata.cxjmjbyljj,/*城乡居民基本医疗保险基金*/
+			cxjmjbyljjrc: rowdata.cxjmjbyljjrc,/*城乡居民基本医疗保险基金*/
+			cxjmdbyljj: rowdata.cxjmdbyljj,/*城乡居民大病医疗保险基金*/
+			cxjmdbyljjrc: rowdata.cxjmdbyljjrc,/*城乡居民大病医疗保险基金*/
+			yljzjj: rowdata.yljzjj,/*医疗救助基金*/
+			yljzjjrc: rowdata.yljzjjrc,/*医疗救助基金人次*/
+			yfjj: rowdata.yfjj,/*优抚基金*/
+			yfjjrc: rowdata.yfjjrc,/*优抚基金人次*/
+			syjj: rowdata.syjj,/*生育基金*/
+			syjjrc: rowdata.syjjrc,/*生育基金人次*/
+			qtjj: rowdata.qtjj,/*其他基金*/
+			qtjjrc: rowdata.qtjjrc,/*其他基金人次*/
+			eyjj: rowdata.eyjj,/*二乙基金*/
+			eyjjrc: rowdata.eyjjrc,/*二乙基金人次*/
+			sqzt: 0,
+			create_user: '@(opr.rygh)',
+		};
+		//console.log(predata);
+		$.ajax({
+			type: "POST",
+			url: "/DaySettleManage/DaySettle/inserqssq",
+			data: predata,
+			dataType: "json",
+			async: false,
+			success: function (data) {
+				var refinfo = eval('(' + data + ')');
+				//console.log(refinfo);
+
+
+			}
+		});
+
+	}
+
+</script>
+

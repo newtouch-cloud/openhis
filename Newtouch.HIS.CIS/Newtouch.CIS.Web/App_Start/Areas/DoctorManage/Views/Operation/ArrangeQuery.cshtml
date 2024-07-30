@@ -1,0 +1,116 @@
+﻿@{
+    ViewBag.Title = "ArrangeQueryGridView";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<form name="form1">
+    <div class="panel panel-default" style="margin-bottom:5px;">
+        <div style="width:1000px;padding: 2px 0;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue" colspan="2">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:1%;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input id="zyh" type="text" class="form-control" />
+                    </td>
+                    <td></td>
+                    <td class="formValue" colspan="3">
+                        &nbsp;&nbsp;
+                        <input type="button" id="btn_search" class="btn btn-primary" onclick="GridQuerry()" value=" 查 询 " />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        gridList();
+    });
+    var rowNo = 0;
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "@Url.Action("ArrangeQueryGridView")",
+            datatype: "json",
+            postData: getSearchPostData(),
+            height: $(window).height() - 120,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "住院号", name: "zyh", width: 80, align: 'left' },
+                { label: "姓名", name: "xm", width: 80, align: 'left' },
+                { label: "开始日期", name: "kssj", width: 150, align: 'left'},
+                { label: "手术医嘱", name: "yznr", width: 180, align: 'left' },
+                { label: "开嘱医生", name: "ysmc", width: 80, align: 'left' },
+                { label: "手术日期", name: "aprq", width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: "手术医生", name: "surgeonName", width: 80, align: 'left' },
+                { label: "手术地点", name: "ssAddr", width: 100, align: 'left' },
+                { label: "安排状态", name: "ztmc", width: 80, align: 'left' },
+                { label: "备注", name: "remark", width: 120, align: 'left' }
+            ],
+            rowNum: 10,
+            pager: "#gridPager",
+            sortname: 'kssj',
+            viewrecords: true,
+            rownumbers: false,
+            ondblClickRow: function (row) {
+                gridEditRow(row);
+            },
+            gridComplete: function () {
+                this.hasOwnProperty;
+            }
+        });
+    }
+
+    function GridQuerry() {
+        $("#gridList").clearGridData();
+        $("#gridList").jqGrid('setGridParam', {
+            url: "@Url.Action("ArrangeQueryGridView")",
+            postData: getSearchPostData()
+    }).trigger("reloadGrid");
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        var zyh = $("#zyh").val();
+        return { zyh: zyh, kssj: kssj, jssj: jssj };
+    };
+
+    function gridEditRow(row) {
+        var rowData = $("#gridList").jqGrid('getRowData', row);
+        InpatientVitalSignsForm(rowData.Id);
+    }
+
+    function InpatientVitalSignsForm(lsyzId) {
+        $.modalOpen({
+            id: "ArrangeForm",
+            title: "手术安排录入",
+            url: "/DoctorManage/Operation/ArrangeForm?lsyzId=" + lsyzId,
+            width: "800px",
+            height: "510px",
+            showleftlalbel: !!!lsyzId,  //新增时显示 '确认并关闭按钮'
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId, isClose) {
+                var ret = top.frames[iframeId].AcceptClick(function () {
+                    $("#gridList").trigger("reloadGrid");
+                    if (isClose === undefined || isClose === true) {
+                        top.frames[iframeId].$.modalClose();
+                    }
+                });
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,554 @@
+﻿@{
+    ViewBag.Title = "膳食医嘱维护";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .topPanel {
+        height: 50px;
+        line-height: 50px;
+        background: #fff;
+        margin: 0px;
+        border-bottom: none;
+        position: relative;
+    }
+
+    .form .formTitle {
+        position: relative;
+        text-align: right;
+        white-space: nowrap;
+        font-weight: normal;
+        width: 55px;
+        padding-right: 15px;
+    }
+
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+
+    #btn_print {
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=95);
+        -moz-opacity: 0.95;
+        opacity: 0.95;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=95);
+            -moz-opacity: 0.95;
+            opacity: 0.95;
+        }
+
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+    #gridMxPager_center {
+        display: none;
+    }
+    .ui-pg-div {
+        color: #fff;
+        background-color: #31b0d5;
+        border-color: #269abc;
+        padding: 4px 8px;
+        line-height: 1.3333333;
+        border-radius: 6px;
+        font-size: xx-small;
+    }
+    .required {
+        color: red
+    }
+</style>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="inputedit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a id="inputdel" class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div style="height:45px !important;">
+        <table class="form" style="width:750px;height:45px !important;">
+            <tr>
+                <td class="formTitle">大类：</td>
+                <td class="formValue formDdlSelectorTd" style="width:120px">
+                    <select class="form-control" id="lb">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle">关键字：</td>
+                <td class="formValue" style="width:90px">
+                    <input type="text" class="form-control" id="keyword" />
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                </td>
+                <td class="formTitle"></td>
+                <td class="formTitle"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel" style="margin-top:10px">
+    <table id="gridList"></table>
+    <div id="gridPager" rel="form1"></div>
+</div>
+<div id="TabGrid">
+    <ul class="nav nav-tabs navb-bg" role="tablist" id="myTab">
+        <li role="presentation" class="active">
+            <a href="#dv_mx" id="linkSearch" role="tab" data-toggle="tab">收费项目列表</a>
+        </li>
+        <li style="float:right">
+            <span class="hiding glyphicon glyphicon-chevron-right btn-lg"></span>
+        </li>
+    </ul>
+    <div id="dv_mx" style="background-color:white">
+        <table id="gridMxInfo"></table>
+        <div id="gridMxPager" style="height:30px;"></div>
+    </div>
+</div>
+<div class="showbotton">
+    <span class="glyphicon glyphicon-chevron-left btn-lg"></span>
+</div>
+<script>
+    var localdata = [];
+    var deldata = [];//删除对象
+    var $gridMxList = $("#gridMxInfo");
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        $(".hiding,.rows,#dv_search,.panel-default").click(function () {
+            TabGridHide();
+        });
+        $(".showbotton").click(function () {
+            $(".showbotton").animate({ width: 'hide' },
+                "fast",
+                function () {
+                    $("#TabGrid").animate({ left: '0px' }, "slow");
+                });
+        });
+        Initial();
+    });
+
+    //初始化
+    function Initial() {
+        getLbSelectTree();
+        gridList();
+        gridMxInfo();
+        TabGridHide();;
+    }
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        var tabGridwith = $("#TabGrid").width() + 200;
+        if ($(".showbotton").is(":hidden")) {
+            $("#TabGrid").animate({ left: tabGridwith },
+                "slow",
+                function () {
+                    $(".showbotton").animate({ width: 'show' }, "fast");
+                });
+        }
+    }
+
+    //类别
+    function getLbSelectTree() {
+        $("#lb").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.itemDetails) {
+                    $.each(top.clients.itemDetails, function (idx, val) {
+                        if (val.Type === "SSDFL") {
+                            $.each(val.Items, function (key, value) {
+                                $('#lb').append('<option value="' + value.Code + '">' + value.Name + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+        $('#lb').change(function () {
+            $('#btn_search').trigger('click');
+        });
+    }
+
+    //主表信息
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/NurseManage/DietaryAdvice/GetGridList",
+            postData: $("#form1").formSerialize(),
+            height: $(window).height() - document.getElementById('gridList').offsetTop - 70,
+            colModel: [
+                { label: 'Id', name: 'Id', key: true, hidden: true },
+                { label: '膳食名称', name: 'Name', width: 180, align: 'center' },
+                { label: '拼音', name: 'py', width: 150, align: 'center' },
+                {
+                    label: '大类', name: 'DietBigType', width: 90, align: 'center', formatter: function (cellvalue) {
+                        var rtnval = cellvalue;
+                        if (top.clients.itemDetails) {
+                            $.each(top.clients.itemDetails, function (idx, val) {
+                                if (val.Type === "SSDFL") {
+                                    $.each(val.Items, function (key, value) {
+                                        if (cellvalue == value.Code) {
+                                            rtnval=value.Name;
+                                        }
+                                    });
+                                }
+                            });
+                        } 
+                        return rtnval;
+                    }
+                },
+                {
+                    label: '类别', name: 'DietType', width: 90, align: 'center', formatter: function (cellvalue) {
+                        return $.enum.getDescByValue("EnumSSLB", cellvalue);
+                    }
+                },
+                {
+                    label: '有无收费项目', name: 'bdsfxm', width: 100, align: 'center', formatter: function (cellvalue) {
+                        if (cellvalue == true) {
+                            return "是";
+                        } else if (cellvalue == false) {
+                            return "否"
+                        }
+                        return "";
+                    }
+                },
+                { label: '创建日期', name: 'CreateTime', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+            ],
+            pager: "#gridPager",
+            rowNum: '15',
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                localdata = [];
+                ajaxmxList();
+                $(".showbotton").click();
+            },
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: getgridListPar()
+                }).trigger('reloadGrid');
+        });
+    }
+
+    function ajaxmxList() {
+        var Id = $("#gridList").jqGridRowValue().Id;
+        $.najax({
+            url: "@Url.Action("GetGridMXList")",
+            data: { Id: Id },
+            dataType: "json",
+            type: "POST",
+            async: false,
+            success: function (data) {
+                localdata = data;
+                $.each(localdata, function () {
+                    this.action = getActionStr()
+                });
+                $gridMxList.jqGrid('setGridParam', {
+                    datatype: 'local',
+                    data: localdata,
+                }).trigger("reloadGrid");
+            }
+        });
+    }
+
+    //明细信息
+    function gridMxInfo() {
+        $gridMxList.dataGrid({
+            datatype: 'local',
+            data: localdata,
+            height: $(window).height() - document.getElementById('gridList').offsetTop - 180,
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                { label: 'Id', name: 'Id', align: 'center', hidden: true },
+                { label: '药品名称', name: 'sfxmmc', width: 180, editwidth: '100%', align: 'center', editable: true, editrules: { required: true } },
+                { label: '药品名称', name: 'sfxmCode',editwidth: '100%', align: 'center', editable: true, hidden: true},
+                {
+                    label: '<span class="required">*</span>绑定数量', name: 'sl', width: 120, editwidth: '100%', align: 'center', editable: true, editrules: { required: true },editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var cellval = $(this).val();
+                                    if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                        $.modalAlert("数量为空，请确认。", 'warning');
+                                        return;
+                                    }
+                                    if (isNaN(cellval)) {
+                                        $.modalAlert("数量：请填写数字", 'warning');
+                                        $(this).val('')
+                                        return;
+                                    }
+                                }
+                            }
+                        ]
+
+                    }, editrules: { required: true }
+                },
+                //{
+                //    label: '是否换算', name: 'sfhs', width: 120, editwidth: '90%', align: 'center', edittype: "select", editable: true, editrules: { required: true }, editoptions: {
+                //        dataEvents: [
+                //            {
+                //                type: 'change',
+                //                fn: function (e) {
+                //                    var row = $(e.target).closest('tr.jqgrow');
+                //                    var rowid = row.attr('id');
+                //                    $("#" + rowid + "_sfhsval").val($(this).find("option:selected").text());
+                //                }
+                //            }
+                //        ]
+
+                //    }, editrules: { required: true }
+                //},
+                //{ label: 'sfhsval', name: 'sfhsval', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '价格', name: 'price', width: 80, align: 'center', editable: true, editwidth: '100%', align: 'center' },
+                { label: '规格', name: 'gg', width: 80, align: 'center', editable: true, editwidth: '100%', align: 'center'  },
+                { label: '单位', name: 'dw', width: 70, editable: true, editwidth: '100%', align: 'center' },
+                { label: '操作', name: 'action', width: 90, align: 'center' },
+                { label: 'baseId', name: 'baseId', hidden: true },
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            pager: "gridMxPager",
+            gridComplete: function () {
+                EnableInlineEditBox();
+                //隐藏grid底部滚动条
+                $gridMxList.closest(".ui-jqgrid-bdiv").css({ "overflow-x": "hidden" });
+            }
+        });
+        //自定义按钮
+        $gridMxList.navGrid('#gridMxPager',
+            { edit: false, add: false, del: false, search: false, refresh: false, view: false, position: "left", cloneToTop: false })
+            .navButtonAdd('#gridMxPager',
+            {
+                buttonicon: "glyphicon glyphicon-new-window",
+                title: "保存",
+                caption: "保存",
+                position: "last",
+                onClickButton: function () {
+                    saveData();
+                },
+            })
+            .navButtonAdd('#gridMxPager',
+            {
+                buttonicon: "glyphicon glyphicon-new-window",
+                title: "新收费项目",
+                caption: "新收费项目",
+                position: "last",
+                onClickButton: function () {
+                    newsfxmData();
+                },
+            })
+    }
+
+    //启用行内编辑
+    function EnableInlineEditBox() {
+        var ids = $gridMxList.getDataIDs();
+        if (ids.length > 0) {
+            $.each(ids, function () {
+                var rowid = String(this);
+                //打开编辑模式
+                $gridMxList.jqGrid('editRow', rowid, false, initInlineFunc);
+            });
+        }
+    }
+
+     //初始化 浮层
+    function initInlineFunc(rowid) {
+        //部分列只读
+        $("#" + rowid + "_price").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_dw").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_sl").parent().next().children('select').html('');
+        $("#" + rowid + "_sl").parent().next().children('select').append('<option value="1">是</option><option value="0">否</option>');
+
+        //药品浮层  //中药西药 会重复么 ‘"#" + rowid + "_xmmc"’
+        $("#" + rowid + "_sfxmmc").sfxmFloatingSelector({
+            djDecimalPlaces: 4,
+            searchType: 'yp.kc,sfxm',
+            width: 850,
+            ajaxparameters: function ($thisinput) {
+                return "dllb=2&mzzybz=2&keyword=" + $.trim($thisinput.val());
+            },
+            clickautotrigger: true,
+            itemdbclickhandler: function ($thistr, $thisinput) {
+                $('#' + rowid + '_sfxmmc').val($thistr.attr('data-sfxmmc'));
+                $('#' + rowid + '_sfxmCode').val($thistr.attr('data-sfxmcode'));
+                $('#' + rowid + '_dw').val($thistr.attr('data-dw'));
+                $("#" + rowid + "_price").val($thistr.attr('data-dj'));
+                $("#" + rowid + "_gg").val($thistr.attr('data-gg'));
+                
+            }
+        })
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增膳食",
+            url: "/NurseManage/DietaryAdvice/Form",
+            width: "700px",
+            height: "300px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (data) {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改膳食",
+            url: "/NurseManage/DietaryAdvice/Form?keyValue=" + keyValue,
+            width: "700px",
+            height: "300px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $.currentWindow().$("#gridList").resetSelection();
+                    $.currentWindow().$("#gridList").trigger("reloadGrid");
+
+                });
+
+            }
+        });
+    }
+
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "@Url.Action("DeleteForm")",
+            param: { keyValue: keyValue },
+            success: function () {
+                $.modalMsg("删除成功","warning");
+                $("#gridList").resetSelection();
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+    function getgridListPar() {
+        var lb = $('#lb').val();
+        var keyword = $('#keyword').val();
+        return { lb: lb, keyword: keyword }
+    }
+
+    function newsfxmData() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条膳食信息", 'warning');
+            return;
+        }
+         var dataRow = {
+             Id: Math.random().toString() + new Date().getMilliseconds(),
+             action: getActionStr(),
+             baseId: $("#gridList").jqGridRowValue().Id
+            };
+        $gridMxList.jqGrid("addRowData", undefined, dataRow, "last");
+    }
+
+    function getActionStr() {
+        return "<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;' onclick='deleteRowData($(this).parent().parent().attr(\"id\"))'></i>";
+    }
+
+    function saveData() {
+
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $gridMxList.jqGrid('getDataIDs');
+        if (rowIds < 1) {
+            $.modalAlert("当前没有保存的膳食内容", 'warning');
+            return;
+        }
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $gridMxList.saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+            if (!saveResult) {
+                EnableInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                return;   //保存失败，则return
+            }
+        }
+
+        var gridMxData = $gridMxList.jqGrid('getRowData_AllLine', null, true);
+        if (gridMxData.length < 1) {
+            $.modalAlert("当前没有保存的医嘱内容", 'warning');
+        }
+
+        $.each(gridMxData, function () {
+            delete this.action;
+             });
+       
+
+        $.najax({
+            url: "@Url.Action("SaveData")",
+            data: { gridMxData: gridMxData, deldata: deldata },
+            dataType: "json",
+            type: "POST",
+            async: false,
+            success: function (data) {
+                $.modalMsg("保存成功", "success");
+                $(".hiding").click();
+            }
+        });
+    }
+    //删除明细
+    function deleteRowData(selRowId) {
+        if (!!selRowId) {
+            var Id = $gridMxList.jqGrid('getRowData', selRowId).Id;
+            $gridMxList.jqGrid("delRowData", selRowId);
+            if (Id.indexOf("0.") == '-1') {//记录下来，从数据库删除
+                deldata.push(Id);
+            }
+        }
+    }
+</script>

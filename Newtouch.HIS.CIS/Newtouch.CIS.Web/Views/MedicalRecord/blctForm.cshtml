@@ -1,0 +1,156 @@
+﻿@{
+    ViewBag.Title = "词条管理表单页";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="formblct">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <input type="hidden" id="type" name="type" />
+        <input type="hidden" id="parentId" name="parentId" />
+        <input type="hidden" id="qx" name="qx" />
+        <input type="hidden" id="ID" name="ID" />
+
+        <table class="form" id="citiao">
+
+            <tr>
+                <th class="formTitle"><span class="required">*</span>词条名称：</th>
+                <td class="formValue">
+                    <div class="row">
+                        <div class="col-md-7">
+
+                            <input id="mc" name="mc" type="text" class="form-control required" />
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>词条内容：</th>
+                <td class="formValue">
+                    <div class="row">
+                        <div class="col-md-7">
+
+                            <textarea rows="3" id="ctnr" name="ctnr" class="form-control required"></textarea>
+
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+
+        </table>
+
+        <table class="form" id="mulu">
+            <tr>
+                <th class="formTitle">权限：</th>
+                <td class="formValue">
+                    <div class="row">
+                        <div class="col-md-7 select2-selection__rendered">
+                            <select id="mlqx" class="form-control">
+                                <option value="1" selected>个人</option>
+                                <option value="2">科室</option>
+                                <option value="0">全院</option>
+                            </select>
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>目录名称：</th>
+                <td class="formValue">
+                    <div class="row">
+                        <div class="col-md-7">
+
+                            <input id="mlmc" name="mlmc" type="text" class="form-control required" />
+                        </div>
+
+                    </div>
+                </td>
+            </tr>
+
+
+
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("wybsf");
+    $(function () {
+        initControl();
+        var SelectionText = $.request("Text");
+        //SelectionText = unescape(SelectionText);
+        var type = $.request("type");
+        $("#type").val(type);
+        var PartCTID = $.request("PartCTID");
+        $("#parentId").val(PartCTID);
+        var qx = $.request("qx");
+        if (qx != "") {
+            $("#mlqx").val(qx);
+        }
+        var CTID = $.request("wybsf");
+        $("#ID").val(CTID);
+
+        var ctmc = $.request("ctmc");
+        $("#mc").val(ctmc);
+        if (type == "mulu") {
+            $("#citiao").hide();
+            $("#mulu").show();
+
+        } else {
+            $("#citiao").show();
+            $("#mulu").hide();
+            //$("#mulu").show();
+            $("#ctnr").val(SelectionText);
+        }
+
+    });
+
+    function initControl() {
+        if (!!keyValue) {
+            $.ajax({
+                url: "/MedicalRecord/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    $("#formblct").formSerialize(data.ct);
+                    $("#mlmc").val(data.parentmc);
+                }
+            });
+        }
+    }
+
+
+
+
+    function AcceptClick(callBack) {
+        var mlqx = $("#mlqx").find("option:selected").val();
+        var qx = $("#qx").val();
+        if (!$('#formblct').formValid()) {
+            return false;
+        }
+        var postData = $("#formblct").formSerialize();
+
+        $.submitForm({
+            url: "/MedicalRecord/blctSubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                if( $("#type").val()=="mulu"){
+                  $.currentWindow().$("#" + mlqx).click();
+                } else {
+                    $.currentWindow().$("#" + mlqx).click();
+                    //$.currentWindow().$("#0").click();
+
+                    //$.currentWindow().$("#qxlb a[id='0']").trigger('click');
+
+                    $.currentWindow().$("#mlqx").val(mlqx).trigger("change");
+                    //$("#mlqx").val(0).trigger("change");
+
+                }
+                $.currentWindow().getBqTreeList(mlqx);
+                $.modalClose();
+            }
+        });
+    }
+</script>

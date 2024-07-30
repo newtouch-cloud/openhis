@@ -1,0 +1,307 @@
+﻿@using Newtouch.Herp.Infrastructure.Enum
+@{
+    ViewBag.Title = "新增/修改";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .formTitle span {
+        color: red;
+    }
+
+    .tab-content #basicInfo table tr td {
+        border: 0;
+    }
+
+    #myTab li {
+        padding: 2px 2px 0 2px;
+    }
+
+    #myTab a {
+        padding: 8px;
+        width: 65px;
+        text-align: center;
+    }
+
+    #contactsGridPanel {
+        margin-left: 10px;
+    }
+</style>
+<form id="form1">
+    <div class="container" style="padding:0;">
+        <ul class="nav nav-tabs" role="tablist" id="myTab">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab" style="width: 80px;">基本信息</a></li>
+            <li role="presentation"><a href="#contacts" role="tab" data-toggle="tab" style="width: 70px;">联系人</a></li>
+        </ul>
+        <div class="tab-content" style="margin-top:10px;padding-right:10px;">
+            <div id="basicInfo" role="tabpanel" class="tab-pane fade in active">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue">
+                            <input id="name" name="name" type="text" class="form-control required" placeholder="请输入名称" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>首拼：</th>
+                        <td class="formValue">
+                            <input id="py" name="py" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">邮编：</th>
+                        <td class="formValue">
+                            <input id="zipCode" name="zipCode" type="text" class="form-control" />
+                        </td>
+                        <th class="formTitle">公司电话：</th>
+                        <td class="formValue">
+                            <input id="tel" name="tel" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">传真：</th>
+                        <td class="formValue">
+                            <input id="fax" name="fax" type="text" class="form-control" />
+                        </td>
+                        <th class="formTitle">地址：</th>
+                        <td class="formValue">
+                            <input id="address" name="address" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">开户行：</th>
+                        <td class="formValue">
+                            <input id="khh" name="khh" type="text" class="form-control" />
+                        </td>
+                        <th class="formTitle">开户行账号：</th>
+                        <td class="formValue">
+                            <input id="khhzh" name="khhzh" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">税号：</th>
+                        <td class="formValue">
+                            <input id="sh" name="shsh" type="text" class="form-control" />
+                        </td>
+                        <th class="formTitle">结算周期：</th>
+                        <td class="formValue">
+                            <input id="jszq" name="jszq" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">公司类型：</th>
+                        <td class="formValue">
+                            @Html.DropDownList("supplierType", EnumSupplierType.Distributor.ToDescSelectList((int)EnumSupplierType.Distributor), new { @class = "form-control form-an" })
+                        </td>
+                        <th class="formTitle" style="height: 35px;">选项：</th>
+                        <td class="formValue" style="padding-top: 1px;" colspan="3">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div id="contacts" role="tabpanel" class="tab-pane fade in">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>姓名：</th>
+                        <td class="formValue">
+                            <input id="contactName" name="contactName" type="text" class="form-control required" placeholder="请输入名称" />
+                            <input type="hidden" id="hdId" value="" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>手机：</th>
+                        <td class="formValue">
+                            <input id="telphone" name="telphone" type="text" class="form-control required" />
+                        </td>
+                        <th class="formTitle">职务：</th>
+                        <td class="formValue">
+                            <input id="duties" name="duties" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">固话：</th>
+                        <td class="formValue">
+                            <input id="phone" name="phone" type="text" class="form-control" />
+                        </td>
+                        <th class="formTitle">邮箱：</th>
+                        <td class="formValue">
+                            <input id="email" name="email" type="text" class="form-control" />
+                        </td>
+                        <td class="formValue" colspan="2">
+                            <input type="button" id="btn_clean" class="btn btn-md btn-primary" style="width:50px; margin-left:40px;" value="清除" />
+                            <input type="button" id="btn_submit" class="btn btn-md btn-primary" style="width:50px; margin-left:10px;" value="确定" />
+                        </td>
+                    </tr>
+                </table>
+                <div id="contactsGridPanel">
+                    <table id="gridList"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<script lang="javascript">
+    var keyWord = $.request("keyValue");
+    var $gridList = $("#gridList");
+    $(function () {
+        initControl();
+        if (!!keyWord) {
+            $.najax({
+                url: "/SupplierManage/Supplier/GetFormJson",
+                data: { keyWord: keyWord },
+                dataType: "json",
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    if (data.supplierType == null || data.supplierType == undefined) {
+                        $("#supplierType").val(@((int)EnumSupplierType.Distributor));
+                    }
+                }
+            });
+        }
+    });
+
+    //初始化
+    function initControl() {
+        $('#myTab a:first').tab('show');
+        $('#name').keyup(function () {
+            $('#py').val($(this).toShouPin());
+        });
+        $("#btn_submit").click(function () {
+            SubmitContact();
+        });
+        $("#btn_clean").click(function () {
+            cleanContactInput();
+        });
+        GetContacts();
+    }
+
+    //clean contacts input
+    function cleanContactInput() {
+        $("#contactName").val("");
+        $("#hdId").val("");
+        $("#telphone").val("");
+        $("#duties").val("");
+        $("#phone").val("");
+        $("#email").val("");
+    }
+
+    //get contacts grid list
+    function GetContacts() {
+        $gridList.dataGrid({
+            url: "/SupplierManage/Supplier/GetSupplierContactsGridJson",
+            height: $(window).height() - 170,
+            postData: { keyWord: keyWord },
+            colModel: [
+                { label: "Id", name: "Id", hidden: true, key: true },
+                { label: 'OrganizeId', name: 'OrganizeId', hidden: true },
+                { label: '姓名', name: 'contactName', width: 80, align: 'left' },
+                { label: '职务', name: 'duties', width: 100, align: 'left' },
+                { label: '固话', name: 'phone', width: 120, align: 'left' },
+                { label: '手机', name: 'telphone', width: 120, align: 'left' },
+                { label: 'Email', name: 'email', width: 150, align: 'left' },
+                {
+                    label: '操作', name: '操作', width: 100, align: 'center', formatter: function (cellvalue, options, rowObject) {
+                        return "<input type=\"button\" class=\"btn btn-default btn-md\" value=\"删除\" onclick=\"DeleteContacts('" + rowObject.Id + "');\" />";
+                    }
+                }
+            ],
+            multiselect: false,
+            rownumbers: false
+        });
+    }
+
+    //load contacts grid data
+    function LoadContacts() {
+        $gridList.jqGrid("clearGridData"); //清除明细的grid
+        $gridList.jqGrid('setGridParam',
+            {
+                postData: { keyWord: keyWord }
+            }).trigger('reloadGrid');
+        cleanContactInput();
+    }
+
+    //update contacts
+    function btn_edit() {
+        $("#contactName").val($("#gridList").jqGridRowValue().contactName);
+        $("#hdId").val($("#gridList").jqGridRowValue().Id);
+        $("#telphone").val($("#gridList").jqGridRowValue().telphone);
+        $("#duties").val($("#gridList").jqGridRowValue().duties);
+        $("#phone").val($("#gridList").jqGridRowValue().phone);
+        $("#email").val($("#gridList").jqGridRowValue().email);
+    }
+
+    //delete contacts
+    function DeleteContacts(p) {
+        $.najax({
+            type: "Post",
+            url: "/SupplierManage/Supplier/DeleteContacts",
+            data: { contactsId: p },
+            dataType: "json",
+            success: function (data) {
+                LoadContacts();
+            }
+        });
+    }
+
+    //add contacts
+    function SubmitContact() {
+        if (keyWord === "") {
+            $.modalAlert("请提交供应商基本信息后在修改联系人信息", 'warning');
+            return false;
+        }
+        if ($("#contactName").val() === "") {
+            $.modalAlert("联系人姓名必填", 'warning');
+            return false;
+        }
+        if ($("#telphone").val() === "") {
+            $.modalAlert("联系人手机号必填", 'warning');
+            return false;
+        }
+        var param = {
+            contactName: $("#contactName").val(),
+            telphone: $("#telphone").val(),
+            duties: $("#duties").val(),
+            phone: $("#phone").val(),
+            email: $("#email").val(),
+            keyWord: keyWord,
+            id: $("#hdId").val()
+        };
+        $.najax({
+            type: "Post",
+            url: "/SupplierManage/Supplier/SubmitContacts",
+            data: param,
+            dataType: "json",
+            success: function (data) {
+                LoadContacts();
+            }
+        });
+        return true;
+    }
+
+    //提交
+    function AcceptClick(callback) {
+        if (!DataValidate()) {
+            return;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/SupplierManage/Supplier/SubmitForm?keyWord=" + keyWord,
+            param: postData,
+            success: function () {
+                $.modalClose();
+                callback();
+            }
+        });
+    }
+
+    //数据效验
+    function DataValidate() {
+        if ($("#name").val() === "") {
+            $.modalAlert("企业名称必填", 'warning');
+            return false;
+        }
+        if ($("#py").val() === "") {
+            $.modalAlert("拼音必选", 'warning');
+            return false;
+        }
+        return true;
+    }
+</script>

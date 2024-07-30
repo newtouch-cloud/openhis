@@ -1,0 +1,200 @@
+﻿
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="alert alert-danger" style="text-align: left; margin-bottom: 10px;">
+        <i class="fa fa-warning alert-dismissible" style="position: relative; top: 1px; font-size: 15px; padding-right: 5px;"></i>
+        病历大类标识、简码与业务表一经保存无法修改，请确认无误后提交。
+    </div>
+    <div style="width:40%;float:left">
+        <table class="form" style="width:95%;">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>业务类型</th>
+                <td class="formValue">
+                    <select id="mzbz" name="mzbz" class="form-control required">
+                        <option value="0">住院</option>
+                        <option value="1">门诊</option>
+                        <option value="2" selected>不限</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>大类标识</th>
+                <td class="formValue">
+                    <input id="bllx" name="bllx" type="text" class="form-control required" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>大类名称</th>
+                <td class="formValue">
+                    <input id="bllxmc" name="bllxmc" type="text" class="form-control required" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>大类简码</th>
+                <td class="formValue">
+                    <input id="bllxcode" name="bllxcode" type="text" class="form-control required" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>关联业务表</th>
+                <td class="formValue">
+                    <input id="relTB" name="relTB" type="text" class="form-control required" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">排序</th>
+                <td class="formValue">
+                    <input id="px" name="px" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;"><span class="required">*</span>菜单管理</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <select id="MenuLev" name="MenuLev" class="form-control required">
+                        <option value="1">无</option>
+                        <option value="2">时间（yyyy-MM）</option>
+                        @*<option value="3">1级-自定义</option>*@
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"></th>
+                <td class="formValue">
+                    <input id="MenuLevName" name="MenuLevName" type="text" class="form-control" placeholder="子目录名称" readonly="readonly" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">状态</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">授权岗位</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <span class="glyphicon glyphicon-hand-right" style="color: rgb(255, 140, 60);font-size:20px;" title="请选择右侧岗位列表"></span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div style="width:55%;float:right;padding-right:20px;">
+        <div class="gridPanel" style="width:90%;padding-left:30px;">
+            <table id="gridListForm"></table>
+            <div id="gridPager"></div>
+            @*<input id="RelDutys" name="RelDutys" type="hidden" />*@
+        </div>
+    </div>
+
+
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        gridList();
+        if (!!keyValue) {
+            $("#bllx").attr("readonly", "readonly");
+            $("#bllxcode").attr("readonly", "readonly");
+            $.najax({
+                url: "/SystemManage/Common/GetBllxbyId",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+
+        $("#MenuLev").change(function (a) {
+            var lev = $("#MenuLev option:selected").val();
+            $("#MenuLevName").val("");
+            if (lev == "3") {
+                $("#MenuLevName").removeAttr("readonly");                
+            }
+            else {
+                $("#MenuLevName").attr("readonly", "readonly");
+                if (lev == "2") {
+                    $("#MenuLevName").val("日期：yyyy-MM");
+                }
+            }
+        });
+    });
+
+    function gridList() {
+        var $gridList = $("#gridListForm");
+        $gridList.dataGrid({
+            url: "/SystemManage/Common/GetDutyList",
+            postData: { dutyCode: "", bllxId: keyValue },
+            height: 350,
+            colModel: [
+                { label: '关系主键', name: 'Id', hidden: true },
+                { label: '岗位主键', name: 'Code', hidden: true },
+                { label: 'ischeck', name: 'ischeck', hidden: true },
+                { label: '岗位名称', name: 'Name', width: 100, align: 'center' },
+            ],
+            multiselect: true,
+            viewrecords: true,
+            sortname:"ischeck desc",
+            //caption: "访问授权表",
+            loadComplete: function () {
+                var ids = $("#gridListForm").jqGrid('getRowData_AllLine');
+                for (var i = 1; i <= ids.length; i++) {
+                    var rowData = $("#gridListForm").jqGrid('getRowData', i);
+                    if (rowData.ischeck == 1) {
+                        $("#gridListForm").jqGrid('setSelection', i);
+                    }
+                }
+
+            }
+        });
+    }
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        if (!(/(^[1-9]\d*$)/.test($("#px").val()))) {
+            $.modalMsg("请输入正确的排序序号(正整数)", 'warning');
+            return false;
+        }
+        var lev = $("#MenuLev option:selected").val();
+        if (lev == "3" && !$("#MenuLevName").val()) {
+            $.modalMsg("自定义目录不可为空");
+            return false;
+        }
+        
+        var postData = $("#form1").formSerialize();
+        postData.RelDutys = "";
+        var selRowIds = jQuery("#gridListForm").jqGrid("getGridParam", "selarrrow");
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridListForm").jqGrid('getRowData', selRowIds[i]);
+            postData.RelDutys += rowData.Code + ",";
+        }
+
+        $.submitForm({
+            url: "/SystemManage/Common/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalMsg('保存成功', 'success');
+                    $.currentWindow().$("#gridList").resetSelection();
+                    $.currentWindow().$("#gridList").trigger("reloadGrid");
+                }
+                else {
+                    $.modalMsg(data.message, 'error');
+                }
+
+                $.modalClose();
+            }
+        });
+
+    }
+
+
+</script>

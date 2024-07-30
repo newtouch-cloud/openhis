@@ -1,0 +1,172 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui/easyui.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui/icon.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui-ribbon/ribbon.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui-ribbon/ribbon-icon.css" />
+<script type="text/javascript" src="~/Content/jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="~/Content/jquery-easyui-ribbon/jquery.ribbon.js"></script>
+<link href="~/Content/jquery-easyui-ribbon/MedicalRecordEdit.css" rel="stylesheet" />
+
+<style>
+    .btfloatRight {
+        float: right
+    }
+</style>
+<form method="post" style="background-color:#ffffff">
+    <span id="toolDiv" style="background-color:white;">
+        <input type="submit" name="saveDocument" id="saveXml" value="保存文档" class="edtBtn" style="background-image: url(/Content/img/tupian/-_保存.ico);background-repeat: no-repeat;background-size: 25%;padding-left: 30px;height: 22px;" />
+        @Html.Partial("_DCSW.ToolList")
+        @*@Html.Partial("_ToolBar")*@
+        @Html.Partial("_DCSW.SaveAS")
+    </span>
+    <a id="toolShow" class="btn btn-primary btfloatRight" style="margin:5px 5px 5px 0px;"><i></i>工具栏</a>
+    <a id="lhlb" class="btn btn-primary btfloatRight" style="margin:5px 5px 5px 0px;display:none;">痕迹列表</a>
+    <a id="returnblbj" class="btn btn-primary btfloatRight" style="margin:5px 5px 5px 0px;display:none;">返回修改</a>
+    <a id="lhyl" class="btn btn-primary btfloatRight" style="margin:5px 5px 5px 0px;">痕迹查看</a>
+    <a id="blyl" class="btn btn-primary btfloatRight" style="margin:5px 5px 5px 0px;">病历预览</a>
+    @if (!string.IsNullOrWhiteSpace(ViewBag.zyh))
+    {
+        <input id="upload" name="saveDocument" type="submit" class="btn btn-primary" style="float:left;margin:5px 10px 5px 5px;display:none;" value="上传医保" />
+    }
+    <input type="submit" name="saveDocument" id="history" value="history" class="edtBtn" style="display:none;" />
+
+    <div style="clear:both;"> </div>
+    @Html.Raw(ViewBag.WriterControlHtml)
+    <input type="hidden" name="blid" id="blid" value="@ViewBag.blid " />
+    <input type="hidden" name="zyh" id="zyh" value="@ViewBag.zyh" />
+    <input type="hidden" name="mzh" id="mzh" value="@ViewBag.mzh" />
+    <input type="hidden" name="bllx" id="bllx" value="@ViewBag.bllx" />
+    <input type="hidden" name="bllj" id="bllj" value="@ViewBag.bllj" />
+    <input type="hidden" name="thisblid" id="thisblid" value="@ViewBag.blid " />
+    <input type="hidden" name="blxtmc_yj" id="blxtmc_yj" value="@ViewBag.blxtmc_yj " />
+    <input type="hidden" name="userid" id="userid" value="@ViewBag.userid " />
+    <input type="hidden" name="username" id="username" value="@ViewBag.username " />
+    @Html.Partial("_DCSW.JS")
+</form>
+
+<div id="RecordistDiv">
+    @Html.Action("RecordList", "MedicalRecord", new { zyh = ViewBag.zyh, mzh = ViewBag.mzh, blxtmc_yj = ViewBag.blxtmc_yj })
+</div>
+<div id="treeDiv">
+    @Html.Action("CTGLList", "Blctgl")
+
+    @Html.Action("YXFHlist", "Blctgl")
+</div>
+<div id="list" style="display: none;position: absolute; top: 60px; right: 3px; background-color: #fff; padding: 3px;box-shadow: 0 0 5px rgba(0,0,0,0.5);">
+    <div class="tabheader" style="line-height: 22px; border-bottom: 1px solid #ddd;">
+        <span style="font-size: 16px; color: #000; padding-top: 10px;" class="formTitle">病历修改记录</span>
+        <span style="position: absolute; right: 20px; top: 10px; cursor: pointer;" onclick="document.querySelector('#list').style.display = 'none'">X</span>
+    </div>
+    <div class="tabbody" style="height: 300px;width: 200px; overflow-y: auto;">
+        <dl></dl>
+    </div>
+</div>
+
+@*<div id="treeDIV2">
+        @Html.Action("YXFHlist", "Blctgl")
+    </div>*@
+<script>
+    var isupload = $.request("isupload");
+    var jydm = $.request("jydm");
+    var blId = $.request("blid");
+    var message = $.request("message");
+    var menuid = "";
+    $(function () {
+        //menuid = "/MedicalRecordManage/MedicalRecord/PreView?blid=" + blId + "&bllx=" + '@ViewBag.bllx' + "&zyh=" + '@ViewBag.zyh' + "&mzh=" + '@ViewBag.mzh';
+        $.each(top.$('a.menuTab'), function () {
+            if ($(this).attr("data-id").indexOf(blId)>0) {
+                $(this).find("i").hide();
+                $(this).find("span").show();
+            }
+        });
+        //top.$("a.menuTab span").show();
+        top.$("a.menuTab span").click(function () {
+            $.modalConfirm("病历正在编辑...是否关闭页面？", function (flag) {
+                if (flag) {
+                    setTimeout(function () {
+                        $.najax({
+                            url: "/MedicalRecordManage/MedicalRecord/UpdateLockzt",
+                            data: { blId: blId},
+                            dataType: "json",
+                            async: false,
+                            success: function (data) {
+
+                            }
+                        });
+                        $.each(top.$('a.menuTab[data-id*=' + blId + '] '), function () {
+                            if ($(this).attr("data-id").indexOf(blId) > 0) {
+                                $(this).find("i").trigger('click');
+                                return false;
+                            }
+                        });
+                    }, 500);
+                    return true;
+                }
+            });
+        });
+
+        if (!!isupload && isupload == 1) {
+            if (!!message) {
+                $.modalAlert(message, 'warning');
+                return;
+            }
+            var ret = GetblData(jydm, blId);
+            if (jydm == "7100" && ret==1) {
+                GetblData("7110", blId);
+            }
+            else if (jydm == "7500" && ret == 1) {
+                GetblData("7510", blId);
+            }
+        }
+    });
+
+    function GetblData(jydm, blId) {
+        if (!!jydm) {
+            $.najax({
+                url: "/MedicalRecordManage/MedicalRecord/GetBlxxbyJydm",
+                data: { blId: blId, jydm: jydm },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    if (data != null && data != undefined) {
+                        Upload(data);
+                    }
+                    else {
+                        $.modalAlert("上传失败，请查看日志", "error");
+                    }
+                }
+            });
+        }
+    }
+
+    function Upload(jsondata) {
+        $.ajax({
+            url: "http://127.0.0.1:33333/api/QHDSmartCheck/MedicalRecordUpload",//智能审核
+            dataType: "json",
+            data: jsondata,
+            type: "POST",
+            async: true,
+            success: function (ajaxdata) {
+                
+                if (!!ajaxdata) {
+                    var resp = JSON.parse(ajaxdata);
+                    if (resp.code == "-1") {
+                        $.modalAlert("上传失败" + resp.message, "error");
+                    }
+                    else {
+                        $.modalAlert("上传成功", "success");
+                        return 1;
+                    }
+                }
+                else
+                    $.modalAlert("上传失败，请查看日志", "error");
+
+            }
+        });
+
+        return 0;
+    }
+
+</script>

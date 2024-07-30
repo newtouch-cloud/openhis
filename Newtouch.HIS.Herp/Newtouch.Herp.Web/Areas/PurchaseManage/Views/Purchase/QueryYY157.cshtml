@@ -1,0 +1,289 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "耗材发票数据查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+<script src="~/Content/js/index.js"></script>
+
+<style>
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+</style>
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">耗材发票数据查询</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">查询时间：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <td class="formValue" style="width:8px;float:left;">-</td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle">发票代码：</th>
+                <td class="formValue">
+                    <input id="fpdm" class="form-control" placeholder="发票代码" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle ">企业名称：</th>
+                <td class="formValue" colspan="2">
+                    <input type="text" id="qy" name="qy" class="form-control" placeholder="请选择企业" autocomplete="off" style="width:70%" />
+                    <input type="hidden" id="qybm" />
+                </td>
+                <th class="formTitle">发票号：</th>
+                <td class="formValue">
+                    <input id="fph" class="form-control" placeholder="发票号" />
+                </td>
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+    <div id="TabGrid">
+        <ul class="nav nav-tabs navb-bg" role="tablist" id="myTab">
+            <li role="presentation" class="active">
+                <a href="#dv_djmx" id="linkSearch" role="tab" data-toggle="tab">单据明细</a>
+            </li>
+            <li style="float:right">
+                <span class="hiding glyphicon glyphicon-chevron-right btn-lg"></span>
+            </li>
+        </ul>
+        <div id="dv_djmx" style="">
+            <table id="gridDJMXInfo"></table>
+        </div>
+    </div>
+    <div class="showbotton">
+        <span class="glyphicon glyphicon-chevron-left btn-lg"></span>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+
+        InitFloat();
+
+        //gridList();
+
+        //搜索框隐藏显示控制
+        $(".hiding,.rows,#dv_search,.toolbar").click(function () {
+            TabGridHide();
+        });
+        $(".showbotton").click(function () {
+            $(".showbotton").animate({ width: 'hide' }, "fast", function () {
+                $("#TabGrid").animate({ left: '0px' }, "slow");
+            });
+        });
+        TabGridHide();
+    });
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        var tabGridwith = $("#TabGrid").width() + 200;
+        if ($(".showbotton").is(":hidden")) {
+            $("#TabGrid").animate({ left: tabGridwith }, "slow", function () {
+                $(".showbotton").animate({ width: 'show' }, "fast");
+            });
+        }
+    }
+
+    //初始化浮层
+    function InitFloat() {
+        //物资供应商
+        $("#qy").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            url: '/Storage/GetSupplierList',
+            height: 300,
+            width: 400,
+            caption: "物资供应商",
+            ajaxparameters: function () {
+                return "key=" + $("#qy").val();
+            },
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '编码', name: 'py', widthratio: 45 },
+                { label: '供应商', name: 'name', widthratio: 55 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#qybm").val($thistr.attr('data-py'));
+                $("#qy").val($thistr.attr('data-name'));
+            }
+        });
+    }
+
+    function getPostData() {
+        return {
+            QSRQ: $("#kssj").val().replace(/\-/g, ""),
+            JZRQ: $("#jssj").val().replace(/\-/g, ""),
+            QYBM: $("#qybm").val(),
+            FPDM: $("#fpdm").val(),
+            FPH: $("#fph").val(),
+            FPBHCXTJ: '',
+        };
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetGridJsonYY157",
+            height: $(window).height() - 200,
+            postData: getPostData(),
+            colModel: [{ label: '发票编号', name: 'FPBH', width: 180, align: 'left' },
+            { label: '发票代码', name: 'FPDM', width: 150, align: 'left' },
+            { label: '发票号', name: 'FPH', width: 180, align: 'left' },
+            { label: '发票日期', name: 'FPRQ', width: 100, align: 'left' },
+            { label: '发票含税总金额', name: 'FPHSZJE', width: 100, align: 'left' },
+            { label: '企业名称', name: 'QYBM', width: 180, align: 'left' },
+            { label: '医院编码', name: 'YYBM', width: 110, align: 'left' },
+            { label: '配送点编码', name: 'PSDBM', width: 100, align: 'left' },
+            {
+                label: '采购类型', name: 'CGLX', width: 80, align: 'left', formatter: function (val) {
+                    return $.enum.getDescByValue("EnumCGLX", val);
+                }
+            },
+            { label: '发票备注', name: 'FPBZ', width: 80, align: 'left' },
+            { label: '发票明细条数', name: 'FPMXTS', width: 80, align: 'left' },
+            {
+                label: '发票状态', name: 'FPZT', width: 80, align: 'left', formatter: function (val) {
+                    return $.enum.getDescByValue("EnumFPZT", val);
+                }
+            },
+            ],
+            multiselect: false,
+            //pager: "#gridPager",
+            //sortname: '',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: getPostData(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+
+    //单击事件
+    function btn_selectrow(rowId) {
+        $('#gridDJMXInfo').jqGrid("clearGridData");//每次单击，先清空明细 再重新加载所有选中行明细
+        $.najax({
+            type: "Get",
+            url: "/PurchaseManage/Purchase/GetGridJsonYY158",
+            data: { FPBH: $("#gridList").jqGrid('getRowData', rowId).FPBH, FPMXBHCXTJ: '' },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp !== null) {
+                    $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp);
+                }
+                $(".showbotton").click().trigger("click");
+            }
+        });
+    }
+    //单据明细
+    $('#gridDJMXInfo').newtouchLocalDataGrid({
+        height: $(window).height() - 200,
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '发票明细编号', name: 'FPMXBH', width: 160, align: 'left' },
+            {
+                label: '是否无配送发票', name: 'SFWPSFP', width: 100, align: 'left', formatter: function (cellvalue) {
+                    if (cellvalue == 0) return '否';
+                    else if (cellvalue == 1) return '是';
+                }
+            },
+            { label: '无配送发票说明', name: 'WPSFPSM', width: 100, align: 'left' },
+            {
+                label: '是否冲红', name: 'SFCH', width: 80, align: 'left', formatter: function (cellvalue) {
+                    if (cellvalue == 0) return '否';
+                    else if (cellvalue == 1) return '是';
+                }
+            },
+            { label: '耗材统编代码', name: 'HCTBDM', width: 200, align: 'left' },
+            { label: '耗材细分代码', name: 'HCXFDM', width: 200, align: 'left' },
+            { label: '医院本地代码', name: 'YYBDDM', width: 80, align: 'left' },
+            { label: '规格型号说明', name: 'GGXHSM', width: 80, align: 'left' },
+            { label: '关联明细编号', name: 'GLMXBH', width: 160, align: 'left' },
+            { label: '销售订单号', name: 'XSDDH', width: 80, align: 'left' },
+            { label: '生产批号', name: 'SCPH', width: 80, align: 'left' },
+            { label: '生产日期', name: 'SCRQ', width: 80, align: 'left' },
+            { label: '有效日期', name: 'YXRQ', width: 80, align: 'left' },
+            { label: '商品数量', name: 'SPSL', width: 80, align: 'left' },
+            { label: '无税单价', name: 'WSDJ', width: 80, align: 'left' },
+            { label: '含税单价', name: 'HSDJ', width: 80, align: 'left' },
+            { label: '税率', name: 'SL', width: 80, align: 'left' },
+            { label: '税额', name: 'SE', width: 80, align: 'left' },
+            { label: '含税金额', name: 'HSJE', width: 80, align: 'left' },
+            { label: '批发价', name: 'PFJ', width: 80, align: 'left' },
+            { label: '零售价', name: 'LSJ', width: 80, align: 'left' },
+            { label: '注册证号', name: 'ZCZH', width: 160, align: 'left' },
+        ]
+    });
+
+
+    //获取明细
+    $('#btn_search').click(function () {
+        var kssj = new Date($("#kssj").val());
+        var jssj = new Date($("#jssj").val());
+        if (getDaysBetween(kssj, jssj) > 30) {
+            $.modalAlert("日期不能超过30天", 'warning');
+            return;
+        }
+        gridList();
+    });
+</script>
+
+

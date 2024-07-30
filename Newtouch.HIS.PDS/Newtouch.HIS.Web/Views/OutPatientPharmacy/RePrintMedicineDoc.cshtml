@@ -1,0 +1,160 @@
+﻿
+@{
+    ViewBag.Title = "RePrintMedicineDoc";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<form id="form1">
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            查询方式
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">卡号:</th>
+                    <td class="formValue">
+                        <input id="keyword" type="text" class="form-control" placeholder="卡号 姓名" />
+                    </td>
+                    <th class="formTitle">发票号:</th>
+                    <td class="formValue">
+                        <input id="fph" type="text" class="form-control" placeholder="发票号" />
+                    </td>
+                    <th class="formTitle "><span class="required">*</span>发药时间:</th>
+                    <td class="formValue" style="width: 220px;">
+                        <input id="txtstartDate" type="text" class="form-control input-wdatepicker" style="width:90px;float: left;" value="@DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="float:left;margin:0 5px;">-</span>
+                        <input id="txtendDate" type="text" class="form-control input-wdatepicker" style="width:90px;float: left;" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div style="width:28%;float:left">
+        <table id="gridRpInfo"></table>
+    </div>
+    <div style="width:71.5%;float:left; margin-left:0.5%">
+        <table id="gridRpDetail"></table>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+    {
+        ShowKeyList = new[] { 6 },
+        F6Text = "补打发药单"
+    })
+</form>
+<script>
+    $(".toolbar").width(160);
+    var $gridRpInfo = $("#gridRpInfo");
+    var $gridRpDetail = $("#gridRpDetail");
+    $(function () {
+        gridRpInfo();
+        gridRpDetail();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    function gridRpInfo() {
+        $gridRpInfo.dataGrid({
+            height: $(window).height() - 170,
+            url: "/OutPatientPharmacy/fyInfoSearch?r=" + Math.random(),
+            postData: {
+                fph: $("#fph").val(), keyword: $("#keyword").val(), kssj: $("#txtstartDate").val(), jssj: $("#txtendDate").val()
+            },
+            caption: "处方列表",
+            colModel: [
+                { label: '处方内码', name: 'cfnm', hidden: true },
+                { label: '卡号', name: 'CardNo', width: 80, align: 'left' },
+                { label: '姓名', name: 'xm', width: 70, align: 'left' },
+                { label: '发票号', name: 'Fph', width: 100, align: 'left' },
+                { label: '收费时间', name: 'sfsj', width: 110, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: '处方号', name: 'cfh', width: 100, align: 'left' },
+                { label: '医生', name: 'ysmc', width: 70, align: 'left' },
+                { label: '科室', name: 'ksmc', width: 80, align: 'left' },
+                { label: '发药时间', name: 'fysj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } }
+            ],
+            onSelectRow_page: function (rowid, status) {
+                var data = $gridRpInfo.jqGrid('getRowData', rowid);
+                $gridRpDetail.jqGrid('setGridParam', {
+                    postData: { pCfh: data.cfh },
+                    url: "/OutPatientPharmacy/pyDeailInfoSearch?r=" + Math.random()
+                }).trigger('reloadGrid');
+            },
+            gridComplete: function () {
+                $gridRpDetail.jqGrid("clearGridData");
+                var ids = new Array();
+                //getDataIDs()返回当前grid里所有数据的id
+                ids = $gridRpInfo.getDataIDs();
+                if (ids == null || ids.length <= 0) return;
+                //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
+                $gridRpInfo.setSelection(ids[0], true);
+                var pdata = $gridRpInfo.jqGrid('getRowData', ids[0]);
+                if (pdata == null) return;
+                $gridRpDetail.jqGrid('setGridParam', {
+                    postData: { pCfh: pdata.cfh },
+                    url: "/OutPatientPharmacy/pyDeailInfoSearch?r=" + Math.random()
+                }).trigger('reloadGrid');
+            },
+            sortname: 'fysj asc'
+        });
+
+        $("#btn_search").click(function () {
+            $gridRpInfo.jqGrid('setGridParam', {
+                postData: {
+                    fph: $("#fph").val(), keyword: $("#keyword").val(), kssj: $("#txtstartDate").val(), jssj: $("#txtendDate").val()
+                }
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function gridRpDetail() {
+        $gridRpDetail.dataGrid({
+            height: $(window).height() - 210,
+            caption: "处方明细",
+            colModel: [
+                { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
+                { label: '规格', name: 'gg', width: 80, align: 'left' },
+                { label: '数量', name: 'slStr', width: 80, align: 'right' },
+                {
+                    label: '单价', name: 'dj', width: 80, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.0000";
+                    }
+                },
+                {
+                    label: '金额', name: 'je', width: 90, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                { label: '剂量', name: 'jl', width: 70, align: 'right' },
+                { label: '剂量单位', name: 'jldw', width: 60, align: 'left' },
+                { label: '用法', name: 'yfmc', width: 100, align: 'left' },
+                { label: '医生嘱托', name: 'bz', width: 100, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 120, align: 'left' },
+                { label: '药品分组', name: 'czh', width: 70, align: 'center' }
+            ]
+        });
+    }
+
+    //补打发药单
+    function newtouch_event_f6() {
+        var id = $("#gridRpInfo").jqGrid("getGridParam", "selrow");
+        if (id) {
+            var chf = $("#gridRpInfo").jqGrid('getRowData', id).cfh;
+            var uri = '@reportUrl' + "?tempCode=63" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + chf;
+            window.open(uri);
+            //window.open("/Report/PrintReport?type=MZFYBD_Bill&param=OrganizeId=@ViewBag.OrganizeId" + "|yfbmCode=@ViewBag.yfbmCode" + "|cfh=" + chf);
+        } else {
+            $.modalAlert("请选中患者信息！", 'warning');
+        }
+    }
+</script>

@@ -1,0 +1,273 @@
+﻿
+@{
+    ViewBag.Title = "PriceAdjustmentApproval";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            筛选条件
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">关键字</th>
+                    <td class="formValue">
+                        <input type="text" id="txtINPUTCODE" class="form-control" placeholder="药品代码 拼音 名称" />
+                    </td>
+                    <th class="formTitle">审核状态</th>
+                    <td class="formValue">
+                        <select id="ddlSHZT" class="form-control" onchange="DisableControls(this)">
+                            <option value="-1">全部</option>
+                            <option value="0" selected>未审核</option>
+                            <option value="1">已审核</option>
+                            <option value="2">已拒绝</option>
+                            <option value="3">已撤销</option>
+                        </select>
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" style="width:55px;margin-left:30%;" />
+                    </td>
+                    <th></th>
+                    <td></td>
+                </tr>
+            </table>
+        </div>        
+    </div>
+    <div class="gridPanel" style="margin-top:10px">
+        <div class="gridPanel">
+            <table id="gridXSHYPInfoList"></table>
+            <div id="gridPager" rel="form1"></div>
+        </div>
+    </div>
+</form>
+<div style="float:left;margin:10px 30px 12px;">
+    <span style="background-color:#EECBAD">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 已过期
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 2, 3, 6, 7, },
+    F2Text = "审核",
+    F3Text = "拒绝",
+    F6Text = "撤销",
+    F7Text = "执行"
+})
+
+<script>
+    $(function () {
+        gridXSHYPInfoList();
+    });
+
+    function gridXSHYPInfoList() {
+        var $gridXshypInfoList = $("#gridXSHYPInfoList");
+        $gridXshypInfoList.dataGrid({
+            url: '/DrugStorage/SelectMedicineAdjustPriceApprovalInfoList',
+            postData: getSearchPostData(),
+            height: $(window).height() - 210,
+            colModel: [
+                { label: "审核状态", name: "shzt", width: 80, align: 'left' },
+                { label: '执行标志', name: 'zxbz', width: 80, align: 'left' },
+                { label: '药品代码', name: 'ypCode', width: 80, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
+                { label: '药品规格', name: 'ypgg', width: 120, align: 'left' },
+                { label: '定价单位', name: 'djdw', width: 80, align: 'left' },
+                { label: '原批发价', name: 'ypfj', width: 80, align: 'left' },                
+                { label: '原零售价', name: 'ylsj', width: 80, align: 'left' },
+                { label: '新批发价', name: 'pfj', width: 80, align: 'left' },
+                { label: '新零售价', name: 'lsj', width: 80, align: 'left' },
+                { label: '药品属性', name: 'yptssxmc', width: 80, align: 'left' },
+                { label: '药品类别', name: 'yplb', width: 80, align: 'left' },
+                { label: '剂量', name: 'jl', width: 80, align: 'left' },
+                { label: '剂量单位', name: 'jldw', width: 80, align: 'left' },
+                { label: '包装数', name: 'bzs', width: 80, align: 'left' },
+                { label: '包装单位', name: 'bzdw', width: 80, align: 'left' },
+                { label: '门诊拆零数', name: 'mzcls', width: 80, align: 'left' },
+                { label: '门诊拆零单位', name: 'mzcldw', width: 80, align: 'left' },
+                { label: '住院拆零数', name: 'zycls', width: 80, align: 'left' },
+                { label: '住院拆零单位', name: 'zycldw', width: 80, align: 'left' },
+                { label: '自负比例', name: 'zfbl', width: 80, align: 'left' },
+                { label: '自负性质', name: 'zfxz', width: 80, align: 'left' },
+                { label: '剂型名称', name: 'jxmc', width: 80, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 150, align: 'left' },
+                { label: '状态', name: 'zt', width: 80, align: 'left' },
+                { label: '记账类型', name: 'jzlx', width: 80, align: 'left' },
+                { label: '默认包装数', name: 'mrbzq', width: 80, align: 'left' },
+                { label: '调整文件', name: 'tzwj', width: 80, align: 'left' },
+                { label: '执行时间', name: 'zxsj', width: 160, align: 'left' },
+                {
+                    label: '是否过期', name: 'Isgq', width: 80, align: 'left',
+                    formatter: function (val) {
+                        return val === "true" ? "已过期" : "";
+                    }
+                }
+            ],
+            multiselect: true,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+                if (rowid) {
+                    $("#btn_bottombutton_f2").nfnRemoveReadonly();
+                    $("#btn_bottombutton_f3").nfnRemoveReadonly();
+                    $("#btn_bottombutton_f6").nfnRemoveReadonly();
+                    $("#btn_bottombutton_f7").nfnRemoveReadonly();
+
+                    var isHasWSH = false;
+                    var isHasYSH = false;
+                    var isHasYJJ = false;
+                    var isHasYCX = false;
+
+                    var rowsData = $("#gridXSHYPInfoList").jqGrid("getRowData_AllLine", true);
+                    var rowsDataArray = rowsData;
+                    for (var i = 0; i < rowsDataArray.length; i++) {
+                        if (rowsDataArray[i].shzt === "未审核") {
+                            isHasWSH = true;
+                        }
+                        if (rowsDataArray[i].shzt === "已审核") {
+                            isHasYSH = true;
+                        }
+                        if (rowsDataArray[i].shzt === "已拒绝") {
+                            isHasYJJ = true;
+                        }
+                        if (rowsDataArray[i].shzt === "已撤销" || rowsDataArray[i].zxbz === '已执行') {
+                            isHasYCX = true;
+                        }
+                    }
+
+                    if (isHasWSH) {
+                        $("#btn_bottombutton_f7").nfnAddReadonly();
+                    }
+                    if (isHasYSH) {
+                        $("#btn_bottombutton_f2").nfnAddReadonly();
+                        $("#btn_bottombutton_f3").nfnAddReadonly();
+                        $("#btn_bottombutton_f6").nfnAddReadonly();
+                    }
+                    if (isHasYJJ) {
+                        $("#btn_bottombutton_f2").nfnAddReadonly();
+                        $("#btn_bottombutton_f3").nfnAddReadonly();
+                        $("#btn_bottombutton_f6").nfnAddReadonly();
+                        $("#btn_bottombutton_f7").nfnAddReadonly();
+                    }
+                    if (isHasYCX) {
+                        $("#btn_bottombutton_f2").nfnAddReadonly();
+                        $("#btn_bottombutton_f3").nfnAddReadonly();
+                        $("#btn_bottombutton_f6").nfnAddReadonly();
+                        $("#btn_bottombutton_f7").nfnAddReadonly();
+                    }
+                }
+            },
+            gridComplete: function () {
+                afterCompleteFunction();
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridXshypInfoList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger('click');
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var inputCode = $("#txtINPUTCODE").val();
+        var shzt = $("#ddlSHZT").val();
+        return { inputCode: inputCode, shzt: shzt };
+    };
+
+    //已过期 背景色为红色
+    function afterCompleteFunction() {
+        var ids = $("#gridXSHYPInfoList").getDataIDs();
+        for (var i = 0; i < ids.length; i++) {
+            var rowData = $("#gridXSHYPInfoList").getRowData(ids[i]);
+            if (rowData.Isgq === "已过期") {
+                $("#" + ids[i]).find("td").css("background-color", "#EECBAD");
+            }
+        }
+    }
+
+    //批准 EnumPriceAdjustOperationType:1:批准,2:拒绝,3:撤销,4:执行
+    function newtouch_event_f2() {
+        MedicineAdjustPriceApproval(1);
+    }
+    //拒绝
+    function newtouch_event_f3() {
+        MedicineAdjustPriceApproval(2);
+    }
+    //撤销
+    function newtouch_event_f6() {
+        MedicineAdjustPriceApproval(3);
+    }
+    //执行
+    function newtouch_event_f7() {
+        MedicineAdjustPriceApproval(4);
+    }
+
+    //审核 拒绝 撤销 执行操作
+    function MedicineAdjustPriceApproval(operationType) {
+        var rowsData = $("#gridXSHYPInfoList").jqGrid("getRowData_AllLine", true);
+        //var rowsDataArray = JSON.parse(rowsData);
+        var rowsDataArray = rowsData;
+        if (rowsDataArray.length === 0) {
+            $.modalAlert("请先选择需操作的数据", 'warning');
+            return;
+        }
+        var ypCodeStr = "";
+        for (var i = 0; i < rowsDataArray.length; i++) {
+            if (rowsDataArray[i].Isgq === '已过期') {
+                $.modalAlert(rowsDataArray[i].ypCode + " 已过期，执行时间需大于当前时间", 'warning');
+                return;
+            }
+            ypCodeStr += rowsDataArray[i].ypCode + ",";
+        }
+
+        if (ypCodeStr == "") {
+            $.modalAlert("未获取到需操作数据", 'warning');
+            return;
+        }
+        var tipStr = "";
+        if (operationType == "1") {
+            tipStr = "确定要批准吗？";
+        } else if (operationType == "2") {
+            tipStr = "确定要拒绝吗？";
+        } else if (operationType == "3") {
+            tipStr = "确定要撤销吗？";
+        } else if (operationType == "4") {
+            tipStr = "确定要执行吗？";
+        }
+        $.modalConfirm(tipStr, function (flag) {
+            if (flag) {
+                $.najax({
+                    url: "/DrugStorage/MedicineAdjustPriceApproval",
+                    dataType: "json",
+                    data: { ypCodeStr: ypCodeStr, operationType: operationType },
+                    Type: "POST",
+                    success: function (data) {
+                        if (data.message === '操作成功') {
+                            $.modalAlert(data.message, 'success');
+                        } else {
+                            $.modalAlert(data.message, 'error');
+                        }
+                        $("#btn_search").trigger('click');
+                    }
+                });
+            }
+            else
+                return false;
+        }, false);        
+    }
+
+    //禁用
+    function DisableControls(flag) {
+        if (flag === "0" || flag === "2" || flag === "3") {
+            $("#btn_bottombutton_f7").attr("disabled", "disabled").css("background-color", "rgb(238, 238, 238)");
+        } else {
+            $("#btn_bottombutton_f7").removeAttr("disabled");
+        }
+    }
+</script>
+
+
+
+

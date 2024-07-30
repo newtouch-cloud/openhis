@@ -1,0 +1,269 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "发票获取与验收";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+
+<style>
+    /*.inline {
+        width: 80%;
+        display: inline;
+    }
+
+    .PriceInline {
+        width: 70%;
+        display: inline;
+    }
+
+    #dv-detail table th {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail .ui-jqgrid-labels, #dv-detail .jqgrow .ui-row-ltr {
+        height: 30px;
+        vertical-align: middle;
+    }
+
+
+    #dv-detail table td {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail input[role=textbox] {
+        padding: 2px 2px;
+    }
+
+    #gridList .ckbox label {
+        margin-top: 24px;
+    }*/
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">发票信息</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle "><span class="required">*</span>药企：</th>
+                <td class="formValue">
+                    <input type="text" id="yq" name="yq" class="form-control" placeholder="请选择药企" autocomplete="off" style="width:60%"/>
+                    <input type="hidden" id="yqbm" />
+                </td>
+
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="获取明细" />
+                    <input type="button" id="btn_accept" class="btn btn-md btn-primary" value="明细验收" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        InitFloat();
+
+        //gridList();
+    });
+
+
+    //初始化浮层
+    function InitFloat() {
+
+        //药企
+        $("#yq").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 200,
+            width: 400,
+            url: "/Medicine/MedicineSupplierList",
+            ajaxmethod: 'Get',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#yq").val());
+                return reqData;
+            },
+            colModel: [
+                { label: '药企编码', name: 'gysCode', widthratio: 30 },
+                { label: '药企', name: 'gysmc', widthratio: 70 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#yqbm").val($thistr.attr('data-gysCode'));
+                $("#yq").val($thistr.attr('data-gysmc'));
+                return;
+            }
+        });
+
+
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/OutOrInStoredManage/Purchase/GetBillGridJson",
+            height: $(window).height() - 200,
+            postData: { yqbm: $("#yqbm").val(), fpmxbh: '1' },
+            colModel: [
+            
+                { label: '发票号', name: 'FPH', width: 80, align: 'left' ,key:true,},
+                { label: '发票日期', name: 'FPRQ', width: 80, align: 'left' },
+                { label: '发票含税总金额', name: 'FPHSZJE', width: 100, align: 'left' },
+                { label: '药企编码', name: 'YQBM', width: 80, align: 'left' },
+                { label: '医院编码', name: 'YYBM', width: 100, align: 'left' },
+                { label: '配送点编码', name: 'PSDBM', width: 100, align: 'left' },
+                { label: '带量采购标志', name: 'DLSGBZ', width: 80, align: 'left' },
+                { label: '发票备注', name: 'FPBZ', width: 60, align: 'left' },
+                {
+                    label: '是否无配送发票', name: 'SFWPSFP', width: 90, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 0) return '否';
+                        else if (cellvalue == 1) return '是';
+                    }
+                },
+                { label: '无配送发票说明', name: 'WPSFPSM', width: 80, align: 'left' },
+                { label: '发票明细编号', name: 'FPMXBH', width: 140, align: 'left' },
+                {
+                    label: '商品类型', name: 'SPLX', width: 60, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '药品类';
+                        else if (cellvalue == 2) return '医用耗材类';
+                        else if (cellvalue == 3) return '医疗器械类';
+                        else if (cellvalue == 9) '其他';
+                    }
+                },
+                {
+                    label: '是否冲红', name: 'SFCH', width: 60, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 0) return '否';
+                        else if (cellvalue == 1) return '是';
+                    }
+                },
+                { label: '商品统编代码', name: 'ZXSPBM', width: 120, align: 'left' },
+                { label: '生产批号', name: 'SCPH', width: 60, align: 'left' },
+                { label: '生产日期', name: 'SCRQ', width: 60, align: 'left' },
+                { label: '商品数量', name: 'SPSL', width: 60, align: 'left' },
+                { label: '关联明细编号', name: 'GLMXBH', width: 120, align: 'left' },
+                { label: '销售订单号', name: 'XSDDH', width: 120, align: 'left' },
+                { label: '顺序号', name: 'SXH', width: 60, align: 'left' },
+                { label: '有效日期', name: 'YXRQ', width: 60, align: 'left' },
+                { label: '无税单价', name: 'WSDJ', width: 60, align: 'left' },
+                { label: '含税单价', name: 'HSDJ', width: 60, align: 'left' },
+                { label: '税率', name: 'SL', width: 60, align: 'left' },
+                { label: '税额', name: 'SE', width: 60, align: 'left' },
+                { label: '含税金额', name: 'HSJE', width: 60, align: 'left' },
+                { label: '批发价', name: 'PFJ', width: 60, align: 'left' },
+                { label: '零售价', name: 'LSJ', width: 60, align: 'left' },
+                { label: '药品批准文号', name: 'PZWH', width: 120, align: 'left' },
+
+            ],
+
+            multiselect: false,
+
+            pager: "#gridPager",
+            sortname: 'FPH',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridDJMXInfo').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //获取明细
+    $('#btn_search').click(function () {
+        if ($("#yq").val() == "" || $("#yq").val() == null) {
+            $.modalAlert("请选择药企", 'warning');
+            return ;
+        }
+        gridList();
+    });
+
+
+    //明细验收
+    $('#btn_accept').click(function () {
+        var rowData = $("#gridList").jqGridRowValue();
+        if (rowData == null || rowData.length==0) {
+            $.modalAlert("请选择需要验收的单据", 'warning');
+            return;
+        }
+        //var psmxbh = rowData.PSMXBH;
+        //var hctbdm = rowData.HCTBDM;
+        //var scph = rowData.SCPH;
+        //var pssl = rowData.PSSL
+        $.modalOpen({
+            id: "Form",
+            title: "发票验收",
+            url: "/OutOrInStoredManage/Purchase/BillForm?FPH=" + rowData.FPH + "&YQBM=" + rowData.YQBM + "&FPHSZJE=" + rowData.FPHSZJE,
+            width: "350px",
+            height: "150px",
+            callBack: function (iframeId) {
+                //验收
+                top.frames[iframeId].SubmitForm();
+                //发票明细落地
+                $.najax({
+                    type: "POST",
+                    url: "/OutOrInStoredManage/Purchase/BillDetailInsert",
+                    data: { entity: rowData },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state == "success") {
+                            $.modalMsg("发票落地成功！", 'success');
+                            //$('#gridDJMXInfo').jqGrid("clearGridData");
+
+                            $('#btn_search').trigger('click');
+                        } else {
+                            $.modalMsg("发票落地失败：" + res.message, 'warning');
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+
+
+    ////明细验收
+    //$('#btn_accept').click(function () {
+    //    //var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+    //    var rowData = $("#gridList").jqGridRowValue();
+    //    if (rowData == null ) {
+    //        $.modalAlert("请选择需要验收的单据", 'warning');
+    //        return;
+    //    }
+    //    var yqbm = rowData.YQBM;
+    //    var fph = rowData.FPH;
+    //    var fphszje = rowData.FPHSZJE;
+    //    if (!fphszje) {
+    //        return; 
+    //    }
+    //    $.najax({
+    //        type: "POST",
+    //        url: "/Purchase/BillAccept",
+    //        data: { yqbm:yqbm,fph:fph,fphszje:fphszje },
+    //        dataType: "json",
+    //        success: function (res) {
+    //            if (res.state == "success") {
+    //                $('#btn_search').trigger('click');
+    //                $.modalAlert("单据验收成功！", 'success');
+    //            } else {
+    //                $.modalAlert("单据验收失败：" + res.message, 'warning');
+    //            }
+    //        }
+    //    });
+    //});
+
+</script>
+
+

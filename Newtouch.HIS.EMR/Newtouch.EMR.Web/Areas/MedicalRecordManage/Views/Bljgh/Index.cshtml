@@ -1,0 +1,312 @@
+﻿@{
+    ViewBag.Title = "病历结构维护";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 15%;
+        float: left;
+        height: 100%;
+        background-color: white;
+        margin-top: 5px;
+    }
+
+    .dv-right {
+        margin-top: 5px;
+        float: left;
+        margin-left: 5px;
+        width: 84.6%;
+        /*background-color:*/
+    }
+</style>
+<div class="topPanel" style="width:100%">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_Blmladd()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_Blmladd(1)"><i class="fa fa-plus"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_Blmldelete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+
+        </div>
+    </div>
+</div>
+<div style="width:100%">
+    <div id="treeDiv" class="gridPanel dv-left">
+        <div class="dv-left-tree" id="YsTree"></div>
+    </div>
+    <div id="Blys" class="gridPanel dv-right">
+        @Html.Action("Form", "Bljgh")
+        <table id="gridList" style="width:100%;"></table>
+        <div id="gridPager"></div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    var ElementId = "";
+    var Table_Name = "";
+    var Table_EnlishName = "";
+    $(function () {
+        getYsTree();
+        gridList();
+
+    });
+    function getYsTree()
+    {
+        $("#YsTree").treeview({
+            height: $(window).height() - 75,
+            slimscroll: false,
+            showcheck: true,
+            url: "/MedicalRecordManage/Bljgh/GetElementTree",
+            onnodeclick: function (item) {
+                debugger;
+                btn_clear();
+                ElementId = item.id;
+                Table_Name = item.value;
+                Table_EnlishName = item.Ex1;
+                $("#ElementId").val(item.id);
+                $("#Table_Name").val(item.value);
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { ElementId: ElementId },
+                }).trigger('reloadGrid');
+                columnfloat();
+            }
+        });
+
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { ElementId: "" },
+            url: "/MedicalRecordManage/Bljgh/GetGridJson",
+            height: $(window).height() - 300,
+            colModel: [
+                 { label: "主键", name: "Id", hidden: true, key: true },
+                 { label: '字段代码', name: 'Table_Column_Code', width: 80, align: 'center' },
+                 { label: '字段名称', name: 'Table_Colunn_Name', width: 80, align: 'center' },
+                 { label: "字段类型", name: "Table_Column_Type", width: 80, align: 'center' },
+                 { label: "字段序号", name: "Table_Column_No", width: 50, align: 'center'},
+                 { label: '元素编码', name: 'Element_ID', width: 80, align: 'center' },
+                 { label: '元素名称', name: 'Element_Name', width: 120, align: 'center' },
+                 { label: '元素类型', name: 'Element_Type', width: 50, align: 'center' },
+                 { label: '元素类型名称', name: 'Element_Type_Name', width: 150, align: 'center' },
+                 { label: '默认值', name: 'AreValue', width: 80, align: 'center', hidden: true },
+                 { label: '默认值', name: 'AreValuemc', width: 80, align: 'center' },
+                 { label: 'ysmxId', name: 'ysmxId', width: 80, align: 'center', hidden: true },
+                 { label: '使用标志', name: 'Sybz', width: 50, align: 'center', formatter: function (cellvalue) { return cellvalue == "1" ? "是" : "否"; } },
+                 { label: '元素排序', name: 'Px', width: 50, align: 'center', hidden: true }
+                
+            ],
+            pager: "#gridPager",
+            sortname: 'Px',
+            viewrecords: true,
+            onSelectRow: function (row) {
+                var rowData = $('#gridList').jqGrid('getRowData', row);
+                rowData.Sybz = rowData.Sybz = "是" ? "1" : "0";
+                row.Table_Name = Table_Name;
+                $("#form1").formSerialize(rowData);
+                $("#saveoredit").html("修改");
+                ysmxFloat();
+
+            }
+        });
+        $("#Element_Name").ElementFloatingSelector({
+            itemdbclickhandler: function ($this) {
+                debugger;
+                //保存时验证val和data-Name一致
+                $this.attr('data-ysId', $this.attr('data-ysId'));
+                $this.attr('data-BindingPath', $this.attr('data-BindingPath'));
+                $this.attr('data-ysmc', $this.attr('data-ysmc'));
+                $this.attr('data-yslx', $this.attr('data-yslx'));
+                $this.val($this.attr('data-ysmc'));
+                $("#Element_Name").val($this.attr('data-ysmc'));
+                $("#Element_Type").val($this.attr('data-yslx'));
+                $("#Element_ID").val($this.attr('data-BindingPath'));
+                //$("#YsId").val($this.attr('data-ysId'));
+                $("#ysmxId").val($this.attr('data-ysId'));
+                debugger;
+                if ($("#Element_Type").val()=="1") {
+                    ysmxFloat();
+                }
+            }
+        });
+    }
+
+    function columnfloat()
+    {
+        $("#Table_Column_Code").TabColumnFloatingSelector({
+            TableName: Table_EnlishName,
+            itemdbclickhandler: function ($this) {
+                debugger;
+                //保存时验证val和data-Name一致
+                $this.attr('data-column_id', $this.attr('data-column_id'));
+                $this.attr('data-columnName', $this.attr('data-columnName'));
+                $this.attr('data-columnType', $this.attr('data-columnType'));
+                $this.attr('data-max_length', $this.attr('data-max_length'));
+                $this.val($this.attr('data-columnName'));
+                $("#Table_Column_Code").val($this.attr('data-columnName'));
+                if ($this.attr('data-columnType') == "varchar")
+                    $("#Table_Column_Type").val($this.attr('data-columnType') + "(" + $this.attr('data-max_length') + ")");
+                else
+                    $("#Table_Column_Type").val($this.attr('data-columnType'));
+                $("#Table_Column_No").val($this.attr('data-column_id'));
+                $("#Table_Colunn_Name").val($this.attr('data-columnName'));
+            }
+        });
+    }
+    function ysmxFloat()
+    {
+        $("#AreValuemc").ElementMxFloatingSelector({
+            ysId: $('#ysmxId').val(),
+            itemdbclickhandler: function ($this) {
+                $this.attr('data-column_id', $this.attr('data-ysmxcode'));
+                $("#AreValuemc").val($this.attr('data-ysmxName'));
+                $("#AreValue").val($this.attr('data-ysmxcode'));
+            }
+        });
+    }
+    
+    function btn_edit()
+    {
+        if (!ElementId)
+        {
+            $.modalAlert("请选中病历文书", 'warning');
+            return;
+        }
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        if ($("#Element_Type").val() == "1") {
+            if (!$("#AreValue").val()) {
+                $.modalAlert("请选择元素默认值", 'warning');
+                return;
+            }
+        }
+        var flag = $("#saveoredit").html();
+        if (flag == "修改") {
+            var keyValue = $("#Id").val();
+            if (!!!keyValue) {
+                $.modalAlert("请选中需要修改的数据列", 'warning');
+                return;
+            }
+            var postData = $("#form1").formSerialize();
+            $.submitForm({
+                url: "/MedicalRecordManage/Bljgh/SubmitForm?keyValue=" + keyValue,
+                param: postData,
+                success: function () {
+                    reloadGrid();
+                    $.modalMsg("修改成功", 'success');
+                }
+            });
+        }
+        else {
+            var key = "";
+            var postData = $("#form1").formSerialize();
+            postData.Table_Name = Table_Name;
+            postData.ElementId = ElementId;
+            $.submitForm({
+                url: "/MedicalRecordManage/Bljgh/SubmitForm?keyValue=" + key,
+                param: postData,
+                success: function () {
+                    reloadGrid();
+                    $.modalMsg("保存成功", 'success');
+                }
+            });
+        }
+
+    }
+
+    function btn_ColumnDelete()
+    {
+        var delYSID = $("#Id").val();
+        if (!delYSID) {
+            $.modalMsg("请选择要删除的数据行", 'warning');
+            return;
+        }
+        $.modalConfirm("确定要删除吗？",
+           function (flag) {
+               if (flag) {
+                   $.najax({
+                       url: "@Url.Action("DeleteForm", "Bljgh")",
+                       dataType: "json",
+                       data: { delBljgmxId: delYSID },
+                       type: "POST",
+                       success: function () {
+                           $.loading(false);
+                           $.modalMsg("删除成功", 'success');
+                           reloadGrid();
+                           btn_clear();
+                       }
+                 });
+             }
+        });
+    }
+
+    function reloadGrid()
+    {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { ElementId: ElementId },
+        }).trigger('reloadGrid');
+        btn_clear();
+    }
+
+    function btn_clear() {
+        $("#saveoredit").html("新增");
+        $("#Blys form input").each(function () {
+            $(this).val('');
+        });
+    }
+
+    function btn_Blmladd(obj)
+    {
+        var keyValue = "";
+        if (obj)
+        {
+            keyValue = ElementId;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "新建病历表",
+            url: "/MedicalRecordManage/Bljgh/BlmlAdd?keyValue=" + keyValue,
+            width: "350px",
+            height: "400px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm(function (ref) {
+                    getYsTree();
+                });
+            }
+        });
+    }
+    function btn_Blmldelete()
+    {
+        if (!ElementId) {
+            $.modalAlert("请选中一条病历文书", 'warning');
+            return;
+        }
+        var keyValue = ElementId;
+        $.deleteForm({
+            url: "/MedicalRecordManage/Bljgh/DeleteBljgMainForm",
+            param: { keyValue: keyValue },
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalAlert('删除成功', 'success');
+                    getYsTree();
+                }
+                else {
+                    $.modalAlert(data.message, 'error');
+                }
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

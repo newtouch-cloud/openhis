@@ -1,0 +1,169 @@
+﻿
+@{
+    ViewBag.Title = "查询门诊预约记录";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<script src="~/Content/js/bootstrap-multiselect.js"></script>
+<link href="~/Content/js/bootstrap-multiselect.css" rel="stylesheet" />
+<style>
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+   </style>
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">预约日期：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td><td class="formValue" style="width:10%;float:left;"><label style="position:relative;top:5px;">至</label></td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle">预约姓名：</th>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="xm" type="text" class="form-control" style="width:90px;float:left;" />
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //查询列表
+        gridList();
+    });
+    //预约信息查询
+    function gridList() {
+        var $gridJsList = $("#gridList");
+        $gridJsList.dataGrid({
+            postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val(), xm: $("#xm").val() },
+            height: $(window).height() - 160,
+            width: "100px",
+            url: "/DoctorManage/OutpatientQuery/GetReservationGridJson",
+            colModel: [
+
+                { label: '预约日期', name: 'yyrq', width: 80, align: 'center' },
+                { label: '预约时间', name: 'yysj', width: 80, align: 'center' },
+                { label: '门诊号码', name: 'mzh', width: 100, align: 'center' },
+                { label: '患者姓名', name: 'xm', align: 'center', width: 110 },
+                { label: '性别', name: 'xb', align: 'center', width: 50 },
+                { label: '预约人电话', name: 'yylxfs', align: 'center', width: 100 },
+                { label: '预约科室', name: 'yyks', width: 80, align: 'center' },
+                { label: '预约医生', name: 'yyys', align: 'center', width: 80 },
+                { label: '操作1', name: 'action', align: 'center', width: 100, formatter: function (val) { return "<input class='btn btn-default btn-md btn_add' type='button' value='修改时间' onclick='updateRow($(this).parent().parent().attr(\"id\"))'/>"; } },
+                { label: '操作2', name: 'action', align: 'left', width: 100, formatter: function (val) { return "<input class='btn btn-default btn-md btn_add' type='button' value='删除记录' onclick='deleteRow($(this).parent().parent().attr(\"id\"))'/>"; } },
+            ],
+            pager: "#gridPager",
+            sortname: " yyrq asc",
+            rownumbers: true,  //是否显示序号
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val(), xm: $("#xm").val() },
+                url: "/DoctorManage/OutpatientQuery/GetReservationGridJson",
+            }).trigger('reloadGrid');
+        });
+    }
+    function updateRow(rowid) {
+        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+        if (rowData == null) {
+            $.modalMsg("未找到当前行", 'error');
+        }
+        $.modalOpen({
+            id: "ReservationForm",
+            title: "预约看诊",
+            url: "/MedicalRecord/ReservationForm?mzh=" + rowData.mzh,
+            width: "400px",
+            height: "300px",
+            callBack: function (iframeId) {
+                var yuyueObj = top.frames[iframeId].submitForm();
+                $.najax({
+                    url: "/MedicalRecord/SaveReservationData",
+                    dataType: "json",
+                    data: {
+                        yyrq: yuyueObj.yyrq,
+                        yysj: yuyueObj.yysj,
+                        yyks: rowData.yyks,
+                        mzh: rowData.mzh,
+                        yylxfs: yuyueObj.yylxfs,
+                    },
+                    type: "POST",
+                    success: function (data) {
+                    }
+                });
+                $.modalClose("ReservationForm");
+                $("#btn_search").click();
+            }
+        });
+    }
+    function deleteRow(rowid) {
+        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+        if (rowData == null) {
+            $.modalMsg("未找到当前行", 'error');
+        }
+        $.ajax({
+            url: "/MedicalRecord/DelReservationData",
+            data: {
+                mzh: rowData.mzh,
+            },
+            type: "POST",
+            success: function (data) {
+                $("#btn_search").click();
+            }
+        });
+    }
+</script>

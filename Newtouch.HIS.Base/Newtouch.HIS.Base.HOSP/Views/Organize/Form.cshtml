@@ -1,0 +1,148 @@
+﻿
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" style="margin-left: 4%;">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" style="padding-top: 20px; margin-left: 45px; margin-right: 75px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">上级：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="ParentId" name="ParentId" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue">
+                            <input id="Name" name="Name" type="text" class="form-control required" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">简称：</th>
+                        <td class="formValue">
+                            <input id="ShortName" name="ShortName" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>编码：</th>
+                        <td class="formValue">
+                            <input id="Code" name="Code" type="text" class="form-control required" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">国家编码：</th>
+                        <td class="formValue">
+                            <input id="gjjgdm" name="gjjgdm" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>分类：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="CategoryCode" name="CategoryCode" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                        
+                    </tr>
+                    <tr>
+                        <th class="formTitle">邮箱：</th>
+                        <td class="formValue">
+                            <input id="Email" name="Email" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>电话：</th>
+                        <td class="formValue">
+                            <input id="TelePhone" name="TelePhone" type="text" class="form-control required" placeholder="" />
+                        </td>
+                        
+                    </tr>
+                    <tr>
+                        <th class="formTitle">微信：</th>
+                        <td class="formValue">
+                            <input id="WeChat" name="WeChat" type="text" class="form-control" placeholder="请输入官方微信号" />
+                        </td>
+                        <th class="formTitle">传真：</th>
+                        <td class="formValue">
+                            <input id="Fax" name="Fax" type="text" class="form-control" placeholder="" />
+                        </td>
+                        
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle" style="height: 35px;">选项：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+
+                    </tr>
+                    <tr>
+                        <th class="formTitle" valign="top" style="padding-top: 5px;">
+                            <span class="required">*</span>地址：
+                        </th>
+                        <td class="formValue" colspan="3">
+                            <input id="Address" name="Address" type="text" class="form-control required" placeholder="请输入地址" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" valign="top" style="padding-top: 5px;">
+                            介绍：
+                        </th>
+                        <td class="formValue" colspan="3">
+                            <textarea id="Description" name="Description" class="form-control" style="height: 50px;"></textarea>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/Organize/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+    function initControl() {
+        //上级组织机构下拉框
+        $("#ParentId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+        //机构分类下拉    //这里不区分组织机构
+        $("#CategoryCode").bindSelect({
+            url: "/ItemsData/GetSelectJson",
+            param: { code: "OrganizeType" }
+        });
+    }
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        $.submitForm({
+            url: "/Organize/SubmitForm?keyValue=" + keyValue,
+            param: $("#form1").formSerialize(),
+            success: function () {
+                top.top.$.clientsRefresh(); //刷新缓存
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

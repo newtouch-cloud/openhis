@@ -1,0 +1,498 @@
+﻿@using Newtouch.Infrastructure
+
+@{
+    ViewBag.Title = "RequisitionForm";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-top:5px;">
+        <div class="panel-heading">
+            申领信息
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">申领单号：</th>
+                    <td class="formValue">
+                        <input id="txtSldh" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">发药部门：</th>
+                    <td class="formValue">
+                        <input id="txtfybm" type="text" class="form-control" />
+                    </td>
+                    <th class="formTitle">部门名称</th>
+                    <td class="formValue"><input id="txtfybmmc" type="text" class="form-control newtouch_Readonly" /></td>
+                    <th class="formTitle" style="visibility:hidden;"></th>
+                    <td class="formValue" style="visibility:hidden;"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="panel-heading">
+            药品信息
+        </div>
+        <div id="divSLMX" style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">药品代码：</th>
+                    <td class="formValue">
+                        <input id="editRowId" value="" style="display:none;" />
+                        <input id="ypCode" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">申领数量<span id="spanSlslDw"></span>：</th>
+                    <td class="formValue">
+                        <input id="lqdw" value="" style="display:none;" />
+                        <input id="slsl" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle" id="thRKSLDW">药品名称：</th>
+                    <td class="formValue">
+                        <input id="ypmc" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">规格：</th>
+                    <td class="formValue">
+                        <input id="ypgg" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">生产厂家：</th>
+                    <td class="formValue">
+                        <input id="ycmc" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <!-- 目标药库 的 库存 -->
+                    <th class="formTitle">可领数量：</th>
+                    <td class="formValue">
+                        <input id="klslandDw" type="text" class="form-control newtouch_Readonly inline" style="width:120px; display: inline;" />
+                        <label id="spanklslDw"></label>
+                    </td>
+                    <th class="formTitle">药库转换因子：</th>
+                    <td class="formValue">
+                        <input id="ykzhyz" type="text" class="form-control newtouch_Readonly" />
+                        <input id="bbmzhyz" type="text" style="display:none;" />
+                    </td>
+                    <td colspan="2"></td>
+                </tr>
+                <tr>
+                    <th class="formTitle">批发价(元)：</th>
+                    <td class="formValue">
+                        <input id="pfj" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">批发总额(元)：</th>
+                    <td class="formValue">
+                        <input id="pfjze" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">零售价(元)：</th>
+                    <td class="formValue">
+                        <input id="lsj" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">零售总额(元)：</th>
+                    <td class="formValue">
+                        <input id="lsjze" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+@Html.Partial("_MiddleButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 2, 3, 9 },
+    F2Text = "添加",
+    F3Text = "修改",
+    F9Text = "删除"
+})
+
+<div>
+    <table id="gridSLMX"></table>
+</div>
+
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new[] { 4, 7, 8 },
+    F7Text = "新申领单"
+})
+
+<script>
+    window.newtouch_globalconfig.f4opions = { container: '#divSLMX' }; //关闭 回车 Next
+
+    $(function () {
+        $(window).resize(function () { //浏览器窗口调整大小时重新加载jqGrid的宽
+            window.initLayout("MyTabGrid");
+        });
+        funcNewSLD();   //页面加载时New一个
+    });
+
+    //新申领单
+    function funcNewSLD() {
+        $.najax({
+            type: "POST",
+            url: "/Pharmacy/RequisitionGetNewDjh",
+            dataType: "text",
+            success: function (data) {
+                $('#txtSldh').val(data);
+            }
+        });
+    };
+
+    //发药部门浮层
+    $("#txtfybm").newtouchBatchFloatingSelector({
+        url: '/Pharmacy/RequisitionFybmSele',
+        height: 200,
+        width: 300,
+        caption: "发药部门",
+        clickautotrigger: true,
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.keyword = $.trim($("#txtfybm").val());
+            return reqData;
+        },
+        colModel: [
+            { label: '部门代码', name: 'yfbmCode', widthratio: 40 },
+            { label: '部门名称', name: 'yfbmmc', widthratio: 60 }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#txtfybm").val($thistr.attr('data-yfbmCode')).nfnAddReadonly();
+            $("#txtfybmmc").val($thistr.attr('data-yfbmmc'));
+            //放开下方的药品输入区
+            $("#ypCode,#slsl").nfnRemoveReadonly();
+            $('#editRowId').val('');
+        },
+        itemdbclickhandleComplete: function () {
+            $('#ypCode').trigger('focus'); //focus到申领数量
+        }
+    });
+
+    //药品代码（药品）浮层
+    $("#ypCode").newtouchFloatingSelector({
+        url: "/DrugStorage/GetValidMedicinesrmList",
+        height: 350,
+        width: 850,
+        clickautotrigger: true,
+        caption: "药品信息",
+        ajaxparameters: function () {
+            return "srm=" + $('#ypCode').val() + "&ypYfbmCode=" + $("#txtfybm").val();
+        },
+        colModel: [
+            { label: '类别', name: 'dlmc', width: 70 },
+            { label: '药品名称', name: 'ypmc', width: 200, align: 'left' },
+            { label: '规格', name: 'gg', width: 110, align: 'center' },
+            { label: '库存', name: 'slStr', width: 100, align: 'center' },
+            { label: '零售价', name: 'lsj', width: 60, align: 'center' },
+            { label: '批发价', name: 'pfj', width: 60, align: 'center' },
+            { label: '生产厂家', name: 'sccj', width: 190, align: 'left' },
+            { label: 'bzdw', name: 'bzdw', hidden: true },
+            { label: 'bzdwsl', name: 'bzdwsl', hidden: true },
+            { label: '转换因子', name: 'zhyz', hidden: true },
+            { label: '单位', name: 'bmdw', hidden: true },
+            { label: '药品代码', name: 'ypdm', hidden: true },
+            { label: '批次', name: 'pc', hidden: true },
+            { label: '最小库存', name: 'zxsl', hidden: true },
+            { label: '药库单位', name: 'zxdw', hidden: true },
+            { label: '系数', name: 'bzs', hidden: true },
+            { label: '转换成部门单位后的最大可用数', name: 'bmdwsl', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            //申领部门，非发药部门）
+            $.najax({
+                url: "/DrugStorage/CheckRkbmOwnMedicine?yp=" + $thistr.attr('data-ypdm') + "&rkbm=@Constants.CurrentYfbm.yfbmCode",
+                dataType: "json",
+                type: "Get",
+                success: function (res) {
+                    if (res.state === 'success') {
+                        $("#ypCode").val($thistr.attr('data-ypdm'));
+                        $("#slsl").val('');
+                        $("#ypmc").val($thistr.attr('data-ypmc'));
+                        $("#ypgg").val($thistr.attr('data-gg'));
+                        $("#ycmc").val($thistr.attr('data-sccj'));
+                        $("#klslandDw").val($thistr.attr('data-bzdwsl'));  //可领数量
+                        $("#spanSlslDw").html('(' + $thistr.attr('data-bzdw') + ')'); //申领数量单位
+                        $("#spanklslDw").html($thistr.attr('data-bzdw'));
+                        $("#pfj").val($thistr.attr('data-pfj'));
+                        $("#pfjze").val('');
+                        $("#lsj").val($thistr.attr('data-lsj'));
+                        $("#lsjze").val('');
+                        $('#ykzhyz').val($thistr.attr('data-bzs'));
+                        $("#bbmzhyz").val($thistr.attr('data-bzs'));   //药库转化因子
+                        $("#lqdw").val($thistr.attr('data-bzdw'));   //申领数量单位
+                    }else {
+                        $.modalAlert(res.message, 'error');
+                    }
+                }
+            });
+        },
+        itemdbclickhandleComplete: function () {
+            $('#slsl').trigger('focus');    //focus到申领数量
+        }
+    });
+
+    //声明 申领明细 grid
+    $("#gridSLMX").newtouchLocalDataGrid({
+        height: $(window).height() - 335,
+        unwritten: false,
+        colModel: [
+            { label: '药品代码', name: 'ypCode', width: 100, align: 'left' },
+            { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+            { label: '规格', name: 'ypgg', width: 110, align: 'left' },
+            { label: '可领数量', name: 'klslandDw', width: 80, align: 'left' },
+            { label: '现有库存', name: 'xykcslandDw', width: 80, align: 'left', hidden: true },
+            { label: '申领数量', name: 'slsl', width: 70, align: 'left' }, //药房数量
+            { label: '单位', name: 'lqdw', width: 60, align: 'left' },   //药房单位
+            { label: '生产厂家', name: 'ycmc', width: 180, align: 'left' },
+            { label: '批发价', name: 'pfj', width: 70, align: 'left' },
+            { label: '零售价', name: 'lsj', width: 70, align: 'left' },
+            { label: '批发总额', name: 'pfjze', width: 80, align: 'left' },
+            { label: '零售总额', name: 'lsjze', width: 80, align: 'left' },
+            { label: '药库转换因子', name: 'ykzhyz', hidden: true },
+            { label: 'bzdw', name: 'bzdw', hidden: true },
+            { label: '本部门转换因子', name: 'bbmzhyz', hidden: true }
+        ],
+        ondblClickRow: function (rowid) {
+            gridDbclickRow(rowid);
+        }
+    });
+
+    //已选药品双击修改
+    function gridDbclickRow(rowid) {
+        if (rowid) {
+            var rowData = $("#gridSLMX").jqGrid('getRowData', rowid);
+            if (rowData) {
+                $("#ypCode").val(rowData.ypCode);
+                $("#slsl").val(rowData.slsl);
+                $("#ypmc").val(rowData.ypmc);
+                $("#ypgg").val(rowData.ypgg);
+                $("#ycmc").val(rowData.ycmc);
+                $("#klslandDw").val(rowData.klslandDw);
+                $("#xykc").val(rowData.xykc);
+                $("#xykcslandDw").val(rowData.xykcslandDw);
+                $("#pfj").val(rowData.pfj);
+                $("#pfjze").val(rowData.pfjze);
+                $("#lsj").val(rowData.lsj);
+                $("#lsjze").val(rowData.lsjze);
+                $('#ykzhyz').val(rowData.ykzhyz);
+                $('#bbmzhyz').val(rowData.bbmzhyz);
+                $('#editRowId').val(rowid);
+                $("#lqdw").val(rowData.lqdw);
+                $("#spanklslDw").html(rowData.bzdw);
+                $('#ypCode').trigger('focus');
+            }
+        }
+    }
+
+    //申领数量 事件
+    $('#slsl').keyup(function () {
+        if (this.value.length === 1) {
+            this.value = this.value.replace(/[^1-9]/g, '');
+        }
+        else {
+            this.value = this.value.replace(/\D/g, '');
+        }
+        $("#pfjze").val('');
+        $("#lsjze").val('');
+        var slslVal = $(this).val();
+        if (slslVal && !isNaN(slslVal)) {
+            slslVal = parseInt(slslVal);
+        }
+        var pfjVal = $('#pfj').val();
+        if (pfjVal && !isNaN(pfjVal)) {
+            pfjVal = parseFloat(pfjVal);
+        }
+        var lsjVal = $('#lsj').val();
+        if (lsjVal && !isNaN(lsjVal)) {
+            lsjVal = parseFloat(lsjVal);
+        }
+        if (!(isNaN(slslVal)) && !(isNaN(pfjVal)) && !(isNaN(lsjVal))) {
+            $("#pfjze").val(roundingBy4she6ru5chengshuang(slslVal * pfjVal, 2));
+            $("#lsjze").val(roundingBy4she6ru5chengshuang(slslVal * lsjVal, 2));
+        }
+    }).blur(function () {
+        if (isNaN($(this).val())) {
+            $("#pfjze").val('');
+            $("#pfjze").val('');
+        }
+    });
+
+    //申领数量input的回车事件
+    $('#slsl').keydownEnterEvent(function () {
+        if ($('#editRowId').val()) {            //是修改
+            newtouch_event_f3();    //模拟 修改按钮 点击
+        }
+        else {
+            newtouch_event_f2();    //模拟 确认按钮 点击
+        }
+    });
+
+
+    //为药品Grid组装数据
+    function getEditRowData() {
+        var data = [{
+            ypCode: $('#ypCode').val(),
+            ypmc: $('#ypmc').val(),
+            ypgg: $('#ypgg').val(),
+            klslandDw: $('#klslandDw').val(),   //可领数量
+            xykcslandDw: $('#xykcslandDw').val(),
+            slsl: $('#slsl').val(),
+            lqdw: $('#lqdw').val(),
+            ycmc: $('#ycmc').val(),
+            pfj: $('#pfj').val(),
+            lsj: $('#lsj').val(),
+            pfjze: $('#pfjze').val(),
+            lsjze: $('#lsjze').val(),
+            ykzhyz: $('#ykzhyz').val(),
+            bbmzhyz: $('#bbmzhyz').val(),
+            bzdw: $('#spanklslDw').html()
+        }];
+        return data;
+    }
+
+    //清楚
+    function newtouch_event_f4() {
+        $("#lqdw").val("");   //申领数量单位
+        $("#spanSlslDw").html('');
+        $('#spanklslDw').html("");
+        $('#gridSLMX').jqGrid("clearGridData"); //清除明细的grid
+    }
+
+    //添加按钮
+    function newtouch_event_f2() {
+        var data = getEditRowData();
+        if (!checkInputVal(data)) {
+            return;
+        }
+        
+        //检查重复项
+        var isRepeatedAdd = false;
+        $.each($("#gridSLMX").getDataIDs(), function () {
+            var rowData = $("#gridSLMX").jqGrid('getRowData', this);
+            if (rowData.ypCode === data[0].ypCode) {
+                isRepeatedAdd = true;
+            }
+        });
+        if (isRepeatedAdd) {
+            $.modalAlert("重复添加", 'warning');
+            return;
+        }
+
+        $("#gridSLMX").newtouchLocalDataGrid(null, data);
+        $('#divSLMX input').val('');    //中间明细块 所有input 重置
+        $("#spanSlslDw").html('');
+        $("#spanklslDw").html("");
+        $("#lqdw").val("");
+        $('#ypCode').val('').trigger('focus');
+    }
+
+    //检查输入合法性
+    function checkInputVal(data) {
+        if (!data[0].ypCode) {
+            $.modalAlert("药品代码必填", 'warning');
+            return false;
+        }
+        if (!data[0].slsl) {
+            $.modalAlert("申领数必填", 'warning');
+            return false;
+        }
+        if (!data[0].ypgg) {
+            $.modalAlert("规格不能为空", 'warning');
+            return false;
+        }
+        if (!data[0].pfjze || !data[0].lsjze) {
+            $.modalAlert("批发总价和零售总价不能为空", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    //修改按钮
+    function newtouch_event_f3() {
+        if ($('#editRowId').val()) {
+            //保存rowId的内容
+            var data = getEditRowData();
+            if (!checkInputVal(data)) {
+                return;
+            }
+            $('#gridSLMX').jqGrid("delRowData", $('#editRowId').val()); //先remove掉那一行
+            //检查重复项
+            var isRepeatedAdd = false;
+            $.each($("#gridSLMX").getDataIDs(), function () {
+                var rowData = $("#gridSLMX").jqGrid('getRowData', this);
+                if (rowData.ypCode == data[0].ypCode) {
+                    isRepeatedAdd = true;
+                }
+            });
+            if (isRepeatedAdd) {
+                $.modalAlert("重复添加", 'warning');
+                return;
+            }
+            $("#gridSLMX").newtouchLocalDataGrid(null, data);
+            $('#divSLMX input').val('');    //中间明细块 所有input 重置
+            $("#spanSlslDw").html('');
+            $('#spanklslDw').html("");
+            $("#lqdw").val("");
+            $('#ypCode').val('').trigger('focus');
+        }
+        else {
+            //获取grid当前选中的那一行
+            var seleId = $('#gridSLMX').jqGrid('getGridParam', 'selrow');
+            if (seleId) {
+                //请求修改该行
+                gridDbclickRow(seleId);
+            }
+            else {
+                return;
+            }
+        }
+    }
+
+    //新申领单
+    function newtouch_event_f6() {
+        if ($("#gridSLMX").getDataIDs().length !== 0) {
+            $.modalConfirm("列表中存在未保存的申领明细<br/>确认放弃保存", function (flag) {
+                if (flag) {
+                    newtouch_event_f7(flag);
+                }
+            });
+            return;
+        }
+        newtouch_event_f7();
+    }
+
+    //新申领单
+    function newtouch_event_f7() {
+        newtouch_globalevent_f4();
+        $('#txtfybm').val('');
+        $('#txtfybmmc').val('');
+        $('#editRowId').val('');    //无 正在修改的那一行
+        $('#gridSLMX').jqGrid("clearGridData");
+        funcNewSLD();
+        $("#txtfybm").nfnRemoveReadonly();
+        $("#ypCode,#slsl").nfnAddReadonly();
+    }
+
+    //保存
+    function newtouch_event_f8() {
+        if ($("#gridSLMX").getDataIDs().length === 0) {
+            $.modalAlert("无明细数据", 'warning');
+            return;
+        }
+        var postData = {};
+        postData.sldh = $('#txtSldh').val();
+        postData.fybmCode = $('#txtfybm').val();
+        postData.slmxList = $("#gridSLMX").jqGrid('getRowData_AllLine', false, true);    //获取选中行的Json数据
+        $.najax({
+            type: "POST",
+            url: "/Pharmacy/SubmitRequisition",
+            data: postData,
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state === 'success') {
+                    $.modalMsg('申领单发送成功', 'success', 1000);
+                    newtouch_event_f7();
+                }
+                else {
+                    $.newtouchAlert(ajaxresp);
+                    return;
+                }
+            }
+        });
+    }
+
+</script>

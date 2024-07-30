@@ -1,0 +1,158 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "ReceiptQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var djlxItemStrs = "1,2,3,4,5,6"; //对应枚举EnumDanJuLX
+    if (Constants.CurrentYfbm.yfbmjb == "2")    //药房
+    {
+        djlxItemStrs = "3,4,5,6"; //直接发药、申领发药、内部发药退回
+    }
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">审核状态：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlSHZT", EnumDjShzt.WaitingApprove.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle" style="width: 75px;padding-right: 0;">日期：</th>
+                    <td class="formValue" style="width:130px;">
+                        <input id="txtStartDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                    </td>
+                    <th class="formTitle" style="width: 35px;padding-right: 0;">到：</th>
+                    <td class="formValue" style="width:130px;">
+                        <input id="txtEndDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                    </td>
+                    <th class="formTitle">单据号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtPDH" />
+                    </td>
+                    <th class="formTitle">单据类型：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlDJLX", EnumDanJuLX.yaopinruku.ToSomeDescSelectList(djlxItemStrs), "全部", new { @class = "form-control" })
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div>
+        <table id="gridDJMainRecords"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div style="margin-top:5px;">
+        <table id="gridDJMXInfo"></table>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        gridDJMainRecords();
+    });
+
+    //单据主记录
+    function gridDJMainRecords() {
+        var $gridDjMainRecords = $("#gridDJMainRecords");
+        $gridDjMainRecords.dataGrid({
+            postData: getSearchPostData(),
+            height: 165,
+            url: "/PharmacyDrugStorage/SelectReceiptMainInfo?from=query",
+            colModel: [
+                {
+                    label: '审核状态', name: 'shzt', width: 60, align: 'center', formatter: function (val) {
+                        return val === "0" ? "未审核" : (val === "1" ? "已通过" : (val === "2" ? "未通过" : (val === "3" ? "已作废" : "")));
+                    }
+                },
+                { label: '单据类型', name: 'djlxmc', width: 70, align: 'center' },
+                { label: '单据号', name: 'pdh', width: 130, align: 'center' },
+                { label: '出库部门', name: 'ckbmmc', width: 100, align: 'left' },
+                { label: '入库部门', name: 'rkbmmc', width: 100, align: 'left' },
+                { label: '出入库方式', name: 'crkfsmc', width: 80, align: 'center' },
+                { label: '批发价金额', name: 'pjze', width: 80, align: 'left' },
+                { label: '零售价金额', name: 'ljze', width: 80, align: 'left' },
+                { label: '进价总金额', name: 'zje', width: 80, align: 'left' },
+                { label: '进销差价', name: 'jxcj', width: 80, align: 'left' },
+                { label: '操作时间', name: 'czsj', width: 130, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' }  },
+                { label: 'crkId', name: 'crkId', hidden: true, align: 'left' },
+                { label: 'djlx', name: 'djlx', hidden: true, align: 'left' }
+            ],
+            unwritten: false,
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowId) {
+                btn_selectrow(rowId);
+            }
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridDJMXInfo').jqGrid("clearGridData");
+            $gridDjMainRecords.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger('click');
+    }
+    function getSearchPostData() {
+        var shzt = $("#ddlSHZT").val();
+        var qsrj = $("#txtStartDate").val();
+        var jsrj = $("#txtEndDate").val();
+        var pdh = $("#txtPDH").val();
+        var djlx = $("#ddlDJLX").val();
+        return { qsrj: qsrj, jsrj: jsrj, pdh: pdh, djlx: djlx, shzt: shzt };
+    };
+
+    //单击事件
+    function btn_selectrow(rowId) {
+        //每次单击，先清空明细 再重新加载所有选中行明细
+        $('#gridDJMXInfo').jqGrid("clearGridData");
+        $.najax({
+            type: "POST",
+            url: "/PharmacyDrugStorage/SelectReceipDetailInfo",
+            data: { crkId: $("#gridDJMainRecords").jqGrid('getRowData', rowId).crkId, djlx: $("#gridDJMainRecords").jqGrid('getRowData', rowId).djlx },
+            dataType: "json",
+            success: function (ajaxresp) {
+                $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp);
+            }
+        });
+    }
+
+    //单据明细
+    $('#gridDJMXInfo').newtouchLocalDataGrid({
+        height: $(window).height() - 385,
+        caption: "单据明细",
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '出入库明细序号', name: 'crkmxId', hidden: true, width: 100, align: 'left' },
+            { label: '批号', name: 'ph', width: 80, align: 'left' },
+            { label: '批次', name: 'pc', width: 80, align: 'left' },
+            { label: '药品类别', name: 'yplbmc', width: 60, align: 'left' },
+            { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+            { label: '规格', name: 'gg', width: 70, align: 'left' },
+            { label: '生产厂家', name: 'sccj', width: 110, align: 'left' },
+            { label: '数量', name: 'slanddw', width: 40, align: 'left' },
+            { label: '批价金额', name: 'pjze', width: 70, align: 'left' },
+            { label: '零价金额', name: 'ljze', width: 70, align: 'left' },
+            { label: '进价', name: 'jj', width: 70, align: 'left' },
+            { label: '进价总金额', name: 'zje', width: 70, align: 'left' },
+            { label: '进销差价', name: 'jxcj', width: 60, align: 'left' },
+            { label: '拼音', name: 'py', width: 60, align: 'left' },
+            { label: '扣率', name: 'kl', width: 50, align: 'left' }
+        ]
+    });
+
+</script>

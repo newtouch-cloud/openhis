@@ -1,0 +1,664 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "直接出库";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<style>
+    .inline {
+        width: 85%;
+        display: inline;
+    }
+
+    .PriceInline {
+        width: 75%;
+        display: inline;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">出库信息</div>
+        <div style="padding-right: 10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">出库单号：</th>
+                    <td class="formValue">
+                        <input id="Pdh" type="text" class="form-control newtouch_Readonly required" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>入库部门</th>
+                    <td class="formValue">
+                        <input type="text" id="rkbm" name="rkbm" data-rkbmId="" placeholder="请选择入库部门" class="form-control required" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>出库方式：</th>
+                    <td class="formValue">
+                        <select id="crkfs" class="form-control required"></select>
+                    </td>
+                    <th class="formTitle"></th>
+                    <td class="formValue"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="panel-heading">物资信息</div>
+        <div style="padding-right: 10px;">
+            <table class="form" id="form3">
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>物资</th>
+                    <td class="formValue">
+                        <input id="wzmc" type="text" class="form-control required" placeholder="代码 名称 拼音 商品名" />
+                        <input id="productId" type="hidden" value="" />
+                        <input id="editRowId" type="hidden" value="" />
+                        <input id="lbmc" type="hidden" value="" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>批次</th>
+                    <td class="formValue">
+                        <input type="text" id="pc" name="pc" class="form-control required" />
+                        <input id="fph" type="hidden" value="" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>出库数量：</th>
+                    <td class="formValue">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <input id="sl" type="text" class="form-control required" />
+                            </div>
+                            <div class="col-md-4">
+                                <select id="dw" class="form-control" onchange="CKSL_Leave()"></select>
+                                <input id="mindwmc" value="" data-zhyz="" data-name="" type="hidden" />
+                                <input id="bmdwmc" value="" data-zhyz="" data-name="" type="hidden" />
+                            </div>
+                        </div>
+                    </td>
+                    <th class="formTitle">转化因子：</th>
+                    <td class="formValue">
+                        <input id="zhyz" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">规格</th>
+                    <td class="formValue">
+                        <input type="text" id="gg" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">生产厂家</th>
+                    <td class="formValue">
+                        <input type="text" id="sccj" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">可用库存</th>
+                    <td class="formValue">
+                        <input type="text" id="slstr" class="form-control newtouch_Readonly inline" />
+                        <input id="kykcsl" type="text" data-kcsl="" hidden="hidden" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>有效期</th>
+                    <td class="formValue">
+                        <input type="text" id="yxq" name="yxq" class="form-control newtouch_Readonly required" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">零售价</th>
+                    <td class="formValue">
+                        <input type="text" id="lsj" class="form-control newtouch_Readonly PriceInline" style="width: 65%;float: left;" />
+                        <span name="sp_bmdw" style="line-height:24px;margin-left: 10px;"></span>
+                        <input id="minlsj" type="hidden" value="" />
+                    </td>
+                    <th class="formTitle">零售金额</th>
+                    <td class="formValue">
+                        <input type="text" id="lsze" class="form-control newtouch_Readonly inline" style="width: 70%;float: left;" />
+                        <span style="line-height:24px;margin-left: 10px;">(元)</span>
+                        <input id="bmjj" type="hidden" value="" />
+                        <input id="minjj" type="hidden" value="" />
+                    </td>
+                    <th class="formTitle">批号</th>
+                    <td class="formValue">
+                        <input type="text" id="ph" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">生产日期</th>
+                    <td class="formValue">
+                        <input type="text" id="scrq" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+@Html.Partial("_MiddleButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 2, 3, 6 },
+    F2Text = "添加",
+    F3Text = "修改",
+    F6Text = "删除",
+})
+<div class="gridPanel" style="margin-top:10px">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 7, 8 },
+    F7Text = "重置",
+    F8Text = "出库"
+
+})
+<script type="text/javascript">
+    $(function () {
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        init();
+        $("#sl").blur(function () {//计算批发总价和零售总价
+            CKSL_Leave();
+        });
+        $("#wzmc").change(function () {
+            $("#ph").val("");
+            $("#pc").val("");
+            $("#slstr").val("");
+            $("#kykcsl").attr('data-kcsl', "").val("");
+            $("#productId").val("");
+            bottomButtonsReset();
+        });
+    });
+
+    //初始化
+    function init() {
+        $('#gridList').jqGrid("clearGridData");//清空Grid
+        $("#gridList").clearGridData();
+        GetNewZjckdh();
+        GetCrkfs();
+        GridList();
+        bottomButtonsReset();
+    }
+
+    //get jqgrid
+    function GridList() {
+        $("#gridList").newtouchLocalDataGrid({
+            height: $(window).height() - document.getElementById('gridList').offsetTop - 85,
+            unwritten: false,
+            colModel: [
+                { label: "类别", name: "lbmc", width: 80, align: 'left' },
+                { label: '物资名称', name: 'wzmc', width: 170, align: 'left' },
+                { label: '数量', name: 'sl', width: 50, align: 'right' },
+                { label: '单位', name: 'unitName', width: 40, align: 'center' },
+                { label: '可用库存', name: 'slstr', width: 60, align: 'right' },
+                {
+                    label: '零售价', name: 'lsj', width: 70, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.00";
+                    }
+                },
+                {
+                    label: '零售总价', name: 'lsze', width: 70, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                { label: '规格', name: 'gg', width: 50, align: 'left' },
+                { label: '批号', name: 'ph', width: 100, align: 'center' },
+                { label: '批次', name: 'pc', width: 110, align: 'center' },
+                { label: '有效期', name: 'yxq', width: 70, align: 'center' },
+                { label: '生产厂家', name: 'sccj', width: 120, align: 'left' },
+                { label: "productId", name: "productId", hidden: true, key: true },
+                { label: "rkbm", name: "rkbm", hidden: true },
+                { label: "rkbmId", name: "rkbmId", hidden: true },
+                { label: "Pdh", name: "Pdh", hidden: true },
+                { label: "crkfs", name: "crkfs", hidden: true },
+                { label: "mindwmc", name: "mindwmc", hidden: true },
+                { label: "zxdwId", name: "zxdwId", hidden: true },
+                { label: "zxdwzhyz", name: "zxdwzhyz", hidden: true },
+                { label: "bmdwId", name: "bmdwId", hidden: true },
+                { label: "bmdwmc", name: "bmdwmc", hidden: true },
+                { label: "bmdwzhyz", name: "bmdwzhyz", hidden: true },
+                { label: "zhyz", name: "zhyz", hidden: true },
+                { label: "kykcsl", name: "kykcsl", hidden: true },
+                { label: "ckbmkc", name: "ckbmkc", hidden: true },
+                { label: "jj", name: "jj", hidden: true },
+                { label: "minjj", name: "minjj", hidden: true },
+                { label: "minlsj", name: "minlsj", hidden: true },
+                { label: "fph", name: "fph", hidden: true },
+                { label: "unitId", name: "unitId", hidden: true }
+            ],
+            ondblClickRow: function (rowid) {
+                gridDbclickRow(rowid);
+            },
+            onSelectRow: function (rowid) {
+                EnabledControls();
+            }
+        });
+    }
+
+    //出库
+    function newtouch_event_f8() {
+        var djmx = $("#gridList").jqGrid('getRowData_AllLine');
+        if (djmx == null || djmx.length <= 0) {
+            $.modalAlert("请先添加出库信息", 'warning');
+            return;
+        }
+        var crkdj = Object();
+        crkdj.pdh = djmx[0].Pdh;
+        crkdj.rkbm = djmx[0].rkbmId;
+        crkdj.crkfs = djmx[0].crkfs;
+        $.najax({
+            url: "/StorageManage/Storage/SaveDirectDelivery",
+            type: "POST",
+            data: { crkdj: crkdj, crkdjmx: djmx },
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalAlert("出库成功", 'success');
+                    newtouch_event_f7();//出入库：新单据号 主数据清空 明细清空
+                } else {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+    //添加
+    function newtouch_event_f2() {
+        if (!checkEditingRowData()) {    //数据是否完善，检查必填项
+            return;
+        }
+        var data = getEditRowData();
+        $("#gridList").newtouchLocalDataGrid(null, data);
+        CleanInput();//清空物资信息
+    }
+
+    //修改
+    function newtouch_event_f3() {
+        if ($('#editRowId').val()) {
+            if (!checkEditingRowData()) {
+                return false;
+            }
+            var data = getEditRowData();//获取明细
+            $('#gridList').jqGrid("delRowData", $('#editRowId').val()); //先remove掉那一行
+            //检查重复项
+            var isRepeatedAdd = false;
+            $.each($("#gridList").getDataIDs(), function () {
+                var rowData = $("#gridList").jqGrid('getRowData', this);
+                if (rowData.productId === data[0].productId && rowData.ph === data[0].ph && rowData.pc === data[0].pc) {
+                    isRepeatedAdd = true;
+                }
+            });
+            if (isRepeatedAdd) {
+                $.modalAlert("重复添加", 'warning');
+                return false;
+            }
+            $("#gridList").newtouchLocalDataGrid(null, data);
+            CleanInput(); //清空物资信息
+            bottomButtonsReset();//重置按钮
+        } else {
+            var seleId = $('#gridList').jqGrid('getGridParam', 'selrow');//获取grid当前选中的那一行
+            if (seleId) {
+                gridDbclickRow(seleId);//请求修改该行
+            }
+        }
+    }
+
+    //删除
+    function newtouch_event_f6() {
+        var delRowid = $("#gridList").jqGrid('getGridParam', 'selrow');
+        if (!delRowid) {
+            $.modalAlert("未选中行", 'warning');
+            return;
+        }
+        $('#gridList').jqGrid('delRowData', delRowid);
+        CleanInput();
+        bottomButtonsReset();
+    }
+
+    //新出库单
+    function newtouch_event_f7() {
+        newtouch_globalevent_f4(null, {
+            container: "#form1",
+            inner: false
+        });
+        //解禁退药信息
+        var list = new Array();
+        list.push({ id: 'rkbm' });
+        list.push({ id: 'crkfs' });
+        readonly(list, 2);
+        ////禁用药品信息
+        //var list2 = new Array();
+        //list2.push({ id: 'wzmc' });
+        //list2.push({ id: 'pc' });
+        //list2.push({ id: 'yxq' });
+        //list2.push({ id: 'sl' });
+        //readonly(list2, 1);
+        init();
+    }
+
+    //获取编辑域的对象数据
+    function getEditRowData() {
+        var newData = $("#form1").formSerialize();
+        newData["unitName"] = $("#dw").find("option:selected").text();
+        newData["zhyz"] = $("#dw").find("option:selected").attr("data-zhyz");
+        newData["unitId"] = $("#dw").val();
+        newData["zxdwId"] = $("#mindwmc").val();
+        newData["mindwmc"] = $("#mindwmc").attr("data-name");
+        newData["zxdwzhyz"] = $("#mindwmc").attr("data-zhyz");
+        newData["bmdwId"] = $("#bmdwmc").val();
+        newData["bmdwmc"] = $("#bmdwmc").attr("data-name");
+        newData["bmdwzhyz"] = $("#bmdwmc").attr("data-zhyz");
+        newData["rkbmId"] = $("#rkbm").attr("data-rkbmId");
+        newData["ckbmkc"] = $("#kykcsl").attr("data-kcsl");
+        newData["jj"] = $("#bmjj").val();
+        return [newData];
+    }
+
+    //请求 编辑 行
+    function gridDbclickRow(rowid) {
+        if (rowid) {
+            var getRowData = $("#gridList").jqGrid('getRowData', rowid);
+            if (getRowData) {
+                $("#lbmc").val(getRowData.lbmc);
+                $("#wzmc").val(getRowData.wzmc);
+                $("#sl").val(getRowData.sl);
+                $("#unitName").val(getRowData.unitName);
+                $("#slstr").val(getRowData.slstr);
+                $("#gg").val(getRowData.gg);
+                $("#ph").val(getRowData.ph);
+                $("#pc").val(getRowData.pc);
+                $("#yxq").val(getRowData.yxq);
+                $("#sccj").val(getRowData.sccj);
+                $("#lsj").val(getRowData.lsj);
+                $("#minlsj").val(getRowData.minlsj);
+                $("#lsze").val(getRowData.lsze);
+                $("#bmjj").val(getRowData.jj);
+                $("#productId").val(getRowData.productId);
+                $("#rkbm").val(getRowData.rkbm).attr("data-rkbmId", getRowData.rkbmId);
+                $("#Pdh").val(getRowData.Pdh);
+                $("#crkfs").val(getRowData.crkfs);
+                $("#zxdwzhyz").val(getRowData.zxdwzhyz);
+                $("#zhyz").val(getRowData.zhyz);
+                $("#kykcsl").val(getRowData.kykcsl).attr("data-kcsl", getRowData.ckbmkc);
+                $("#scrq").val(getRowData.scrq);
+                $("#fph").val(getRowData.fph);
+                $("#dw").empty();
+                if (getRowData.mindwmc !== getRowData.bmdwmc) {
+                    $("#dw").append("<option data-zhyz='1' value='" + getRowData.zxdwId + "'>" + getRowData.mindwmc + "</option>");
+                }
+                $("#dw").append("<option data-zhyz='" + getRowData.bmdwzhyz + "' value='" + getRowData.bmdwId + "'>" + getRowData.bmdwmc + "</option>");
+                $("#mindwmc").val(getRowData.zxdwId).attr("data-zhyz", 1).attr("data-name", getRowData.mindwmc);
+                $("#bmdwmc").val(getRowData.bmdwId).attr("data-zhyz", getRowData.bmdwzhyz).attr("data-name", getRowData.bmdwmc);
+                $("#dw").val(getRowData.unitId).trigger("change");
+                //$("#dw").val(getRowData.unitId);
+                $('#editRowId').val(rowid);
+            }
+        }
+    }
+
+    //启用
+    function EnabledControls() {
+        $('#btn_bottombutton_f3').removeAttr('disabled');
+        $('#btn_bottombutton_f6').removeAttr('disabled');
+        $('#btn_bottombutton_f2').attr('disabled', 'disabled');
+    }
+
+    //按钮重置
+    function bottomButtonsReset() {
+        $('#btn_bottombutton_f2').removeAttr('disabled');
+        $('#btn_bottombutton_f3').attr('disabled', 'disabled');
+        $('#btn_bottombutton_f6').attr('disabled', 'disabled');
+    }
+
+    //检查正在编辑的数据（待提交）的完整性
+    function checkEditingRowData() {
+        var validator = $('#form1').validate();
+        validator.settings = {
+            rules: {
+                Pdh: { required: true },
+                rkbm: { required: true },
+                crkfs: { required: true },
+                wzmc: { required: true },
+                pc: { required: true },
+                ph: { required: true },
+                sl: { required: true }
+            },
+            messages: {
+                Pdh: { required: "出库单号必须填写" },
+                rkbm: { required: "入库部门必须填写" },
+                crkfs: { required: "出库方式必须选择" },
+                wzmc: { required: "物资不能为空" },
+                pc: { required: "请选择批次" },
+                ph: { required: "批号不能为空" },
+                sl: { required: "出库数量必须为正数" }
+            },
+            showErrors: function (errorMap, errorList) {
+                if (!$.isEmptyObject(errorList)) {
+                    $.modalAlert(errorList[0].message, 'warning');
+                }
+            }
+        };
+        if (!validator.form()) {
+            return false;
+        }
+        var sl = Number($("#sl").val());
+        var zhyz = parseFloat($("#dw").find("option:selected").attr("data-zhyz"));
+        var dw = $("#dw").find("option:selected").text();
+        var kykcsl = Number($("#kykcsl").val());
+        if (sl * zhyz > kykcsl) {
+            $("#sl").val("");
+            $("#sl").focus();
+            $.modalAlert("本批出库数不得大于可用库存数！", 'warning');
+            return false;
+        }
+        else if (sl <= 0) {
+            $.modalAlert("出库数量必须为正数", 'warning');
+            return false;
+        }
+
+        var isRepeatedAdd = false;
+        $.each($("#gridList").getDataIDs(), function () {
+            var rowData = $("#gridCKMX").jqGrid('getRowData', this);
+            if (rowData.productId === $("#productId").val() && rowData.ph === $("#ph").val() && rowData.pc === $("#pc").val()) {
+                isRepeatedAdd = true;
+            }
+        });
+        if (isRepeatedAdd) {
+            $.modalAlert("不可重复添加！", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    //清空物资信息
+    function CleanInput() {
+        newtouch_globalevent_f4(null, {
+            container: "#form3",
+            inner: false
+        });
+        $("#dw").empty();
+        $("#sp_bmdw").html("");
+    }
+
+    //初始化输入码
+    $("#wzmc").newtouchBatchFloatingSelector({
+        clickautotrigger: true,
+        height: 300,
+        width: 920,
+        id: 'wzsrm',
+        ajaxmethod: "Get",
+        caption: "物资",
+        url: '/StorageManage/Storage/DepartmentStockListQuery',
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.key = $("#wzmc").val();
+            return reqData;
+        },
+        colModel: [
+            { label: '类别', name: 'lbmc', width: 120, align: "left" },
+            { label: '名称', name: 'name', width: 200, align: "left" },
+            { label: '库存', name: 'slstr', width: 100, align: "right" },
+            { label: '规格', name: 'gg', width: 120, align: "right" },
+            {
+                label: '零售价', name: 'bmlsj', width: 90, align: "right",
+                formatter: function (cellvalue) { return cellvalue.toFixed(4); }
+            },
+            { label: '单位', name: 'bmdwmc', width: 60 },
+            { label: '生产厂家', name: 'supplierName', width: 180, align: "left" },
+            { label: 'Id', name: 'Id', hidden: true },
+            { label: 'zhyz', name: 'zhyz', hidden: true },
+            { label: 'kykcsl', name: 'kykcsl', hidden: true },
+            { label: 'zxdwId', name: 'zxdwId', hidden: true },
+            { label: 'bmdwmc', name: 'bmdwmc', hidden: true },
+            { label: 'bmdwId', name: 'bmdwId', hidden: true },
+            { label: 'minlsj', name: 'minlsj', hidden: true },
+            { label: 'mindwmc', name: 'mindwmc', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#wzmc").val($thistr.attr('data-name'));
+            $("#productId").val($thistr.attr('data-Id'));
+            $("#dw").empty();
+            if ($thistr.attr('data-bmdwmc') !== $thistr.attr('data-mindwmc')) {
+                $("#dw").append("<option data-zhyz='1' value='" + $thistr.attr('data-zxdwId') + "'>" + $thistr.attr('data-mindwmc') + "</option>");   //出库单位
+            }
+            $("#dw").append("<option data-zhyz='" + $thistr.attr('data-zhyz') + "' value='" + $thistr.attr('data-bmdwId') + "'>" + $thistr.attr('data-bmdwmc') + "</option>");   //出库单位
+            $("#mindwmc").val($thistr.attr('data-zxdwId')).attr("data-zhyz", 1).attr("data-name", $thistr.attr('data-mindwmc'));
+            $("#bmdwmc").val($thistr.attr('data-bmdwId')).attr("data-zhyz", $thistr.attr('data-zhyz')).attr("data-name", $thistr.attr('data-bmdwmc'));
+            $("span[name=sp_bmdw]").html("(元/" + $thistr.attr('data-bmdwmc') + ")").attr("data-zhyz", $thistr.attr('data-zhyz'));
+            $("#slstr").val($thistr.attr('data-slstr'));
+            $("#kykcsl").val($thistr.attr('data-kykcsl'));
+            $("#gg").val($thistr.attr('data-gg'));
+            $("#lsj").val(parseFloat($thistr.attr('data-bmlsj')).toFixed(4));
+            $("#minlsj").val($thistr.attr('data-minlsj'));
+            $("#lbmc").val($thistr.attr('data-lbmc'));
+            $("#sccj").val($thistr.attr('data-supplierName'));
+            $("#sl").val("");
+            $("#lsze").val("");
+            $("#dw").trigger("change");
+
+            //禁用物资信息
+            var list = new Array();
+            list.push({ id: 'rkbm' });
+            list.push({ id: 'crkfs' });
+            readonly(list, 1);
+            return;
+        }
+    });
+
+    //初始化物资批次
+    $("#pc").newtouchBatchFloatingSelector({
+        clickautotrigger: true,
+        height: 300,
+        width: 870,
+        id: 'selectProductPcPh',
+        url: '/StorageManage/Storage/ProductBatchQuery',
+        ajaxmethod: 'Get',
+        inputtextcheck: function () {
+            if ($("#productId").val().replace(/(^\s*)|(\s*$)/g, "") === "" ||
+                $("#wzmc").val().replace(/(^\s*)|(\s*$)/g, "") === "") {   //去掉左右两端空格
+                $.modalAlert("请先选择物资", 'warning');
+                return false;
+            }
+            return true;
+        },
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.proId = $("#productId").val();
+            return reqData;
+        },
+        caption: "物资批号批次信息",
+        colModel: [
+            { label: '批号', name: 'ph', width: 120 },
+            { label: '批次', name: 'pc', width: 200 },
+            { label: '数量', name: 'slstr', width: 100 },
+            {
+                label: '进价', name: 'bmjj', width: 90,
+                formatter: function (cellvalue) { return cellvalue.toFixed(4); }
+            },
+            {
+                label: '进价总额', name: 'jjzje', width: 90,
+                formatter: function (cellvalue) { return cellvalue.toFixed(2); }
+            },
+            { label: '有效期', name: 'yxq', width: 80, formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            { label: '生产日期', name: 'scrq', width: 100, formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            { label: 'kykcsl', name: 'kykcsl', hidden: true },
+            { label: 'fph', name: 'fph', hidden: true },
+            { label: 'minjj', name: 'minjj', hidden: true },
+            { label: 'kcsl', name: 'kcsl', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#ph").val($thistr.attr('data-ph'));
+            $("#pc").val($thistr.attr('data-pc'));
+            $("#slstr").val($thistr.attr('data-slstr'));
+            $("#yxq").val($thistr.attr('data-yxq'));
+            $("#kykcsl").attr('data-kcsl', $thistr.attr('data-kcsl')).val($thistr.attr('data-kykcsl'));
+            $("#scrq").val($thistr.attr('data-scrq'));
+            $("#bmjj").val($thistr.attr('data-bmjj'));
+            $("#minjj").val($thistr.attr('data-minjj'));
+            $("#fph").val($thistr.attr('data-fph'));
+            $("#sl").val("");
+        }
+    });
+
+    //加载直接出库单号
+    function GetNewZjckdh() {
+        $.najax({
+            url: "/StorageManage/Storage/GetNewZjckdh?r=" + Math.random(),
+            dataType: "text",
+            type: "Get",
+            success: function (data) {
+                $("#Pdh").val(data);
+            }
+        });
+    }
+
+    //出库方式
+    function GetCrkfs() {
+        $("#crkfs").bindSelect({
+            url: "/Storage/GetStorageIOMode?crkbz=1",
+            id: "Id",
+            text: "crkfsmc"
+        });
+    }
+
+    //数量失焦,计算批发金额 零售金额
+    function CKSL_Leave() {
+        if ($("#wzmc").val() === "") {
+            return false;
+        }
+        var minlsj = parseFloat($("#minlsj").val());
+        var minjj = parseFloat($("#minjj").val());
+        var zhyz = parseFloat($("#dw").find("option:selected").attr("data-zhyz"));
+        $("#zhyz").val(zhyz);
+        $("span[name=sp_bmdw]").html("(元/" + $("#dw").find("option:selected").text() + ")").attr("data-zhyz", zhyz);
+        //var lsj = parseFloat($("#lsj").val()) / yzhyz * zhyz;
+        var lsj = minlsj * zhyz;
+        var jj = minjj * zhyz;
+        $("#lsj").val(lsj);
+        //$("#bmjj").val(parseFloat($("#bmjj").val()) / yzhyz * zhyz);
+        $("#bmjj").val(jj);
+        if ($("#sl").val() === "") {
+            return false;
+        }
+        if (isNaN($("#sl").val())) {
+            $.modalAlert("数量格式错误", 'warning');
+            return false;
+        }
+        var sl = parseFloat($("#sl").val());
+        $("#lsze").val((lsj * sl).toFixed(2));
+        return true;
+    }
+
+    ///初始化入库部门
+    $("#rkbm").newtouchBatchFloatingSelector({
+        height: 300,
+        width: 650,
+        clickautotrigger: true,
+        ajaxmethod: 'Get',
+        caption: "入库部门",
+        url: "/StorageManage/Storage/GetBrothersOrChildren",
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.keyword = $("#rkbm").val();
+            return reqData;
+        },
+        colModel: [
+            { label: 'Id', name: 'Id', hidden: true },
+            { label: '库房名称', name: 'name', widthratio: 35 },
+            { label: '等级', name: 'level', widthratio: 15 },
+            { label: '地址', name: 'address', widthratio: 50 }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#rkbm").val($thistr.attr('data-name')).attr("data-rkbmId", $thistr.attr('data-Id'));
+            return;
+        }
+    });
+</script>

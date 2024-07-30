@@ -1,0 +1,221 @@
+﻿@{
+    Layout = null;
+}
+<style>
+    #ctglDiv {
+        position: fixed;
+        top: 10%;
+        right: 30px;
+    }
+
+    .dv-right {
+        width: 160px;
+        float: right;
+    }
+
+    .dv-right-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-right-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    #toolbar {
+        float: left;
+        width:38px;
+         background-color: #00a0ea;
+         
+    }
+        #biaoqian {
+        float: left;
+        height: 80px;
+        padding: 10px;
+        color:white;
+    }
+	.quanxian {
+		background-color: #ddd;
+	}
+
+    .selected {
+        background-color: rgb(0, 160, 234);
+    }
+</style>
+
+
+
+<div class="dv-body" id="ctglDiv">
+    <span id="toolbar">
+        <a class="btn  " id="biaoqian">词<br /><br />条</a>
+
+        <a class="btn  " onclick="btn_add()" style="width:25px;height:30px;" title="添加">
+        <i class="fa fa-plus"></i>
+        </a>
+        <a class="btn  " onclick="btn_delete()" style="width:25px;height:30px;">
+            <img src="~/Content/img/icon/eraser.png" title="删除" />
+        </a>
+        <a class="btn  " onclick="btn_edit()" style="width:25px;height:30px;">
+
+            <img src="~/Content/img/icon/copy.png" title="编辑" />
+        </a>
+
+    </span>
+
+    <div class="dv-right">
+        <div class="dv-right-title">
+            <a id="1" class="btn  quanxian selected"><i class="fa "></i>个人</a>
+            <a id="2" class="btn  quanxian "><i class="fa "></i>科室</a>
+            <a id="0" class="btn  quanxian"><i class="fa "></i>全院</a>
+        
+        </div>
+        <div class="dv-right-tree" id="BqTreeList" style="background-color:#eee;"></div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    $(function () {
+        getBqTreeList(1);
+        $(".dv-right").toggle();
+        $(".quanxian").click(function () {
+            $(".quanxian").removeClass("selected");
+            $(this).addClass("selected");
+            var lx = $(this).attr("id");
+            getBqTreeList(lx);
+        });
+        $("#biaoqian").click(function () {
+            $(".dv-right").toggle();
+        });
+    });
+
+    function getBqTreeList(lx) {
+        $("#BqTreeList").treeview({
+            height: 240,
+            slimscroll: false,
+            showcheck: true,
+            url: "/MedicalRecordManage/Blctgl/GetTreeList?qx=" + lx,
+            //param: { aa: "" },
+            onnodeclick: function (item) {
+                if (item.value != 'parent') {
+                }
+            },
+            onnodedbclick: function (item) {
+                if (item.value != 'parent') {
+                    document.getElementById('myWriterControl').DCExecuteCommand('Spechars', true, item.value);
+        
+          
+                }
+            }
+        });
+
+    }
+
+    function btn_add() {
+
+        var PartCTID = $("#ctglDiv").find(".bbit-tree-selected").find(".bbit-tree-node-text").attr("data-id");
+        var Isparent = $("#ctglDiv").find(".bbit-tree-selected").find(".bbit-tree-node-text").attr("data-value");
+        if (PartCTID == null ||Isparent!= "parent") {
+            $.modalConfirm("当前未选择目录，是否创建目录？",
+                    function (flag) {
+                        if (flag) {
+                            $.modalOpen({
+                                id: "Form",
+                                title: "创建目录",
+                                data: { SelectionText: Text },
+                                url: "/MedicalRecordManage/Blctgl/Form?type=mulu",
+                                width: "500px",
+                                height: "200px",
+                                callBack: function (iframeId) {
+                                    $.currentWindow(iframeId).AcceptClick(function () {
+
+                                    });
+                                }
+                            });
+                        }
+                    });
+        } else {
+            var SelectionText = document.getElementById('myWriterControl').SelectionText();
+            var qx = $(".dv-right-title").find(".selected").attr("id");
+            if (SelectionText == null) {
+                SelectionText = "";
+            } else
+            {
+                SelectionText = escape(SelectionText);
+            }
+            $.modalOpen({
+                id: "Form",
+                title: "导入词条",
+                url: "/MedicalRecordManage/Blctgl/Form?type=citiao&&Text=" + SelectionText + "&&PartCTID=" + PartCTID+"&&qx="+qx,
+                width: "500px",
+                height: "300px",
+                callBack: function (iframeId) {
+                    $.currentWindow(iframeId).AcceptClick(function () {
+
+                    });
+                }
+            });
+        }
+
+    }
+    function btn_edit() {
+
+        var wybsf = $("#ctglDiv").find(".bbit-tree-selected").find(".bbit-tree-node-text").attr("data-id");
+        var ctnr = $("#ctglDiv").find(".bbit-tree-selected").find(".bbit-tree-node-text").attr("data-value");
+        var ctmc = $("#ctglDiv").find(".bbit-tree-selected").find(".bbit-tree-node-text").html();
+        if (wybsf == null || ctnr == "parent") {
+            return;
+        } else {
+         
+            var qx = $(".dv-right-title").find(".selected").attr("id");
+            $.modalOpen({
+                id: "Form",
+                title: "编辑词条",
+                url: "/MedicalRecordManage/Blctgl/Form?type=citiao&&Text=" + escape(ctnr) + "&&wybsf=" + wybsf + "&&qx=" + qx + "&&ctmc=" + escape(ctmc) ,
+                width: "500px",
+                height: "300px",
+                callBack: function (iframeId) {
+                    $.currentWindow(iframeId).AcceptClick(function () {
+
+                    });
+                }
+            });
+        }
+
+    }
+
+
+    //删除
+    function btn_delete() {
+        var delCTID = $("#ctglDiv").find(".bbit-tree-selected").find(".bbit-tree-node-text").attr("data-id");
+        if (delCTID === undefined)
+        {
+            $.modalMsg("请选择要删除的词条", 'warning');
+            return;
+        }
+        $.modalConfirm("确定要删除吗？",
+            function (flag) {
+                if (flag) {
+                    $.najax({
+                        url: "@Url.Action("DeleteForm", "Blctgl")",
+                        dataType: "json",
+                        data: { delCTID: delCTID },
+                        type: "POST",
+                        success: function () {
+                            $.loading(false);
+                            $.modalMsg("删除成功", 'success');
+                            getBqTreeList($(".dv-right-title").find(".selected").attr("id"));
+                        }
+                    });
+                }
+            });
+    }
+
+
+</script>

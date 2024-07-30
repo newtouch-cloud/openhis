@@ -1,0 +1,120 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-add" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码" style="width: 200px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        gridList();
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PharmacyDrugStorage/SysMedicineUsage/GetGridJson",
+            postData: getSearchPostData(),
+            height: 400,
+            colModel: [
+                { label: "yfId", name: "yfId", width: 100, align: "center", hidden: true },
+                { label: "名称", name: "yfmc", width: 100, align: "center" },
+                { label: "编码", name: "yfCode", width: 100, align: "center" },
+                { label: "拼音", name: "py", width: 100, align: "center" },
+	            { label: "药品类型", name: "yplx", width: 100, align: "center",formatter: function(cellvalue) {
+		            if (cellvalue=="1") {
+			            return "西药";
+		            } else if(cellvalue=="2") {
+			            return "中药";
+		            }
+		            return "";
+	            } },
+                { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData(), url: "/SysMedicineUsage/GetGridJson"
+            }).trigger('reloadGrid');
+        })
+        $("#btn_search").trigger('click');
+    }
+    //查询条件
+    function getSearchPostData() {
+        var keyword = $("#txt_keyword").val();
+        return { keyword: keyword };
+    };
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    //新增
+    function btn_add() {
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "药品用法维护",
+            url: "/PharmacyDrugStorage/SysMedicineUsage/Form",
+            width: "500px",
+            height: "470px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    //修改
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().yfId;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "修改信息",
+            url: "/PharmacyDrugStorage/SysMedicineUsage/Form?yfId=" + keyValue,
+            width: "500px",
+            height: "470px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+</script>

@@ -1,0 +1,359 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "分诊叫号";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //分诊叫号自动刷新时间
+    var ConsultCallRefreshTime = SysConfigReader.String("ConsultCallRefreshTime");
+}
+<style>
+    html, body {
+        height: 100%;
+        background-color: black;
+    }
+
+    #dv_pretb {
+        font-size: 14px;
+        /*border: 2px solid rgba(26, 157, 251, 0.80);*/
+        border-radius: 5px;
+        /*background-color: azure;*/
+    }
+
+    #pretb th {
+        padding: 5px 10px;
+        background-color: black;
+    }
+
+    #pretb td {
+        padding: 3px 5px;
+        font-size: 40px;
+        color: #FFBF7A;
+        border-top: 1px solid white;
+        border-bottom: 1px solid white;
+    }
+
+    .back {
+        background-color: black;
+    }
+</style>
+<style>
+    .black_overlay {
+        display: none;
+        position: absolute;
+        top: 0%;
+        left: 0%;
+        width: 100%;
+        height: 100%;
+        background-color: black;
+        z-index: 1001;
+        -moz-opacity: 0.8;
+        opacity: .80;
+        filter: alpha(opacity=88);
+    }
+
+    .white_content {
+        display: none;
+        position: absolute;
+        top: 25%;
+        left: 25%;
+        width: 55%;
+        height: 35%;
+        padding: 20px;
+        /*border: 1px solid orange;*/
+        background-color: #619daf;
+        z-index: 1002;
+        overflow: auto;
+    }
+    /*#pretb {
+        border-collapse: collapse;
+        width: 100%;
+        height: 500px;
+        margin: 0 auto;
+    }
+        #pretb tr {
+            width: 100%;
+        }
+
+    #tbody {
+        display: block;
+        width: 100%;
+        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: hidden;
+        height: 500px;
+    }*/
+</style>
+<div id="content" style="width:100%;float:left;">
+    <div class="topPanel back" style="height:20%;">
+        <div>
+            <span style="font-size:30px;color:red;margin-left:20px;">上海明德五官科医院排队叫号系统</span>
+            <span id="dateTime" style="font-size:30px;color:#F4F897;float:right;margin-right:20px;"></span>
+        </div>
+    </div>
+
+    <div id="dv_pretb" style="text-align:center;width:100%;overflow: hidden;overflow-x: hidden;overflow-y: hidden">
+        <table id="pretb" style="width:100%;height:100px;overflow: hidden;overflow-x: hidden;overflow-y: hidden">
+            <tbody id="tbody" style="width:100%;overflow-y: auto; height: 500px;overflow: hidden;overflow-x: hidden;overflow-y: hidden"></tbody>
+        </table>
+    </div>
+    @*<p>示例弹出层：<a href="javascript:void(0)" onclick="document.getElementById('light').style.display='block';document.getElementById('fade').style.display='block'">请点这里</a></p>*@
+    <div id="light" class="white_content">
+        <label id="texttx" style="font-size:50px;color:black;"></label>
+        @*这是一个层窗口示例程序. <a href="javascript:void(0)" onclick="document.getElementById('light').style.display='none';document.getElementById('fade').style.display='none'">点这里关闭本窗口</a>*@
+    </div>
+    <div id="fade" class="black_overlay"></div>
+
+    <div id="word" style="font-size:28px;color:red;position:absolute;left:125px;bottom:0px;height:10%;">
+        欢迎来到上海明德五官科医院就诊
+    </div>
+</div>
+<script>
+        var ksCode = $.request("ksCode");//接收科室编号
+        $(function () {
+            //initControl();
+            //gridList();
+            getDateTime();
+            getConsultCall();
+        })
+        function scrollTable() {
+            var tableHeight = document.getElementById("pretb").offsetHeight;
+            var tbodyHeight = document.getElementById("tbody").offsetHeight;
+            var trHeight = document.getElementById("tbody").getElementsByTagName("tr")[0].offsetHeight;
+            if (tbodyHeight > tableHeight) {
+                alert(trHeight);
+                var firstTr = document.getElementById("tbody").getElementsByTagName("tr")[0];
+                document.getElementById("tbody").removeChild(firstTr);
+                document.getElementById("tbody").style.transform = "translateY(" + trHeight + "px)";
+                setTimeout(function () {
+                    document.getElementById("tbody").appendChild(firstTr);
+                    document.getElementById("tbody").style.transform = "translateY(0)";
+                }, 600);
+            }
+        }
+        setInterval(scrollTable, 2000);
+    //定时器显示诊室叫号信息
+    var intervalId = window.setInterval("getConsultCall()", 3000);
+
+    //定时器实时显示当前时间
+    var count = 0;
+        function getDateTime() {
+            var date = new Date();
+        var d = date.format("yyyy-MM-dd hh:mm:ss");
+        $("#dateTime").html(d);
+    }
+    var a = window.setInterval("getDateTime()", 1000);
+
+
+    //回车事件
+        $('#txt_keyword').keydownEnterEvent(function () {
+            $('#btn_search').trigger('click');
+        })
+
+        //var ksCode = '';
+        //function initControl() {
+            //    $('#ks').ksFloatingSelector({
+            //        itemdbclickhandler: function ($this) {
+            //            $('#ks').attr('data-code', $this.attr('data-Code'))
+            //                .val($this.attr('data-Name'));
+            //            $('#ksCode').attr('data-code', $this.attr('data-Code'))
+            //                .val($this.attr('data-Code'));
+            //            ksCode = $this.attr('data-Code');
+            //            //$('#btn_search').trigger('click');
+            //            getConsultCall();
+            //        },
+            //    });
+            //}
+
+            function gridList() {
+                var $gridListRight = $("#gridList");
+                $gridListRight.dataGrid({
+                    url: "/NurseManage/OutpatientConsult/GetConsultCall",
+                    height: $(window).height() - 298,
+                    width: $(window).width() - 298,
+                    postData: { ksCode: ksCode, keyword: '', ghrq: new Date().format('yyyy-MM-dd') },
+                    colModel: [
+
+                        { label: '科室', name: 'ksmc', width: 80, },
+                        {
+                            label: '病人姓名', name: 'xm', width: 60, align: 'left', formatter: function (val, option, rows) {
+
+
+                                return nameDesensitization(val);
+
+                            }
+                        },
+                        { label: '序号', name: 'jzxh', width: 30, align: 'center' },
+                        //{ label: '挂号时间', name: 'ghrq', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                        //{ label: '科室', name: 'ksmc', width: 80, },
+                        { label: '科室编码', name: 'ksCode', hidden: true, },
+                        { label: '医生', name: 'ysmc', width: 50, hidden: true, },
+                        { label: '诊室', name: 'zsmc', width: 80, },
+                        { label: '诊室编码', name: 'zsCode', editwidth: '93%', editable: true, hidden: true, },
+                    ],
+                    pager: "#gridPager",
+                    sortname: 'ghrq asc',
+                    viewrecords: true,
+                    caption: "普通诊室",
+                    autoScroll: false,//当autoScroll和shrinkToFit均为false时，会出现行滚动条
+                    shrinkToFit: false,//是否列宽度自适应。true=适应 false=不适应
+                    gridComplete: function () {
+                    }
+                });
+                $gridList.jqGrid('setFrozenColumns');//设置冻结列生效
+
+                $("#btn_search").click(function () {
+                    var queryJson = getPostData();
+                    $gridList.jqGrid('setGridParam', {
+                        postData: queryJson,
+                        page: 1,
+                    }).trigger('reloadGrid');
+                    getConsultCall();
+                });
+            }
+        function nameDesensitization(str) {
+
+            if (null == str || str == undefined || str.length == 0) {
+                return ''
+    }
+            if (str.length == 1) {
+                return str
+    }
+            if (str.length == 2) {
+                return str.substring(0, 1) + '*' //截取name 字符串截取第一个字符，
+    }
+
+    let starStr = ''
+            for (let index = 0; index < str.length - 2; index++) {
+            starStr += "*"
+        }
+        var retstr = str.substring(0, 1) + starStr + str.substring(str.length - 1, str.length);
+        return retstr;
+    }
+        function getPostData() {
+            var timeType = $("#time_horizon a.active").attr('data-value');
+        var dt = new Date().format("yyyy-MM-dd");
+            if (timeType != 1) {
+            dt = $("#txt_jhrq").val();
+        }
+            var queryJson = {
+            keyword: '',
+        ghrq: new Date().format('yyyy-MM-dd'),
+        //qdsj: dt,
+        ksCode: $("#ksCode").val(),
+        //ywbz: $("#ywbz").val(),
+        //ywlx: $("#ywlx").val(),
+    }
+    return queryJson;
+}
+
+//分诊叫号
+        function getConsultCall() {
+            //console.log(new Date().format('yyyy-MM-dd'));
+            if (ksCode) {
+            $.najax({
+                type: "POST",
+                url: "/NurseManage/OutpatientConsult/getConsultCall",
+                data: { ksCode: ksCode, keyword: '', ghrq: new Date().format('yyyy-MM-dd') },
+                dataType: "json",
+                async: false,
+                success: function (ajaxresp) {
+                    // console.log(ajaxresp.length);
+                    var datalen = 0;
+                        if (ajaxresp.length > 9) {
+                            for (var i = 0; i < parseInt(ajaxresp.length / 9); i++) {
+
+                        }
+                    }
+                    if (ajaxresp.length > 0) {
+                        //显示
+                        $("#tbody").html("");
+                        var th = "<tr>";
+                        th += "<td style='color:#619daf;'>科室名称</td>";
+                        th += "<td style='color:#619daf;'>姓名</td>";
+                        //th += "<td>就诊序号</td>";
+                        th += "<td style='color:#619daf;'>就诊诊室</td>";
+                        th += "</tr>";
+                        $("#tbody").append(th);
+                        for (var i = 0; i < ajaxresp.length; i++) {
+                            var zsmcrep = ajaxresp[i].zsmc == null ? "" : ajaxresp[i].zsmc.replace(/[0-9]/g, '');
+                            var zsfh = ajaxresp[i].zsfh == null ? "" : ajaxresp[i].zsfh;
+                            var ksmc = "<td><span id='sp_ksmc'>" + ajaxresp[i].ksmc + "</span></td>";
+                            var xm = "<td><span id='sp_xm'>" + nameDesensitization(ajaxresp[i].xm); + "</span></td>";
+                            var jzxh = "<td><span id='sp_jzxh'>" + ajaxresp[i].jzxh + "</span></td>";
+                            var zsmc = "<td><span id='sp_zsmc'>" + zsmcrep + zsfh + "</span></td>";
+                            var html = "<tr>" + ksmc + xm + zsmc + "</tr>";
+                            $("#tbody").append(html);
+
+                            if (ajaxresp[i].calledstu == "4") {
+                                //console.log("状态4", ajaxresp[i]);
+                                $.najax({
+                                    type: "POST",
+                                    url: "/NurseManage/OutpatientConsult/UpdateCalledstu",
+                                    data: { ghnm: ajaxresp[i].ghnm, calledstu: 2 },
+                                    dataType: "json",
+                                    async: false,
+                                    success: function (refdata) {
+                                        //console.log("已修改数据", refdata);
+                                        var changeNum = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+                                        var num = parseInt(refdata.zsfh);
+                                        var strArr = num.toString().split("");
+                                        var newzsfh = "";
+                                        for (var i = 0; i < strArr.length; i++) {
+                                            newzsfh += changeNum[strArr[i]];
+                                        }
+                                        var xstext = refdata.xm + "请到" + refdata.zslc + "楼" + refdata.zsmc.replace(/[0-9]/g, '') + refdata.zsfh + "就诊";
+                                        var text = refdata.xm + "请到" + refdata.zslc + "楼" + refdata.zsmc.replace(/[0-9]/g, '') + newzsfh + "就诊";
+                                        $("#light").css("display", "block");//.style.display = 'block';
+                                        $("#fade").css("display", "block");//.style.display = 'block';
+                                        $("#texttx").html(xstext);
+                                        for (var k = 1; k <= 3; k++) {
+                                            var utterThis = new window.SpeechSynthesisUtterance();
+                                            utterThis.text = text;
+                                            window.speechSynthesis.speak(utterThis);
+                                        }
+                                        setTimeout(function () {
+                                            $("#light").css("display", "none");//.style.display = 'none';
+                                            $("#fade").css("display", "none");//.style.display = 'none';
+                                        }, 10000);
+                                    }
+                                });
+                            }
+                        }
+
+                    }
+                }
+            });
+        }
+    }
+
+        function jiaohao(text) {
+            var utterThis = new window.SpeechSynthesisUtterance();
+        utterThis.text = text;
+        window.speechSynthesis.speak(utterThis);
+    }
+
+    //文字左右滚动特效
+    var tag = 0;
+        function moveWord() {
+            var resource = document.getElementById("word");
+        //$("#word").style = "top"+parseInt(window.getComputedStyle(resource, null).top) - 50;
+        var x = parseInt(window.getComputedStyle(resource, null).left);
+        var tx = window.innerWidth - 600;
+        var rx = 100;
+            if (x < tx && tag == 0) {
+            x++;
+        if (x == tx) {
+            tag = 1
+        }
+        }
+            if (x > rx && tag == 1) {
+            x--;
+        if (x == rx) {
+            tag = 0;
+        }
+    }
+    resource.style.left = x + "px";
+    t = setTimeout("moveWord()", 10);
+}
+window.onload = moveWord;
+
+</script>

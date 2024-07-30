@@ -1,0 +1,46 @@
+﻿
+@{
+    ViewBag.Title = "CorrelationUsage";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/PharmacyDrugStorage/SysMedicineFormulation/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#div").formSerialize(data);
+                }
+            });
+        }
+    })
+    function initControl() {
+        $("#permissionTree").treeview({
+            slimscroll: false,
+            showcheck: true,
+            url: "/PharmacyDrugStorage/SysMedicineFormulation/GetDosageTree",
+            param: { jxCode: keyValue }
+        });
+    }
+    function submitForm() {
+        var postData = $("#div").formSerialize();
+        postData["yfCode"] = String($("#permissionTree").getCheckedValues());
+        $.submitForm({
+            url: "/PharmacyDrugStorage/SysMedicineFormulation/submitUsage?jxCode=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>
+<div>
+    <div id="permissionTree"></div>
+</div>
+

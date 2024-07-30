@@ -1,0 +1,332 @@
+﻿@{
+    ViewBag.Title = "门诊综合分析";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<head>
+    <meta charset="utf-8">
+    <script src="~/Content/js/echarts.min.js"></script>
+
+    <style>
+        /*边框*/
+        .bk {
+            background-color: #ffffff;
+        }
+        /*字体*/
+        .font {
+            font-weight: bold;
+            text-align: center;
+        }
+        .down_border {
+            border-bottom: 1px solid #e6e6e6;
+        }
+    </style>
+
+</head>
+
+<div>
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle" id="xzsjtext">类型：</th>
+                <td class="formValue" style="width:150px">
+                    <select id="dateType" class="form-control" onchange="updateSjType()">
+                        <option value="1">年</option>
+                        <option value="2">月</option>
+                        <option value="3">日</option>
+                    </select>
+                </td>
+                <th class="formTitle" id="xzsjtext">时间：</th>
+                <td class="formValue" style="width:150px">
+                    <input id="rSJ" type="text" class="form-control input-wdatepicker" @*onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"*@>
+                </td>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="main_div">
+        <div style="display:flex;justify-content:space-between;margin-top:20px;color:#ffffff;">
+            <div style="width:19.8%;height:25%;text-align:center;background-color:#fc8675;">
+                <h4>门诊人次(次)</h4>
+                <div style="width:50%;height:62.5%;float:left;line-height:50px;" >
+                    <text id="mzrc" style="font-size:20px;" class="font"></text>
+                </div>
+                <div style="width:50%;height:62.5%;float:right;">
+                    <div style="height:50%;" class="font">
+                        <text id="mzrc_hb" style="font-size:13px;"></text>
+                    </div>
+                    <div style="height:50%" class="font">
+                        <text id="mzrc_tb" style="font-size:13px;"></text>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width:19.6%;height:25%;text-align:center;background-color:#65cea7;">
+                <h4>门诊人数(人)</h4>
+                <div style="width:50%;height:62.5%;float:left;line-height:50px;">
+                    <text id="mzrs" style="font-size:20px;" class="font"></text>
+                </div>
+            </div>
+
+            <div style="width:19.6%;height:25%;text-align:center;background-color:#f3ce85;">
+                <h4>复诊率(%)</h4>
+                <div style="width:50%;height:62.5%;float:left;line-height:50px;">
+                    <text id="fzl" style="font-size:20px;" class="font"></text>
+                </div>
+            </div>
+
+            <div style="width:19.6%;height:25%;text-align:center;background-color:#00c0ef;">
+                <h4>诊次费用(元/次)</h4>
+                <div style="width:50%;height:62.5%;float:left;line-height:50px;">
+                    <text id="zcfy" style="font-size:20px;" class="font"></text>
+                </div>
+                <div style="width:50%;height:62.5%;float:right;">
+                    <div style="height:50%;" class="font">
+                        <text id="zcfy_hb" style="font-size:13px;"></text>
+                    </div>
+                    <div style="height:50%" class="font">
+                        <text id="zcfy_tb" style="font-size:13px;"></text>
+                    </div>
+                </div>
+            </div>
+
+            <div style="width:19.6%;height:25%;text-align:center;background-color:#fc8675;">
+                <h4>平均诊疗时长(分钟)</h4>
+                <div style="width:50%;height:62.5%;float:left;line-height:50px;">
+                    <text id="pjzlsc" style="font-size:20px;" class="font"></text>
+                </div>
+                <div style="width:50%;height:62.5%;float:right;">
+                    <div style="height:50%;" class="font">
+                        <text id="pjzlsc_hb" style="font-size:13px;"></text>
+                    </div>
+                    <div style="height:50%" class="font">
+                        <text id="pjzlsc_tb" style="font-size:13px;"></text>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div style="margin-top:20px;background-color:#ffffff;height:75%">
+            @*<div style="text-align:left;" class="font">
+                <span><img src="~/Content/img/report.png" style="width:30px;height:30px;"></span>
+                <span style="margin-top: 20px;">门诊患者分析</span>
+            </div>*@
+            <div class="panel-heading down_border" style="font-size: 15px;">
+                <i class="fa fa-area-chart fa-lg" style="padding-right:5px;"></i>门诊患者分析
+            </div>
+            <div style="display:flex;width:100%;justify-content:space-between;background-color: #f1f4f6;height:100%">
+                <div id="main1" style="width:33%;height:100%;display:flex;justify-content:center;margin-bottom:2px;padding-top:30px;" class="bk"></div>
+                <div id="main2" style="width:33%;height:100%;display:flex;justify-content:center;margin-bottom:2px;padding-top:30px;" class="bk"></div>
+                <div id="main3" style="width:33%;height:100%;display:flex;justify-content:center;margin-right:2px;margin-bottom:2px;padding-top:30px;" class="bk"></div>
+            </div>
+
+        </div> 
+
+    </div>
+
+</div>
+
+<script>
+
+    var myDate = new Date();
+    $(function () {
+        $('#main_div').height($(window).height() - 60);
+        //默认设置时间类型为月
+        $("#dateType").val("2");
+        $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+        $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        
+        getData();
+        initEcharts();
+    });
+    function submit() {
+        getData();
+        initEcharts();
+    }
+    //改变时间类型
+    function updateSjType() {
+        $('#rSJ').val("");
+        let dateType = $("#dateType").val();
+        if (dateType == "1") {//年
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy' })");
+            $('#rSJ').val(myDate.getFullYear());
+        }
+        if (dateType == "2") {//月
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth())+1));
+        }
+        if (dateType == "3") {//日
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM-dd' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1) + "-" + myDate.getDate());
+        }
+    }
+    //根据年月获取月天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+    //抬头
+    function getData()
+    {
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/OutpatientComprehensiveAnalysis/GetTitleData",
+            dataType: "json",
+            data: getSearchData(),
+            success: function (ajaxresp) {
+                if ($("#dateType").val() == "2") {
+                    document.getElementById('mzrc').innerText = ajaxresp.mzrc;
+                    document.getElementById('mzrc_hb').innerText = "环比" + ajaxresp.mzrc_hb + "%";
+                    document.getElementById('mzrc_tb').innerText = "同比" + ajaxresp.mzrc_tb + "%";
+                    document.getElementById('mzrs').innerText = ajaxresp.mzrs;
+                    document.getElementById('fzl').innerText = ajaxresp.fzl;
+                    document.getElementById('zcfy').innerText = ajaxresp.zcfy;
+                    document.getElementById('zcfy_hb').innerText = "环比" + ajaxresp.zcfy_hb + "%";
+                    document.getElementById('zcfy_tb').innerText = "同比" + ajaxresp.zcfy_tb + "%";
+                    document.getElementById('pjzlsc').innerText = ajaxresp.pjzlsc;
+                    document.getElementById('pjzlsc_hb').innerText = "环比" + ajaxresp.pjzlsc_hb + "%";
+                    document.getElementById('pjzlsc_tb').innerText = "同比" + ajaxresp.pjzlsc_tb + "%";
+                }
+                else {
+                    document.getElementById('mzrc').innerText = ajaxresp.mzrc;
+                    document.getElementById('mzrc_hb').innerText = "";
+                    document.getElementById('mzrc_tb').innerText = "";
+                    document.getElementById('mzrs').innerText = ajaxresp.mzrs;
+                    document.getElementById('fzl').innerText = ajaxresp.fzl;
+                    document.getElementById('zcfy').innerText = ajaxresp.zcfy;
+                    document.getElementById('zcfy_hb').innerText = "";
+                    document.getElementById('zcfy_tb').innerText = "";
+                    document.getElementById('pjzlsc').innerText = ajaxresp.pjzlsc;
+                    document.getElementById('pjzlsc_hb').innerText = "";
+                    document.getElementById('pjzlsc_tb').innerText ="";
+                }
+            }
+        });
+    }
+    //组装请求参数
+    function getSearchData() {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+        return { ksrq: ksrq, jsrq: jsrq, rtype: dateType };
+    }
+    function initEcharts()
+    {
+        $.ajax({
+            type: "Post",
+            url: "/DeanInquiryManage/OutpatientComprehensiveAnalysis/GetMzhzfx",
+            data: getSearchData(),
+            dataType: "json",
+            success: function (ajaxresp) {
+                var myChart2 = echarts.init(document.getElementById('main2'));
+                var myChart3 = echarts.init(document.getElementById('main3'));
+                var myChart1 = echarts.init(document.getElementById('main1'));
+
+                var option1 = {
+                    title: {
+                        text: '门诊患者分析',
+                        left: 'center'
+                    },
+                    tooltip: {//tooltip 鼠标移动到图上显示的标签
+                        trigger: 'item'
+                    },
+                    legend: {//左边数据（图例）
+                        orient: 'vertical',
+                        bottom: 'bottom'
+                    },
+                    series: [
+                        {
+                            name: '患者性质占比',
+                            type: 'pie',
+                            radius: '50%',
+                            data: [
+                                { value: ajaxresp.hzxzb_yb, name: '医保' },
+                                { value: ajaxresp.hzxzb_zf, name: '自费' }
+                            ],
+                            emphasis: {// 高亮样式
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }
+                    ]
+                };
+
+                var option2 = {
+                    title: {
+                        text: '门诊患者性别占比',
+                        subtext: '',
+                        left: 'center'
+                    },
+                    tooltip: {//tooltip 鼠标移动到图上显示的标签
+                        trigger: 'item'
+                    },
+                    legend: {//左边数据（图例）
+                        orient: 'vertical',
+                        bottom: 'bottom'
+                    },
+                    series: [
+                        {
+                            name: '门诊患者性别占比',
+                            type: 'pie',
+                            radius: '50%',
+                            data: [
+                                { value: ajaxresp.mzhzxbzb_m, name: '男性' },
+                                { value: ajaxresp.mzhzxbzb_w, name: '女性' }
+                            ],
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }
+                    ]
+                };
+
+                var option3 = {
+                    title: {
+                        text: '不同年龄段患者分布',
+                        left: 'center'
+                    },
+                    tooltip: {
+
+                    },
+                    xAxis: {
+                        data: ["3岁以下", "3-16岁", "17-65岁", "65-75岁", "75岁以上"]
+                    },
+                    yAxis: {},
+                    series: [{
+                        barWidth: '25%',
+                        name: '患者',
+                        type: 'bar',
+                        data: [ajaxresp.age_3, ajaxresp.age_3_16, ajaxresp.age_17_65, ajaxresp.age_65_75, ajaxresp.age_75]
+                    }]
+                };
+
+                myChart1.setOption(option1);
+                myChart2.setOption(option2);
+                myChart3.setOption(option3);
+            }
+        });
+    }
+</script>

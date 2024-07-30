@@ -1,0 +1,246 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "PrescriptionPadQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<div class="rows">
+    <form id="form1">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                查询条件
+            </div>
+            <div style="padding: 2px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">病区：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="bqmc" class="form-control">
+                                <option value="">全部</option>
+                            </select>
+                        </td>
+                        <th class="formTitle">姓名/住院号：</th>
+                        <td class="formValue">
+                            <input id="keyword" type="text" class="form-control" placeholder="姓名/住院号" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>开始时间：</th>
+                        <td class="formValue">
+                            <input id="kssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-01 00:00")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>结束时间：</th>
+                        <td class="formValue">
+                            <input id="jssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd 23:59")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd 23:59:59'})" />
+                        </td>
+                        <td class="formTitle" rowspan="2">
+                            <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">处方性质：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="yzxz" class="form-control">
+                                <option value="2">长期</option>
+                                <option value="1">临时</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="rows">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+<div style="background-color: #fff; margin-top:5px;">
+    <table id="gridMXList"></table>
+    <div id="gridMxPager"></div>
+</div>
+
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 6 } ,
+    F6Text = "打印"
+})
+
+<script type="text/javascript">
+    var $gridList = $("#gridList");
+    $(function () {
+        $("#bqmc").bindSelect({ //病区信息集合
+            url: "/HospitalizationPharmacy/GetBQSelectJson",
+            id: "bqCode",
+            text: "bqmc"
+        });
+        dispenseMedicinGridList();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+    function dispenseMedicinGridList() {
+        $gridList.dataGrid({
+            multiselect: true,
+            url: '/HospitalizationPharmacy/GetZycfGridJson',
+            height: 100,
+            //height: $(window).height() - document.getElementById('gridList').offsetTop - 150,
+            postData: {
+                bq: $("#bqmc").val(), keyword: $("#keyword").val(),
+                kssj: $("#kssj").val(), jssj: $("#jssj").val(), yzxz: $("#yzxz").val()
+            },
+            colModel: [
+                { label: '处方号', name: 'cfh', width: 150, align: 'center' },
+                { label: '住院号', name: 'zyh', width: 80, align: 'center' },
+                { label: '姓名', name: 'hzxm', width: 80, align: 'center' },
+                { label: '病区', name: 'bqmc', width: 110, align: 'center' },
+                { label: 'yzxz', name: 'yzxz', width: 80, align: 'left', hidden:true},
+                { label: '处方性质', name: 'yzxzmc', width: 50, align: 'center' },
+                { label: '医生', name: 'ysmc', width: 80, align: 'center' },
+                { label: '总金额', name: 'je', width: 80, align: 'center' },
+                { label: '领药序号', name: 'lyxh', width: 80, align: 'center', hidden: true },
+                { label: 'yzlx', name: 'yzlx', width: 80, align: 'center', hidden: true },
+                {
+                    label: '处方类型', name: 'yzlxstr', width: 90, align: 'center', formatter: function (val) {
+                        return val == "2" ? "西药" : (val == "10" ? "中草药" : "西药");
+                    }
+                },
+                {
+                    label: '开单时间', name: 'kssj', width: 130, align: 'center',
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                {
+                    label: '发药标志', name: 'fybz', width: 50, align: 'center', formatter: function (val) {
+                        return val== "2" ? "已发药":(val=="3"?"已退药":"未发药");  //$.enum.getDescByValue("EnumFybz", val);
+                    }
+                }
+            ],
+            //caption: "处方笺列表",
+            pager: "#gridPager",
+            sortname: 'kssj',
+            viewrecords: true,
+            rowNum:10,
+            ondblClickRow: function (rowId) {
+                btn_clickrow(rowId);
+            }
+        });
+
+        function btn_clickrow(rowId)
+        {
+            var cfh = $("#gridList").jqGrid('getRowData', rowId).cfh;
+            var yzxz = $("#gridList").jqGrid('getRowData', rowId).yzxz;
+            var zxrq = $("#gridList").jqGrid('getRowData', rowId).kssj;
+            //$.modalOpen({
+            //    id: "GetCfDetail",
+            //    title: "处方明细",
+            //    url: "/HospitalizationPharmacy/PrescriptionDetailFrom?cfh=" + cfh + "&yzxz="+yzxz+"&zxrq="+zxrq,
+            //    width: "950px",
+            //    height: "600px",
+            //    btn: ['', '关闭'],
+            //    callBack: function (iframeId) {
+            //    }
+            //});
+
+            var $gridMxList = $("#gridMXList");
+            $gridMxList.jqGrid("clearGridData");
+           
+            $gridMxList.jqGrid('setGridParam', {
+                url: '/HospitalizationPharmacy/GetZycfGridDetailJson',
+                postData: { yzh: cfh, zxrq: zxrq, yzxz: yzxz }
+            }).trigger('reloadGrid');
+        }
+
+        $("#btn_search").click(function () {
+            if ($("#kssj").val() === "") {
+                $.modalMsg("开始时间不能为空", "warning", 2000);
+                return false;
+            }
+            if ($("#jssj").val() === "") {
+                $.modalMsg("结束时间不能为空", "warning", 2000);
+                return false;
+            }
+            $gridList.jqGrid('setGridParam', {
+                postData: {
+                    bq: $("#bqmc").val(),
+                    kssj: $("#kssj").val(),
+                    jssj: $("#jssj").val(),
+                    keyword: $("#keyword").val(),
+                    yzxz: $("#yzxz").val()
+                }
+            }).trigger('reloadGrid');
+
+        });
+
+        $("#gridMXList").dataGrid({
+            //postData: { yzh: "", zxrq: "", yzxz: "" },
+            //url: '/HospitalizationPharmacy/GetZycfGridDetailJson',
+            height:100,
+            colModel: [
+                { label: '住院号', name: 'zyh', align: 'center', width: 80 },
+                { label: '姓名', name: 'hzxm', align: 'center', width: 80 },
+                { label: '处方性质', name: 'yzxzmc', align: 'center', width: 50 },
+                { label: '病区', name: 'bqmc', align: 'center', width: 120 },
+                { label: '项目代码', name: 'xmdm', align: 'center', width: 80 },
+                { label: '项目名称', name: 'xmmc', align: 'center', width: 120 },
+                  { label: '特殊处方', name: 'yztag', width: 80, align: 'left', hidden: true },
+                { label: '特殊处方', name: 'yztagName', width: 80, align: 'center' },
+                { label: '单位', name: 'dw', align: 'center', width: 60 },
+                 { label: '数量', name: 'sl', align: 'center', width: 60 },
+                {
+                    label: '单价', name: 'dj', align: 'center', width: 60, formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.0000' }
+                },
+                {
+                    label: '费用', name: 'je', align: 'center', width: 60, formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.0000' }
+                },
+                { label: '剂量', name: 'ypjl', align: 'center', width: 60 },
+                { label: '规格', name: 'ypgg', align: 'center', width: 60 },
+
+            ],
+            pager: "#gridMxPager",
+            rowNum:10,
+            sortname: 'kssj',
+            viewrecords: true,
+        });
+    }
+
+    
+
+    function newtouch_event_f6() {
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds.length == 0) {
+            $.modalAlert("请先选中需打印的处方", 'warning');
+            return;
+        }
+        if (selRowIds.length > 1) {
+            $.modalAlert("单次只能打印一张处方", 'warning');
+            return;
+        }
+        var seleRow = $("#gridList").jqGridRowValue();
+        var cfh = seleRow[0].cfh;
+        var zyh = seleRow[0].zyh;
+        var yzlx = seleRow[0].yzlx;
+        var lyxh = seleRow[0].lyxh;
+        var zxrq = seleRow[0].kssj.substring(0, 10);
+        var tempCode = "33";//药品
+        if (yzlx == "10")
+            tempCode = "1022" //中药
+        var rpturl = '@reportUrl' + "?tempCode=" + tempCode + "&systemCode=" + '@reportSystemCode' + "&orgId=" + '@ViewBag.OrganizeId' + "&zxrq=" + zxrq + "&lyxh=" + lyxh;
+        window.open(rpturl + "&zyh=" + zyh + "&yzhs=" + cfh, "_blank",
+            "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+
+    }
+</script>

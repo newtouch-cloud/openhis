@@ -1,0 +1,320 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "AdviceList";
+    Layout = null;
+}
+<style>
+    /*已执行*/
+    .orginal {
+        color: brown;
+    }
+    /*已审核*/
+    .ysh {
+        background-color: white;
+        color: black;
+    }
+    /*已停止*/
+    .grey {
+        color: grey;
+    }
+    /*已作废*/
+    .red {
+        color: red;
+    }
+    /*DC*/
+    .pink {
+        color: pink;
+    }
+
+    .toolbar {
+        width: 45% !important;
+        margin: 10px 30px 12px;
+    }
+</style>
+<div id="linkyzcx" role="tabpanel" class="tab-pane">
+    <div class="topPanel" style="width: 99%; margin-top: -15px; border-radius: 5px;height:unset !important">
+        <table class="form" style="margin-left:5px;">
+            <tr>
+                <td colspan="3" id="btnKeywordTypeGourp">
+                    <input type="button" id="btn_dryz" class="panelposition btn btn-default btn-md" value="当日医嘱">
+                    <input type="button" id="btn_cqyz" class="panelposition btn btn-default btn-md" value="长期医嘱">
+                    <input type="button" id="btn_lsyz" class="panelposition btn btn-default btn-md" value="临时医嘱">
+                    <span style="margin:auto 5px">|</span>
+                    <input type="button" id="btn_wsh" class="panelposition btn btn-md btn-restore active" value="未审核">
+                </td>
+                <td class="formTitle">
+                    医嘱类型：
+                </td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="yzlx" class="form-control required"></select>
+                </td>
+                <td class="formValue" style="width:15%;margin-left:10px">
+                    <div id="panelposition" style="margin-left:30px">
+                        <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" checked value="qb" />全部医嘱</label>
+                        <label><input type="radio" id="radioTreating" name="optionsRadios" class="optionsRadios formClearIgnore" value="yx" />有效医嘱</label>
+                    </div>
+                </td>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { btn_search() } })" value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { btn_search() }  })" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" onclick="btn_search()" style="margin-right:10px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="contentPanel" style="width: 99%; height: 84%; margin-top: 2px;">
+        <div style="background-color: #fff;width:100%;">
+            <table id="gridPatientList"></table>
+            <div id="gridPatPager"></div>
+        </div>
+    </div>
+    <table style="width:420px;height:20px; margin-top:10px;margin-left:10px; float:left; color:#274b6d">
+        <tr>
+            <td>
+                <label style="height:7px;width:25px;background-color:brown; border:1px solid #ddd"></label>
+            </td>
+            <td>执行长期/临时</td>
+            <td>
+                <label style="height:7px;width:25px;background-color:red; border:1px solid #ddd"></label>
+            </td>
+            <td>作废临时</td>
+            <td>
+                <label style="height:7px;width:25px;background-color:grey; border:1px solid #ddd"></label>
+            </td>
+            <td>停止长期</td>
+            <td>
+                <label style="height:7px;width:25px;background-color:black;  border:1px solid #ddd"></label>
+            </td>
+            <td>未执行长期/临时</td>
+        </tr>
+    </table>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 2, 3 },
+    F2Text = "打印长期",
+    F3Text = "打印临时",
+    F5Text = "刷新"
+})
+</div>
+
+<script>
+    var newlist = new Array();
+    var last = "";//上一个组号
+    $(function () {
+        gridPatientList();
+        $('#gridPatientList').clearGridData();
+        $('#btnKeywordTypeGourp').on('click', '.btn', function () {
+            if ($(this).attr('id') == "btn_dryz" || $(this).attr('id') == "btn_wsh") {
+                if (!$(this).hasClass('active')) {
+                    $(this).siblings('.btn').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                }
+            } else {
+                if ($('#btn_dryz').hasClass("active")) {
+                    $('#btn_dryz').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                }
+                if ($('#btn_wsh').hasClass("active")) {
+                    $('#btn_wsh').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                }
+            }
+            if ($(this).hasClass("active")) {
+                $(this).removeClass('btn-restore').removeClass('active').addClass('btn-default');
+            } else {
+                $(this).removeClass('btn-default').addClass('btn-restore active');
+            }
+            btn_search();
+        });
+
+        $("#yzlx").bindSelect({
+            url: "@Url.Action("GetyzlxContain")",
+        });
+    });
+
+
+    function gridPatientList() {
+        $('#gridPatientList').dataGrid({
+            url:"@Url.Action("AdviceGridView")",
+            height: $(window).height() - 220,
+            postData: getSearchPostData(),
+            unwritten: false,
+            pager: '#gridPatPager',
+            sortname: 'zh,yzlb,yzlx,kssj desc',
+            rownumbers: true,
+            rowNum: 100, //每页显示记录数  
+            colModel: [
+                { label: '医嘱ID', name: 'Id', align: 'center', width: 50, hidden: true },
+                {label: '医嘱类别', name: 'yzlb', align: 'center', width: 50},
+                {
+                    label: '医嘱类型', name: 'yzlx', align: 'center', width: 50, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumYzlx", val)
+                    }
+                },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 130, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '医生', name: 'ysmc', align: 'center', width: 70 },
+                { label: '医嘱', name: 'yznr', align: 'center', width: 230},
+                {label: '同组', name: 'zh', align: 'center', width: 40},
+                {
+                    label: '停止时间', name: 'tzsj', align: 'center', width: 130, formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: '停止医生', name: 'tzr', align: 'center', width: 70 },
+                { label: '执行者', name: 'zxr', align: 'center', width: 70 },
+                {
+                    label: '状态', name: 'yzzt', align: 'center', width: 40, formatter: function (val, options, rowObject) {
+                        if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.DC).ToString())) {//DC状态
+                            //有执行时间，取已执行状态，有审核时间，取已审核状态
+                            if (rowObject["zxsj"] !== typeof (undefined) && rowObject["zxsj"] !== "") {
+                            return "执行";
+                        } else {
+                            return "审核";
+                        }
+                    } else if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.TZ).ToString())) {
+                        if (rowObject["yzlb"] == "长") {
+                            return "停止";
+                        } else {
+                            return "作废";
+                        }
+                    }
+        return $.enum.getDescByValue("EnumYzzt", val)
+    }
+    },
+    {
+        label: '操作', name: 'cz', align: 'center', width: 70, title: false
+    }],
+
+    gridComplete: function () {
+        var ids = $("#gridPatientList").jqGrid('getDataIDs');
+        for (i = 0; i < ids.length; i++) {
+            var rowData = $("#gridPatientList").jqGrid('getRowData', ids[i]);
+            if (rowData.yzzt == "执行") {
+                $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('orginal');
+            } else
+                if (rowData.yzzt == "待审" || rowData.yzzt == "审核") {
+                    $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('ysh');
+                } else
+                    if (rowData.yzzt == "停止") {
+                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('grey');
+                    } else if (rowData.yzzt == "作废") {
+                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('red');
+                    }
+            //组号生成特殊符号
+            var returnval = "";
+            if (rowData.zh != typeof (undefined) && rowData.zh !== "" && rowData.zh !== null) {
+                if (last == rowData.zh) {
+                    returnval = "中间";
+                    if (i == (ids.length-1)) {//最后一个
+                        returnval = "结束";
+                        last = "";
+                    }
+                } else if (last !== rowData.zh) {
+                    if (last !== "") {
+                        setlastrowzuhao(ids[i]);
+                    }
+                    returnval = "开始";
+                }
+                $("#gridPatientList").setCell(ids[i], "zh", '<img src="../../../../Content/img/'+ returnval+'.png" />');//setCell 设置单元格样式 值 或属性
+            } else if (last !== rowData.zh && last!=="") {
+                setlastrowzuhao(ids[i]);
+            }
+            last = rowData.zh;
+        }
+    }
+    });
+    }
+    //设置上一行组号
+    function setlastrowzuhao(rowid) {
+        var lastrow = parseInt(rowid) - 1;
+        $("#gridPatientList").setCell(lastrow, "zh", '<img src="../../../../Content/img/结束.png" />');//setCell 设置单元格样式 值 或属性
+    }
+
+    function getSearchPostData() {
+        var wsh = false;
+        var dryz = false;
+        var yzlb = "长临";
+        if ($('#btn_wsh').hasClass("active")) {//未审核
+            wsh = true;
+        } else
+            if ($('#btn_dryz').hasClass("active")) {
+                dryz = true;
+            } else if (($('#btn_cqyz').hasClass("active") && $('#btn_lsyz').hasClass("active"))) {
+                var yzlb = "长临";
+            } else if ($('#btn_cqyz').hasClass("active") && !$('#btn_lsyz').hasClass("active")) {
+                var yzlb = "长";
+            } else if (!$('#btn_cqyz').hasClass("active") && $('#btn_lsyz').hasClass("active")) {
+                var yzlb = "临";
+            }
+        var yx = $('#panelposition').val();
+        var kssj = $('#kssj').val();
+        var jssj = $('#jssj').val();
+        var yzlx = $('#yzlx').val();
+        return { dryz: dryz, yzlb: yzlb, wsh: wsh, yx: yx, kssj: kssj, jssj: jssj, yzlx: yzlx, zyh: currentobj.zyh };
+    }
+
+    function btn_search() {
+        last = "";
+        $("#gridPatientList").clearGridData();
+        $("#gridPatientList").jqGrid('setGridParam', {
+            url: "@Url.Action("AdviceGridView")",
+            postData: getSearchPostData()
+        }).trigger("reloadGrid");
+    }
+    $('#yzlx').change(function () {
+        btn_search();
+    });
+    $('#panelposition').click(function () {
+        btn_search();
+    });
+
+    //续打
+    //function newtouch_event_f8() {
+    //    $.modalOpen({
+    //        id: "ContinuePrint",
+    //        title: "续打",
+    //        url: "/DoctorManage/DoctorsAdvice/ContinuePrint",
+    //        width: "550px",
+    //        height: "300px",
+    //        callBack: function (iframeId) {
+
+    //            $.modalClose("AdviceLeaveHospitalStop");
+    //        }
+    //    });
+    //}
+
+    //刷新
+    function newtouch_event_f4() {
+        btn_search();
+    }
+
+    ///判断当前病人是否存在未审核的长期医嘱
+    function boolwsh(zyh, callback) {
+        $.najax({
+            url: "@Url.Action("boolwsh")",
+            dataType: "json",
+            data: { zyh: zyh },
+            async: true,
+            type: "POST",
+            success: function () {
+                callback(false);
+            }, error: function () {
+                callback(true);
+            }
+        });
+    }
+
+    //打印长期医嘱
+    function newtouch_event_f2() {
+        var zyh = currentobj.zyh;
+        window.open("/ReportManage/Report/PrintCqyzReport?zyh=" + zyh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+    }
+    //打印临时医嘱
+    function newtouch_event_f3() {
+        var zyh = currentobj.zyh;
+        window.open("/ReportManage/Report/PrintLsyzReport?zyh=" + zyh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+    }
+</script>
+

@@ -1,0 +1,53 @@
+﻿@using Newtouch.Common.Operator;
+@{
+
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    //是否页面加载时就必须选择Org
+    var mediOrgList = ViewBag.MediOrgList as IList<Newtouch.HIS.Domain.Entity.SysOrganizeEntity>;
+}
+
+<ul class="list-group">
+    @for (var i = 0; i < mediOrgList.Count; i++)
+    {
+        <li class="list-group-item" style="text-align: center;">
+            <a data-id="@mediOrgList[i].Id" style="width: 100%;display: block;cursor: pointer;">@(mediOrgList[i].Name)</a>
+        </li>
+    }
+</ul>
+
+<script type="text/javascript">
+    $('li.list-group-item a').click(function () {
+        var orgId = $(this).attr('data-id');
+
+        SwithOrg(orgId);
+    });
+
+    function SwithOrg(dstnOrgId) {
+        $.najax({
+            url: "/Home/SwithOrg",
+            data: { dstnOrgId: dstnOrgId },
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                cookieRemove(); //必须选择医疗机构
+
+                top.top.location.href = top.top.location.href;
+            }
+        });
+    }
+
+    function cookieRemove() {
+        var chooseOrgKey = "CookieKey_ChooseOrg";
+        var appId = '@(Newtouch.Infrastructure.Constants.AppId)';
+        if (appId) {
+            chooseOrgKey = appId + "_" + chooseOrgKey;
+        }
+        var chooseOrgVal = top.$.cookie(chooseOrgKey);
+        if (chooseOrgVal != null) {
+            //用完立remove
+            top.$.cookie(chooseOrgKey, '', { path: "/", expires: -1 });
+        }
+    }
+
+</script>

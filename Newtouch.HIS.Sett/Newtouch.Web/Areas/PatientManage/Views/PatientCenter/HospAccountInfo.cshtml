@@ -1,0 +1,119 @@
+﻿
+@{
+
+    Layout = null;
+}
+
+
+@*<form id="form_account">*@
+@*<table class="form" style="font-size:12px;border-radius: 4px;box-shadow: 0 0 2px #808080 inset;padding: 5px 10px 5px 15px;">
+        <tr>
+            <td class="formValue">预交金信息</td>
+        </tr>
+        <tr>
+            <td class="formValue" style="border-bottom:solid;border-bottom-left-radius:5px;border-bottom-color:#90cbb7;"></td>
+        </tr>
+        <tr>
+            <td class="formValue"></td>
+        </tr>
+        <tr>
+            <td class="formValue"></td>
+        </tr>
+
+    </table>*@
+
+@*<div class="gridPanel">
+            <table id="gridListYJJ" rel="form_account"></table>
+        </div>
+    </form>*@
+<div class="gridPanel">
+        <table id="gridListYJJ"></table>
+    </div>
+
+
+
+<script>
+        $(function () {
+            //$(window).resize(function () { $("#gridListYJJ").setGridwidth($(window).width()+10); });
+            //gridListData("01699");
+
+        })
+        //住院号span标签内容改变事件
+        //$("#zyh").on('DOMNodeInserted', function () {
+        //    gridListAccount($("#zyh").text());
+        //    //$("#gridListYJJ").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+        //    //$("#gridListYJJ").closest(".ui-jqgrid-bdiv").css({ "with": $("#form_account").width() + 30 });
+        //})
+
+    function gridListAccount(zyh) {
+            $.ajax({
+                url: "/PatientManage/PatientCenter/GetAdvancePayment",
+                dataType: "json",
+                async: false,
+                data: { "zyh": zyh },
+                //data: { "zyh": "00826" },
+                type: "POST",
+                success: function (mydata) {
+                    $('#gridListYJJ').jqGrid("clearGridData");
+                    var $gridList = $("#gridListYJJ");
+                    var zhye = "0.00";
+                    if (mydata != [] && mydata.length > 0) {
+                        zhye = mydata[0].zhye.toFixed(2);
+                    }
+                    var captionCon = "账户收支清单";
+                    captionCon += '<label style="height: 7px; width: 36px; background-color:#DDDDFF; border: 1px solid #ddd;margin-left: 40px;"></label> 充值 ';
+                    captionCon += '<label style="height: 7px; width: 36px; background-color:#ACD6FF; border: 1px solid #ddd;margin-left: 40px;"></label> 取款 ';
+                    captionCon += "<span id='YJJyeCon'>账户余额：" + zhye + "元</span>";
+                    $gridList.dataNewGrid({
+                        height: $(window).height() - 160,
+                        autowidth: true,
+                        //width: $(window).width() + 10,
+                        caption: captionCon,
+                        colModel: [
+                            { label: '收支金额', name: 'szje', width: 110, formatter: "number", align: 'center' },
+                            { label: '账户金额', name: 'zhye', width: 110, formatter: "number", align: 'center' },
+                            { label: '凭证号', name: 'pzh', width: 150, align: 'center' },
+                            { label: '收支人员', name: 'Creator', width: 110, align: 'center' },
+                            { label: '支付方式', name: 'xjzffsmc', width: 120, align: 'center' },
+                            { label: '收支日期', name: 'CreateTime', width: 180, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                            {
+                                label: '收支性质', name: 'szxz', width: 110, align: 'center',
+                                formatter: function (val) {
+                                    return $.enum.getDescByValue("EnumSZXZ", val)
+                                }
+                            }, { label: 'Id', name: 'Id', hidden: true },
+                            { label: 'tId', name: 'tId', hidden: true },
+                        ],
+                        gridComplete: function () {
+                            var ids = $gridList.getDataIDs();
+                            for (i = 0; i < ids.length; i++) {
+                                var rowData = $gridList.getRowData(ids[i]);
+                                if (rowData && rowData.szxz == "充值") {
+                                    $gridList.find('tr[id="' + ids[i] + '"]').css("background-color", "#DDDDFF");
+                                } else if (rowData && rowData.szxz == "取款") {
+                                    $gridList.find('tr[id="' + ids[i] + '"]').css("background-color", "#ACD6FF");
+                                }
+                            }
+                        },
+                        onSelectRow: function (rowid, status) {
+                            btn_edit();
+                        }
+                        //, gridComplete: function () {
+                        //    $("#gridListYJJ").width($("#form_account").width());
+
+                        //}
+                    }, mydata);
+
+                    if (mydata.length > 0) {
+                        $('.ui-jqgrid-bdiv').find(".unwritten").remove();
+                    }
+                    $("#YJJyeCon").text("账户余额：" + zhye + "元");
+                },
+            })
+
+        }
+
+
+
+
+    </script>

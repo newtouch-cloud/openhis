@@ -1,0 +1,409 @@
+﻿@using System.Text
+@using Newtouch.Herp.Infrastructure.Enum
+@using Newtouch.HIS.Web.Core.Extensions;
+@using Newtouch.Tools;
+@{
+    ViewBag.Title = "申领出库";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var applyProcess = new StringBuilder().Append((int)EnumApplyProcess.AuditApproved).Append(",").Append((int)EnumApplyProcess.Distributing).Append(",").Append((int)EnumApplyProcess.PartialCompletion);
+}
+
+<style>
+    .txt-ffsl {
+        height: 18px;
+        line-height: 20px;
+        margin: 3px !important;
+        width: 80px;
+    }
+
+    .form-control {
+        padding: 0 3px;
+    }
+
+    .sp-content {
+        position: relative;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    #dv_left {
+        z-index: 101;
+        float: left;
+        margin-bottom: 0;
+        width: 30%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        box-shadow: 0 1px 12px rgba(0, 0, 0, 1);
+        -webkit-box-shadow: 0 1px 12px rgba(0,0,0,1);
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        border-color: #f1f4f6;
+    }
+
+    #dv_right {
+        z-index: 100;
+        float: right;
+        width: 69%;
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        border-color: #f1f4f6;
+    }
+
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+
+    .toolbar {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+</style>
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">筛选信息</div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">申领单号：</td>
+                <td class="formValue">
+                    <input type="text" id="djh" name="djh" class="form-control" placeholder="请输入申领单号" />
+                </td>
+                <td class="formTitle">申领状态：</td>
+                <td class="formValue">
+                    @Html.DropDownList("applyProcess", EnumApplyProcess.Waiting.ToSomeDescSelectList(applyProcess.ToString()), "全部", new { @class = "form-control" })
+                </td>
+                <th class="formTitle">单据类型：</th>
+                <td class="formValue" style="width: 110px;">
+                    @Html.DropDownList("applyType", EnumApplyType.DepartmentApply.ToDescSelectList(), "全部", new { @class = "form-control" })
+                </td>
+                <td class="formTitle">申领部门：</td>
+                <td class="formValue" style="width: 200px;">
+                    <select id="slbm" name="slbm" class="form-control"><option value="">全部</option></select>
+                </td>
+                <td class="formTitle" rowspan="2">
+                    <input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>申请日期：</th>
+                <td class="formValue" style="width:130px;">
+                    <input id="startTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                </td>
+                <th class="formTitle"><span class="required">*</span>到：</th>
+                <td class="formValue">
+                    <input id="endTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                </td>
+                <td colspan="4"></td>
+            </tr>
+        </table>
+    </div>
+    <div class="sp-content">
+        <div id="dv_left">
+            <table id="parentgridList"></table>
+            <div id="gridPager" rel="form1"></div>
+        </div>
+        <div id="dv_right">
+            <table id="MedicineGridList"></table>
+            <div id="gridmxPager" rel="form1"></div>
+        </div>
+        @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+        {
+            ShowKeyList = new[] { 8 },
+            F8Text = "发药"
+        })
+    </div>
+</form>
+<script>
+    var $gridList = $("#parentgridList");
+    var $ProductGridList = $("#MedicineGridList");
+    $(".sp-content").height($(window).height() - 120);
+    $(".toolbar").css("width", "15%");
+    $(function () {
+        gridList();
+        productGridList();
+        $("#dv_left").click(function () {
+            $("#dv_left").css("z-index", 101);
+            $("#dv_right").css("z-index", 100);
+        });
+        $("#dv_right").click(function () {
+            $("#dv_left").css("z-index", 100);
+            $("#dv_right").css("z-index", 101);
+        });
+        $("#applyType").change(function () {
+            $("#slbm").html("<option value=''>全部</option>");
+            switch ($(this).val()) {
+                case "@((int)EnumApplyType.DepartmentApply)":
+                    bindDeptmentSelecotr();
+                    return;
+                case "@((int)EnumApplyType.WarehouseApply)":
+                    bindWarehouseSelecotr();
+                    return;
+                default:
+                    return ;
+            }
+        });
+        $("#applyType").trigger("change");
+    });
+
+    //科室绑定
+    function bindDeptmentSelecotr() {
+        $.najax({
+            url: "/WarehouseManage/Warehouse/GetDeptmentSelecotrTree",
+            dataType: "json",
+            success: function (res) {
+                if (res != null && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        $("#slbm").append("<option value=" + res[i].id + ">" + res[i].text + "</option>");
+                    }
+                }
+            }
+        });
+    }
+
+    //部门绑定
+    function bindWarehouseSelecotr() {
+        $.najax({
+            url: "/WarehouseManage/Warehouse/GetPatientTreeSelectJson",
+            dataType: "json",
+            success: function (res) {
+                if (res != null && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        $("#slbm").append("<option value=" + res[i].id + ">" + res[i].text + "</option>");
+                    }
+                }
+            }
+        });
+    }
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //左侧，申请单区
+    function gridList() {
+        $gridList.dataGrid({
+            caption: "申领信息",
+            url: "/ApplyBill/ApplyBillInfoQueryV2",
+            height: $(window).height() - 220,
+            postData: getSearchPostData(),
+            colModel: [
+                {
+                    label: '处理状态', name: 'applyProcess', width: 60, align: 'center', formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumApplyProcess.Waiting):
+                            return "@EnumApplyProcess.Waiting.GetDescription()";
+                        case @((int)EnumApplyProcess.AuditApproved):
+                            return "@EnumApplyProcess.AuditApproved.GetDescription()";
+                        case @((int)EnumApplyProcess.AuditFailed):
+                            return "@EnumApplyProcess.AuditFailed.GetDescription()";
+                        case @((int)EnumApplyProcess.Distributing):
+                            return "@EnumApplyProcess.Distributing.GetDescription()";
+                        case @((int)EnumApplyProcess.PartialCompletion):
+                            return "@EnumApplyProcess.PartialCompletion.GetDescription()";
+                        case @((int)EnumApplyProcess.Completion):
+                            return "@EnumApplyProcess.Completion.GetDescription()";
+                        case @((int)EnumApplyProcess.Rejection):
+                            return "@EnumApplyProcess.Rejection.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                {
+                    label: '入库库房/科室', name: 'rkbmmc', width: 80, align: 'center', formatter: function (val, options, rowObject) {
+                        if (rowObject != null) {
+                            switch (rowObject.applyType) {
+                            case @((int)EnumApplyType.DepartmentApply):
+                                return rowObject.rkksmc;
+                            case @((int)EnumApplyType.WarehouseApply):
+                                return rowObject.rkbmmc;
+                            default:
+                                return "";
+                            }
+                        }
+                    }
+                },
+                {
+                    label: '单据类型', name: 'applyType', width: 65, align: 'center', formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumApplyType.DepartmentApply):
+                            return "@EnumApplyType.DepartmentApply.GetDescription()";
+                        case @((int)EnumApplyType.WarehouseApply):
+                            return "@EnumApplyType.WarehouseApply.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                { label: '单据号', name: 'sldh', width: 130, align: 'center' },
+                { label: '创建时间', name: 'CreateTime', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: '创建人', name: 'CreatorName', width: 70, align: 'center' }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            multiselect: true,
+            viewrecords: false,
+            onSelectRow_page: function (rowid, status) {
+                $ProductGridList.jqGrid("clearGridData");
+                $ProductGridList.jqGrid('setGridParam', {
+                    url: "/BillManage/ApplyBill/ApplyBillDetailQuery",
+                    postData: getSelectRowPostData()
+                }).trigger('reloadGrid');
+            },
+            onSelectAll: function (rowids, statue) {
+                $ProductGridList.jqGrid("clearGridData");
+                $ProductGridList.jqGrid('setGridParam', {
+                    url: "/BillManage/ApplyBill/ApplyBillDetailQuery",
+                    postData: getSelectRowPostData()
+                }).trigger('reloadGrid');
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //组装查询条件
+    function getSelectRowPostData() {
+        var allCheckedTr = $(":checkbox:checked").parents("tr");
+        var ids = "";
+        if (allCheckedTr != null && allCheckedTr.length > 0) {
+            var arr = [];
+            for (var i = 0; i < allCheckedTr.length; i++) {
+               var rowData= $gridList.jqGrid('getRowData', allCheckedTr[i].id);
+                if (rowData!=null&&rowData.sldh != null && rowData.sldh !== "") {
+                    arr.push(rowData.sldh);
+                }
+            }
+            ids = arr.join(",");
+        }
+        return { sldIds: ids };
+    };
+
+    //组装查询条件
+    function getSearchPostData() {
+        var applyProcess = $("#applyProcess").val();
+        var applyType = $("#applyType").val();
+        var kssj = $("#startTime").val();
+        var jssj = $("#endTime").val();
+        var pdh = $("#djh").val();
+        var slbm = $("#slbm").val();
+        applyType = applyType == undefined || applyType === "" ? 0 : applyType;
+        applyProcess = applyProcess == undefined || applyProcess === "" ? 0 : applyProcess;
+        return { kssj: kssj, jssj: jssj, pdh: pdh, applyType: applyType, applyProcess: applyProcess, slbm: slbm, applyProcesses:"@applyProcess" };
+    };
+
+    //右侧，明细区域
+    function productGridList() {
+        $ProductGridList.dataGrid({
+            caption: "申领明细",
+            url: "",
+            height: $(window).height() - 265,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            colModel: [
+                { label: '现发数量', name: 'xfsl', width: 55, align: 'center', editable: true, editwidth:"88%"},
+                { label: '单位', name: 'bmdwmc', width: 40, align: 'left' },
+                { label: '已发数量', name: 'yfslStr', width: 55, align: 'right' },
+                { label: '申领数量', name: 'slStr', width: 55, align: 'right' },
+                { label: '现有库存', name: 'kyslStr', width: 80, align: 'center' },
+                { label: '物资名称', name: 'wzmc', width: 110, align: 'left' },
+                { label: '规格', name: 'gg', width: 110, align: 'left' },
+                { label: '品牌', name: 'brand', width: 110, align: 'left' },
+                { label: "申领单号", name: "sldh", width: 130, align: 'center' },
+                { label: "sldmxId", name: "sldmxId", hidden: true },
+                { label: 'zhyz', name: 'zhyz', hidden: true },
+                { label: "sldId", name: "sldId", hidden: true },
+                { label: 'productId', name: 'productId', hidden: true },
+                { label: 'bmdwsysl', name: 'bmdwsysl', hidden: true },//剩余待发数量 初次加载与xfsl相同
+                { label: 'kykcsl', name: 'kykcsl', hidden: true },
+                { label: 'sl', name: 'sl', hidden: true },
+                { label: 'bmdwId', name: 'bmdwId', hidden: true },
+                { label: 'rkbm', name: 'rkbm', hidden: true }
+            ],
+            onSelectRow: function (rowid, status) {
+                $ProductGridList.jqGrid('editRow', rowid, true, null, function (result) { }, null, null, function () { });
+                $("#" + rowid + "_xfsl").keyup(function () {
+                    RowDataValidate(rowid);
+                    $ProductGridList.jqGrid('editRow', rowid, true, null, function (result) { }, null, null, function () { });
+                });
+            },
+            pager: "#gridmxPager",
+            sortname: 'sldh desc',
+            viewrecords: false
+        });
+    }
+
+    //行编辑验证
+    function RowDataValidate(rowid){
+        $ProductGridList.saveRow(rowid, function (result) { }); //先保存处于编辑状态的那一行
+        var rowData = $ProductGridList.getRowData(rowid);
+        var reg = /^[1-9]\d*$/;//大于0的整数
+        if (!reg.test(rowData.xfsl)) {
+            $.modalMsg("发药数量必须为大于0的整数！", "warning", 1500);
+            return false;
+        }
+        var xfsl = parseInt(rowData.xfsl);
+        var zhyz = parseInt(rowData.zhyz);
+        if (xfsl - parseInt(rowData.bmdwsysl) > 0) {
+            $.modalMsg("现发数量不可大于" + rowData.bmdwsysl + "！", 'warning', 1500);
+            return false;
+        }
+        if ((xfsl * zhyz - parseInt(rowData.kykcsl) > 0)) {
+            $.modalMsg("现发数量不可大于可用库存！", 'warning', 1500);
+            return false;
+        }
+        return true;
+    }
+
+    //发货
+    function newtouch_event_f8() {
+        var rowIds = $ProductGridList.getDataIDs();
+        if (rowIds == undefined || rowIds.length <= 0) {
+            $.modalMsg("请选择出库单据！", 'warning', 1500);
+            return false;
+        }
+        var ckmx = [];
+        $.each(rowIds, function() {
+            $ProductGridList.saveRow(this, null, null, null, function (callbackRowId) {}, null, null);
+            var rowData = $ProductGridList.getRowData(this);
+            if (rowData != null) ckmx.push(rowData);
+        });
+        if (ckmx.length <= 0) {
+            $.modalMsg("未找到有效的出库明细！", 'warning', 1500);
+            return false;
+        }
+        $.najax({
+            type: "POST",
+            url: "/StorageManage/Storage/SubmitApplyOutStock",
+            data: { ckmx: ckmx},
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('发药成功', 'success', 1000);
+                    $gridList.trigger("reloadGrid");
+                    $ProductGridList.jqGrid("clearGridData");
+                } else if (res.state === "error") {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+</script>
+

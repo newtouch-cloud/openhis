@@ -1,0 +1,449 @@
+﻿@using Newtouch.Infrastructure;
+@{
+	ViewBag.Title = "门诊分诊";
+	Layout = "~/Views/Shared/_Index.cshtml";
+	var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<style>
+
+	#dv_pretb {
+		font-size: 14px;
+		border: 2px solid rgba(26, 157, 251, 0.80);
+		border-radius: 5px;
+		background-color: azure;
+	}
+
+	#pretb th {
+		padding: 5px 10px;
+		border-right: 2px solid rgb(111, 216, 171);
+	}
+
+	#pretb td {
+		padding: 3px 5px;
+	}
+</style>
+
+<div class="topPanel">
+	<div class="search">
+		<table class="form">
+			<tr>
+				<td class="formTitle">科室</td>
+				@*<td class="formValue">
+						<input type="text" id="ks" class="form-control" style="width: 200px" />
+						<input type="text" id="ksCode" class="form-control" style="display:none;" />
+					</td>*@
+				<td>
+					<div class="input-group">
+						<input type="text" id="ks" class="form-control" autocomplete="off" style="width: 200px" />
+						<input type="text" id="ksCode" class="form-control" style="display:none;" />
+						<input id="txt_keyword" type="text" class="form-control" placeholder="姓名" autocomplete="off" style="width: 100px;float:left;margin-left:20px;">
+						<span class="input-group-btn" style="width: 100px;float:left;margin-left:20px;">
+							<button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+						</span>
+						<span class="input-group-btn" style="float:left;">
+							<button id="btn_consultCall" type="button" onclick="ConsultCall()" class="btn btn-primary" style="width: 100px;">分诊叫号</button>
+						</span>
+						<span class="input-group-btn">
+							<button type="button" class="btn btn-primary" onclick="ConsultCallOpen()">大屏显示</button>
+						</span>
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+
+<div id="dv_pretb" style="width:98%;text-align:center;height:100px;">
+	<table id="pretb" style="border-right:2.5px solid rgb(111, 216, 171);">
+		<tbody id="tbody"></tbody>
+		@*<tr>
+				<th> <span id="sp_zsmc">诊室1</span></th>
+				<td>
+					<span id="sp_num">23</span>
+				</td>
+			</tr>*@
+	</table>
+</div>
+<div style="width:40%;float:left;">
+	<div class="gridPanel">
+		<table id="gridList"></table>
+		<div id="gridPager"></div>
+	</div>
+</div>
+<div style="width:58%;float:right;">
+	<div class="gridPanel">
+		<table id="gridListRight"></table>
+		<div id="gridPagerRight"></div>
+
+	</div>
+	@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+	ShowKeyList = new int[] {  4,  8 },
+})
+</div>
+<script src="~/Content/js/pdjhyybb.js"></script>
+<script>
+	var kscode = "@(opr.DepartmentCode)";
+    $(function () {
+        initControl();
+        gridList();
+        gridListRight();
+        getConsultCount();
+    })
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/NurseManage/OutpatientConsult/GetExpertInfo",
+            height: $(window).height() - 258,
+            postData: { ksCode: $("#ksCode").val(),keyword: $("#txt_keyword").val(), ghrq: new Date().format('yyyy-MM-dd')},
+            colModel: [
+                { label: 'Id', name: 'ghzsId', hidden: true, },
+                { label: '挂号内码', name: 'ghnm', hidden: true, },
+                @*{
+                    label: '操作区', name: 'action', width: 40, align: 'center', formatter: function (cellvalue, op, row) {
+                        if (row.ghzsId==0) {
+                            return '';
+                        }
+                        else if (row.calledstu == "2" ) {//已叫号
+                            return '<input type="button" class="btn btn-default"  onclick="jiaohao(' + row.ghzsId + ',' + @Html.Raw(((int)EmunConsultCalledStu.pass)) + ')" value="过号" />';
+                        }
+                        else if (row.calledstu == "3") {//过号
+                            return '<input type="button" class="btn btn-default"  onclick="jiaohao(' + row.ghzsId + ',' + @Html.Raw(((int)EmunConsultCalledStu.recall)) + ')" value="重叫" />';
+                        }
+
+                        else
+                            return '';
+                    },
+                },*@
+                { label: '序号', name: 'jzxh', width: 30, align: 'center' },
+                { label: '病人姓名', name: 'xm', width: 60, align: 'left'},
+                { label: '挂号时间', name: 'ghrq', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '科室', name: 'ksmc', width: 80, },
+                { label: '科室编码', name: 'ksCode', hidden: true, },
+                { label: '医生', name: 'ysmc', width: 50,   },
+                { label: '诊室', name: 'zsmc', width: 80, },
+                { label: '诊室编码', name: 'zsCode', hidden: true, },
+            ],
+            pager: "#gridPager",
+            sortname: 'ghrq asc',
+            viewrecords: true,
+            caption: "专家诊室",
+            autoScroll: false,//当autoScroll和shrinkToFit均为false时，会出现行滚动条
+            shrinkToFit: false,//是否列宽度自适应。true=适应 false=不适应
+        });
+        $gridList.jqGrid('setFrozenColumns');//设置冻结列生效
+        $("#time_horizon a.btn-default").click(function () {
+            $("#time_horizon a.btn-default").removeClass("active");
+            $(this).addClass("active");
+            $('#btn_search').trigger("click");
+        });
+
+
+
+        $("#btn_search").click(function () {
+            var queryJson = getPostData();
+            $gridList.jqGrid('setGridParam', {
+                postData: queryJson,
+                page: 1,
+            }).trigger('reloadGrid');
+            getConsultCount();
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    var ksCode = "";
+    function initControl() {
+        $('#ks').ksFloatingSelector({
+            iszlks: "1",
+            itemdbclickhandler: function ($this) {
+                $('#ks').attr('data-code', $this.attr('data-Code'))
+                    .val($this.attr('data-Name'));
+                $('#ksCode').attr('data-code', $this.attr('data-Code'))
+                    .val($this.attr('data-Code'));
+                ksCode = $this.attr('data-Code');
+                $('#btn_search').trigger('click');
+            },
+        });
+    }
+
+    function gridListRight() {
+        var $gridListRight = $("#gridListRight");
+        $gridListRight.dataGrid({
+            url: "/NurseManage/OutpatientConsult/GetNormalInfo",
+            height: $(window).height() - 298,
+			postData: { ksCode: ksCode, keyword: $("#txt_keyword").val(), ghrq: new Date().format('yyyy-MM-dd') },
+            colModel: [
+
+                { label: 'Id', name: 'ghzsId', hidden: true, },
+                { label: '挂号内码', name: 'ghnm', hidden: true, },
+                {
+                    label: '操作区', name: 'action', width: 40, align: 'center', formatter: function (cellvalue, op, row) {
+                        if (row.ghzsId==0) {
+                            return '';
+                        }
+                        @*else if (row.calledstu == "2" ) {//已叫号未应答
+							return '<input type="button" class="btn btn-default"  onclick="jiaohao(' + row.ghnm + ',' + @Html.Raw(((int)EmunConsultCalledStu.pass)) + ')" value="过号" />';
+                        }*@
+						else if (row.calledstu == "2") {//已叫号可以重叫
+							return '<input type="button" class="btn btn-default"  onclick="jiaohao(' + row.ghnm + ',' + @Html.Raw(((int)EmunConsultCalledStu.recall)) + ')" value="重叫" />';
+                        }
+
+                        else
+                            return '';
+                    },
+                },
+                { label: '序号', name: 'jzxh', width: 30, align: 'center' },
+                { label: '病人姓名', name: 'xm', width: 60, align: 'left' },
+                { label: '挂号时间', name: 'ghrq', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+				{ label: '科室', name: 'ksmc', width: 80 },
+				{ label: '科室编码', name: 'ksCode', hidden: true, editwidth: '93%', editable: true },
+				{ label: '医生', name: 'ysmc', width: 50,  },
+                { label: '诊室', name: 'zsmc', width: 80, editwidth: '93%', editable: true },
+                { label: '诊室编码', name: 'zsCode', editwidth: '93%', editable: true, hidden: true, },
+
+            ],
+            pager: "#gridPagerRight",
+            sortname: 'ghrq asc',
+			viewrecords: true,
+			unwritten: false,
+			editurl: "clientArray",  //行编辑不向服务器提交数据
+            caption: "普通诊室",
+            autoScroll: false,//当autoScroll和shrinkToFit均为false时，会出现行滚动条
+            shrinkToFit: false,//是否列宽度自适应。true=适应 false=不适应
+            gridComplete: function () {
+                EnableInlineEditBox();
+            }
+        });
+        $gridListRight.jqGrid('setFrozenColumns');//设置冻结列生效
+
+        $("#btn_search").click(function () {
+            var queryJson = getPostData();
+            $gridListRight.jqGrid('setGridParam', {
+                postData: queryJson,
+                page: 1,
+            }).trigger('reloadGrid');
+            getConsultCount();
+        });
+    }
+
+    function getPostData() {
+        var timeType = $("#time_horizon a.active").attr('data-value');
+        var dt = new Date().format("yyyy-MM-dd");
+        if (timeType != 1) {
+            dt = $("#txt_jhrq").val();
+        }
+        var queryJson = {
+            keyword: $("#txt_keyword").val(),
+            ghrq: new Date().format('yyyy-MM-dd'),
+            //qdsj: dt,
+			ksCode: ksCode,
+            //ywbz: $("#ywbz").val(),
+            //ywlx: $("#ywlx").val(),
+        }
+        return queryJson;
+    }
+
+    //获取各诊室待就诊患者数量
+    function getConsultCount() {
+        if (ksCode) {
+            $.najax({
+                type: "POST",
+                url: "/NurseManage/OutpatientConsult/getConsultCount",
+                data: { ksCode: ksCode, ghrq: new Date().format('yyyy-MM-dd')},
+                dataType: "json",
+                async: false,
+                success: function (ajaxresp) {
+                    $("#tbody").html("");
+                    for (var i = 0; i < ajaxresp.length; i++) {
+                        var zsmc = " <th> <span id='sp_zsmc'>" + ajaxresp[i].zsmc + "</span></th>";
+                        var num = "<td ><span id='sp_num'>" + "等待人数：" + ajaxresp[i].num + "</span> </td>";
+                        var html = "<tr>" + zsmc + num + "</tr>"
+                        $("#tbody").append(html);
+                    }
+                }
+            });
+        }
+    }
+
+    //诊室行编辑
+    function EnableInlineEditBox() {
+        var ids = $("#gridListRight").getDataIDs();
+        $.each(ids, function () {
+            var rowid = String(this);
+            //打开编辑模式
+            $("#gridListRight").jqGrid('editRow', rowid, false, initInlineFunc);
+        })
+    }
+
+    //诊室行编辑
+	function initInlineFunc(rowid) {
+		$("#" + rowid + "_zsmc").attr('autocomplete', 'off');
+        //$("#" + rowid + "_zsmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        //诊室浮层
+        $("#" + rowid + "_zsmc").zsFloatingSelector({
+            djDecimalPlaces: 4,
+            searchType: 'sfxm',
+            leftshift: 150,
+            ajaxparameters: function ($thisinput) {
+                return "ksCode=" + ksCode+ "&keyword=" + $.trim($thisinput.val());
+                //return "ksCode=" + $("#ksCode").val() + "&keyword=" + $.trim($thisinput.val());
+            },
+            itemdbclickhandler: function ($thistr) {
+                var returnFlag = false;
+                var allData = $("#gridListRight").getRowData_AllLine(undefined, true);
+                $.each(allData, function () {
+                    $("#" + rowid + "_zsmc").val($thistr.attr('data-Name'));
+                    $("#" + rowid + "_zsCode").val($thistr.attr('data-Code'));
+                });
+            },
+		});
+
+		
+
+    }
+
+    //保存
+    function newtouch_event_f8() {
+        var rowIds = $("#gridListRight").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#gridListRight").saveRow(rowIds[i], null, null, null, null, null, function (callbackRowId) { }, function (callbackRowId) { });
+
+            if (!saveResult) {
+                EnableInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                return;   //保存失败，则return
+            }
+        }
+
+
+        //项目
+        var ghzslist = $("#gridListRight").jqGrid('getRowData_AllLine', null, true);
+
+        $.each(ghzslist, function () {    //去掉action
+            delete this.action;   //去掉action
+        })
+        $.najax({
+            url: "/NurseManage/OutpatientConsult/SaveData",
+            dataType: "json",
+            data: {  ghzslist: ghzslist },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'warning');
+                //清空
+				$("#txt_keyword").val("");
+
+                $("#gridListRight").clearGridData();
+                //刷新
+                $("#gridListRight").jqGrid('setGridParam', {
+                    page: 1,
+                }).trigger('reloadGrid');
+
+                $('#btn_search').trigger('click');
+            }
+        });
+    }
+	function ConsultCallOpen() {
+		var ksCode = $("#ksCode").val();
+		if (!ksCode) {
+			$.modalAlert("请选择科室", 'warning');
+			return;
+		}
+		window.open("/NurseManage/OutpatientConsult/ConsultCall?ksCode=" + ksCode, "_blank", "height = 500, width = 950, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+	}
+
+    function ConsultCall() {
+        var ksCode = $("#ksCode").val();
+		if (!ksCode) {
+            $.modalAlert("请选择科室", 'warning');
+            return;
+		}
+		var selrowId = $("#gridListRight").jqGrid("getGridParam", "selrow");
+		var keyword = "";
+		if (selrowId != null) {
+			var selRowData = $("#gridListRight").getRowData(selrowId);
+			keyword = selRowData.xm;
+		}
+		$.najax({
+			type: "POST",
+			url: "/NurseManage/OutpatientConsult/getConsultCall",
+			data: { ksCode: ksCode, keyword: keyword, ghrq: new Date().format('yyyy-MM-dd') },
+			dataType: "json",
+			async: false,
+			success: function (ajaxresp) {
+				console.log(ajaxresp.length);
+				if (ajaxresp.length > 0) {//" + ajaxresp[0].zsfh+"
+					//var zsfh = ajaxresp[0].zsfh;
+					//var zsfhnew = "";
+					//while (zsfh.length > 0) // Loop through string
+					//{
+					//	zsfhnew = zsfhnew + " " + zsfh.substring(0, 1);
+					//	zsfh = zsfh.substring(1);
+					//}
+
+					//var text = ajaxresp[0].xm + "请到" + ajaxresp[0].zslc + "楼" + ajaxresp[0].ksmc + "" + ajaxresp[0].zsmc.replace(/[0-9]/g, '') + zsfhnew+"就诊";
+					//for (var k = 1; k <= 3; k++) {
+					//	bobao(text);
+					//}
+					//更新叫号状态（2已叫）
+					$.najax({
+					    type: "POST",
+						url: "/NurseManage/OutpatientConsult/UpdateCalledstu",
+						data: { ghnm: ajaxresp[0].ghnm, calledstu: 4 },
+					    dataType: "json",
+					    async: false,
+					    success: function (ajaxresp) {
+
+					    }
+					});
+
+					//清空
+					$("#txt_keyword").val("");
+					//$("#gridListRight").jqGrid('setSelection', selrowId, false);//取消选中行
+					$("#gridListRight").clearGridData();
+					getConsultCount();
+					$("#gridListRight").jqGrid('setGridParam', {
+						page: 1,
+					}).trigger('reloadGrid');
+				}
+			}
+		});
+
+
+    }
+
+	function jiaohao(ghzsId, calledstu) {
+
+        //更新叫号状态
+        $.najax({
+            type: "POST",
+            url: "/NurseManage/OutpatientConsult/UpdateCalledstu",
+			data: { ghnm: ghzsId, calledstu: calledstu },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+				$.modalAlert("保存成功", 'warning');
+
+				//var text = ajaxresp[0].xm + "请到" + ajaxresp[0].zslc + "楼" + ajaxresp[0].ksmc + "" + ajaxresp[0].zsmc.replace(/[0-9]/g, '') + zsfhnew + "就诊";
+				//for (var k = 1; k <= 3; k++) {
+				//	bobao(text);
+				//}
+
+                //清空
+				$("#txt_keyword").val("");
+                $("#gridListRight").clearGridData();
+                //刷新
+                $("#gridListRight").jqGrid('setGridParam', {
+                    page: 1,
+                }).trigger('reloadGrid');
+
+                $('#btn_search').trigger('click');
+            }
+        });
+    }
+
+</script>

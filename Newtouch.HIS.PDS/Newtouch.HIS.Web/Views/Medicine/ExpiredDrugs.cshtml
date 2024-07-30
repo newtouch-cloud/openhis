@@ -1,0 +1,164 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "MedicineInfo";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .trSelected {
+        background-color: #87CEEB !important;
+    }
+
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            筛选信息
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <td class="formTitle">药品代码：</td>
+                    <td class="formValue">
+                        <input type="text" id="ypdm" class="form-control" placeholder="请输入药品代码 拼音 名称" />
+                    </td>
+                    <td class="formTitle">药品类别：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        <select class="form-control" id="yplb">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <td class="formTitle">药品属性：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        <select class="form-control" id="ypsx">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <td class="formTitle" rowspan="2">
+                        <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">药品剂型：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        <select class="form-control" id="ypjx" name="ypjx">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <td class="formTitle">使用状态：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        @Html.DropDownList("syzt", BenBuMenZT.Control.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <td class="formTitle">药品状态：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        @Html.DropDownList("ypzt", EnumYPZT.Enabled.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<div class="gridPanel" style="margin-top:10px">
+    <table id="gridList"></table>
+    <div id="gridPager" rel="form1"></div>
+</div>
+<script>
+    var par = new Object();
+    $(function () {
+        initialddlYPLBList();
+        initialddlJXList();
+        iniddlTSSXList();
+        gridList();
+    });
+
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Medicine/GetExpiredDrugsGridJson",
+            postData: $("#form1").formSerialize(),
+            height: $(window).height() - 235,
+            colModel: [
+                { label: "药品代码", name: "ypCode", width: 70, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 150, align: 'left' },
+                { label: '药品类别', name: 'yplb', width: 50, align: 'left' },
+                { label: '库存数量', name: 'kcsl', width: 70, align: 'left' },
+                //{ label: '药品属性', name: 'ypxzmc', width: 50, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 50, align: 'left' },
+                { label: '批发价', name: 'pfj', width: 50, align: 'left' },
+                { label: '单位', name: 'deptdw', width: 50, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 150, align: 'left' },
+                { label: '有效期', name: 'yxq', width: 150, align: 'left' },
+                { label: '使用状态', name: 'syzt', width: 50, align: 'left' },
+                { label: '库位', name: 'Ypkw', width: 55, align: 'left' },
+                { label: '停用标志', name: 'ypzt', width: 65, align: 'left' },
+                { label: "主键", name: "ypId", hidden: true, key: true }
+            ],
+            pager: "#gridPager",
+            sortname: 'ypmc asc',
+            viewrecords: true,
+            gridComplete: function () {
+                afterCompleteFunction();
+            },
+            onSelectRow: function (status) {
+                var id = $("#gridList").jqGrid("getGridParam", "selrow");
+                if (id) {
+                    $(this).find(".trSelected").removeClass('trSelected');
+                    if (status) {
+                        $("#" + id).find("td").addClass("trSelected");
+                    }
+
+                }
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: $("#form1").formSerialize(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //控制的药品显示红色
+    function afterCompleteFunction() {
+        var ids = $("#gridList").getDataIDs();
+        for (i = 0; i < ids.length; i++) {
+            var rowData = $("#gridList").getRowData(ids[i]);
+            if (rowData.syzt === "控制") {
+                $("#" + ids[i]).find("td").css("background-color", "#00BFFF");
+            }
+        }
+    }
+
+    //药品类别
+    function initialddlYPLBList() {
+        $("#yplb").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineCategoryList"
+        });
+    }
+
+    //药品剂型
+    function initialddlJXList() {
+        $("#ypjx").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineFormulationList",
+            id: "jxCode",
+            text: "jxmc"
+        });
+    }
+
+    //药品属性
+    function iniddlTSSXList() {
+        $("#ypsx").bindSelect({
+            url: "/Medicine/GetMedicineTSSXList",
+            id: "Code",
+            text: "Name"
+        });
+    }
+</script>

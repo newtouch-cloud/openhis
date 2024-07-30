@@ -1,0 +1,619 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //var isWithRehabSuggestion = SysConfigReader.Bool("IS_WithRehabSuggestion", false).Value;
+}
+<style>
+    .dv-lable {
+        width: 40px;
+    }
+    .dv-value {
+        width: 60px;
+    }
+</style>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/Content/js/floatingselector.js", false)"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/floatingselector.css", false)" rel="stylesheet" />
+<form id="form1" autocomplete="off">
+    <div >
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                基本信息
+            </div>
+            <table class="form" style="width:96%;">
+                <tbody>
+                    <tr>
+                        <th class="formTitle">病人类型：</th>
+                        <td class="formValue" style="width:60px;">
+                            <select id="kflb" name="kflb" class="form-control">
+                                <option value="2">&nbsp;&nbsp;住院</option>
+                                <option value="1">&nbsp;&nbsp;门诊</option>
+                            </select>
+                        </td>
+                        <th class="formTitle dv-lable" id="brlxSearch">住院号：</th>
+                        <td class="formValue" style="width:80px;">
+                            <input class="form-control" type="text" id="mzzyh"  value="" />
+                        </td> 
+                        <td class="formValue" style="z-index:1">
+                            <input type="button" class="btn btn-default btn-md btn-default-color" title="选择住院患者" id="zy_btnsyy" value="查询" onclick="GetPatSerarchView($('#mzzyh').val());">
+                            <input hidden="hidden" id="btn_search" />
+                        </td>
+                        <th class="formTitle dv-lable">姓名：</th>
+                        <td class="formValue" style="width:120px;">
+                            <label id="xm" ></label>
+                        </td>
+                        <th class="formTitle dv-lable">性别：</th>
+                        <td class="formValue">
+                            <label id="xb"></label>
+                        </td>
+                        <th class="formTitle dv-lable">年龄：</th>
+                        <td class="formValue" style="width:30px;">
+                            <label id="nlshow"></label>
+                        </td>
+                        <th class="formTitle dv-lable">证件号：</th>
+                        <td class="formValue" style="width:120px;">
+                            <label id="zjh"></label>
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody class="dispTbody" style="display:none;">
+                    <tr>
+                        
+                        <th class="formTitle dv-lable">手机号：</th>
+                        <td class="formValue" colspan="2">
+                            <label id="phone"></label>
+                        </td>
+                        <th class="formTitle dv-lable">出生日期：</th>
+                        <td class="formValue" colspan="2">
+                            <label id="csny"></label>
+                        </td>
+                        <th class="formTitle zy dv-lable">入院日期：</th>
+                        <td class="formValue zy " >
+                            <label id="ryrq"></label>
+                        </td>
+                        <th class="formTitle zy dv-lable">入院诊断：</th>
+                        <td class="formValue zy" colspan="2">
+                            <label id="ryzd"></label>
+                        </td>
+                        <td>
+                            <input id="hidblh" style="display:none" />
+                            <input id="hidmzzyh" style="display:none" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="fa_icontoggle"><i class="fa fa-angle-double-down icontoggle" style="color:rgb(0, 160, 233);cursor:pointer;"></i>
+            </div>
+        </div>
+    </div>
+    <div>
+        <div><table id="gridzljy"></table></div>
+        <div id="gridzljyPager"></div>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 2, 7, 8 },
+    F2Text = "新增",
+    F7Text = "模板",
+    F8Text = "保存"
+})
+</form>
+<script src="~/Content/js/floatingselector.js"></script>
+<link href="~/Content/css/floatingselector.css" rel="stylesheet" />
+<script type="text/javascript">
+    var zljyflag = 0;
+    var isLoadingIIII = false;  //是否正在从后台加载数据
+    var brlx = 2; //1门诊 2住院
+    var delRowDataIds = [];
+    var kflocaldata = "";
+    var xmjf = [];
+    var brxz = "";
+    $(function ()  {
+        gridzljy();
+        $("#kflb").change(function () {
+            var options = $("#kflb option:selected");
+            $("#brlxSearch").html(options.text() + "号：");
+            brlx = options.val();
+            if (brlx=="1") {
+                $(".zy").hide();
+                clearHtmlData();
+                $("#gridzljy").setGridParam().showCol("sl");
+                $("#gridzljy").setGridWidth($(window).height() + 600);
+            }
+            else {
+                $(".zy").show();
+                clearHtmlData();
+                $("#gridzljy").setGridParam().hideCol("sl");
+                $("#gridzljy").setGridWidth($(window).height() + 600);
+            }
+            
+        });
+    })
+    function clearHtmlData() {
+        $('#gridzljy').jqGrid("clearGridData");
+        $('#xm').html("");
+        $('#xb').html("");
+        $('#nlshow').html("");
+        $('#zjh').html("");
+        $('#phone').html("");
+        $('#csny').html("");
+        $('#hidblh').val("");
+        $('#hidmzzyh').val("");
+        $('#ryrq').html("");
+        $('#ryzd').html("");
+        $('#mzzyh').val("");
+    }
+
+    //住院病人查询
+    function GetPatSerarchView(mzzyh) {
+        if (!!!mzzyh) {
+            mzzyh = '';
+        }
+        //1门诊  2住院
+        if (brlx=="1") {
+            $.modalOpen({
+                id: "patSearch",
+                title: "患者查询",
+                url: "/OutpatientManage/OutpatientRefund/SysPatEntitiesReView?jiuzhenbiaozhi=1,2&t=" + Math.random() + "&mzh=" + mzzyh + "&blh=",
+                width: "700px",
+                height: "600px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].PatDbGrid(); //在弹出窗口事件
+                }
+            });
+        }
+        else {
+            $.modalOpen({
+                id: "patSearch",
+                title: "患者查询",
+                url: "/PatientManage/AccountManage/PatSearchView?t=" + Math.random() + "&zyh=" + mzzyh + "&brzybzType=1",
+                width: "700px",
+                height: "600px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].PatDbGrid(); //在弹出窗口事件
+                }//窗口点确定的回调函数
+            });
+        }
+       
+    }
+    //门诊病人回调
+    function GetQueryFphAjax(selePatInfo) {
+        $('#mzzyh').val(selePatInfo.mzh);
+        brxz = selePatInfo.brxz;
+        GetPatZLJYAjax(selePatInfo.mzh);
+    }
+
+    //住院选择的病人 callback
+    function getPatInfoAjax(selePatInfo) {
+        $('#mzzyh').val(selePatInfo.zyh);
+        brxz = selePatInfo.brxz;
+        GetPatZLJYAjax(selePatInfo.zyh)
+    }
+    //根据选择的病人加载病人信息及治疗建议列表
+    function GetPatZLJYAjax(mzzyh) {
+        //$.loading(true, "正在请求数据...");
+        $.ajax({
+            type: "POST",
+            url: "@Url.Action("GetPatZLJYInfo")",
+            data: { mzzyh: mzzyh, brlx: brlx },
+        dataType: "json",
+        cache: true,
+        async: true,
+        success: function (ajaxresp) {
+            if (ajaxresp.state === 'success') {
+                setPatInfoModel(ajaxresp.data.MzZyPatInfoDto); //个人基本信息赋值
+                $('#gridzljy').jqGrid("clearGridData");
+                $.each(ajaxresp.data.TherapistAdviceDto, function () {
+                    this.action = getRehbActionStr();
+                })
+                $("#gridzljy").newtouchLocalDataGrid(null, ajaxresp.data.TherapistAdviceDto);
+            } else if (ajaxresp.state === 'error') {
+                $.modalAlert("查询失败", 'error');
+            }
+        },
+        complete: function () {
+            $.loading(false);
+        }
+    });
+    }
+
+    //初始化病人信息
+    function setPatInfoModel(patModel) {
+        $('#xm').html(patModel.xm);
+        $('#xb').html($.getGender(patModel.xb));
+        $("#nlshow").html(getAgeFromBirthTime({ begin: patModel.csny }).text);
+        $('#zjh').html(patModel.zjh);
+        $('#phone').html(patModel.phone);
+        $('#csny').html(patModel.csny ? patModel.csny.substring(0, 10) : '');
+        $('#hidblh').val(patModel.blh);
+        $('#hidmzzyh').val(patModel.mzzyh);
+        $('#ryrq').html(patModel.ryrq ? patModel.ryrq.substring(0, 10) : '');
+        $('#ryzd').html(patModel.ryzd);
+    }
+   
+    //住院患者信息赋值
+    //function ajaxLoadDataResult() {
+    //    if (!isLoadingIIII) {
+    //        isLoadingIIII = true;
+    //        var mzzyh = $.trim($("#mzzyh").val());
+    //        if (mzzyh == '') {
+    //            isLoadingIIII = false;
+    //            return false;
+    //        }
+    //        $('#gridList').jqGrid("clearGridData");
+    //        $.najax({
+    //            type: "GET",
+    //            url: "/HospitalizationManage/BookkeepInHos/GetAccountingStatusDetail?zyh=" + mzzyh,
+    //            loading: true,
+    //            success: function (ajaxresp) {
+    //                var patModel = ajaxresp.data.patInfo;
+    //                $('#xm').html(patModel.xm);
+    //                $('#xb').html($.getGender(patModel.xb));
+    //                $('#nl').html(patModel.nl);
+    //                $('#ryzd').html(patModel.ryzdmc);
+    //                $('#zjh').html(patModel.zjh);
+    //                $('#phone').html(patModel.phone);
+    //                $('#csny').html(patModel.csny ? patModel.csny.substring(0, 10) : '');
+    //                $('#ryrq').html(patModel.ryrq ? patModel.ryrq.substring(0, 10) : '');
+    //                //$('#gridzljy').jqGrid("clearGridData");
+    //            },
+    //            errorCallback: function (err) {
+    //                $('#mzzyh').trigger('focus');
+    //            }
+    //        });
+    //    }
+    //};
+
+    //治疗建议列表
+    function gridzljy() {
+        var $gridzljy = $("#gridzljy");
+        $gridzljy.jqGrid({
+            datatype: 'local',
+            data: kflocaldata,
+            height: $(window).height() - 230,
+            //altRows: true,//隔行换色
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            multiselect: true,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                { label: 'jyId', name: 'jyId', width: 120, align: 'center', hidden: true },
+                {
+                    label: 'itemCode', name: 'itemCode', width: 120, editwidth: '100%', align: 'center', editable: true, hidden: true
+                },
+                {
+                    label: '<span class="required">*</span>项目名称', name: 'itemName', width: 400, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true, autocomplete: 'off'
+                },
+                { label: '<span class="required">*</span>频次', name: 'pcmc', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: '<span class="required"></span>部位', name: 'bw', width: 100, editwidth: '100%', align: 'center', editable: true },
+                { label: 'pc', name: 'pc', editwidth: '100%', align: 'center', editable: true, hidden: true },
+                {
+                    label: '<span class="required">*</span>每次治疗量', name: 'mczll', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true, editrules: { integer: true, minValue: 1 }, editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("数量为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (isNaN(cellval)) {
+                                            $.modalAlert("数量：请填写数字", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+                                    }
+                                }
+                                ,
+                                {
+                                    type: 'keyup',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("数量为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (isNaN(cellval)) {
+                                            $.modalAlert("数量：请填写数字", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+
+                                    }
+                                }
+                        ]
+                    }
+                },
+                { label: '<span class="required"></span>数量', name: 'sl', width: 100, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '<span class="required">*</span>执行科室', name: 'zxksmc', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: 'zxksdm', name: 'zxksdm', editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '<span class="required"></span>嘱托', name: 'bz', width: 400, editwidth: '100%', align: 'center', editable: true },
+                { label: '操作', name: 'action', width: 100, align: 'center' }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            pager: "#gridzljyPager",
+            loadComplete: function () {
+                ////自动触发新治疗建议
+                //if (kflocaldata && kflocaldata.length == 0) {
+                //    newZljyRowData();
+                //}
+            },
+            gridComplete: function () {
+                EnableRehabInlineEditBox();
+            }
+        });
+
+    }
+
+    //启用行内编辑
+    function EnableRehabInlineEditBox(){
+        var ids = $("#gridzljy").getDataIDs();
+        $.each(ids, function () {
+            //打开编辑模式
+            $("#gridzljy").jqGrid('editRow', String(this), false, initRehabInlineFunc);
+
+            //标识治疗建议颜色
+            @*//var cfColor = getCfColor(@Html.Raw(((int)EnumCflx.RehabPres).ToString()),cfh);
+            //$('#gridzljy tr[id="' +  String(this) + '"]').css('border-left-color',cfColor);*@
+            //$('#gridzljy tr[id="' +  String(this) + '"]').css('border-left-style','solid');
+            $('#gridzljy tr[id="' +  String(this) + '"]').css('border-left-width','5px');
+
+        });
+
+    }
+    //初始化 浮层
+    function initRehabInlineFunc(rowid) {
+        //部分列只读
+        //$("#" + rowid + "_pcmc").attr('readonly','true');
+
+        //var currlineCfh = $("#gridzljy").getRowData(rowid).cfh;
+      
+        ////项目浮层
+        $("#" + rowid + "_itemName").sfxmFloatingSelector({
+            djDecimalPlaces: 4,
+            searchType: "sfxm ",
+            leftshift:200,
+            ajaxparameters: function ($thisinput) {
+            	return "&mzzybz=" + brlx + "&sfdllx=Rehab&dllb=2&keyword=" + $.trim($thisinput.val());
+            },
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_itemName").val($this.attr('data-sfxmmc'))
+                $("#" + rowid + "_itemCode").val($this.attr('data-sfxmCode'))
+                $("#" + rowid + "_zxksmc").val($this.attr('data-zxksmc'))
+                $("#" + rowid + "_zxksdm").val($this.attr('data-zxks'))
+            },
+        });
+        //频次浮层
+        $("#" + rowid + "_pcmc").pcFloatingSelector({
+            showtext: 'yzpcmc',
+            attrcols: ['yzpcmc', 'yzpcCode'],
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_pcmc").val($this.attr('data-yzpcmc'));
+                $("#" + rowid + "_pc").val($this.attr('data-yzpcCode'));
+            }
+        });
+
+        //部位浮层
+        $("#" + rowid + "_bw").bwFloatingSelector({
+            showtext: 'Name',
+            attrcols: ['Name', 'Code'],
+            checkItemActivity: function ($li, $thisinput) {
+                var selected = false;//默认没有选中当前值
+                var selectval = $thisinput.val();
+                if (selectval) {
+                    selectval = selectval.split(',');
+                    $.each(selectval, function () {
+                        if (this == $li.html()) {
+                            selected = true;
+                        }
+                    });
+                }
+                return selected;
+            },
+            itemdbclickhandler: function ($this) {
+                var mcval = "";
+                if (typeof ($this) !== "undefined") {
+                    $.each($this, function () {
+                        mcval += this.attr('data-Name') + ",";
+
+                    });
+                    if (mcval.length > 0) {
+                        mcval = mcval.substring(0, mcval.length - 1);
+                    };
+                }
+                $("#" + rowid + "_bw").val(mcval);
+            },
+        });
+        $("#" + rowid + "_zxksmc").newtouchBatchFloatingSelector({
+            height: 170,
+            width: 300,
+            caption: "选择科室",
+            url: '/basedata/GetSfxmZxksSelectJson',
+            clickautotrigger: true,
+            ajaxparameters: function ($thisinput) {
+                return 'sfxmCode=' + $("#" + rowid + "_itemCode").val();
+            },
+            colModel: [
+                { label: '编号', name: 'Code', widthratio: 40 },
+                { label: '名称', name: 'Name', widthratio: 60 },
+                { label: '拼音', name: 'py', hidden: true }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#" + rowid + "_zxksdm").val($thistr.find("td:eq(0)").html());
+                $("#" + rowid + "_zxksmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+
+    }
+
+    function checkItemActivity($li, $thisinput) {
+        var selected = false;//默认没有选中当前值
+        var selectval = $thisinput.val();
+        if (selectval) {
+            selectval = selectval.split(',');
+            $.each(selectval, function () {
+                if (this == $li.html()) {
+                    selected = true;
+                }
+            });
+        }
+        return selected;
+    }
+    //新治疗建议 按钮
+    function newZljyRowData() {
+        var dataRow = {
+            jyId: null, //尚未保存到数据库
+            action: getRehbActionStr()
+        };
+        $("#gridzljy").jqGrid("addRowData", undefined, dataRow, "last");
+    }
+
+    function newZljyAfterRowData(selRowId) {
+        //获取当前添加的处方号
+        var selRowData = $("#gridzljy").getRowData(selRowId);
+
+        //新加一行
+        var dataRow = {
+            jyId: null, //尚未保存到数据库
+            action: getRehbActionStr()
+        };
+        $("#gridzljy").jqGrid("addRowData", undefined, dataRow, "after", selRowId);
+    }
+
+    function getRehbActionStr() {
+        return "<i class='fa fa-plus-square-o' style='font-size: large; color: #09a3ea;' onclick='newZljyAfterRowData($(this).parent().parent().attr(\"id\"));return false;'></i>&nbsp;&nbsp;&nbsp;<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;' onclick='deleteRehRowData($(this).parent().parent().attr(\"id\"));return false;'></i>";
+    }
+    //删除明细
+    function deleteRehRowData(selRowId, recalc) {
+        if (!!selRowId) {
+            var rowData = $("#gridzljy").jqGrid('getRowData', selRowId);
+            if (rowData.jyId != null && rowData.jyId.length > 0) {
+                delRowDataIds.push(rowData.jyId);
+            }
+            $("#gridzljy").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    //选择模板
+    function GetTemplate() {
+        xmjf = [];
+        $.modalOpen({
+            id: "Form",
+            title: "收费项目模板窗口",
+            url: "/HospitalizationManage/BookkeepInHos/ChargeItemTemplate",
+            width: "700px",
+            height: "530px",
+            callBack: function (iframeId) {
+                var data = top.frames[iframeId].submitForm();
+                $.each(data, function () {
+                    var newRowData = {
+                        jyId: "",
+                        itemCode: this.sfxm,
+                        itemName: this.sfxmmc,
+                        pcmc: this.yzpcmc,
+                        pc: this.yzpc,
+                        mczll:this.zll,
+                        sl: this.sl,
+                        zxksdm: this.zxks,
+                        zxksmc: this.zxksmc,
+                        bw:this.bw,
+                        bz: "",
+                        action: getRehbActionStr()
+                    };
+                    xmjf.unshift(newRowData);   //作为新项添加 //”数组最前端“
+                });
+                //重新将xm数组呈现至grid
+                //$('#gridzljy').jqGrid("clearGridData");
+                $("#gridzljy").newtouchLocalDataGrid(null, xmjf);
+            }
+        });
+    }
+
+    //新增
+    function newtouch_event_f2() {
+        if ($('#hidmzzyh').val() == "" || $('#hidmzzyh').val().length == 0) {
+            $.modalAlert("请先选择患者", 'warning');
+            return;
+        }
+        newZljyRowData();
+    }
+    function newtouch_event_f7() {
+        if ($('#hidmzzyh').val() == "" || $('#hidmzzyh').val().length == 0) {
+            $.modalAlert("请先选择患者", 'warning');
+            return;
+        }
+        GetTemplate();
+    }
+    ////删除
+    //function newtouch_event_f6() {
+    //    var selRowIds = $("#gridzljy").jqGrid('getGridParam', 'selarrrow');
+    //    if (selRowIds.length == 0) {
+    //        $.modalAlert("请先选中需删除的建议", 'warning');
+    //        return;
+    //    }
+    //    for (var i = 0; i < selRowIds.length; i++) {
+    //        var rowData = $("#gridzljy").jqGrid('getRowData', selRowIds[i]);
+    //        if (rowData.jyId != null && rowData.jyId.length>0) {
+    //            delRowDataIds.push({ jyId: rowData.jyId });
+    //        }
+    //        $("#gridzljy").jqGrid("delRowData", selRowId);
+    //    }
+    //}
+    //保存
+    function newtouch_event_f8() {
+        if ($('#hidmzzyh').val()=="" || $('#hidmzzyh').val().length==0) {
+            $.modalAlert("请先选择患者", 'warning');
+            return;
+        }
+       
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridzljy").jqGrid('getDataIDs');
+        //alert(rowIds.length);
+        if (rowIds.length == 0) {
+            $.modalAlert("治疗建议不能为空", 'warning');
+            return;
+        }
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#gridzljy").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+            if (!saveResult) {
+                EnableRehabInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                return;   //保存失败，则return
+            }
+        }
+        var gridzljyData = $("#gridzljy").jqGrid('getRowData');
+        gridzljyData.push($("#gridzljy").jqGrid('getRowData', rowIds[rowIds.length - 1]));
+        if (!gridzljyData || gridzljyData.length == 0) {
+            EnableRehabInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+            $.modalAlert("治疗建议不能为空", 'warning');
+            return;
+        }
+        $.each(gridzljyData, function () {    //去掉action
+            for (var i = 0; i < $(this).length; i++) {
+                delete $(this)[i].action;
+            }
+        });
+        $.najax({
+            url: "/TherapeutistManage/TherapistAdvice/SaveData",
+            dataType: "json",
+            data: { mxList: gridzljyData, blh: $('#hidblh').val(), delRowIds:JSON.stringify(delRowDataIds), brlx: brlx, mzzyh: $('#hidmzzyh').val() },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'warning');
+                GetPatZLJYAjax($('#hidmzzyh').val());
+                window.$('#current').trigger('click');
+            },
+            complete: function () {
+                EnableRehabInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+            }
+        });
+    }
+</script>

@@ -1,0 +1,504 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.Common.Operator;
+@using System.IdentityModel.Metadata
+@{
+	/**/
+
+	ViewBag.Title = "PatientList";
+	var opr = OperatorProvider.GetCurrent();
+	Layout = null;
+	var iSReminderBeforehand = SysConfigReader.Bool("IS_ReminderBeforehand", false).Value;
+	var isShowghlybz = SysConfigReader.String("IS_Showghlybz");
+	var cmmSwitch = SysConfigReader.Bool("cmmSwitch", false).Value;
+	var djzhqsj = SysConfigReader.String("YXZ_CIS_1001");
+}
+@Html.Partial("_YibaoCommonView")
+
+<div id="linkbrlb" role="tabpanel" class="tab-pane">
+    <div class="topPanel" style="width: 99%; margin-top: 15px; border-radius: 5px; height:75px">
+        <table class="form">
+            <tr>
+                <th class="formTitle">就诊类型：</th>
+                <td class="formValue" style="width:10%;">
+                    @*<select id="mjzbz" name="mjzbz" class="form-control formClearIgnore" data-EnumType="EnumOutPatientType">*@
+                    <select id="mjzbz" name="mjzbz" class="form-control formClearIgnore">
+                        <option value="1" selected="selected">普通门诊</option>
+                        <option value="2">急诊</option>
+                        <option value="3">专家门诊</option>
+                        <option value="4">特病门诊</option>
+                        <option value="5">重大疾病门诊</option>
+                        <option value="6">慢性病门诊</option>
+                        <option value="7">居民两病</option>
+                        <option value="8">意外伤害门诊</option>
+                        <option value="9">生育门诊</option>
+                        <option value="10">耐多药结核门诊</option>
+                        <option value="11">儿童两病门诊</option>
+                    </select>
+                </td>
+                <td class="formValue" style="width:18%;">
+                    <div class="panelposition">
+                        <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" onclick="refleshPatientList()" checked value=@Html.Raw(((int)EnumJzzt.NotYetTreate).ToString()) />待就诊</label>
+                        <label><input type="radio" id="radioTreating" name="optionsRadios" class="optionsRadios formClearIgnore" onclick="refleshPatientList()" value=@Html.Raw(((int)EnumJzzt.Treating).ToString()) />就诊中</label>
+                        <label><input type="radio" id="radioTreated" name="optionsRadios" class="optionsRadios formClearIgnore" onclick="refleshPatientList()" value=@Html.Raw(((int)EnumJzzt.Treated).ToString()) />已就诊</label>
+                    </div>
+                </td>
+                <th class="formTitle">看诊日期：</th>
+                <td class="formValue" style="width:13%;">
+                    <input id="kzrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:70%;" value="" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { refleshPatientList(); } })" />
+                </td>
+                <td class="formValue" style="width:18%;">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <input id="txt_keyword" type="text" class="form-control formClearIgnore" placeholder="请输入门诊号、病历号、姓名">
+                        </div>
+                        <div class="col-md-2" style="line-height:26px;">
+                            <button id="btn_search" type="button" class="btn btn-info"><i class="fa fa-search"></i></button>
+                        </div>
+                    </div>
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_startTreat" class="panelposition btn btn-default btn-md" onclick="startTreat()" value="开始诊疗">
+                    <input type="button" id="btn_resumeTreat" class="panelposition btn btn-default btn-md" onclick="resumeTreat()" value="恢复诊疗" style="margin-left:6%;">
+                </td>
+                @*<td class="formValue" style="width: 70px;">
+                        <input id="syncPdsbc" type="text" class="form-control" value="2021-6-18" />
+                        <input id="btn_syncPdsbc" type="button" class="panelposition btn btn-default btn-md"  value="补充推送到药房" onclick="synctoPDS()" />
+                    </td>*@
+            </tr>
+        </table>
+    </div>
+    <div class="contentPanel" style="width: 99%; height: 84%; margin-top: 2px;">
+        <div style="background-color: #fff;width:100%;">
+            <table id="gridPatientList"></table>
+            <div id="gridPatPager"></div>
+        </div>
+    </div>
+</div>
+<script src="~/Content/js/pdjhyybb.js"></script>
+<script>
+    var cmmSwitch = "@(cmmSwitch ? 1 : 0)";
+    var djz = "";
+    function init_PatientList() {
+        initMjzbz();
+        gridPatientList();
+        $("#btn_search").trigger('click');
+    }
+
+    //刷新列表
+    function refleshPatientList() {
+        $("#btn_search").trigger('click');
+    }
+
+    //回车
+    $('#txt_keyword').keydownEnterEvent(function() {
+        $("#btn_search").trigger('click');
+    });
+
+    $('#mjzbz').change(function () {
+        $("#btn_search").trigger('click');
+    });
+
+    //初始化就诊类型（登录用户是专家,就诊类型默认绑定专家门诊）
+    function initMjzbz() {
+        $.ajax({
+            type: "POST",
+            url: "/PatientList/IsExpertByLoginUser",
+            //data: {  },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var flag = data;
+                if (flag == true) {
+                    $("#mjzbz option[value='3']").attr("selected", "selected");
+                }
+            }
+        });
+    }
+
+    //患者信息列表
+    function gridPatientList() {
+        var $gridPatientList = $("#gridPatientList");
+        $gridPatientList.dataGrid({
+            url: GetSearchUrl(),
+            postData: getSearchPostData(),
+            height: $(window).height() - 230,
+            caption: "挂号信息",
+            colModel: [
+                { label: 'jzId', name: 'jzId', width: 80, align: 'left', hidden: true },
+                { label: '门诊号', name: 'mzh', width: 100, align: 'left' },
+                { label: '序号', name: 'queno', width: 30, align: 'left' },
+                {
+                    label: '就诊类别', name: 'mjzbz', width: 70, align: 'left',
+                    formatter: function (celvalue) {
+                        return $.enum.getDescByValue("EnumOutPatientType", celvalue);
+                    }
+                },
+                { label: '病历号', name: 'blh', width: 80, align: 'left' },
+                {
+                    label: '姓名', name: 'xmms', width: 100, align: 'left', formatter: function (val, option, rows) {
+                        if ('@isShowghlybz' == "ON" && rows.ghlybz) {
+                            var desc = $.enum.getDescByValue("EnumMzghly", rows.ghlybz);
+                            return rows.xm + "[" + desc + "]";
+                        }
+                        else
+                            return rows.xm;
+                    }
+                },
+                { label: 'xm', name: 'xm', hidden: true},
+                { label: '性别', name: 'xb', width: 50, align: 'left' },
+                { label: '出生年月', name: 'csny', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '费别', name: 'brxzmc', width: 80, align: 'left' },
+                { label: '挂号科室', name: 'ghksmc', width: 80, align: 'left' },
+                { label: '挂号医生', name: 'ghys', width: 80, align: 'left' },
+                { label: '挂号日期', name: 'ghsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '挂号操作时间', name: 'ghczsj', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                {
+                    label: '操作', name: 'action', width: 150, align: 'center', formatter: function (val, option, rows) {
+
+                        if (djz == "1") {
+							return "<input class='btn btn-default btn-md btn_add' type='button' value='叫号' onclick='jiaohao(" + rows.mzh + ",$(this).parent().parent().attr(\"id\"))'/>";//+"<input class='btn btn-default btn-md btn_del' type='button' value='过号' onclick='guohao(" + rows.mzh + ")'/>";
+                            //return '<input type="button" class="btn btn-default"  onclick="jiaohao(' + rows.mzh + ',' + $(this).parent().parent().attr("\'id\'") + ')" value="叫号" /> <input type="button" class="btn btn-default"  onclick="guohao(' + rows.mzh + ')" value="过号" />';
+                        } else {
+                            return '';
+                        }
+                    }
+                },
+                { label: 'jzzt', name: 'jzzt', width: 80, align: 'left', hidden: true },
+                { label: 'brxzCode', name: 'brxzCode',hidden: true },
+                { label: 'jzks', name: 'jzks', hidden: true },
+                { label: 'nlshow', name: 'nlshow', hidden: true },
+                { label: 'jzys', name: 'jzys',hidden: true },
+                { label: 'ybjsh', name: 'ybjsh',hidden: true },
+                { label: 'cfzbz', name: 'cfzbz',hidden: true },
+                { label: 'sbbh', name: 'sbbh',hidden: true },
+                { label: 'cbdbm', name: 'cbdbm',hidden: true },
+                { label: 'py', name: 'py', hidden: true },
+                { label: 'kh', name: 'kh', hidden: true },
+                { label: 'ContactNum', name: 'ContactNum', hidden: true },
+                { label: 'province', name: 'province', hidden: true },
+                { label: 'city', name: 'city', hidden: true },
+                { label: 'county', name: 'county', hidden: true },
+                { label: 'zjlx', name: 'zjlx', hidden: true },
+                { label: 'zjh', name: 'zjh', hidden: true },
+                { label: 'address', name: 'address', hidden: true },
+                { label: 'ghlybz', name: 'ghlybz', hidden: true },
+                { label: 'grbh', name: 'grbh', hidden: true }
+            ],
+            rowNum: 150,
+            viewrecords: true,
+            pager: "#gridPatPager",
+            onSelectRow: function (rowid) {
+                var rowdata = $gridPatientList.getRowData(rowid);
+                if (rowdata && rowdata.jzzt == '@((int)EnumJzzt.Treated)') {
+                    //就诊结束的场景
+                    $('#btn_startTreat').attr('disabled', 'disabled');
+                    $('#btn_resumeTreat').removeAttr('disabled', 'disabled');
+                }
+                else {
+                    $('#btn_startTreat').removeAttr('disabled', 'disabled');
+                    $('#btn_resumeTreat').attr('disabled', 'disabled');
+                }
+            },
+            ondblClickRow: function (rowid) {
+                startTreat(rowid);
+            },
+            gridComplete: function () {
+                if ($("input[name='optionsRadios']:checked").val() == '@((int)EnumJzzt.Treating)') {   //就诊中
+                    var ids = $("#gridPatientList").getDataIDs();
+                    for (i = 0; i < ids.length; i++) {
+                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('success1');
+                    }
+                }
+                if ($("input[name='optionsRadios']:checked").val() == '@((int)EnumJzzt.Treated)') {   //已就诊
+                    var ids = $("#gridPatientList").getDataIDs();
+                    for (i = 0; i < ids.length; i++) {
+                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('info');
+                    }
+                }
+            },
+            loadComplete: function () {
+                //var selRowData = $gridPatientList.jqGrid('getRowData_AllLine');
+                //for (var i = 0; i < selRowData.length; i++) {
+
+                //}
+            }
+        });
+
+        $("#btn_search").click(function () {
+            //清空患者信息
+            window.currPatientInfo = null;
+            removePatientBasicInfo();
+            $gridPatientList.jqGrid('setGridParam', {
+                postData: getSearchPostData(), url: GetSearchUrl(),
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //关键字
+    function getSearchPostData() {
+        var keyword = $("#txt_keyword").val();
+        var jzzt = $("input[name='optionsRadios']:checked").val();
+        var mjzbz = $('#mjzbz option:selected').val();
+        var kzrq = $('#kzrq').val();
+        return { keyword: keyword, mjzbz: mjzbz, jzzt: jzzt, kzrq: kzrq };
+    }
+	function jiaohao(mzh, rowid) {
+  //      $.ajax({
+  //          type: "POST",
+  //          url: "/QueueInfo/CallNumber",
+  //          data: { mzh: mzh, calledstu:"2"},
+  //          dataType: "json",
+  //          async: false,
+  //          success: function (data) {
+  //              $.modalAlert("叫号完成！", 'success');
+  //              startTreat(rowid);
+  //          }
+		//});
+		$.najax({
+			type: "POST",
+			url: "/NurseManage/OutpatientConsult/UpdatePatient",
+			data: { mzh: mzh, calledstu: 4 },
+			dataType: "json",
+			async: false,
+			success: function (refdata) {
+				console.log("测试返回", refdata);
+				if (refdata.falg == null || refdata.falg == undefined) {
+					startTreat(rowid);
+				} else {
+					$.modalAlert("该病人已经被叫号过", 'success');
+				}
+			}
+		});
+
+    }
+    function guohao(mzh) {
+        $.ajax({
+            type: "POST",
+            url: "/QueueInfo/CallNumber",
+            data: { mzh: mzh, calledstu: "3" },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+                $.modalAlert("过号完成！", 'success');
+            }
+        });
+    }
+    //Url
+    function GetSearchUrl() {
+		var url = "";
+		
+        if ($("input[name='optionsRadios']:checked").val() == '@((int)EnumJzzt.NotYetTreate)') {   //待就诊
+            url = "/PatientList/SelectNotYetTreateList";
+			djz = "1";
+			if ('@djzhqsj' == "1") {
+			url = "/PatientList/GetdjzList";
+		}
+        } else if ($("input[name='optionsRadios']:checked").val() == '@((int)EnumJzzt.Treating)' || $("input[name='optionsRadios']:checked").val() == '@((int)EnumJzzt.Treated)') {   //就诊中、已就诊
+            url = "/PatientList/SelectTreatingOrTreatedList";
+            djz = "0";
+		}
+		
+        return url;
+    }
+
+    //全局变量 本次就诊的患者信息
+    var currPatientInfo = Object();
+
+    //开始/继续诊断
+    function startTreat(selrowId) {
+        ;
+        if (!selrowId) {
+            selrowId = $("#gridPatientList").jqGrid("getGridParam", "selrow");
+        }
+        if (!selrowId) {
+            $.modalAlert("请先选择一个患者", 'warning');
+            return;
+        }
+        var selRowData = $("#gridPatientList").getRowData(selrowId);
+
+        syncPresChargeStatus(selRowData.blh, true);
+
+        sessionStorage.removeItem('reqSourcePage');  //先清空
+        if (selRowData.jzzt === '@((int)EnumJzzt.NotYetTreate)') {
+            //待就诊
+            //单独录入生命体征开关（护士录入）
+            if (window.IsVitalSignsSwitch=== 'ON') {
+                if (window.IsNurse === "True") {
+                    //当前登录人是护士
+                    $.modalOpen({
+                        id: "Form",
+                        title: "生命体征",
+                        url: "/PatientList/Form?mzh=" + selRowData.mzh,
+                        width: "550px",
+                        height: "470px",
+                        callBack: function (iframeId) {
+                            top.frames[iframeId].submitForm();
+                        }
+                    });
+                    return; //不再继续走
+                }
+                //判断能不能开始就诊（待就诊的）
+            }
+            //2.check能不能开始新的就诊
+            //查询该患者 同一个科室 门急诊 专家 等 最后一次就诊  就诊状态
+            var historyLastTreat = null;
+            $.ajax({
+                type: "POST",
+                url: "/PatientList/GetLastTreate",
+                data: { blh: selRowData.blh, mjzbz: $('#mjzbz option:selected').val() },
+                dataType: "json",
+                async: false,
+                success: function (ajaxresp) {
+                    historyLastTreat = ajaxresp;
+                }
+            });
+
+            if (historyLastTreat != null && !!historyLastTreat.jzzt && historyLastTreat.jzzt != '@((int)EnumJzzt.Treated)') {
+                $.modalAlert("不能开始新的就诊<br/>" + "存在尚未结束的就诊" + $.getDate({ date: historyLastTreat.zlkssj }), 'warning');
+                return;
+            }
+            //3.
+            if (window.IsVitalSignsSwitch === 'ON') {
+                //新就诊加载生命体征
+                $.najax({
+                    type: "POST",
+                    url: "/PatientList/GetVitalSignsByMzh",
+                    data: { mzh: selRowData.mzh },
+                    dataType: "json",
+                    success: function (ajaxresp) {
+                        if (ajaxresp) {
+                            $('#form1').formSerialize(ajaxresp);
+                            if (ajaxresp.fzbz == "1") {
+                                $("input[name='cfzbzRadios'][value='0']").prop('checked', false);
+                                $("input[name='cfzbzRadios'][value='1']").prop('checked', true);
+                            } else {
+                                $("input[name='cfzbzRadios'][value='1']").prop('checked', false);
+                                $("input[name='cfzbzRadios'][value='0']").prop('checked', true);
+                            }
+                            //window.$('#tizhong').val(ajaxresp.tizhong); //初始化载入已录入好的生命体征
+                            //window.$('#tiwen').val(ajaxresp.tiwen);
+                            //window.$('#maibo').val(ajaxresp.maibo);
+                            ////window.$('#xueya').val(ajaxresp.xueya);
+                            //window.$('#xuetang').val(ajaxresp.xuetang);
+                            //window.$('#shengao').val(ajaxresp.shengao);
+                            //window.$('#shousuoya').val(ajaxresp.shousuoya);
+                            //window.$('#shuzhangya').val(ajaxresp.shuzhangya);
+                            //window.$('#huxi').val(ajaxresp.huxi);
+                            //window.$("#xuetangclfs").val(ajaxresp.xtfs);
+                        }
+                    }
+                });
+            }
+            sessionStorage.setItem("reqSourcePage", "fromNotYetTreatePage");
+
+        }
+        else if (selRowData.jzzt === '@((int)EnumJzzt.Treating)') {
+            //就诊中
+            sessionStorage.setItem("reqSourcePage", "fromTreatingPage");
+        }
+        else {
+            //已就诊
+            sessionStorage.setItem("reqSourcePage", "fromTreatedPage");
+        }
+
+        $.loading(true);
+        window.mrflag = 0;    //认为是第一次加载病历页，这样每次诊断，都会根据病人的jzId查出历史病历
+        selRowData.mjzbz = $('#mjzbz option:selected').val();
+        window.currPatientInfo = selRowData;
+
+        //清空 所有文本、处方、历史处方、grid列表
+        newtouch_globalevent_f4();  //在病例页
+
+        //显示患者信息
+        showPatientBasicInfo();
+        if (window.currPatientInfo.cfzbz == "1") {
+            window.$("input[name='cfzbzRadios'][value='0']").prop('checked', false);
+            window.$("input[name='cfzbzRadios'][value='1']").prop('checked', true);
+        } else {
+            window.$("input[name='cfzbzRadios'][value='1']").prop('checked', false);
+            window.$("input[name='cfzbzRadios'][value='0']").prop('checked', true);
+        }
+        window.$('#mzh').text(window.currPatientInfo.mzh);
+        window.$('#zlkssj').text($.getTime());
+        window.$('#jzks').text('@opr.DepartmentName');
+        window.$('#sbbh').text(window.currPatientInfo.sbbh);
+        //跳转到病历页
+        $('#myTab [href="#linkbl"').trigger('click'); //初始化显示哪个tab
+
+        $.loading(false);
+
+
+        if (cmmSwitch === "1" && selRowData.jzzt === '@((int)EnumJzzt.NotYetTreate)') {
+            $("#li_pushPatient").hide();
+            $.najax({
+                type: "Get",
+                url: "/MainBusiness/TcmHis01",
+                data: selRowData,
+                dataType: "json",
+                success: function (ajaxresp) { }
+            });
+        } else if (cmmSwitch === "1" && selRowData.jzzt !== '@((int)EnumJzzt.NotYetTreate)') {
+            $("#li_pushPatient").show();
+        }
+    }
+
+    //恢复就诊
+    function resumeTreat() {
+        var selrowId = $("#gridPatientList").jqGrid("getGridParam", "selrow");
+        if (!selrowId) {
+            $.modalAlert("请先选择一个患者", 'warning');
+            return;
+        }
+        var selRowData = $("#gridPatientList").getRowData(selrowId);
+        if (!selRowData || selRowData.jzzt != '@((int)EnumJzzt.Treated)') {
+            return;
+        }
+
+        syncPresChargeStatus(selRowData.blh, false);
+
+        //2.check能不能恢复就诊
+        //查询该患者 同一个科室 门急诊 专家 等 最后一次就诊  就诊状态
+        var historyLastTreat = null;
+        $.ajax({
+            type: "POST",
+            url: "/PatientList/GetLastTreate",
+            data: { blh: selRowData.blh, mjzbz: $('#mjzbz option:selected').val() },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+                historyLastTreat = ajaxresp;
+            }
+        });
+        if (historyLastTreat == null || !!!historyLastTreat.jzzt) {
+            return;
+        }
+        if (historyLastTreat.jzId != selRowData.jzId) {
+            $.modalAlert("不能恢复<br/>" + "仅最后一次就诊可恢复", 'warning');
+            return;
+        }
+        $.najax({
+            url: "/PatientList/ResumeTreat",
+            dataType: "json",
+            data: { jzId: selRowData.jzId },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("已恢复就诊", 'success');
+                $("#btn_search").trigger('click');
+            }
+        });
+    }
+
+    //根据病历号同步患者的处方收费状态
+    //sync：是否同步
+    function syncPresChargeStatus(blh, sync) {
+        $.ajax({
+            url: '/PatientList/SyncPresChargeStatus',
+            data: { blh: blh },
+            dataType: "json",
+            async: !!!sync,
+        });
+    }
+
+
+</script>

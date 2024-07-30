@@ -1,0 +1,254 @@
+﻿
+@{
+
+    ViewBag.Title = "病案科室";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    /*body {
+        background: #DFC2F2;
+        background-image: linear-gradient( 135deg, #d5b1f8 10%, #a49cf2 100%);
+        background-attachment: fixed;
+        background-size: cover;
+        /*color:#3dd73c*/
+    }*/
+   
+    .dv-left {
+        width: 50%;
+        float: left;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+        width: 58%;
+        /*background-color:*/
+    }
+
+    #patList {
+        float: left;
+        background-color: #FFF;
+    }
+
+    .clearboth {
+        clear: both;
+    }
+</style>
+
+<div id="patList" class="gridPanel dv-left">
+    <div class="topPanel">
+        <div class="toolbar">
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+            </div>
+        </div>
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="病案代码/病案名称" style="width: 120px;">
+                            <span class="input -group-btn">
+                                <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <div class="gridPanel">
+        <table id="gridList1"></table>
+        <div id="gridPager1"></div>
+    </div>
+</div>
+<div id="dv_Medlist" class="gridPanel dv-right" style="margin-left:50px;">
+    <div class="topPanel">
+        <p class="formTitle" style="width:110px;font-size:22px;background:rgba(215, 242, 252, 0.86);text-align:center;">关联科室</p>
+    </div>
+        <div class="gridPanel">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+
+
+    @*<div class="gridPanel">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>*@
+
+    <script>
+        //$(window).resize(function () {//浏览器窗口调整大小时重新加载jqGrid的宽
+        //    window.initLayout("div_Patlist");
+        //    window.initLayout("dv_Medlist");
+        //});
+
+        $(function () {
+            GridInit();
+            GridInit2();
+        });
+
+        function GridInit() {
+            var $gridList1 = $("#gridList1");
+            var keyValue = $("#txt_keyword").val();
+            $gridList1.dataGrid({
+                url: "/RecordManage/MrDept/GetPagintionDicDeptList?keyValue=" + keyValue,
+                autowidth: true,
+                height: $(window).height() - 195,
+                colModel: [
+                    { label: "Id", name: "Id", hidden: true },
+                    { label: "病案科室代码", name: "ksbm", width: 163, align: 'left' },
+                    { label: "病案科室名称", name: "ksmc", width: 163, align: 'left' }
+                ],
+                sortname: "ID desc",
+                rowNum: 10,
+                pager: "#gridPager1",
+                viewrecords: true,
+                onSelectRow: function (id) {
+                    jQuery('#gridList1').jqGrid('editRow', id, true);
+                },
+                ondblClickRow: function () {
+                    btn_edit();
+                },
+            });
+            $("#btn_search").click(function () {
+                $("#gridList1").jqGrid('setGridParam', {
+                    postData: { keyword: $("#txt_keyword").val() }, page: 1
+                }).trigger('reloadGrid');
+            });
+        }
+
+        function GridInit2() {
+            var $gridList = $("#gridList");
+            $gridList.dataGrid({
+                url: "/RecordManage/MrDept/GetPagintionList",
+                autowidth: true,
+                height: $(window).height() - 166,
+                colModel: [
+                    { label: "Id", name: "Id", hidden: true },
+                    { label: "HIS代码", name: "hisdept", width: 100, align: 'left' },
+                    { label: "HIS名称", name: "hisdeptname", width: 120, align: 'left' },
+                    { label: "病案代码", name: "baksId", width: 120, align: 'left' },
+                    { label: "病案名称", name: "baksName", width: 120, align: 'left', editable: true, edittype: "select", editoptions: { dataUrl: "/RecordManage/MrDept/GetDicDeptList" } },
+                    {
+                        label: "操作", name: "", width: 120, align: 'left', formatter(val, option, row) {
+                            return "<a class='btn btn-default' style='width:50px;font-weight:bold;float:left;' onclick=save('" + row.hisdept + "','" + row.hisdeptname + "','" + option.rowId + "')>保存</a>";
+                        }
+                    }
+                ],
+                sortname: "ID desc",
+                rowNum: 10,
+                pager: "#gridPager",
+                viewrecords: true,
+                onSelectRow: function (id) {
+                    jQuery('#gridList').jqGrid('editRow', id, true);
+                },
+                ondblClickRow: function () {
+
+                },
+            });
+        }
+
+        //保存
+        function save(hisdept, hisdeptname, val) {
+            var baksId = $("#" + val + "_baksName option:selected").val();
+            if (baksId == 0) {
+                $.modalAlert("请选择病案科室", 'warning');
+                return false;
+            }
+            else {
+                $.ajax({
+                    url: "/RecordManage/MrDept/SubmitForm?hisdept=" + hisdept + "&hisdeptname=" + hisdeptname + "&baksId=" + baksId,
+                    dataType: "json",
+                    async: false,
+                    success: function (data) {
+                        $("#gridList").resetSelection();
+                        $("#gridList").trigger("reloadGrid");
+                    }
+                });
+            }
+        }
+
+        //新增
+        function btn_add() {
+            window.$.modalOpen({
+                id: "Form",
+                title: "新增病案科室",
+                url: "/RecordManage/MrDept/Form",
+                width: "500px",
+                height: "350px",
+                callBack: function (iframeId) {
+                    $.currentWindow(iframeId).AcceptClick(function () {
+                        $("#gridList1").resetSelection();
+                        $("#gridList1").trigger("reloadGrid");
+                        $("#gridList").resetSelection();
+                        $("#gridList").trigger("reloadGrid");
+                    });
+                }
+            });
+        }
+
+        //更新
+        function btn_edit() {
+            var keyValue = $("#gridList1").jqGridRowValue().Id;
+            if (!!!keyValue) {
+                $.modalAlert("请选中一条信息", 'warning');
+                return false;
+            }
+            $.modalOpen({
+                id: "updateForm",
+                title: "修改病案科室",
+                url: "/RecordManage/MrDept/Form?keyValue=" + keyValue,
+                width: "500px",
+                height: "350px",
+                callBack: function (iframeId) {
+                    $.currentWindow(iframeId).AcceptClick(function () {
+                        $("#gridList1").resetSelection();
+                        $("#gridList1").trigger("reloadGrid");
+                        $("#gridList").resetSelection();
+                        $("#gridList").trigger("reloadGrid");
+                    });
+                }
+            });
+        }
+
+        //删除
+        function btn_delete() {
+            window.$.modalConfirm("确定要删除吗？", function (flag) {
+                if (!flag) {
+                    return false;
+                }
+                return true;
+            });
+            var keyValue = window.$("#gridList1").jqGridRowValue().Id;
+            if (!!!keyValue) {
+                window.$.modalAlert("请选中一条信息", 'warning');
+                return false;
+            }
+            window.$.deleteForm({
+                url: "/RecordManage/MrDept/DeleteData",
+                param: { keyValue: keyValue },
+                success: function () {
+                    $.modalMsg("删除成功", "success");
+                    $('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                    $("#btn_search").trigger("click");
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                }
+            });
+            return true;
+        }
+
+    </script>

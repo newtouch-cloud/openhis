@@ -1,0 +1,284 @@
+﻿@using Newtouch.Infrastructure;
+<div id="floatPreTemplateTree" style="display:none;z-index:1;background: white;">
+    <div class="ui-layout-west">
+        <ul id="beveltabs">
+            <li><a href="#" name="#personal" data-type=@Html.Raw(((int)EnumCfMbLx.personal).ToString())>个人</a></li>
+            <li><a href="#" name="#department" data-type=@Html.Raw(((int)EnumCfMbLx.department).ToString())>科室</a></li>
+            <li><a href="#" name="#hospital" data-type=@Html.Raw(((int)EnumCfMbLx.hospital).ToString())>全院</a></li>
+        </ul>
+        <table class="form">
+            <tr>
+                <td class="formValue">
+                    <input id="mbKeyword" type="text" class="form-control" placeholder="输入模板名称/简拼后按回车键" />
+                </td>
+            </tr>
+        </table>
+            <div id="treeContent">
+                <div id="personal">
+                    <div id="personalTree"></div>
+                </div>
+                <div id="department">
+                    <div id="departmentTree"></div>
+                </div>
+                <div id="hospital">
+                    <div id="hospitalTree"></div>
+                </div>
+            </div>
+    </div>
+</div>
+
+<link href="~/Content/css/beveltabs.css" rel="stylesheet" />
+<script src="~/Content/js/beveltabs.js"></script>
+
+<script>
+    var pageFlag = "";
+    var lasttabName = "";
+    function SetCurrentPageCflx(page) {
+        pageFlag = page;
+        //模拟点击tab   $($(this).attr('name') + "Tree").treeview({
+        $("#beveltabs a:first").trigger('click');
+    }
+    var presTempClieckHandling = false;
+    $("#beveltabs a").on("click", function (e) {
+        var tabname = $(this).attr('name') + "Tree";
+        lasttabName = tabname;
+        SetCurrentPageCfmb(tabname);
+    });
+
+    function SetCurrentPageCfmb(tabName)
+    {
+        if (pageFlag == "") {
+            return;
+        }
+        $(tabName).treeview({
+            height: $(window).height() - 100,
+            slimscroll: false,
+            url: "/TemplateManage/PresTemplate/GetTreeList?mblx=" + $('#current').attr('data-type') + "&cflx=" + pageFlag + "&mbKeyword=" + $("#mbKeyword").val(),
+            onnodeclick: function (item) {
+                if (presTempClieckHandling) {
+                    return;
+                }
+                presTempClieckHandling = true;
+                if (!item.Ex1) {
+                    presTempClieckHandling = false;
+                    return;
+                }
+                //引用历史处方
+                $.modalOpen({
+                    id: "FormShowPresTemplateDetail",
+                    title: "处方模板",
+                    url: "/TemplateManage/PresTemplate/PresTemplateDetail?mbId=" + item.Ex1 + "&cflx=" + pageFlag + "&brxzCode=" + window.currPatientInfo.brxzCode,
+                    width: "800px",
+                    height: "650px",
+                    btn: ['复制', '关闭'],
+                    callBack: function (iframeId) {
+                        top.frames[iframeId].submitForm(function (data) {
+                            if (data && data.mbmxList && data.mbmxList.length) {
+                                presTemplateFill(data);
+                            }
+                            //重置 历史处方、处方模板
+                            cfLeftFloatHide();
+                            $.modalClose("FormShowPresTemplateDetail");
+                        });
+                    }
+                });
+                presTempClieckHandling = false;
+            }
+        });
+    }
+
+    $('#mbKeyword').keyupEnterEvent(function () {
+        SetCurrentPageCfmb(lasttabName);
+    });
+
+    function presTemplateFill(data) {
+        //alert(data.reverse());
+        if (!(data && data.mbmxList && data.mbmxList.length > 0)) {
+            return;
+        }
+        var getActionStr, grid;
+        var newCfh = '';    //康复、西药作为一个新处方添加
+        var isNewCf = true;
+        if (pageFlag == '@Html.Raw(((int)EnumCflx.RehabPres).ToString())') {
+            getActionStr = getRehbActionStr();
+            grid = "gridkfcf";
+            newCfh = GetNewPresNo();
+        }
+        if (pageFlag == '@Html.Raw(((int)EnumCflx.RegularItemPres).ToString())') {
+            getActionStr = getRegularItemActionStr();
+            grid = "gridcgxmcf";
+            var gridcgcfData = $("#gridcgxmcf").jqGrid('getRowData_AllLine', null, true);
+            if (gridcgcfData.length && gridcgcfData.length > 0) {
+                newCfh = gridcgcfData[0].cfh;
+                isNewCf = false;
+            }
+            else {
+                newCfh = GetNewPresNo();
+            }
+        }
+        if (pageFlag == '@Html.Raw(((int)EnumCflx.WMPres).ToString())') {
+            getActionStr = getWMActionStr();
+            grid = "gridxycf";
+            var gridxycfData = $("#gridxycf").jqGrid('getRowData_AllLine', null, true);
+            if (gridxycfData.length && gridxycfData.length > 0) {
+                newCfh = gridxycfData[0].cfh;
+                isNewCf = false;
+            }
+            else {
+                newCfh = GetNewPresNo();
+            }
+        }
+        @*if (pageFlag == '@Html.Raw(((int)EnumCflx.TCMPres).ToString())') {
+            getActionStr = getTCMActionStr();
+            grid = "gridzycf";
+            var gridzycfData = $("#gridzycf").jqGrid('getRowData_AllLine', null, true);
+            if (gridzycfData.length && gridzycfData.length > 0) {
+                newCfh = gridzycfData[0].cfh;
+                isNewCf = false;
+            }
+            else {
+                newCfh = GetNewPresNo();
+            }
+            //贴数、处方用法、是否代煎
+            if (data.tieshu) {
+                $("#tieshu").val(data.tieshu);
+                if (data.djbz) {
+                    $("#djbz").prop('checked', true);
+                }
+                else {
+                    $("#djbz").prop('checked', false);
+                }
+            }
+            if (data.cfyf) {
+                $("#cfyf").val(data.cfyf).trigger('change');
+            }
+        }*@
+        if (pageFlag == '@Html.Raw(((int)EnumCflx.TCMPres).ToString())') {
+            getActionStr = getTCMActionStr();
+            grid = "gridzycfnew";
+            var gridzycfData = $("#gridzycfnew").jqGrid('getRowData_AllLine', null, true);
+            if (gridzycfData.length && gridzycfData.length > 0) {
+                newCfh = gridzycfData[0].cfh;
+                isNewCf = false;
+            }
+            else {
+                newCfh = GetNewPresNo();
+            }
+            //贴数、处方用法、是否代煎
+            if (data.tieshu) {
+                $("#tieshu").val(data.tieshu);
+                if (data.djbz) {
+                    $("#djbz").prop('checked', true);
+                }
+                else {
+                    $("#djbz").prop('checked', false);
+                }
+            }
+            if (data.cfyf) {
+                $("#cfyf").val(data.cfyf).trigger('change');
+            }
+        }
+        var jj = 0;
+        for (var i = 0; i < data.mbmxList.length; i++) {
+            jj += 1;
+            data.mbmxList[i].cfh = newCfh;
+            data.mbmxList[i].action = getActionStr;
+            if (pageFlag == '@Html.Raw(((int)EnumCflx.TCMPres).ToString())') {
+                var tieshu = $.undefinedwith0($('#tieshu').val());    //贴数
+                if (tieshu) {
+                    data.mbmxList[i].sl = roundingBy4she6ru5chengshuang((parseFloat(tieshu) * parseFloat($.undefinedwith0(data.mbmxList[i].mcjl))), 0);
+                    data.mbmxList[i].je = roundingBy4she6ru5chengshuang(parseFloat(data.mbmxList[i].dj) * parseFloat(data.mbmxList[i].sl), 2);
+                }
+                else {
+                    data.mbmxList[i].sl = data.mbmxList[i].mcjl;
+                    data.mbmxList[i].je = null;
+                }
+            }
+            if (!!!isNewCf) {
+                if (pageFlag == '@Html.Raw(((int)EnumCflx.RegularItemPres).ToString())') {
+                    var iscfcf = false;
+                    var addxmCode = data.mbmxList[i].xmCode;
+                    var existRowIds = $("#" + grid).getDataIDs();
+                    if (existRowIds.length > 0) {
+                        $.each($("#" + grid).getDataIDs(), function () {
+                            var xmCode = $('#' + $($("#" + grid).getRowData(String(this)).xmCode).attr('id')).val()
+                            var cfh = $("#gridcgxmcf").getRowData(String(this)).cfh;
+                            if (addxmCode == xmCode && newCfh == cfh) {
+                                iscfcf = true;
+                                return;
+                            }
+                        });
+                    }
+                    if (iscfcf) {
+                        $.modalAlert("单张处方下明细不能重复", 'warning');
+                        return;
+                    } else {
+                        $("#" + grid).jqGrid("addRowData", undefined, data.mbmxList[i], "last");
+                    }
+                } else {
+                    //非新处方时判断重复
+                var isRepeatedAdd = false;
+                var addypCode = data.mbmxList[i].ypCode;
+                var existRowIds = $("#" + grid).getDataIDs();
+                if (existRowIds.length > 0) {
+                    $.each($("#" + grid).getDataIDs(), function () {
+                        var ypCode = $('#' + $($("#" + grid).getRowData(String(this)).ypCode).attr('id')).val();
+                        var cfh = $("#" + grid).getRowData(String(this)).cfh;
+                        if (addypCode == ypCode && newCfh == cfh) {
+                            isRepeatedAdd = true;
+                            return;
+                        }
+                    });
+                }
+                if (isRepeatedAdd) {
+                    $.modalAlert("单张处方下明细不能重复", 'warning');
+                    return;
+                }
+                else {
+                    if (pageFlag == '@Html.Raw(((int)EnumCflx.TCMPres).ToString())'&& jj % 2 == 0) {
+                        var allRowID = $("#" + grid).jqGrid('getDataIDs');
+                        var lastrowid = allRowID[allRowID.length - 1]
+                        $("#" + lastrowid + "_ypCode2").val(data.mbmxList[i].ypCode);
+                        $("#" + lastrowid + "_ypmc2").val(data.mbmxList[i].ypmc);
+                        $("#" + lastrowid + "_ypgg2").val(data.mbmxList[i].ypgg);
+                        $("#" + lastrowid + "_sl2").val(data.mbmxList[i].sl);
+                        $("#" + lastrowid + "_mcjldw2").val(data.mbmxList[i].mcjldw);
+                        $("#" + lastrowid + "_Remark2").val(data.mbmxList[i].Remark);
+                        $("#" + lastrowid + "_zysm2").val(data.mbmxList[i].zysm);
+                        $("#" + lastrowid + "_mcjl2").val(data.mbmxList[i].mcjl);
+                        $("#" + lastrowid + "_ts2").val(data.mbmxList[i].ts);
+                        $("#" + lastrowid + "_dw2").val(data.mbmxList[i].dw);
+                        $("#" + lastrowid + "_je2").val(data.mbmxList[i].je);
+                        $("#" + lastrowid + "_dj2").val(data.mbmxList[i].dj);
+                        $("#" + lastrowid + "_zxks2").val(data.mbmxList[i].zxks);
+                    } else {
+                        $("#" + grid).jqGrid("addRowData", undefined, data.mbmxList[i], "last");
+                    }
+                }
+                }
+            }
+            else {
+
+                if (pageFlag == '@Html.Raw(((int)EnumCflx.TCMPres).ToString())'&& jj % 2 == 0) {
+                    var allRowID = $("#" + grid).jqGrid('getDataIDs');
+                    var lastrowid = allRowID[allRowID.length - 1]
+                    $("#" + lastrowid + "_ypCode2").val(data.mbmxList[i].ypCode);
+                    $("#" + lastrowid + "_ypmc2").val(data.mbmxList[i].ypmc);
+                    $("#" + lastrowid + "_ypgg2").val(data.mbmxList[i].ypgg);
+                    $("#" + lastrowid + "_sl2").val(data.mbmxList[i].sl);
+                    $("#" + lastrowid + "_mcjldw2").val(data.mbmxList[i].mcjldw);
+                    $("#" + lastrowid + "_Remark2").val(data.mbmxList[i].Remark);
+                    $("#" + lastrowid + "_zysm2").val(data.mbmxList[i].zysm);
+                    $("#" + lastrowid + "_mcjl2").val(data.mbmxList[i].mcjl);
+                    $("#" + lastrowid + "_ts2").val(data.mbmxList[i].ts);
+                    $("#" + lastrowid + "_dw2").val(data.mbmxList[i].dw);
+                    $("#" + lastrowid + "_je2").val(data.mbmxList[i].je);
+                    $("#" + lastrowid + "_dj2").val(data.mbmxList[i].dj);
+                    $("#" + lastrowid + "_zxks2").val(data.mbmxList[i].zxks);
+                    } else {
+                    $("#" + grid).jqGrid("addRowData", undefined, data.mbmxList[i], "last");
+                    }
+            }
+        }
+    }
+</script>

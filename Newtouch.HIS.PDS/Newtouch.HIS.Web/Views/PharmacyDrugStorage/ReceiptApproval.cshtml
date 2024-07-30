@@ -1,0 +1,303 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "ReceiptApproval";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var djlxItemStrs = "1,2,3,4,5,6"; //对应枚举EnumDanJuLX
+    if (Constants.CurrentYfbm.yfbmjb == "2")  //药房
+    {
+        djlxItemStrs = "3,4,6"; //可审核 直接发药、申领发药、科室发药
+    }
+    else   //药库
+    {
+        djlxItemStrs = "1,2,5";  //可审核 药品入库、直接出库、内部发药退回
+    }
+}
+<style>
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+
+    input[name=fph] {
+        padding: 2px;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">单据号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtPDH" />
+                    </td>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue">
+                        <input id="txtStartDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddMonths(-2).ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">至：</th>
+                    <td class="formValue">
+                        <input id="txtEndDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <td class="formTitle" rowspan="2">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">发票号：</th>
+                    <td class="formValue">
+                        <input id="txtFPH" type="text" class="form-control " />
+                    </td>
+                    <th class="formTitle">审核状态：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlSHZT", EnumDjShzt.WaitingApprove.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+
+                    <th class="formTitle">单据类型：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlDJLX", EnumDanJuLX.yaopinruku.ToSomeDescSelectList(djlxItemStrs), "全部", new { @class = "form-control" })
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDJMainRecords"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div style="margin-top:5px;">
+        <table id="gridDJMXInfo"></table>
+    </div>
+</form>
+
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 6, 7, 8 },
+    F6Text = "审核通过",
+    F7Text = "不通过",
+    F8Text = "作废"
+})
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+            $("#gridDJMainRecords").setGridHeight(($(window).height() - 300) / 2);
+            $("#gridDJMXInfo").setGridHeight(($(window).height() - 300) / 2);
+        });
+        Init();
+        gridDJMainRecords();
+    });
+
+    //初始化
+    function Init() {
+        $('#ddlSHZT').val('@((int)EnumDjShzt.WaitingApprove)');//.bindSelect();
+        var djlx = getQueryString("djlx");
+        if (djlx != null) {
+            $("#ddlDJLX").val(djlx);
+        }
+    }
+
+    //单据主记录
+    function gridDJMainRecords() {
+        var $gridDjMainRecords = $("#gridDJMainRecords");
+        $gridDjMainRecords.dataGrid({
+            postData: getSearchPostData(),
+            height: ($(window).height() - 300) / 2,
+            url: "/PharmacyDrugStorage/SelectReceiptMainInfo?from=approval",
+            colModel: [
+                {
+                    label: '审核状态', name: 'shzt', width: 60, align: 'left', formatter: function (val) {
+                        return val === "0" ? "未审核" : (val === "1" ? "已通过" : (val === "2" ? "未通过" : (val === "3" ? "已作废" : "")));
+                    }
+                },
+                { label: '单据类型', name: 'djlxmc', width: 80, align: 'left' },
+                { label: '单据号', name: 'pdh', width: 130, align: 'left' },
+                { label: '出库部门', name: 'ckbmmc', width: 100, align: 'left' },
+                { label: '供应商', name: 'gysmc', width: 100, align: 'left' },
+                { label: '入库部门', name: 'rkbmmc', width: 100, align: 'left' },
+                { label: '出入库方式', name: 'crkfsmc', width: 90, align: 'left' },
+                { label: '操作时间', name: 'czsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' } },
+                { label: '批发价金额', name: 'pjze', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: '零售价金额', name: 'ljze', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: '进价总金额', name: 'zje', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: '进销差价', name: 'jxcj', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: 'crkId', name: 'crkId', hidden: true },
+                { label: 'djlx', name: 'djlx', hidden: true },
+
+            ],
+            unwritten: false,
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowId) {
+                btn_selectrow(rowId);
+            }
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridDJMXInfo').jqGrid("clearGridData");
+
+            $gridDjMainRecords.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger('click');
+    }
+    function getSearchPostData() {
+        var shzt = $("#ddlSHZT").val();
+        var qsrj = $("#txtStartDate").val();
+        var jsrj = $("#txtEndDate").val();
+        var pdh = $("#txtPDH").val();
+        var fph = $("#txtFPH").val();
+        var djlx = $("#ddlDJLX").val();
+        return { qsrj: qsrj, jsrj: jsrj, pdh: pdh, fph: fph, djlx: djlx, shzt: shzt };
+    };
+
+    //单击事件
+    function btn_selectrow(rowId) {
+        //每次单击，先清空明细 再重新加载所有选中行明细
+        $('#gridDJMXInfo').jqGrid("clearGridData");
+        $.najax({
+            type: "POST",
+            url: "/PharmacyDrugStorage/SelectReceipDetailInfo",
+            data: { crkId: $("#gridDJMainRecords").jqGrid('getRowData', rowId).crkId, djlx: $("#gridDJMainRecords").jqGrid('getRowData', rowId).djlx },
+            dataType: "json",
+            success: function (ajaxresp) {
+                $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp);
+                //if (ajaxresp.state === 'success') {
+                //    $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp.data);
+                //}
+                //else {
+                //    $.modalMsg("获取明细失败", "error", 1000);
+                //}
+            }
+        });
+    }
+
+    //单据明细
+    $('#gridDJMXInfo').newtouchLocalDataGrid({
+        height: ($(window).height() - 300) / 2,
+        caption: "单据明细",
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '出入库明细序号', name: 'crkmxId', hidden: true, width: 100, align: 'left' },
+            {
+                label: '发票号', name: 'fph', width: 90, align: 'left',
+                formatter: function (cellvalue, options) { return cellvalue === "" || cellvalue === null ? "<input type=\"text\" name=\"fph\" rowid=" + options.rowId + " role=\"textbox\" class=\"editable inline-edit-cell form-control\" style=\"width: 90%; height: 99%;\" onblur=\"UpdateFph(this)\">" : cellvalue; }
+            },
+            { label: '药品类别', name: 'yplbmc', width: 60, align: 'left' },
+            { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+            { label: '数量', name: 'sl', width: 55, align: 'left' },
+            { label: '单位', name: 'dw', width: 50, align: 'left' },
+            { label: '规格', name: 'gg', width: 70, align: 'left' },
+            { label: '批号', name: 'ph', width: 90, align: 'left' },
+            { label: '批次', name: 'pc', width: 90, align: 'left' },
+            { label: '生产厂家', name: 'sccj', width: 110, align: 'left' },
+            { label: '批价金额', name: 'pjze', width: 60, align: 'left', formatter: function (val) { return val.toFixed(2); }},
+            { label: '零价金额', name: 'ljze', width: 60, align: 'left', formatter: function (val) { return val.toFixed(2); }},
+            { label: '进价', name: 'jj', width: 60, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+            { label: '进价总金额', name: 'zje', width: 60, align: 'left', formatter: function (val) { return val.toFixed(2); }},
+            { label: '进销差价', name: 'jxcj', width: 60, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+            { label: '扣率', name: 'kl', width: 50, align: 'left' },
+            { label: '拼音', name: 'py', width: 100, align: 'left', hidden: true },
+            { label: '数量', name: 'slanddw', width: 60, align: 'left', hidden: true }
+        ],
+        gridComplete: function () {//jqGrid加载完后执行的方法
+        },
+    });
+
+    //补发票号
+    function UpdateFph(obj) {
+        var fph = $(obj).val();
+        var crkmxId = $("#gridDJMXInfo").getRowData($(obj).attr("rowid")).crkmxId;
+        if (fph != "") {
+            $.modalConfirm("您确定要将发票号改为" + fph + "吗？", function (flag) {
+                if (flag)
+                {
+                    $.najax({
+                        url: "/PharmacyDrugStorage/UpdateFph",
+                        type: "POST",
+                        data: { crkmxId: crkmxId,fph: fph },
+                        dataType: "json",
+                        success: function (data) {
+                            if (data.state === 'success') {
+                                $.modalMsg("发票号修改成功", "success", 1000);
+                            }
+                            else {
+                                $.newtouchAlert(data);
+                            }
+                        }
+                    });
+                }
+            })
+
+        }
+    }
+    //审核
+    function newtouch_event_f6() {
+        submitReceiptApproval(@((int)EnumDjShzt.Approved));
+    }
+
+    //未通过
+    function newtouch_event_f7() {
+        submitReceiptApproval(@((int)EnumDjShzt.Rejected));
+    }
+
+    //作废
+    function newtouch_event_f8() {
+        submitReceiptApproval(@((int)EnumDjShzt.Cancelled));
+    }
+
+    //更新单据审核状态，提交至服务器
+    function submitReceiptApproval(dstnShzt) {
+        var selRowData = $("#gridDJMainRecords").jqGridRowValue();
+        if (!selRowData || !selRowData.crkId || !selRowData.djlx) {
+            $.modalAlert('请选择一条单据', 'error');
+            return;
+        }
+        if (selRowData.crkId && selRowData.djlx) {
+            var postData = { crkId: selRowData.crkId, djlx: selRowData.djlx, shzt: dstnShzt };
+            $.najax({
+                url: "/PharmacyDrugStorage/SubmitReceiptApproval",
+                data: postData,
+                type: 'POST',
+                dataType: 'json',
+                success: function (ajaxresp) {
+                    if (ajaxresp.state === 'success') {
+                        $.newtouchAlert(ajaxresp);
+                    }
+                    else {
+                        $.newtouchAlert(ajaxresp);
+                        return;
+                    }
+                },
+                complete: function () {
+                    $("#btn_search").trigger('click');
+                }
+            });
+        }
+    }
+
+    //获取url中的参数
+    function getQueryString(name) {
+        // 匹配目标参数
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var result = window.location.search.substr(1).match(reg); // 对querystring匹配目标参数
+        if (result != null) {
+            return decodeURIComponent(result[2]);
+        } else {
+            return null;
+        }
+    }
+</script>
+

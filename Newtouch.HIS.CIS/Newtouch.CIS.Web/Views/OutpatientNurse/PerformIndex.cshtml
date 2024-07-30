@@ -1,0 +1,299 @@
+﻿
+@{
+    ViewBag.Title = "PerformIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 20%;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    .dv-right {
+        width: 79%;
+        float: right;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+</style>
+<div class="dv-body">
+
+    <div class="dv-left">
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                筛选条件
+            </div>
+
+            <table class="form" style="width:95%">
+                <tbody>
+                    <tr>
+                        <th class="formTitle">姓名/门诊号：</th>
+                        <td class="formValue">
+                            <input id="keyword" type="text" class="form-control">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="dv-left-title">患者列表</div>
+        <div class="dv-left-tree" id="BqTreeList"></div>
+    </div>
+    <div class="dv-right">
+        <div class="dv-right-order">
+            <div class="topPanel">
+                <div class="toolbar" style="float:right;">
+                    <div class="btn-group">
+                        <a class="btn btn-primary" onclick="RefreshOrder()"><span class="fa fa-refresh"></span></a>
+                    </div>
+                    <div class="btn-group">
+                        <a id="btn_input" class="btn btn-primary" onclick="InputResult()" style="width:80px;">
+                            <i class="fa fa-pencil-square-o"></i>皮试执行
+                        </a>
+                    </div>
+                    @*<div class="btn-group">
+                        <a id="btn_edit" class="btn btn-primary" onclick="editResult()" style="width:50px;">
+                            <i class="fa fa-pencil-square-o"></i>取消录入
+                        </a>
+                    </div>*@
+                </div>
+            </div>
+            <div class="gridPanel" id="dv_dlr">
+                <table id="gridList"></table>
+                <div id="gridPager"></div>
+            </div>
+            @*<div class="gridPanel" id="dv_ylr">
+                <table id="gridListylr"></table>
+                <div id="gridPagerylr"></div>
+            </div>*@
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    $(".dv-left-tree").height($(window).height() - 70);
+    var keyword = $("#txt_name").val();
+
+
+    $(function() {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+        });
+        $('#gridList').jqGrid("clearGridData");
+        //$('#gridListylr').jqGrid("clearGridData");
+        getBqTreeList();
+
+        gridList("");
+        //gridListYl("", "1");
+
+        //搜索病人信息
+        $('#keyword').keyup(function () {
+            getBqTreeList();
+        });
+
+        //$("#dv_ylr").hide();
+
+    });
+    //刷新医嘱
+    function RefreshOrder() {
+        $('#gridList').jqGrid("clearGridData");
+        //$('#gridListylr').jqGrid("clearGridData");
+        getBqTreeList();
+    }
+    function getBqTreeList() {
+        //var selectkey = $("#LUJG option:selected").val();
+        $("#BqTreeList").treeview({
+            height: $(window).height() - 150,
+            slimscroll: false,
+            showcheck: true,
+            url: "/OutpatientNurse/SkintestTree?keyword=" + $('#keyword').val()+"&type=1",
+            //param: { aa: "" },
+            oncheckboxclick: function (item, s) {
+                getOrderAuditList(item, s);
+            }
+        });
+
+    }
+
+    function getOrderAuditList(item, s) {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+
+        var patjzid = "";
+        var patzyhItem = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 == "c") {
+                patjzid += patlist[i].value + ",";
+            }
+        }
+
+        if (s == 1) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c") {
+                        patjzid += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patjzid += patlistFath.value;
+            }
+        }
+        else if (s == 0) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c" && patlistFath[j].checkstate == 1) {
+                        patjzid = patjzid.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patjzid = patjzid.replace(patlistFath.value + ",", "");
+            }
+
+        }
+
+        $('#gridList').jqGrid('setGridParam', {
+            postData: {
+                patList: patjzid
+            }
+        }).trigger("reloadGrid");
+
+    }
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+
+    function gridList(patjzid) {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { patList: patjzid },
+            url: "/OutpatientNurse/Inputinformation",
+            height: $(window).height() - 130,
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            colModel: [
+                { label: '处方明细ID', name: 'cfmxId', align: 'center', hidden: true, width: 50,  key: true },
+                { label: 'mzh', name: 'mzh', align: 'center', hidden: true },
+                { label: 'blh', name: 'blh', align: 'center', hidden: true },
+                { label: '患者姓名', name: 'xm', align: 'center', width: 80 },
+                { label: '皮试项目', name: 'ypmc', align: 'left', width: 150 },
+                { label: '处方组号', name: 'zh', align: 'center', width: 70, formatter: function (val) { if (val != null) return val; else return ""; } },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                //{ label: '结果值', name: 'lrjg', align: 'center', width: 100, },
+                { label: '医嘱内容', name: 'cfmxnr', align: 'center', width: 230},
+                { label: 'ypcode', name: 'ypcode', align: 'center', hidden: true },
+                { label: 'sex', name: 'sex', align: 'center', hidden: true }
+            ],
+            pager: "#gridPager",
+            sortname: 'kssj Desc',
+            viewrecords: true,
+            multiselect: true,
+            //onSelectRow: function (rowIndex, s) {
+            //    InputResult();
+            //} 
+        });
+    }
+
+    //皮试执行
+    function InputResult() {
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        if (selRowIds.length == 0) {
+            $.modalAlert("请选择待录入项目", 'warning');
+            return;
+        }
+        var cfmxid = "";
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (cfmxid == "") {
+                cfmxid = rowData.cfmxId;
+            }
+            else {
+                cfmxid += "," + rowData.cfmxId;
+            }
+        }
+        $.modalOpen({
+            id: "InpatientVitalSignsForm",
+            title: "皮试录入",
+            url: "/NurseManage/OrderAudit/Inputresults",
+            width: "400px",
+            height: "200px",
+            leftlalbelchecked: true,
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (patData) {
+                    $.ajax({
+                        url: "/OutpatientNurse/EnteragainMuti",
+                        dataType: "json",
+                        data: { "cfmxid": cfmxid, "lrjg": patData },
+                        type: "post",
+                        success: function (data) {
+                            RefreshOrder();
+                            if (!!data && data.state == "success") {
+                                $.modalMsg('皮试执行成功', 'success');
+                            }
+                            else if (!!data && data.state == "error") {
+                                $.modalMsg(data.message, 'error');
+                            }
+
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+</script>

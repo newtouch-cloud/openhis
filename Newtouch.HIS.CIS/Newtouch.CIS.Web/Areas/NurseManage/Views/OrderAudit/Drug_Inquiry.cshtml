@@ -1,0 +1,203 @@
+﻿@using Newtouch.Infrastructure
+@{
+	ViewBag.Title = "Drug_Inquiry";//住院发药查询
+	Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+<style>
+	#btn_search {
+		height: 45px;
+		width: 45px;
+		background-color: #fff;
+		color: #00a9ea;
+		font-weight: bolder;
+	}
+</style>
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<div class="rows">
+	<div class="panel panel-default">
+		<table class="form">
+			<tr>
+				<th class="formTitle"><span class="required">*</span>开始时间：</th>
+				<td class="formValue">
+					<input id="kssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" />
+				</td>
+				<th class="formTitle"><span class="required">*</span>结束时间：</th>
+				<td class="formValue">
+					<input id="jssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd 23:59")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd 23:59:59'})" />
+				</td>
+				<th class="formTitle">病区：</th>
+				<td class="formValue formDdlSelectorTd">
+					<select id="bqcode" class="form-control">
+						<option value="">全部</option>
+					</select>
+				</td>
+				<th class="formTitle">患者姓名：</th>
+				<td class="formValue">
+					<input id="patientName" type="text" class="form-control" placeholder="姓名" style="width:50%" />
+				</td>
+			</tr>
+			<tr>
+				<th class="formTitle">药品：</th>
+				<td class="formValue">
+					<input id="ypmc" type="text" class="form-control" placeholder="药品" />
+				</td>
+				<th class="formTitle">床位号：</th>
+				<td class="formValue">
+					<input id="cw" type="text" class="form-control" placeholder="床位号" />
+				</td>
+				<th class="formTitle">住院号：</th>
+				<td class="formValue">
+					<input id="zyh" type="text" class="form-control" placeholder="住院号" />
+				</td>
+				<td class="formTitle">
+					<input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" style="width:55px;height:0%" />
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="rows">
+	<table id="resultGridList"></table>
+	<div id="gridPager"></div>
+</div>
+<script type="text/javascript">
+	var last = "";//上一个组号
+	var $gridBRXXDrugsList = $("#resultGridList");
+	$(function () {
+		$("#bqcode").bindSelect({ //病区信息集合
+			url: "/SystemManage/BaseData/GetAuthedWardSelectJson",
+		});
+		dispenseMedicinGridList();
+	});
+
+	//回车事件绑定
+	$(document).keyup(function (event) {
+		if (event.keyCode === 13) {
+			$("#btn_search").trigger("click");
+		}
+	});
+
+
+	var checkArray = [];
+	var pageNum = 1;
+
+	//用户发药详细信息
+	function dispenseMedicinGridList() {
+		$gridBRXXDrugsList.dataGrid({
+			multiselect: false,
+			url: '/OrderAudit/GetOrdersDrugsGridJson',
+			height: $(window).height() - 160,
+			postData: {
+				bqCode: $("#bqcode").val(),
+				xm: $("#patientName").val(),
+				ypmc: $("#ypmc").val(),
+				cw: $("#cw").val(),
+				kssj: $("#kssj").val(),
+				jssj: $("#jssj").val(),
+				zyh: $("#zyh").val(),
+			},
+			colModel: [
+				{ label: 'Id', name: 'Id', align: 'left', hidden: true },
+				{ label: '姓名', name: 'patientName', width: 80, align: 'left' },
+				{ label: '药品', name: 'ypmc', width: 100, align: 'left' },
+				{ label: '住院号', name: 'zyh', align: 'left', width: 50 },
+				{ label: '床位号', name: 'cw', width: 60, align: 'center' },
+				{ label: '发/退数量', name: 'slStr', width: 30, align: 'right' },
+				{ label: '剂型', name: 'jxmc', width: 60, align: 'center' },
+				{ label: '规格', name: 'ypgg', width: 100, align: 'left' },
+				{ label: '频次', name: 'pcmc', width: 50, align: 'center' },
+				{ label: '组号', name: 'zh', width: 50, align: 'center' },
+				{ label: '用量', name: 'ylStr', width: 60, align: 'center' },
+				{ label: '医嘱内容', name: 'yznr', width: 100, align: 'center' },
+				{ label: '医嘱性质', name: 'yzxzmc', width: 60, align: 'center' },
+				{ label: '生产厂家', name: 'ycmc', width: 100, align: 'left' },
+				{ label: '用法', name: 'zlff', width: 50, align: 'center' },
+				{ label: '操作员', name: 'CreatorCode', width: 70, align: 'center' },
+				{ label: '操作时间', name: 'CreateTime', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+				{ label: "医嘱ID", name: 'zxId', hidden: true },
+				{ label: '单价', name: 'djStr', hidden: true },
+				{ label: '金额', name: 'je', hidden: true },
+				{ label: '使用数量', name: 'yl', hidden: true },
+				{ label: '使用单位', name: 'yldw', hidden: true },
+				{ label: "药品编码", name: 'ypCode', hidden: true },
+				{ label: "yzId", name: 'yzId', hidden: true }
+			],
+			caption: "",
+			pager: '#gridPager',
+			sortname: 'CreateTime',
+			viewrecords: true,
+			gridComplete: function () {
+				var returnval = "";
+				var ids = $("#resultGridList").jqGrid('getDataIDs');
+				for (i = 0; i < ids.length; i++) {
+
+					var rowData = $("#resultGridList").jqGrid('getRowData', ids[i]);
+					//组号生成特殊符号
+					if (rowData.zh == "") {
+						continue;
+					}
+					if (rowData.zh != typeof (undefined) && rowData.zh !== "" && rowData.zh !== null) {
+						if (last == rowData.zh) {
+							returnval = "中间";
+							if (i == (ids.length - 1)) {//最后一个
+								returnval = "结束";
+								last = "";
+							}
+							var rowDatas = $("#resultGridList").jqGrid('getRowData', ids[i + 1]);
+							if (rowData.zh != rowDatas.zh || rowDatas.zh == "") {
+								returnval = "结束";
+								last = "";
+							}
+						}
+						else if (last !== rowData.zh) {
+							//if (last !== "") {
+							//	setlastrowzuhao(ids[i]);
+							//}
+							returnval = "开始";
+						}
+						$("#resultGridList").setCell(ids[i], "zh", '<img src="../../../../Content/img/' + returnval + '.png" />');//setCell 设置单元格样式 值 或属性
+
+					}
+					last = rowData.zh;
+				}
+			},
+		});
+
+		function setlastrowzuhao(rowid) {
+			var lastrow = parseInt(rowid) - 1;
+			$("#resultGridList").setCell(lastrow, "zh", '<img src="../../../../Content/img/结束.png" />');//setCell 设置单元格样式 值 或属性
+		}
+
+		$(".ui-pg-selbox").change(function () {
+			//要触发的事件
+			checkArray.splice(0);
+		});
+
+		//查询
+		$("#btn_search").click(function () {
+			if ($("#Kssj").val() === "") {
+				$.modalMsg("开始时间不能为空", "warning", 2000);
+				return false;
+			}
+			if ($("#Jssj").val() === "") {
+				$.modalMsg("结束时间不能为空", "warning", 2000);
+				return false;
+			}
+			$gridBRXXDrugsList.jqGrid('setGridParam', {
+				postData: {
+					bqCode: $("#bqcode").val(),
+					xm: $("#patientName").val(),
+					ypmc: $("#ypmc").val(),
+					cw: $("#cw").val(),
+					kssj: $("#kssj").val(),
+					jssj: $("#jssj").val(),
+					zyh: $("#zyh").val(),
+				}
+			}).trigger('reloadGrid');
+
+			checkArray = [];
+		});
+	}
+
+</script>

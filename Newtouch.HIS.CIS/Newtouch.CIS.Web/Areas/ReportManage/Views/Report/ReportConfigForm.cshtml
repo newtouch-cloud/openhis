@@ -1,0 +1,178 @@
+﻿
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="width:95%;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>报表名称：</th>
+                <td class="formValue">
+                    <input type="text" id="RptName" name="RptName" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>报表代码：</th>
+                <td class="formValue">
+                    <input type="text" id="RptCode" name="RptCode" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>应用系统：</th>
+                <td class="formValue">
+                    <input type="text" id="AppId" name="AppId" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">报表服务器：</th>
+                <td class="formValue">
+                    <input type="text" id="RptHost" name="RptHost" class="form-control" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>报表地址：</th>
+                <td class="formValue">
+                    <input type="text" id="RptUrl" name="RptUrl" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>数据源：</th>
+                <td class="formValue">
+                    <input type="text" id="RptSource" name="RptSource" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">工具栏选择：</th>
+                <td class="formValue">
+                    <select id="Tools" class="form-control">
+                        <option value="">==请选择==</option>
+                        <option value="1">日期(yyyy-MM-dd)</option>
+                        <option value="2">时间段(yyyy-MM-dd 至 yyyy-MM-dd)</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">状态：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <div style="padding-left:15px;">
+            <table id="gridListform"></table>
+        </div>
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    var paras = [];
+    $(function () {
+        gridrpt();
+        if (!!keyValue) {
+            $.najax({
+                url: "/ReportManage/Report/GetReportFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    paras = data.Paralist;
+                    $("#gridListform").jqGrid('setGridParam', {
+                        datatype: 'local',
+                        data: paras,
+                    }).trigger("reloadGrid");;
+                }
+            });
+        }
+    })
+
+
+    function gridrpt() {
+        var $grid = $("#gridListform");
+        $grid.jqGrid({
+            datatype: 'local',
+            data: paras,
+            height: 100,
+            //altRows: true,//隔行换色
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                {
+                    label: '参数', name: 'p', width: 80, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true
+                },
+                {
+                    label: '操作', name: 'action', width: 110, editwidth: '81%', align: 'center', formatter: function (val) {
+                        return getActionStr();
+                    }
+                }              
+
+            ],
+            caption:"参数",
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            loadComplete: function () {
+                if (paras && paras.length == 0) {
+                    newRptData();
+                }
+            },
+            gridComplete: function () {
+                var ids = $grid.getDataIDs();
+                for (var i = 0; i < ids.length; i++) {
+                    $grid.jqGrid('editRow',  ids[i]);
+                }
+            }
+        });
+    }
+
+    function newRptData() {
+        var dataRow = {
+            p: '',            
+            action: getActionStr()
+        };
+        $("#gridListform").jqGrid("addRowData", undefined, dataRow, "first");
+    }
+
+    function getActionStr() {
+        return "<input class='btn btn-default btn-md btn_add' type='button' value='Add' onclick='newRptData($(this).parent().parent().attr(\"id\"))'/><input class='btn btn-default btn-md btn_del' type='button' value='Delete' onclick='deleteRptData($(this).parent().parent().attr(\"id\"))'/>";
+    }
+    //删除明细
+    function deleteRptData(selRowId) {
+        if (!!selRowId) {
+            $("#gridListform").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    function AcceptClick() {
+
+        var postData = $("#form1").formSerialize();
+        var data = $("#gridListform").getDataIDs();
+        var parasstr = "";
+        if (data != null && data.length > 0) {
+            for (var i = 0; i < data.length; i++) {
+                var v = $("#" + data[i] + "_p").val();
+                if (!!v) {
+                    parasstr += v + ',';
+                }                
+            }
+        }
+        postData.Paras = parasstr;
+
+        $.submitForm({
+            url: "/ReportManage/Report/ReportEdit?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+                $.modalClose();
+            }
+        });
+    }
+
+</script>

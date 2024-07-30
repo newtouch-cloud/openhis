@@ -1,0 +1,111 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="panel panel-default" style="padding-right: 10px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">配药师：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <input id="txtDispenser" name="txtDispenser" type="text" class="form-control" placeholder="请输入配药师" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">执行人：</th>
+                <td class="formValue">
+                    <input id="txtExecutor" name="txtExecutor" type="text" class="form-control " placeholder="请输入执行人" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">选项：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" valign="top" style="padding-top: 5px;">
+                    备注：
+                </th>
+                <td class="formValue">
+                    <textarea id="remark" name="remark" class="form-control" style="height: 60px;"></textarea>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+    });
+
+    //控件初始化
+    function initControl() {
+        $("#txtDispenser").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 250,
+            width: 250,
+            url: "/NurseManage/Infusion/GetStaffList",
+            ajaxmethod: 'Get',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#txtDispenser").val());
+                return reqData;
+            },
+            colModel: [
+                { label: '姓名', name: 'Name', widthratio: 50, align: 'center' },
+                { label: '卡号', name: 'gh', widthratio: 50, align: 'center' }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#txtDispenser").val($thistr.attr('data-Name'));
+                $("#txtDispenser").attr("attr-gh", $thistr.attr('data-gh'));
+            }
+        });
+        $("#txtExecutor").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 250,
+            width: 250,
+            url: "/NurseManage/Infusion/GetStaffList",
+            ajaxmethod: 'Get',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#txtExecutor").val());
+                return reqData;
+            },
+            colModel: [
+                { label: '姓名', name: 'Name', widthratio: 50, align: 'center' },
+                { label: '卡号', name: 'gh', widthratio: 50, align: 'center' }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#txtExecutor").val($thistr.attr('data-Name'));
+                $("#txtExecutor").attr("attr-gh", $thistr.attr('data-gh'));
+            }
+        });
+    }
+
+    function AcceptClick(callback) {
+        $.submitForm({
+            url: "/NurseManage/Infusion/SubmitExec",
+            param: getParam(),
+            success: function () {
+                $.modalClose();
+                callback();
+            }
+        });
+    }
+
+    //组装AcceptClick submitForm param
+    function getParam() {
+        return {
+            syIds: keyValue,
+            zt: $("#zt").is(':checked') ? "1" : "0",
+            dispenser: $("#txtDispenser").attr("attr-gh"),
+            executor: $("#txtExecutor").attr("attr-gh"),
+            remark: $("#remark").val()
+        };
+    }
+</script>

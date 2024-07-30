@@ -1,0 +1,119 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+<style>
+    .edtBtn {
+        border: none;
+        background-color: #f1f4f6;
+    }
+</style>
+<script language="javascript">
+                function OpenDocument() {
+                    var frm = document.forms[0];
+                    frm.submit();
+                }
+
+</script>
+    <form method="post" action="#">
+       
+        <div>
+            <span>文件:</span>
+      
+
+            <select id="cboFileName" name="cboFileName" onchange="OpenDocument();">
+                @foreach (Newtouch.EMR.Web.Areas.MedicalRecordManage.FileItem item in (System.Collections.IList)ViewBag.FileItems)
+                {
+                    <option value="@item.FullName" selected="@item.Selected">@item.Name</option>
+                }
+            </select>
+  
+            <div>
+
+                <input type="submit" name="saveDocument" value="保存文档"  class="edtBtn"   style="background-image: url(/Content/img/tupian/-_保存.ico);background-repeat: no-repeat;background-size: 30%;padding-left: 30px;height: 30px;" />
+                <input type="button" value="粗体"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Bold',false ,null);" />
+                <input type="button" value="斜体"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Italic',false ,null);" />
+                <input type="button" value="下划线"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Underline',false ,null);" />
+                <input type="button" value="7号字体"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('FontSize',false ,'7');" />|
+                <input type="button" value="复制"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Copy',false ,null);" />
+                <input type="button" value="粘贴"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Paste',false ,null);" />
+                <input type="button" value="文档校验"
+                       onclick="MyValueValidate();" />
+                <select id="validateResult" onchange="validateResult_Click();"></select>
+                <input class="edtBtn"  value="删除线" onclick="document.getElementById('myWriterControl').DCExecuteCommand('Strikethrough', false, null);"/>
+
+            </div>
+           
+            
+            <script language=javascript>
+
+            function validateResult_Click() {
+                var sel = document.getElementById("validateResult");
+                if (sel == null || sel.selectedIndex < 0) {
+                    return;
+                }
+                var opt = sel.options[sel.selectedIndex];
+                var result = opt.result;
+                result.Select();
+            }
+
+            function MyValueValidate() {
+                var result = document.getElementById('myWriterControl').DCExecuteCommand("DocumentValueValidate", false, null);
+                var sel = document.getElementById("validateResult");
+                if (sel == null) {
+                    return;
+                }
+                while (sel.firstChild != null) {
+                    sel.removeChild(sel.firstChild);
+                }
+                if (result != null && result.length > 0) {
+                    for (var iCount = 0; iCount < result.length; iCount++) {
+                        var item = result[iCount];
+                        var opt = document.createElement("option");
+                        opt.result = item;
+                        opt.appendChild(document.createTextNode(iCount + " |" + item.ElementID + " " + item.Message));
+                        //opt.text = iCount + " |" + item.ElementID + " " + item.Message;
+                        sel.appendChild(opt);
+                    }
+                    //                    var strIndex = window.prompt("共" + result.length + "条信息，请输入序号", "0");
+                    //                    var index = parseInt(strIndex, 10);
+                    //                    if (isNaN(index) == false) {
+                    //                        var item = result[index];
+                    //                        item.Select();
+                    //                    }
+                }
+            }
+            </script>
+        </div>
+
+        @Html.Raw(ViewBag.WriterControlHtml)
+
+        <script language=javascript>
+         function SetCtlHeight() {
+             //debugger;
+             var ctl = document.getElementById("myWriterControl");
+             if (ctl != null) {
+                 if (ctl.getAttribute("ismobiledevice") != "true") {
+                     // 对于移动设备不设置控件高度
+                     //var s1 = document.documentElement.currentStyle;
+                     //var s2 = document.body.currentStyle ;
+                     var h = document.documentElement.clientHeight - ctl.offsetTop - 20;
+                     ctl.style.height = h + "px";
+                 }
+                 else {
+                     if (document.body.clientWidth < 400) {
+                         document.getElementById("cboFileName").style.width = "100%";
+                     }
+                 }
+             }
+         }
+         window.setTimeout(SetCtlHeight, 300);
+         window.setInterval(SetCtlHeight, 1000);
+        </script>
+    </form>

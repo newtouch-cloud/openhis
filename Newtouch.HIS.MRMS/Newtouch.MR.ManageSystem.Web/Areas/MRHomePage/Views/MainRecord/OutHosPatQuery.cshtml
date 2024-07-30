@@ -1,0 +1,148 @@
+﻿@using Newtouch.MR.ManageSystem.Infrastructure
+@{
+    ViewBag.Title = "出院患者查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="panel" style="padding-left:5px;">
+    <table class="form">
+        <tr>
+            <td class="formTitle">出院时间：</td>
+            <td class="formValue" colspan="3">
+                <input id="txt_ksrq" type="text" class="form-control input-wdatepicker" style="float:left;width:45%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-01")">
+                <span style="float:left;">_</span>
+                <input id="txt_jsrq" type="text" class="form-control input-wdatepicker" style="float:left;width:45%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
+            </td>
+            @*<td class="formTitle">病案状态：</td>
+        <td class="formValue formDdlSelectorTd">
+            <select class="form-control" id="bazt" data-enumtype="Enumbazt"></select>
+        </td>*@
+            <td class="formTitle">出院天数>=</td>
+            <td class="formValue">
+                <input id="txt_cyts" name="txt_keyword" class="form-control" style="width:50%;float:left;" />
+            </td>
+            <td></td>
+            <td class="formTitle" rowspan="2">
+                <input type="button" class="btn btn-primary btn-md" style="padding:3px 20px 3px 20px;float:left;" id="btn_cysearch" value="查询" />
+            </td>
+        </tr>
+        <tr>
+            <td class="formTitle">姓名/住院号：</td>
+            <td class="formValue" colspan="3">
+                <input id="txt_keyword" name="txt_keyword" class="form-control"  />
+            </td>
+        </tr>
+    </table>
+    <div style="padding-left:10px;">
+        <table id="gridcyList"></table>
+        <div id="gridcyPager"></div>
+    </div>
+</div>
+<script>
+    $(function () {
+        GridInit();
+        $("#btn_cysearch").click(function () {
+            $("#gridcyList").jqGrid('setGridParam', {
+                postData: {
+                    ksrq: $("#txt_ksrq").val(),
+                    jsrq: $("#txt_jsrq").val(),
+                    cyts: $("#txt_cyts").val(),
+                    keyword: $("#txt_keyword").val(),
+                    blzt:""
+                },
+            }).trigger('reloadGrid');
+        });
+        var zt =@((int)EnumRecordStu.yqs);
+        $("#bazt").val(zt).trigger("change");
+    });
+
+    function GridInit() {
+        var $gridList = $("#gridcyList");
+        $gridList.dataGrid({
+            url: "/MRHomePage/MainRecord/GetEMRPatGridList",
+            postData: {
+                ksrq: $("#txt_ksrq").val(),
+                jsrq: $("#txt_jsrq").val(),
+                cyts: $("#txt_cyts").val(),
+                keyword: $("#txt_keyword").val(),
+                blzt: '@((int)EnumRecordStu.yqs)'
+            },
+            autowidth: true,
+            height:240,
+             colModel: [
+                 { label: "Id", name: "Id", hidden: true },
+                 //{ label: "病案号", name: "bah", width: 70, align: 'left' },
+                 { label: "患者姓名", name: "xm", width: 60, align: 'left' },
+                 //{ label: "病历号", name: "blh", width: 80, align: 'left' },
+                 {
+                     label: "性别", name: "sex", width: 30, align: 'left', formatter: function (val) {
+                         if (val == '@((int)EnumSex.M)') {
+                             return "男";
+                         }
+                         else if (val == '@((int)EnumSex.F)') {
+                             return "女";
+                         }
+                         else {
+                             return "未知"
+                         }
+                     }
+                 },
+                 //{ label: "出生日期", name: "birth", width: 30, align: 'left' },
+                 { label: "住院号", name: "zyh", width: 60, align: 'left' },
+                 { label: "病区", name: "bqmc", width: 80, align: 'left' },
+                 { label: "床号", name: "BedCode", width: 50, align: 'left' },
+                 { label: "出院天数", name: "cyts", width: 50, align: 'left' },
+                 //{ label: "出院日期", name: "cqrq", width: 100, align: 'left', editable: false, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                 //{ label: "诊断", name: "zdmc", width: 120, align: 'left' },
+                 { label: "RecordStu", name: "RecordStu",  hidden:true },
+                {
+                    label: "病案状态", name: "RecordStuMS", width: 70, align: 'center', formatter: function (val,option,row) {
+                        if (row.RecordStu == '@((int)EnumRecordStu.ytj)') {
+                            return "已提交";
+                        }
+                        else if (row.RecordStu == '@((int)EnumRecordStu.th)') {
+                            return "已退回";
+                        }
+                        else if (row.RecordStu == '@((int)EnumRecordStu.wtj)') {
+                            return "未提交";
+                        }
+                        else if (row.RecordStu == '@((int)EnumRecordStu.yqs)') {
+                            return "已签收";
+                        }
+                        else return ""
+
+                    }
+                },
+                {
+                    label: "详情", name: "", width: 80, align: 'center', formatter(val, option, row) {
+                        return "<a class='btn btn-default' style='width:50px;font-weight:bold;' onclick='basyAddedit(" + option.rowId + ")'>病案编辑</a>";
+                        @*if (row.RecordStu == '@((int)EnumRecordStu.yqs)') {
+                            return "<a class='btn btn-default' style='width:50px;font-weight:bold;float:left;' onclick='basyAddedit(" + option.rowId + ")'>病案编辑</a>";
+                        }
+                        else if (row.RecordStu == '@((int)EnumRecordStu.bagd)') {
+                            return "<a class='btn btn-default' style='width:50px;font-weight:bold;float:left;' onclick='basyShow(" + option.rowId + ")'>查看</a>";
+                        }
+                        else
+                            return ""*@
+
+                    }
+                }
+            ],
+            loadComplete: function () {
+
+            },
+            sortname: "Id desc",
+            rowNum: 8,
+            pager: "#gridcyPager",
+            viewrecords: false
+        });
+        
+    }
+
+    function basyAddedit(rowid) {
+        var rowdata = $('#gridcyList').jqGrid('getRowData', rowid);
+        var pat = "【"+rowdata.zyh + "-" + rowdata.xm + "】";
+        top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病案首页" + pat, enName: "", url: "/MRHomePage/MainRecord/Main?keyValue=&zyh=" + rowdata.zyh });
+
+        $.modalClose();
+    }
+</script>

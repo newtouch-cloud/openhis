@@ -1,0 +1,137 @@
+﻿
+@{
+	ViewBag.Title = "检验报告异常值";
+	Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="formPatSer" style="margin:2px;margin-top:10px;">
+	<div class="gridPanel">
+		<div>
+			<table class="form">
+				<tr>
+                    <th class="formTitle">申请单号：</th>
+					<td class="formValue">
+						<input id="sqdhtx" type="text" class="form-control" placeholder="申请单号" />
+					</td>
+					<th class="formTitle">组套名称：</th>
+					<td class="formValue">
+						<input id="ztmc" type="text" class="form-control" placeholder="组套名称" />
+					</td>
+					<td class="formValue">
+						&nbsp;&nbsp;
+						<input id="ycbz" type="checkbox" checked placeholder="是否只查询异常" /><label for="ycbz">是否只查询异常</label>
+						&nbsp;&nbsp;
+						<input type="button" id="btn_search" class="btn btn-primary" value=" 查 询 " />
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div>
+			<table id="gridList" rel="formPatSer"></table>
+			<div id="gridPager" style="padding-right:20%"></div>
+		</div>
+	</div>
+</form>
+<script>
+	var mzzyh = $.request("mzzyh");
+	var type = $.request("type");
+	$(function () {
+		gridList();
+	})
+	$('#btn_search').click(function () {
+		//$("#gridList").clearGridData();
+		var ztmc = $('#ztmc').val();
+		var sqdht = $('#sqdhtx').val();
+		var ycbz = "1";
+		if ($('#ycbz').is(':checked')) {
+			ycbz = "0";
+		}
+		$("#gridList").jqGrid('setGridParam', {
+			postData: { mzzyh: mzzyh, type: type, ztmc: ztmc, ycbz: ycbz, sqdht: sqdht },
+		}).trigger('reloadGrid'); //重新加载当前表格
+	});
+
+	function gridList() {
+		var ztmc = $('#ztmc').val();
+		var ycbz = "1";
+		if ($('#ycbz').is(':checked')) {
+			ycbz = "0";
+		}
+		var sqdht = $('#sqdhtx').val();
+		var $gridList = $("#gridList");
+		$gridList.dataGrid({
+			url: "/MedicalRecord/GetLisSqdyczGridJson",
+			multiselect: true,
+			postData: { mzzyh: mzzyh, type: type, ztmc: ztmc, ycbz: ycbz, sqdht: sqdht },
+			width: $("#formPatSer").width() - 10,
+			height: $(window).height() - 120,
+			colModel: [
+				{ label: 'id', name: 'Id', align: 'center', key: true, hidden: true },
+				{ label: 'sqdlx', name: 'sqdlx', align: 'center', hidden: true },
+				{ label: '申请单号', name: 'sqdh', align: 'center', width: '130px' },
+				{ label: '组套名称', name: 'ztmc', align: 'center', width: '200px' },
+				{ label: '项目名称', name: 'xmzwmc', align: 'left', width: '130px' },
+				{ label: '结果值', name: 'jyjg', align: 'center', width: '40px' },
+				{ label: '结果异常', name: 'gdbj', align: 'center', width: '50px' },
+				{ label: '参考值底限', name: 'ckzdx', align: 'center', width: '60px' },
+				{ label: '参考值高限', name: 'ckzgx', align: 'center', width: '60px' },
+				{ label: '参考值范围', name: 'ckz', align: 'center', width: '80px' }
+			],
+            pager: "#gridPager",
+            sortname: 'sqdh desc',
+			viewrecords: true,
+			unwritten: false,
+			loadComplete: function () {
+				var rowNum = $("#gridList").jqGrid('getGridParam', 'records'); //获取数据总条
+				if (rowNum==0) {
+					if ($("#norecords").html() == null) {
+						$("#gridList").parent().append("<div id='norecords' style='margin:10px;color:red;font-size:16px;'>无异常值项目!</div>");
+					}
+					$("#norecords").show();//显示提示信息
+				} else {
+					$("#norecords").remove();
+					$("#norecords").hide();//隐藏提示信息
+				}
+			}
+		});
+	}
+
+	function addlistpubs() {
+        var selRowIds = $("#gridList").jqGrid("getGridParam", "selarrrow");//选中的id
+
+        var rowids = $("#gridList").jqGrid("getDataIDs");
+        var rowData = new Array();
+        for (var k = 0; k < rowids.length; k++) {
+            var curk = $("#" + rowids[k]).find(":checkbox");
+            if (curk[0].checked) {
+                var rows = $("#gridList").jqGrid('getRowData', rowids[k]);
+                rowData.push(rows);
+            }
+        }
+        var outstr = "";
+        var ztmcjl = "";
+        for (var i = 0; i < rowData.length; i++) {
+            //var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (ztmcjl == rowData[i].ztmc) {
+                outstr += "";
+            } else {
+                outstr += "组套[" + rowData[i].ztmc + "]";
+            }
+            
+			if (rowData[i].sqdlx=="4") {//为检验报告
+				if (rowData[i].gdbj != '') {
+                    outstr += "其中项目[" + rowData[i].xmzwmc + "]，结果为:" + rowData[i].jyjg + " " + rowData[i].gdbj + " 参考值，参考值范围为" + rowData[i].ckz + "；";
+				} else {
+                    outstr += "其中项目[" + rowData[i].xmzwmc + "]，结果为:" + rowData[i].jyjg + "，参考值范围为" + rowData[i].ckz + "；";
+				}
+            } else if (rowData[i].sqdlx == "5") {//为检查报告
+                outstr += "其中项目[" + rowData[i].xmzwmc + "]，结果为:" + rowData[i].jyjg + "；";
+			}
+			
+            ztmcjl = rowData[i].ztmc;
+        }
+        
+		return outstr;
+	}
+
+</script>

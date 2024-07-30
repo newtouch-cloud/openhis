@@ -1,0 +1,67 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script>
+    var from = $.request("from");
+    var organizeId = $.request("organizeId");
+    var isContansChildOrg = $.request("isContansChildOrg");
+    var keyValue = $.request("keyValue");
+    var isExpand = $.request("isExpand");
+    var callbackType = $.request("callbackType");
+    var single = $.request("single");
+    var isShowEmpty = $.request("isShowEmpty");
+    $(function () {
+        initControl();
+    });
+
+    function initControl() {
+        $("#userStaffTree").treeview({
+            height: 485,
+            slimscroll: false,
+            showcheck: true,
+            url: "/SystemManage/SysUser/GetSysUserSelectorTree",
+            param: { from: from, organizeId: organizeId, isContansChildOrg: isContansChildOrg, keyValue: keyValue, isExpand: isExpand, isShowEmpty: isShowEmpty },
+            oncheckboxclick: function (a, ck) {
+                window.treeaid = a.id;
+                if (single == 'true' && ck == 1 && !a.hasChildren) {
+                    //让其他的都不选中，但不包括其父级的
+                    $.each($('img.bbit-tree-node-cb'), function () {
+                        if ($(this).attr('id').indexOf(window.treeaid) == -1
+                            && $(this).attr('src').indexOf('checkbox_1') != -1) {
+                            $(this).trigger('click');
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    function AcceptClick(callBack) {
+        var treeSeleData;
+        if (callbackType == 'json') {
+            treeSeleData = $("#userStaffTree").getCheckedNodeObjArray();
+            if (single == 'true' && treeSeleData.length != 1) {
+                $.modalAlert('最多选中一条', 'warning');
+                return;
+            }
+        }
+        else {
+            treeSeleData = $("#userStaffTree").getCheckedValues();  //Values对应的是UserId
+            if (single == 'true' && treeSeleData.length != 1) {
+                $.modalAlert('最多选中一条', 'warning');
+                return;
+            }
+            treeSeleData = String(treeSeleData);
+        }
+
+        callBack(treeSeleData);
+        $.modalClose();
+    }
+</script>
+<form id="form1">
+    <div class="widget-body">
+        <div id="userStaffTree"></div>
+    </div>
+</form>
+

@@ -1,0 +1,212 @@
+﻿@{
+    ViewBag.Title = "PriceAdjustmentProfitAndLossQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            筛选条件
+        </div>
+        <table class="form" >
+            <tr>
+                <td class="formTitle">开始日期：</td>
+                <td class="formValue"><input type="text" id="startTime" style="width: 140px;" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd 00:00:00' })" /></td>
+                <td class="formTitle">结束日期： </td>
+                <td class="formValue"><input type="text" id="endTime" style="width: 140px;" class="form-control input-wdatepicker" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm'})" /></td>
+                <td class="formTitle">关键字：</td>
+                <td class="formValue">
+                    <input type="text" id="Srm" class="form-control" placeholder="药品代码 拼音 名称" />
+                </td>
+                <th class="formTitle">药房药库：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="ddlyfbm" class="form-control required">
+                        <option>全部</option>
+                    </select>
+                </td>
+                <td><input type="checkbox" value="显示零库存记录" id="checkLkc" style="margin-left:10px;" />显示零库存记录</td>
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" style="width:50px; margin-left:40px;" value="查询" />
+                    <input type="button" id="btn_Excle" class="btn btn-md btn-primary" onclick="Excelbuttion()" style="width:50px; margin-left:40px;" value="导出" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<div class="gridPanel" style="margin-top:10px">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initYfbmDdl(); //加载药房部门ddl
+        gridList(); //加载Grid
+    });
+    var gridop = null;
+    function gridList() {
+        var $gridList = $("#gridList");
+        var gridOptins = {
+            url: "/Medicine/SelectPriceAdjustmentProfitLossList?r=" + Math.random(),
+            height: $(window).height() - 160,
+            postData: getSearchPostData(),
+            colModel: [
+                { label: "主键", name: "TjsyId", hidden: true, key: true },
+                { label: "药品代码", name: "ypCode", width: 60, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
+                { label: '商品名', name: 'spm', width: 120, align: 'left' },
+                { label: '拼音', name: 'py', width: 50, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 50, align: 'left' },
+                { label: '产地', name: 'ycmc', width: 50, align: 'left' },
+                { label: '当时数量', name: 'Dssl', width: 50, align: 'left' },
+                { label: '单位', name: 'dw', width: 50, align: 'left' },
+                { label: '调价文件', name: 'Tjwj', width: 70, align: 'left' },
+                { label: '原批发价', name: 'Ypfj', width: 60, align: 'left' },
+                { label: '新批发价', name: 'Xpfj', width: 70, align: 'left' },
+                { label: '批价利润', name: 'Pfjtjlr', width: 50, align: 'left' },
+                { label: '原零售价', name: 'Ylsj', width: 60, align: 'left' },
+                { label: '新零售价', name: 'Xlsj', width: 70, align: 'left' },
+                { label: '零价利润', name: 'Lsjtjlr', width: 50, align: 'left' },
+                {
+                    label: '范围', name: 'mzzybz', width: 80, align: 'left',
+                    formatter: function (cellvalue) {
+                        if (cellvalue === "0") {
+                            return "通用";
+                        } else if (cellvalue === "1") {
+                            return "门诊";
+                        } else if (cellvalue === "2") {
+                            return "住院";
+                        } else {
+                            return "";
+                        }
+                    }
+                },
+                {
+                    label: '有效', name: 'zt', width: 50, align: 'left',
+                    formatter: function (cellvalue) {
+                        if (cellvalue === "0") {
+                            return "无效";
+                        } else {
+                            return "有效";
+                        }
+                    }
+                },
+                { label: '操作人员', name: 'CreatorCode', width: 50, align: 'left' },
+                {
+                    label: '调整时间', name: 'Tjsj', width: 50, align: 'left',
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' }
+                }
+            ],
+            pager: "#gridPager",
+            sortname: 'Tjsj desc'
+        };
+        $gridList.dataGrid(gridOptins);
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        //$("#btn_search").trigger('click');
+        gridop = gridOptins
+    }
+
+    function getSearchPostData() {
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+        var srm = $("#Srm").val();
+        var ddlyfbm = $("#ddlyfbm").val();
+        var lkc = $("#checkLkc").is(':checked') ? 1 : 0;
+        return { startTime: startTime, endTime: endTime, Srm: srm, ddlyfbm: ddlyfbm, Lkc: lkc };
+    }
+
+    function initYfbmDdl() {
+        $("#ddlyfbm").bindSelect({
+            url: "/PharmacyDrugStorage/PharmacyDepartmentList",
+            id: "yfbmCode",
+            text: "yfbmmc"
+        });
+    }
+
+    var exportCols = null;
+    function Excelbuttion() {
+        exportCols = new Array();
+        var colsChooseSourceArr = new Array();
+        $.each(gridop.colModel, function () {
+            if (!(this.hidden === true)) {
+                exportCols.push({ Heading: this.label, Name: this.name, Width: this.width });
+                colsChooseSourceArr.push({ Heading: this.label, Name: this.name });
+            }
+        });
+        var url = "/DrugStorage/ExcelExportChooseColumns";
+        var cols = JSON.stringify(colsChooseSourceArr);
+        cols = encodeURIComponent(cols);
+        url += "?cols=" + cols;
+        $.modalOpen({
+            id: "ExcelExportChooseColumns",
+            title: "导出Excel",
+            url: url,
+            width: "600px",
+            height: "350px",
+            callBack: function (iframeId) {
+                //结果
+                var restArr = top.frames[iframeId].GetChoosedCols();
+                if (!!!restArr || !!!restArr.length || restArr.length == 0) {
+                    $.modalAlert("请选择导出列", 'error');
+                    return false;
+                }
+                var isContainFilter = top.frames[iframeId].GetIsContainFilter();
+                //关闭选择窗口
+                $.modalClose("ExcelExportChooseColumns");
+                //
+                exportCols = $.jsonWhere(exportCols, function (v) {
+                    var matched = false;
+                    for (var iIndex = 0; iIndex < restArr.length; iIndex++) {
+                        if (restArr[iIndex] == v.Name) {
+                            matched = true;
+                        }
+                    }
+                    return matched;
+                });
+                //导出
+                Export(isContainFilter);
+            }
+        });
+    }
+    function Export(isContainFilter) {
+        
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+        var srm = $("#Srm").val();
+        var ddlyfbm = $("#ddlyfbm").val();
+        var yfykmc = $("#ddlyfbm option:selected").text()
+        var lkc = $("#checkLkc").is(':checked') ? 1 : 0;
+        var cols = JSON.stringify(exportCols);
+        top.$.cookie('ExportExcelCols', cols, { path: "/" });
+        //$.najax({
+        //    type: "POST",
+        //    url: "/Medicine/ExcelGet",
+        //    loading: $.loading("正在导出Excle文件"),
+        //    data: { startTime: startTime, endTime: endTime, Srm: srm, ddlyfbm: ddlyfbm, Lkc: lkc, isContainFilter: isContainFilter, yfykmc: yfykmc, colStanWidth: "70", cols: cols },
+        //    alerterror: false,
+        //    success: function (res) {
+
+        //    }
+        //});
+        var url = "/Medicine/ExcelGet?";
+        url += "startTime=" + startTime;
+        url += "&endTime=" + endTime;
+        url += "&Srm=" + srm;
+        url += "&ddlyfbm=" + ddlyfbm;
+        url += "&Lkc=" + lkc;
+        url += "&isContainFilter=" + isContainFilter;
+        url += "&yfykmc=" + yfykmc;
+        url += "&colStanWidth=" + "70";  //列宽度标准列
+        //var cols = JSON.stringify(exportCols);
+        //top.$.cookie('ExportExcelCols', cols, { path: "/" });
+        //url += "&cols=" + cols;
+
+        window.open(url);
+    }
+
+</script>

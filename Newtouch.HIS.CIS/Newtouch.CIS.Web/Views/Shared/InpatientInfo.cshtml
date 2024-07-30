@@ -1,0 +1,182 @@
+﻿@using Newtouch.Infrastructure;
+<style>
+    .dv-home-patInfo {
+        position: fixed;
+        right: -160px;
+        top: 40px;
+        width: 195px;
+        z-index: 9999;
+        height: 490px;
+    }
+
+    .floatPreTree {
+        width: 160px;
+        float: right;
+    }
+    #tcbeveltabs li {
+        height: 30px;
+        width: 30px;
+        line-height: 30px;
+        background-color: #bfbdbd;
+        text-align: center;
+        margin-bottom: 3px;
+        border-radius: 5px 0px 0px 5px;
+        color: white;
+    }
+
+    #tcbeveltabs {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+    }
+    .activepart {
+        background-color: #00a0e9 !important
+    }
+    #treeContent {
+    background-color:white;
+    height:440px !important
+    }
+</style>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+    <link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<div class="dv-home-patInfo" style="display:none">
+    <div style="height: 133px;width: 30px;float: left;margin-top: 150px;display: flex;align-items: center;">
+        <ul id="tcbeveltabs">
+            <li><i href="#" name="#personal" class="fa fa-user-o fa-lg" title="个人" data-type=@Html.Raw(((int)EnumCfMbLx.personal).ToString())></i></li>
+            <li><i href="#" name="#department" class="fa fa-quora fa-lg" title="科室" data-type=@Html.Raw(((int)EnumCfMbLx.department).ToString())></i></li>
+            @*@if (ViewBag.bhbq)
+            {
+        <li><i href="#" name="#ward" class="fa fa-bank fa-lg" title="病区" data-type=@Html.Raw(((int)EnumTcfw.Ward).ToString())></i></li>
+            }*@
+            <li><i href="#" name="#hospital" class="fa fa-hospital-o fa-lg" title="全院" data-type=@Html.Raw(((int)EnumCfMbLx.hospital).ToString())></i></li>
+        </ul>
+    </div>
+    <div>
+        <div class="dv-vertical" style="width:5px;height:440px;float:left;background-color:#bfbdbd"></div>
+        <div id="floatPreTree">
+            <div class="ui-layout-west">
+                <div id="treeContent" style="display:none">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    var pageFlag = "";
+    function SetCurrentPageyzlx(page) {
+        pageFlag = page;
+        //$("#tcbeveltabs li").removeClass("activepart");
+        //$(".dv-home-patInfo").css("right", "0px !important");
+        
+        //alert($(".dv-home-patInfo").offset().right);
+        if ($("#tcbeveltabs li").hasClass('activepart')) {
+            //再点击 隐藏
+            $("#tcbeveltabs li").removeClass("activepart");
+            $(".dv-home-patInfo").animate({ right: '-160px' }, "slow");
+        }
+    }
+    var presTempClieckHandling = false;
+
+    $(function () {
+
+        $("#tcbeveltabs li").on("click", function (e) {
+            if ($(this).hasClass('activepart')) {
+                //再点击 隐藏
+                $("#tcbeveltabs li").removeClass("activepart");
+                $(".dv-home-patInfo").animate({ right: '-160px' }, "slow");
+                //$('#treeContent').hide();
+            } else {
+                $("#tcbeveltabs li").removeClass("activepart");
+                $(this).addClass("activepart");
+                //$('#floatPreTree').show();
+                $(".dv-home-patInfo").animate({ right: '0px' }, "slow");
+                $('#treeContent').show();
+
+
+                $("#treeContent").treeview({
+                    height: $(window).height() - 100,
+                    slimscroll: false,
+                    url: "/DoctorManage/DoctorsAdvice/GetTreeList?tcfw=" + $(this).children().attr('data-type') + "&yzlx=" + pageFlag,
+                    onnodeclick: function (item) {
+                        $.modalOpen({
+                            id: "TemplatePresForm",
+                            title: "套餐明细",
+                            url: "/DoctorManage/DoctorsAdvice/TemplatePresForm?tcId=" + item.id + "&tclx=" + pageFlag,
+                            width: "800px",
+                            height: "650px",
+                            btn: ['复制', '关闭'],
+                            callBack: function (iframeId) {
+                                var idlist = top.frames[iframeId].submitForm();
+                                if (idlist != "") {
+                                    $.najax({
+                                        url: "/DoctorManage/DoctorsAdvice/GetMBDetailByDetailId",
+                                        dataType: "json",
+                                        data: { idList: idlist },
+                                        type: "POST",
+                                        loadingtext: "模板引用中，请稍后...",
+                                        success: function (resp) {
+                                            $.modalClose("TemplatePresForm");
+                                            $(".dv-home-patInfo").animate({ right: '-160px' }, "slow");
+                                            if (resp && resp.length > 0) {
+                                                var getActionStr, grid;
+                                                var newCfh = '';
+                                                if (pageFlag == '@Html.Raw(((int)EnumYzlx.Yp).ToString())') {
+                                                    getActionStr = getMActionStr();
+                                                    grid = "gridmedicine";
+                                                }
+                                                if (pageFlag == '@Html.Raw(((int)EnumYzlx.Wz).ToString())') {
+                                                    getActionStr = getWordActionStr();
+                                                    grid = "gridword";
+                                                }
+                                                if (pageFlag == '@Html.Raw(((int)EnumYzlx.sfxm).ToString())') {
+                                                    getActionStr = getIActionStr();
+                                                    grid = "gridsfxm";
+                                                }
+	                                            if (pageFlag == '@Html.Raw(((int)EnumYzlx.rehab).ToString())') {
+	                                            	getActionStr = getRActionStr();
+		                                            grid = "gridkfxm";
+	                                            }
+                                                if (pageFlag == '@Html.Raw(((int)EnumYzlx.Cydy).ToString())') {
+                                                    getActionStr = getTActionStr();
+                                                    grid = "gridTake";
+                                                }
+                                                if (pageFlag == '@Html.Raw(((int)EnumYzlx.ssyz).ToString())') {
+                                                    getActionStr = getSSActionStr();
+                                                    grid = "gridssyz";
+                                                }
+                                                 if (pageFlag == '@Html.Raw(((int)EnumYzlx.zcy).ToString())') {
+                                                     getActionStr = getTCMActionStr();
+                                                     grid = "gridTCMmedicine";
+                                                }
+                                                var l = resp;
+                                                ;
+                                                for (var i = 0; i < l.length; i++) {
+                                                    l[i].Id = Math.random().toString() + new Date().getMilliseconds();
+                                                    l[i].yzzt = 0;//默认未审
+                                                    l[i].action = getActionStr;
+                                                    l[i].zyh = currentobj.zyh;
+                                                    l[i].kssj = $.getTime();
+                                                    if (pageFlag == '@Html.Raw(((int)EnumYzlx.ssyz).ToString())') {
+                                                        l[i].ssxhdm = l[i].xmdm;
+                                                        l[i].ssxh = l[i].xmmc;
+                                                        l[i].ssxhval = l[i].xmmc;
+                                                    }
+                                                    $("#" + grid).jqGrid("addRowData", undefined, l[i], "first");
+                                                }
+                                            }
+                                        },
+                                        complete: function () {
+                                            presTempClieckHandling = false;
+                                        }
+                                    });
+                                }
+                            }
+                        });
+
+                    }
+                });
+            }
+    });
+    });
+</script>

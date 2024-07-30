@@ -1,0 +1,102 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "HealthyUpload";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form name="form1" autocomplete="off">
+    <div class="panel panel-default" style="">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <div style="padding: 0px;padding-right:0px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">上传日期：</th>
+                    <td class="formValue">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd  00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                        <span style="margin-left:0;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd  HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+
+                    <th class="formTitle">上传类型：</th>
+                    <td class="formValue">
+                        <select id="selsclx">
+                            <option value="">全部</option>
+                            <option value="TB_YL_MZ_Medical_Record">门诊就诊记录表</option>
+                            <option value="TB_CIS_Prescription_Detail">门诊处方明细表</option>
+                            <option value="TB_HIS_MZ_Fee_Detail">门诊收费明细表</option>
+                            <option value="TB_YL_ZY_Medical_Record">住院就诊记录表</option>
+                            <option value="TB_CIS_DrAdvice_Detail">住院医嘱明细表</option>
+                            <option value="TB_HIS_ZY_Fee_Detail">住院收费明细表</option>
+                            <option value="TB_RIS_Report">医学影像检查报告表</option>
+                            <option value="TB_Operation_Detail">手术明细表</option>
+                            <option value="TB_DIC_Department">医院的科室字典表</option>
+                            <option value="TB_DIC_Practitioner">医护人员字典表</option>
+                            <option value="TB_DIC_MEDICINES">药品目录字典表</option>
+                            <option value="TB_DIC_Materials">非药品目录字典表</option>
+                        </select>&nbsp;&nbsp;&nbsp;
+                        <input type="button" class="btn btn-primary btn-md" id="btnsyy" value="查询" />
+                    </td>
+                    <th class="formTitle"></th>
+                    <th class="formValue"></th>
+
+                </tr>
+
+            </table>
+
+        </div>
+    </div>
+    <div style="margin-top:10px;">
+        <div class="gridPanel">
+            <table id="registedList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+</form>
+<script>
+    $(function () {
+        gridlist();
+    });
+    function postdata() {
+        return {
+            ksrq: $("#kssj").val(),
+            jsrq: $("#jssj").val(),
+            tabname: $("#selsclx").val(),
+        };
+
+    }
+    function gridlist() {
+        var $gridList = $("#registedList");
+        $gridList.dataGrid({
+            url: "/PatientManage/SysPatientMedicalRecord/GetHealthUpload",
+            height: $(window).height() - 205,
+            caption: "列表",
+            postData: postdata(),
+            colModel:  [
+			{ label: 'Id', name: 'Id', key: true, hidden: true },
+
+			{ label: '表名', name: 'TabName', width: 160, align: 'left' },
+			{ label: '表名名称', name: 'TabNameDesc', width: 160, align: 'left' },
+			{ label: '传输状态', name: 'statusName', width: 100, align: 'left' },
+            {
+                label: '传输日期', name: 'createtime', width: 120, align: 'left',
+                formatter: "date", formatoptions: { srcformat: 'Y-m-d H:m:s', newformat: 'Y-m-d H:m:s' }
+            },
+            { label: '传输失败原因', name: 'err_msg', width: 100, align: 'left' }
+			
+            ],
+            pager: "#gridPager",
+            sortname: 'Createtime desc',
+            multiselect: false,
+            viewrecords: true
+        });
+        $("#btnsyy").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: postdata(),
+            }).trigger('reloadGrid');
+        });
+    }
+   
+</script>
+

@@ -1,0 +1,130 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="编码/名称" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    });
+
+    //组织机构
+    function initControl() {
+
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        
+        $gridList.dataGrid({
+            url: "/SysWardBed/GetGridJson",
+            postData: getSearchPostData(),
+            height: 400,
+            colModel: [
+            { label: "cwId", name: "cwId", width: 100, align: "left", hidden: true },
+            { label: "编码", name: "cwCode", width: 100, align: "left" },
+            { label: "名称", name: "cwmc", width: 100, align: "left" },
+            { label: "病区", name: "bqmc", width: 100, align: "left" },
+            { label: "病房", name: "bfNo", width: 100, align: "left" },
+            { label: "床位类型", name: "cwlx", width: 80, align: "left", formatter: function (cellvalue) { if(cellvalue == 1) return "男"; if (cellvalue ==2) return "女";if(cellvalue ==3) return "混";} },
+            //{ label: "床位费", name: "cwf", width: 100, align: "left" },
+            //{ label: "等级医院加收费", name: "djyyjsf", width: 100, align: "left" },
+            //{ label: "病室治疗费", name: "bszlf", width: 100, align: "left" },
+            //{ label: "医用灭菌空气净化费", name: "yymjkqjhf", width: 100, align: "left" },
+            { label: "有效", name: "zt", width: 80, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+            { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+            { label: '创建时间', name: 'CreateTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+            { label: '最后修改时间', name: 'LastModifyTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData(), url: "/SysWardBed/GetGridJson"
+            }).trigger('reloadGrid');
+        })
+        $("#btn_search").trigger('click');
+    }
+    //查询条件
+    function getSearchPostData() {
+        var keyword = $("#txt_keyword").val();
+        var OrganizeId = $("#OrganizeId").val();
+        return { keyword: keyword, organizeId: OrganizeId };
+    };
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    //新增
+    function btn_add() {
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "系统床位维护",
+            url: "/SysWardBed/Form?orgId=" + $('#OrganizeId').val(),
+            width: "600px",
+            height: "800px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    //修改
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var cwId = $("#gridList").jqGridRowValue().cwId;
+        var OrganizeId = $("#OrganizeId").val();
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "修改信息",
+            url: "/SysWardBed/Form?cwId=" + cwId + "&orgId=" + OrganizeId,
+            width: "600px",
+            height: "800px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+</script>
+
+

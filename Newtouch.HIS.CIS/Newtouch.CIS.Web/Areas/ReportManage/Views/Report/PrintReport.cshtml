@@ -1,0 +1,187 @@
+﻿@using System.IdentityModel.Metadata
+@{
+    ViewBag.Title = "通用报表打印";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .sp_lable {
+        text-align:center;
+        width: 30%;
+        float: left;
+        padding:5px 0px 5px 5px;
+    }
+    .inp_p {
+        width: 62%;
+        /*float: right;*/
+        padding-left:5px;
+    }
+</style>
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form" id="tb_tool">
+            <tr>
+                <td class="formValue" id="td_zyh" style="display:none;">
+                    <span id="sp_zyh" class="sp_lable">住院号：</span><input name="zyh" id="zyh" class="form-control inp_p" />
+                </td>
+                <td class="formValue" id="td_kssj" style="display:none;">
+                    <span id="sp_kssj" class="sp_lable">开始日期：</span>
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore inp_p" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { refReport(); } })"
+                           value="@DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formValue" id="td_jssj" style="display:none;">
+                    <span id="sp_jssj" class="sp_lable">开始日期：</span>
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { refReport(); } })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formValue" id="td_doctor" style="display:none;">
+                    <span class="sp_lable">医生：</span><input name="doctor" id="doctor" class="form-control inp_p" value=" " />
+                </td>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+    var rptcode = '@ViewBag.rptCode';
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.orgId)';
+    var gh = '@(ViewBag.user)';
+    var paras = "";
+    var uri = '';
+    $(function () {
+        if (!!rptcode) {
+            $.najax({
+                url: "/ReportManage/Report/GetReportFormJson",
+                data: { keyValue: rptcode },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+
+                    if (data != null && data != undefined) {
+                        if (!!data.Paras) {
+                            $("#btn_search").show();
+                            var para = data.Paras.split(',');
+                            $.each(para, function (e) {
+                                if (!!para[e]) {
+                                    var a = "td_" + para[e];
+                                    $("#" + a).show();
+                                }
+                            });
+                        }
+                        else {
+                            $("#btn_search").hide();
+                        }
+                        if (!!reportServerHOST) {
+                            reportServerHOST = data.RptHost;
+                        }
+                        
+                        paras = data.Paras;
+                        uri = data.RptHost+"/" + data.RptUrl + "?%2f" + data.RptSource + "%2f" + encodeURI(data.RptName);
+                    }    
+                }
+            });
+        }
+    });
+
+    function submit() {
+        if ($('#kssj').val().length == 0 || $('#jssj').val().length == 0) {
+            $.modalAlert("请选择时间范围", "error");
+            return;
+        }
+
+        var url = uri + "&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage";
+        if (!!paras) {
+            var p = paras.split(',');
+            if (!!p && p.length > 0) {
+                for (var i = 0; i < p.length; i++) {
+                    if (p[i] == "orgId") {
+                        url += "&" + p[i] + "=" + orgId;
+                    }
+                    else if (!!p[i]) {
+                        url += "&" + p[i] + "=" + $('#' + p[i]).val()
+                    }                        
+                    //else if (p[i] == "kssj") {
+                    //    url += "&" + p[i] + "=" + $('#kssj').val();
+                    //}
+                    //else if (p[i] == "jssj") {
+                    //    url += "&" + p[i] + "=" + $('#jssj').val();
+                    //}
+                    //else if (p[i] == "zyh") {
+                    //    url += "&" + p[i] + "=" + $('#zyh').val();
+                    //}
+                    //else if (p[i] == "doctor") {
+                    //    url += "&" + p[i] + "=" + $('#doctor').val();
+                    //}
+                }
+            }
+        }
+
+
+        //url += "&kssj=" + $('#ksrq').val() + "&jssj=" + $('#jsrq').val();
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+
+    });
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+    function getUrl(paras) {
+        if (uri.StartWith('/')) {
+            uri = uri.substr(1);
+        }
+        var srcUrl = uri;
+        srcUrl = reportServerHOST + srcUrl;
+
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheetBlankPage";
+            }
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "orgId=";
+            srcUrl += orgId;
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+        }
+
+        return srcUrl;
+    }
+
+</script>
+

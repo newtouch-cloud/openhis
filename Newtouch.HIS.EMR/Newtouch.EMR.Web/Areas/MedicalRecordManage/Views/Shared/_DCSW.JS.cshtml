@@ -1,0 +1,1293 @@
+﻿<script language="javascript">
+    window.dcryzd = [];
+    function OpenDocument() {
+        var frm = document.forms[0];
+        frm.submit();
+    }
+    var dcWriter = document.getElementById('myWriterControl');
+    var signInput = "";
+    dcWriter.ondocumentclick = function (e, f) {
+        var fieldid = document.getElementById('myWriterControl').CurrentInputField();
+        if (fieldid != null && fieldid != undefined) {
+            signInput = fieldid.id;
+            if (String(fieldid.id).indexOf("zyzd_") != -1 && String(fieldid.id).indexOf("_zyzd_") == -1) {                
+                $.modalOpen({
+                    id: "Form",
+                    title: "诊断列表",
+                    url: "/MedicalRecordManage/Blctgl/DiagList",
+                    width: "750px",
+                    height: "640px",
+                    //btn: null,
+                    callBack: function (iframeId) {
+                        var rowData = top.frames[iframeId].AcceptClick();
+                        if (rowData == null ) {
+                            if (String(fieldid.id).indexOf("name") != -1) {
+                                dcWriter.SetElementTextByID(fieldid.id, "");
+                                var idname = String(fieldid.id).replace("_name", "");
+                                dcWriter.SetElementTextByID(idname, "");
+                            }
+                            else {
+                                dcWriter.SetElementTextByID(fieldid.id, "");
+                                var idname = fieldid.id + "_name";
+                                dcWriter.SetElementTextByID(idname, "");
+                            }
+                        }
+                        else  {
+                            if (String(fieldid.id).indexOf("name") != -1) {
+                                dcWriter.SetElementTextByID(fieldid.id, rowData.zdName);
+                                var idname = String(fieldid.id).replace("_name", "");
+                                dcWriter.SetElementTextByID(idname, rowData.icd10);
+                            }
+                            else {
+                                dcWriter.SetElementTextByID(fieldid.id, rowData.icd10);
+                                var idname = fieldid.id + "_name";
+                                dcWriter.SetElementTextByID(idname, rowData.zdName);
+                            }
+                        }
+                    }
+                });
+            }
+            else if (String(fieldid.id).indexOf("img_sign_") != -1) {
+                $.najax({
+                    url: "/SystemManage/Common/GetStaffSign",
+                    dataType: "json",
+                    type: "POST",
+                    success: function (respdata) {
+                        var idname = fieldid.id;
+                        var jsonData = JSON.stringify(respdata);
+                        var data = JSON.parse(jsonData);
+                        var user = data.rygh;
+                        var name = data.name;
+                        dcWriter.SetElementTextByID(idname + "_yscode", user);
+                        dcWriter.SetElementTextByID(idname + "_ysname", name);
+                        Signaturedefault(idname, data.imgbase64, user, name);
+	
+                    }
+                });
+            }
+            if (fieldid.attributes.hasOwnProperty("name")) {
+                var attrs = fieldid.attributes;
+                var nameval = fieldid.getAttributeNode("name");
+                var relcode = fieldid.getAttributeNode("dc_defaulteventexpression");
+                //$.each(attrs, function () {                
+                //    if (String(this.name).indexOf("relcode") != -1) {
+                //        var st = this.name.indexOf(",");
+                //        var ed = this.name.indexOf("]");
+                //        var str = "'{" +this.name.substring(st+2,ed)+"'";
+                //        var jsobj = eval('(' + str + ')');
+                //        relcode = eval('jsobj.' + 'value');
+                //        return;
+                //    }
+                //});
+                if (String(nameval.value).indexOf("ys_click") != -1) {
+                    $.modalOpen({
+                        id: "Form",
+                        title: "医生列表",
+                        url: "/MedicalRecordManage/MedicalRecord/Doctor",
+                        width: "550px",
+                        height: "450px",
+                        //btn: null,
+                        callBack: function (iframeId) {
+                            var rowData = top.frames[iframeId].AcceptClick();
+                            document.getElementById('myWriterControl').DCExecuteCommand('Spechars', true, rowData.StaffName);
+                            if (!!relcode) {
+                                document.getElementById('myWriterControl').SetElementTextByID(relcode.value, rowData.StaffGh);
+                            }
+                        }
+                    });
+                }
+            }            
+        }
+    };
+    dcWriter.ondocumentkeydown = function (eventObject) {
+       
+    };
+
+    //签名-双击文本域
+    function Signaturedefault(id, imgbase64, rygh, name) {
+        id = id + Math.random();
+        var obj = {
+            "id":id,
+            "base64Img": imgbase64,//图片base64 （优先png格式）
+            "scope": "InputField",//签名范围 InputField:输入域;TableCell:单元格; TableRow:表格行; Table:表格; Section:文档节; Body: 文档;
+            "userID":  rygh,
+            "userName":  name,
+            "imageInFrontOfText": "false",//默认false
+            "clientName": "home-pc",//客户端名
+            "width": "50",//签名图片宽度
+            "height": "25",//签名图片高度
+            "providerName": "1", //1:软签 2：诺安签名
+        };
+        var ctl = document.getElementById("myWriterControl");
+        ctl.CASignature(obj, function (result) {
+            if (result.success == "true") {
+                ctl.LoadDocumentFromString(result.result, "xml");// result.strxml: 签名后的Xml文档
+            } else {
+                $.modalMsg("签名失败：" + result.message, 'error');
+            }
+        });
+    }
+    //电子签名-button
+    function Signature() {
+        if (!!signInput) {
+            $.najax({
+                url: "/SystemManage/Common/GetStaffSign",
+                dataType: "json",
+                type: "POST",
+                success: function (respdata) {
+                    //var idname = fieldid.id;
+                    var jsonData = JSON.stringify(respdata);
+                    var data = JSON.parse(jsonData);
+                    var obj = {
+                        "id": signInput + Math.random(),
+                        "base64Img": data.imgbase64,//图片base64 （优先png格式）
+                        "scope": "InputField",//签名范围 InputField:输入域;TableCell:单元格; TableRow:表格行; Table:表格; Section:文档节; Body: 文档;
+                        "userID": data.rygh,
+                        "userName": data.name,
+                        "imageInFrontOfText": "false",//默认false
+                        "clientName": "home-pc",//客户端名
+                        "width": "50",//签名图片宽度
+                        "height": "25",//签名图片高度
+                        "providerName": "1", //1:软签 2：诺安签名
+                    };
+                    var ctl = document.getElementById("myWriterControl");
+                    ctl.CASignature(obj, function (result) {
+                        if (result.success == "true") {
+                            ctl.LoadDocumentFromString(result.result, "xml");// result.strxml: 签名后的Xml文档
+                        } else {
+                            $.modalMsg("签名失败：" + result.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+        else {
+            $.modalMsg("请选中待签名文本域", 'warning');
+        }       
+    }
+
+    $(function () {
+        var ctl = document.getElementById("myWriterControl");
+        ctl.Options.CurrentUserID = $("#userid").val();
+        ctl.Options.CurrentUserName = $("#username").val();
+        $("#toolShow").click(function () {
+            $("#toolDiv").toggle();
+        });
+        //$("#toolShow").click();
+        $("#FileSaveAs").click(function () {
+            var id = $("#zyh").val();
+            if (mzh) {
+                id = $("#mzh").val();
+            }
+            $.ajax({
+                type: "GET",
+                url: "/MedicalRecord/FileSaveAs",
+                dataType: "json",
+                data: { zyh: id, mbmc: $("#mbmc").val() },
+                async: true,
+                loadingtext: "保存中，请稍后...",
+                success: function (ajaxresp) {
+                    $.modalMsg(ajaxresp, 'success');
+                }
+            });
+        });
+        //$("#upload").click(function () {
+        //    debugger
+        //    var ctl = document.getElementById("myWriterControl");
+        //    var list = ctl.GetAllInputFields(false, false);
+        //    $.ajax({
+        //        type: "GET",
+        //        url: "/MedicalRecord/Upload",
+        //        dataType: "json",
+        //        data: { Elements: list },
+        //        async: true,
+        //        loadingtext: "保存中，请稍后...",
+        //        success: function (ajaxresp) {
+        //            $.modalMsg(ajaxresp, 'success');
+        //        }
+        //    });
+        //});
+
+        //插入表格
+        $("#inserttab").click(function () {
+            if ($("#table").attr("style") == "display:block") {
+                $("#table").attr("style", "display:none");
+            } else {
+                $("#table").attr("style", "display:block");
+            }
+        })
+        $("#qd").click(function () {
+
+            var row = $("#row").val();
+            var column = $("#column").val();
+            var tt = column + "," + row;
+            alert(tt);
+            document.getElementById('myWriterControl').DCExecuteCommand('inserttable', true, tt);
+            $("#table").attr("style", "display:none");
+        })
+        //字体颜色
+        $("#backcolor").click(function () {
+            if ($("#bcolor").attr("style") == "display:block") {
+                $("#bcolor").attr("style", "display:none");
+            } else {
+                $("#bcolor").attr("style", "display:block");
+            }
+        })
+        $("#bcolor1").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', false, 'black');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor2").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, 'red');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor3").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, 'green');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor4").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, 'yellow');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor5").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', false, 'blue');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor6").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, '#dedb78');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor7").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, '#ddb3b3');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor8").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, '#1588bb');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor9").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('BackColor', true, 'white');
+            $("#bcolor").attr("style", "display:none");
+        })
+        $("#bcolor").mouseover(function () {
+            $("#bcolor").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#bcolor").attr("style", "display:none");
+        })
+        //字体颜色
+        $("#fontcolor").click(function () {
+            if ($("#fcolor").attr("style") == "display:block") {
+                $("#fcolor").attr("style", "display:none");
+            } else {
+                $("#fcolor").attr("style", "display:block");
+            }
+        })
+        $("#color1").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', false, 'black');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color2").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', true, 'red');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color3").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', true, 'green');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color4").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', true, 'yellow');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color5").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', false, 'blue');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color6").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', true, '#dedb78');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color7").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', true, '#ddb3b3');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#color8").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Color', true, '#1588bb');
+            $("#fcolor").attr("style", "display:none");
+        })
+        $("#fcolor").mouseover(function () {
+            $("#fcolor").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#fcolor").attr("style", "display:none");
+        })
+        //字体
+        $("#fontfa").click(function () {
+            if ($("#fontf").attr("style") == "display:block") {
+                $("#fontf").attr("style", "display:none");
+            } else {
+                $("#fontf").attr("style", "display:block");
+            }
+        })
+        $("#fontfh").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('FontName', true, '黑体');
+            $("#fontf").attr("style", "display:none");
+        })
+        $("#fontfs").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('FontName', true, '宋体');
+            $("#fontf").attr("style", "display:none");
+        })
+        $("#fontfw").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('FontName', true, '微软雅黑');
+            $("#fontf").attr("style", "display:none");
+        })
+        $("#fontfk").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('FontName', true, '楷体');
+            $("#fontf").attr("style", "display:none");
+        })
+        $("#fontf").mouseover(function () {
+            $("#fontf").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#fontf").attr("style", "display:none");
+        })
+        //字体大小
+        $("#fontsize").click(function () {
+            if ($("#fontsizeli").attr("style") == "display:block") {
+                $("#fontsizeli").attr("style", "display:none");
+            } else {
+                $("#fontsizeli").attr("style", "display:block");
+            }
+        })
+        $("#font10").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '10px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font12").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '12px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font14").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '14px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font16").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '16px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font18").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '18px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font19").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '19px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font20").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '20px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font22").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '22px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font26").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '26px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font30").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '30px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#font32").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('Fontsize', true, '32px');
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        $("#fontsizeli").mouseover(function () {
+            $("#fontsizeli").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#fontsizeli").attr("style", "display:none");
+        })
+        //段前距
+        $("#rowspacingup").click(function () {
+            if ($("#rowspacingup1").attr("style") == "display:block") {
+                $("#rowspacingup1").attr("style", "display:none");
+            } else {
+                $("#rowspacingup1").attr("style", "display:block");
+            }
+        })
+        $("#up5").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '5,top');
+            $("#rowspacingup1").attr("style", "display:none");
+        })
+        $("#up10").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '10,top');
+            $("#rowspacingup1").attr("style", "display:none");
+        })
+        $("#up15").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '15,top');
+            $("#rowspacingup1").attr("style", "display:none");
+        })
+        $("#up20").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '20,top');
+            $("#rowspacingup1").attr("style", "display:none");
+        })
+        $("#up25").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '25,top');
+            $("#rowspacingup1").attr("style", "display:none");
+        })
+        $("#rowspacingup1").mouseover(function () {
+            $("#rowspacingup1").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#rowspacingup1").attr("style", "display:none");
+        })
+        //段后距
+        $("#rowspacingdown").click(function () {
+            if ($("#rowspacingdown1").attr("style") == "display:block") {
+                $("#rowspacingdown1").attr("style", "display:none");
+            } else {
+                $("#rowspacingdown1").attr("style", "display:block");
+            }
+        })
+        $("#down5").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '5,bottom');
+            $("#rowspacingdown1").attr("style", "display:none");
+        })
+        $("#down10").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '10,bottom');
+            $("#rowspacingdown1").attr("style", "display:none");
+        })
+        $("#down15").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '15,bottom');
+            $("#rowspacingdown1").attr("style", "display:none");
+        })
+        $("#down20").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '20,bottom');
+            $("#rowspacingdown1").attr("style", "display:none");
+        })
+        $("#down25").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('rowspacing', true, '25,bottom');
+            $("#rowspacingdown1").attr("style", "display:none");
+        })
+        $("#rowspacingdown1").mouseover(function () {
+            $("#rowspacingdown1").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#rowspacingdown1").attr("style", "display:none");
+        })
+        //行间距
+        $("#lineheight").click(function () {
+            if ($("#lineheight1").attr("style") == "display:block") {
+                $("#lineheight1").attr("style", "display:none");
+            } else {
+                $("#lineheight1").attr("style", "display:block");
+            }
+        })
+        $("#li1").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 1);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#li15").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 1.5);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#li175").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 1.75);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#li2").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 2);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#li3").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 3);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#li4").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 4);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#li5").click(function () {
+            document.getElementById('myWriterControl').DCExecuteCommand('lineheight', false, 5);
+            $("#lineheight1").attr("style", "display:none");
+        })
+        $("#lineheight1").mouseover(function () {
+            $("#lineheight1").attr("style", "display:block");
+        }).mouseout(function () {
+            $("#lineheight1").attr("style", "display:none");
+            })
+        $("#lhyl").click(function () {
+            $("#toolShow").click();
+            $("#lhyl").css("display", "none");  //痕迹查看
+            $("#blyl").css("display", "none");   //病历预览
+            $("#returnblbj").css("display", "block");  //返回修改
+            $("#lhlb").css("display", "block"); //痕迹列表
+            $("#toolShow").css("display", "none"); //工具栏
+            var ctl = document.getElementById("myWriterControl");
+            ctl.LoadPrintPreviewWithPermissionMark();
+
+        });
+        $("#blyl").click(function () {
+            $("#toolShow").click();
+            $("#lhyl").css("display", "none");
+            $("#blyl").css("display", "none");
+            $("#returnblbj").css("display", "block");
+            $("#toolShow").css("display", "none");
+                var ctl = document.getElementById("myWriterControl");
+                ctl.LoadPrintPreview();
+        });
+        $("#returnblbj").click(function () {
+            $("#toolShow").click();
+            $("#lhyl").css("display", "block");
+            $("#blyl").css("display", "block");
+            $("#returnblbj").css("display", "none");
+            $("#lhlb").css("display", "none");
+            $("#list").toggle();
+            $("#toolShow").css("display", "block");
+            var ctl = document.getElementById("myWriterControl");
+            ctl.ClosePrintPreview();
+        });
+
+        $("#lhlb").click(function () {
+            setPopUp();
+        })
+    })
+ 
+    function setPopUp(bool) {
+        $("#list").toggle();
+        var ctl = document.getElementById("myWriterControl");
+        if (ctl.IsPrintPreview()) {
+            var contentHtml = document.getElementById('myWriterControl_PreviewFrame').contentDocument;
+        } else {
+            var contentHtml = document.getElementById('myWriterControl_Frame').contentDocument;
+        }
+        debugger;
+        var modifyRecord = [] //修改记录
+        //在文件刚加载时调用获取修改记录(异步)
+        if (bool) {
+            modifyRecord = ctl.GetDocumentUserTrackInfos(bool);
+        } else {
+            modifyRecord = ctl.GetDocumentUserTrackInfos();
+        }       
+        if (modifyRecord)
+        {
+            debugger;
+            var currentTime = new Date().Format("yyyy-MM-dd hh:mm");
+            modifyRecord = modifyRecord.filter((item) => item.Text.replace("​​", "") != "");//|| item.SaveTime.substring(0, 16) != currentTime
+        }
+        modifyRecord = modifyRecord.slice().sort(m=>m.SaveTime);
+        $('#list dl>div').remove()
+        for (var i = 0; i < modifyRecord.length; i++) {
+            var div = document.createElement('div');
+            div.setAttribute('class', modifyRecord[i].InnerID);
+            var dt = document.createElement('dt');
+            dt.innerHTML = modifyRecord[i].StdTitle;
+            var dd1 = document.createElement('dd');
+            dd1.innerHTML = modifyRecord[i].UserName;
+            var dd2 = document.createElement('dd');
+            dd2.innerHTML = modifyRecord[i].SaveTime;
+            var dd3 = document.createElement('dd');
+            switch (modifyRecord[i].InfoType) {
+                case "Create":
+                    modifyRecord[i].InfoType = '创建'
+                    break;
+                case "Delete":
+                    modifyRecord[i].InfoType = '删除'
+                    break;
+            }
+            dd3.innerHTML = modifyRecord[i].InfoType + modifyRecord[i].Text;
+            document.querySelector('#list dl').append(div);
+            document.querySelectorAll('#list dl>div')[i].append(dt);
+            document.querySelectorAll('#list dl>div')[i].append(dd1);
+            document.querySelectorAll('#list dl>div')[i].append(dd2);
+            document.querySelectorAll('#list dl>div')[i].append(dd3);
+        }
+        //contentHtml.querySelectorAll('span[innerid]')
+        //获取当前点击的节点
+        $(contentHtml).on('click', function () {
+            var target = ctl.CurrnetElement(function (element) {
+                if (element.getAttribute && element.getAttribute("innerid")) {
+                    return true;
+                }
+                return false;
+            })
+            if (target) {
+                var inid = $(target).attr('innerid');
+                var indiv = $('body .tabbody .' + inid);
+
+                $('body .tabbody').scrollTop(indiv.offset().top - 200);
+                var colorFlag = 0;
+                var a = setInterval(function () {
+                    if (!colorFlag) {
+                        indiv.css("background-color", "#409EFF");
+                        colorFlag = 1;
+                    } else {
+                        indiv.css("background-color", "");
+                        colorFlag = 0;
+                    }
+                }, 100);
+                setTimeout(function () {
+                    clearInterval(a);
+                    indiv.css("background-color", "#eee");
+                }, 1000);
+            }
+        })
+
+        //点击列表项时回调
+        $('#list dl>div').on('click', function (e) {
+            var innerId = e.srcElement.parentElement.getAttribute('class')
+            var target = $(contentHtml).find('[innerid=' + innerId + ']')
+            var colorFlag = 0
+            var a = setInterval(function () {
+                if (!colorFlag) {
+                    $(target).css("cssText", "background-color:#409EFF !important");
+                    colorFlag = 1;
+                } else {
+                    $(target).css("background-color", "");
+                    colorFlag = 0;
+                }
+            }, 100);
+            setTimeout(function () {
+                clearInterval(a);
+                $(target).css("background-color", "#D3D3D3");
+            }, 1000);
+        })
+        document.querySelector('#list').style.display = 'block';
+    }
+    //function WebWriterControl_51_Init() {
+
+    //    document.getElementById("myWriterControl").DocumentOptions = {
+    //        "SecurityOptions": {
+    //            "CAMode": "Software",
+    //            "CAServerIP": null,
+    //            "CAServerPort": 0,
+    //            "CreatorTipFormatString": null,
+    //            "DeleterTipFormatString": null,
+    //            "AutoEnablePermissionWhenUserLogin": true,
+    //            "EnablePermission": false,
+    //            "CanModifyDeleteSameLevelContent": true,
+    //            "RealDeleteOwnerContent": false,
+    //            "ShowPermissionTip": true,
+    //            "PowerfulSignDocument": true,
+    //            "EnableLogicDelete": false,
+    //            "ShowLogicDeletedContent": false,
+    //            "ShowPermissionMark": false,
+    //            "TrackVisibleLevel0": {
+    //                "Enabled": true,
+    //                "BackgroundColor": "Transparent",
+    //                "BackgroundColorString": null,
+    //                "UnderLineColor": "LightBlue",
+    //                "UnderLineColorString": "#ADD8E6",
+    //                "UnderLineColorNum": 1,
+    //                "DeleteLineColor": "Coral",
+    //                "DeleteLineColorString": "#FF7F50",
+    //                "DeleteLineNum": 1
+    //            },
+    //            "TrackVisibleLevel1": {
+    //                "Enabled": true,
+    //                "BackgroundColor": "Transparent",
+    //                "BackgroundColorString": null,
+    //                "UnderLineColor": "Blue",
+    //                "UnderLineColorString": null,
+    //                "UnderLineColorNum": 1,
+    //                "DeleteLineColor": "Red",
+    //                "DeleteLineColorString": null,
+    //                "DeleteLineNum": 1
+    //            },
+    //            "TrackVisibleLevel2": {
+    //                "Enabled": true,
+    //                "BackgroundColor": "LightYellow",
+    //                "BackgroundColorString": "#FFFFE0",
+    //                "UnderLineColor": "Blue",
+    //                "UnderLineColorString": null,
+    //                "UnderLineColorNum": 2,
+    //                "DeleteLineColor": "Red",
+    //                "DeleteLineColorString": null,
+    //                "DeleteLineNum": 2
+    //            },
+    //            "TrackVisibleLevel3": {
+    //                "Enabled": true,
+    //                "BackgroundColor": "LightYellow",
+    //                "BackgroundColorString": "#FFFFE0",
+    //                "UnderLineColor": "Blue",
+    //                "UnderLineColorString": null,
+    //                "UnderLineColorNum": 2,
+    //                "DeleteLineColor": "Red",
+    //                "DeleteLineColorString": null,
+    //                "DeleteLineNum": 2
+    //            }
+    //        },
+    //        "ViewOptions": {
+    //            "FieldBorderElementPixelWidth": 1.0,
+    //            "NewInputContentUnderlineColor": "Transparent",
+    //            "NewInputContentUnderlineColorValue": null,
+    //            "SupportUG": false,
+    //            "HiddenTableBorderJumpPrintPage": false,
+    //            "ImageInterpolationMode": "High",
+    //            "EmphasisMarkSize": 10.0,
+    //            "MaskColorForJumpPrint": "#0000FF",
+    //            "MaskColorForJumpPrintValue": null,
+    //            "BothBlackWhenPrint": false,
+    //            "ProtectedContentBackColor": "",
+    //            "ProtectedContentBackColorValue": null,
+    //            "DefaultLineColorForImageEditor": "",
+    //            "DefaultLineColorForImageEditorValue": null,
+    //            "ShowInputFieldStateTag": true,
+    //            "SectionBorderVisibility": "All",
+    //            "TableCellBorderVisibility": "All",
+    //            "ShowPageBreak": false,
+    //            "DefaultAdornTextType": "DataSource",
+    //            "AdornTextVisibility": "Hidden",
+    //            "AdornTextBackColor": "#808080",
+    //            "AdornTextBackColorValue": "#64808080",
+    //            "ShowGrayMaskOverDisableContentParty": true,
+    //            "ShowFormButton": false,
+    //            "PageMarginLineLength": 30,
+    //            "DefaultInputFieldHighlight": "Enabled",
+    //            "HighlightProtectedContent": false,
+    //            "ShowLineNumber": false,
+    //            "UseLanguage2": false,
+    //            "SpecifyExtenGridLineStep": 0.0,
+    //            "GridLineStyle": "Solid",
+    //            "EnableRightToLeft": true,
+    //            "AutoZoomDropdownListFontSize": true,
+    //            "DropdownListFontSize": 0.0,
+    //            "DropdownListFontName": null,
+    //            "ShowBackgroundCellID": false,
+    //            "ShowExpressionFlag": true,
+    //            "CommentFontName": null,
+    //            "CommentFontSize": 10.0,
+    //            "CommentDateFormatString": "yyyy-MM-dd HH:mm",
+    //            "OldWhitespaceWidth": false,
+    //            "ShowGridLine": false,
+    //            "EnableEncryptView": true,
+    //            "GridLineColor": "Gray",
+    //            "GridLineColorValue": null,
+    //            "PreserveBackgroundTextWhenPrint": false,
+    //            "PrintBackgroundText": false,
+    //            "IgnoreFieldBorderWhenPrint": true,
+    //            "PrintGridLine": false,
+    //            "PrintImageAltText": false,
+    //            "ShowHeaderBottomLine": true,
+    //            "HeaderBottomLineWidth": 1.0,
+    //            "ShowCellNoneBorder": true,
+    //            "NoneBorderColor": "LightGrey",
+    //            "NoneBorderColorValue": null,
+    //            "GraphicsSmoothingMode": "None",
+    //            "TextRenderStyle": "ClearTypeGridFit",
+    //            "ShowParagraphFlag": false,
+    //            "HiddenFieldBorderWhenLostFocus": true,
+    //            "ShowFieldBorderElement": true,
+    //            "FieldBorderColor": "",
+    //            "FieldBorderColorValue": null,
+    //            "ShowPageLine": true,
+    //            "RichTextBoxCompatibility": false,
+    //            "MinTableColumnWidth": 50.0,
+    //            "DefaultInputFieldTextColor": "Transparent",
+    //            "DefaultInputFieldTextColorValue": null,
+    //            "EnableFieldTextColor": false,
+    //            "FieldTextColor": "Black",
+    //            "FieldTextColorValue": null,
+    //            "FieldTextPrintColor": "Transparent",
+    //            "FieldTextPrintColorValue": null,
+    //            "FieldBackColor": "AliceBlue",
+    //            "FieldBackColorValue": "#F0F8FF",
+    //            "FieldHoverBackColor": "LightBlue",
+    //            "FieldHoverBackColorValue": null,
+    //            "FieldFocusedBackColor": "LightBlue",
+    //            "FieldFocusedBackColorValue": null,
+    //            "FieldInvalidateValueForeColor": "LightCoral",
+    //            "FieldInvalidateValueForeColorValue": null,
+    //            "FieldInvalidateValueBackColor": "LightPink",
+    //            "FieldInvalidateValueBackColorValue": "#FFB6C1",
+    //            "ReadonlyFieldBorderColor": "Gray",
+    //            "TagColorForReadonlyField": "Gray",
+    //            "TagColorForReadonlyFieldValue": null,
+    //            "TagColorForModifiedField": "Blue",
+    //            "TagColorForModifiedFieldValue": null,
+    //            "TagColorForNormalField": "Red",
+    //            "TagColorForNormalFieldValue": "#FF0000",
+    //            "TagColorForValueInvalidateField": "Red",
+    //            "TagColorForValueInvalidateFieldValue": null,
+    //            "ReadonlyFieldBorderColorValue": null,
+    //            "UnEditableFieldBorderColor": "Red",
+    //            "UnEditableFieldBorderColorValue": null,
+    //            "NormalFieldBorderColor": "Blue",
+    //            "NormalFieldBorderColorValue": null,
+    //            "BackgroundTextColor": "Gray",
+    //            "BackgroundTextColorValue": null,
+    //            "SelectionHighlight": "MaskColor",
+    //            "SelectionHightlightMaskColor": "#0000FF",
+    //            "SelectionHightlightMaskColorValue": null,
+    //            "LayoutDirection": "LeftToRight"
+    //        },
+    //        "BehaviorOptions": {
+    //            "EnableAIForSuspiciousContent": false,
+    //            "EncodingCodePageForWriteRTF": 936,
+    //            "AutoSaveScriptAssemblyToTempFile": true,
+    //            "EnabledShowWinTaskBarProgress": true,
+    //            "CompressXMLContent": false,
+    //            "SpeedupByMultiThread": true,
+    //            "LocalAutoSaveWorkDirectory": null,
+    //            "NewExpressionExecuteMode": true,
+    //            "AutoFocusWhenOpenDocument": true,
+    //            "LockScrollPositionWhenStrictFormViewMode": false,
+    //            "CheckedValueBindingHandledForTableRow": true,
+    //            "EnableContentChangedEventWhenLoadDocument": false,
+    //            "EnableCollapseSection": false,
+    //            "MaxTextLengthForPaste": 0,
+    //            "OutputFieldBorderTextToContentText": true,
+    //            "AutoShowScriptErrorMessage": false,
+    //            "AutoClearTextFormatWhenPasteOrInsertContent": false,
+    //            "AutoDocumentValueValidate": false,
+    //            "AutoSaveIntervalInSecond": 0,
+    //            "EnableContentLock": true,
+    //            "MinCountForDropdownListSpellCodeArea": 4,
+    //            "AutoFixElementIDWhenInsertElements": true,
+    //            "MaxZoomRate": 5.0,
+    //            "MinZoomRate": 0.2,
+    //            "RemoveLastParagraphFlagWhenInsertDocument": false,
+    //            "MoveCaretWhenDeleteFail": true,
+    //            "DoubleCompressHtmlWhitespace": true,
+    //            "AllowDeleteJumpOutOfField": true,
+    //            "ContinueHeaderParagrahStyle": false,
+    //            "ActiveCheckInstallWindowsMediaPlayer": false,
+    //            "EnableChineseFontSizeName": true,
+    //            "MaximizedPrintPreviewDialog": false,
+    //            "RaiseQueryListItemsWhenUserEditText": false,
+    //            "AppErrorHandleMode": "ThrowException",
+    //            "XMLContentEncodingName": null,
+    //            "AutoAssistInsertString": false,
+    //            "AutoAssistInsertStringDetectTextLength": 0,
+    //            "AutoTranslateSourceString": null,
+    //            "AutoTranslateDescString": null,
+    //            "AutoScrollToCaretWhenGotFocus": false,
+    //            "MoveFocusHotKey": "Tab",
+    //            "EnabledElementEvent": true,
+    //            "ShowTooltip": true,
+    //            "DoubleClickToEditComment": true,
+    //            "DataObjectRange": "OS",
+    //            "CommentEditableWhenReadonly": false,
+    //            "CommentVisibility": "Auto",
+    //            "AllowDragContent": false,
+    //            "AcceptDataFormats": "All",
+    //            "CreationDataFormats": "All",
+    //            "FormView": "Disable",
+    //            "PreserveClipbardDataWhenExit": false,
+    //            "FastInputMode": false,
+    //            "CompressLayoutForFieldBorder": true,
+    //            "SmoothScrollView": true,
+    //            "AutoActiveSystemTaskbarBeforeShowDialog": false,
+    //            "EnableCalculateControl": true,
+    //            "EnableEditElementValue": true,
+    //            "TitleForToolTip": null,
+    //            "AutoUppercaseFirstCharInFirstLine": false,
+    //            "AutoRefreshUserTrackInfos": false,
+    //            "ValidateIDRepeatMode": "None",
+    //            "IgnorePrintableAreaOffset": false,
+    //            "PageLineUnderPageBreak": false,
+    //            "ParagraphFlagFollowTableOrSection": false,
+    //            "NotificationWorkingTimeout": 2000,
+    //            "HandleCommandException": true,
+    //            "GeneratePageContentVersion": false,
+    //            "DisplayFormatToInnerValue": true,
+    //            "AutoUpdateButtonVisible": false,
+    //            "StdLablesForImageEditor": null,
+    //            "EnableCheckControlLoaded": false,
+    //            "EnableDeleteReadonlyEmptyContainer": true,
+    //            "SimpleElementProperties": false,
+    //            "EnableHyperLink": true,
+    //            "MinImageFileSizeForConfirmCompressSaveMode": 51200,
+    //            "ImageCompressSaveMode": "Prompt",
+    //            "FillCommentToUserTrackList": false,
+    //            "PromptJumpBackForSearch": true,
+    //            "EnableSetJumpPrintPositionWhenPreview": true,
+    //            "ExtendingPrintDialog": true,
+    //            "ImageShapeEditorBackgroundMenuItemConfig": null,
+    //            "MoveFieldWhenDragWholeContent": true,
+    //            "EnableLogUndo": true,
+    //            "ShowDebugMessage": false,
+    //            "EnableCompressUserHistories": true,
+    //            "EnableElementEvents": true,
+    //            "CloneSerialize": true,
+    //            "WeakMode": false,
+    //            "ForceCollateWhenPrint": false,
+    //            "ThreeClickToSelectParagraph": true,
+    //            "DoubleClickToSelectWord": true,
+    //            "EnableKBEntryRangeMask": true,
+    //            "PromptForExcludeSystemClipboardRange": true,
+    //            "PromptForRejectFormat": true,
+    //            "AutoIgnoreLastEmptyPage": true,
+    //            "ValidateUserIDWhenEditDeleteComment": false,
+    //            "InsertCommentBindingUserTrack": false,
+    //            "PowerfulCommentCommand": true,
+    //            "AutoCreateInstanceInProperty": false,
+    //            "GlobalSpecifyDebugModeValue": false,
+    //            "SpecifyDebugMode": false,
+    //            "EnableDataBinding": true,
+    //            "ForcePopupFormTopMost": false,
+    //            "OutputFormatedXMLSource": true,
+    //            "TableCellOperationDetectDistance": 3,
+    //            "WidelyRaiseFocusEvent": false,
+    //            "ExcludeKeywords": null,
+    //            "InsertDocumentWithCheckMRID": "None",
+    //            "DisableCheckMRIDWhenMRIDIsEmptyForOuterDataObject": false,
+    //            "CustomWarringCheckMRID": null,
+    //            "CustomPromptForbitCheckMRID": null,
+    //            "DesignMode": false,
+    //            "EnableControlHostAtDesignTime": true,
+    //            "DebugMode": false,
+    //            "EnableCopySource": true,
+    //            "EnableExpression": true,
+    //            "Printable": true,
+    //            "OutputBackgroundTextToRTF": true,
+    //            "EnableScript": true,
+    //            "DefaultEditorActiveMode": "None",
+    //            "PromptProtectedContent": "Details"
+    //        },
+    //        "EditOptions": {
+    //            "CopyWithoutInputFieldStructure": false,
+    //            "CopyInTextFormatOnly": false,
+    //            "CloneWithoutElementBorderStyle": true,
+    //            "CloneWithoutLogicDeletedContent": false,
+    //            "GridLinePreviewText": "电子病历文档编辑器。",
+    //            "ClearFieldValueWhenCopy": false,
+    //            "KeepTableWidthWhenInsertDeleteColumn": true,
+    //            "FixSizeWhenInsertImage": true,
+    //            "FixWidthWhenInsertImage": true,
+    //            "FixWidthWhenInsertTable": true,
+    //            "TabKeyToFirstLineIndent": true,
+    //            "AutoInsertTableRowWhenMoveToNextCell": true,
+    //            "TabKeyToInsertTableRow": true,
+    //            "ValueValidateMode": "LostFocus"
+    //        }
+    //    };
+    //    if (typeof (DCWriterControllerClass) != 'undefined') DCWriterControllerClass.InitController(document.getElementById("myWriterControl"));
+    //    if (typeof (DCWriterControllerClass) != 'undefined') DCWriterControllerClass.loadContent(document.getElementById("myWriterControl"));
+    //}
+    //WebWriterControl_51_Init();
+
+    //if (typeof (Sys) != 'undefined' && Sys.WebForms && Sys.WebForms.PageRequestManager && Sys.WebForms.PageRequestManager.getInstance) {
+    //    // 遇到ASP.NET AJAX框架
+    //    Sys.WebForms.PageRequestManager.getInstance().add_endRequest(WebWriterControl_51_Init);
+    //}
+
+</script>
+
+
+<script language=javascript>
+    function SetCtlHeight() {
+        var ctl = document.getElementById("myWriterControl");
+        if (ctl != null) {
+            if (ctl.getAttribute("ismobiledevice") != "true") {
+                // 对于移动设备不设置控件高度
+                //var s1 = document.documentElement.currentStyle;
+                //var s2 = document.body.currentStyle ;
+                var h = document.documentElement.clientHeight - ctl.offsetTop - 20;
+                ctl.style.height = h + "px";
+            }
+            else {
+                if (document.body.clientWidth < 400) {
+                    document.getElementById("cboFileName").style.width = "100%";
+                }
+            }
+        }
+    }
+    window.setTimeout(SetCtlHeight, 300);
+    window.setInterval(SetCtlHeight, 1000);
+
+    //纯文本复制
+    function EventBeforePaste() {
+         // 获得控件容器元素
+        var ctl = document.getElementById("myWriterControl");
+        // 绑定控件
+        BindingDCWriterClientControl(ctl);
+        // 创建编辑器框架
+        //ctl.BuildFrame(function () {
+        //    ctl.LoadDocumentFromString(xmlstr, "xml");
+        //});
+        ctl.EventBeforeCopy = function (eventObj) {
+            if (!eventObj) return;
+            var clipboardData = eventObj.clipboardData;
+            if (clipboardData == null) {
+                clipboardData = window.clipboardData;
+                console.log("没有找到编辑器的剪切板，使用系统剪切板");
+            }
+            else {
+                console.log("找到编辑器的剪切板");
+            }
+            var text = ctl.SelectionText();  //选择内容，也可以是XML、HTML内容，可以根据当前病历编号对其格式化或加密        
+            clipboardData.setData('Text', text);//把自己构造的数据填入剪切板  
+            console.log("选择的内容是：" + text);
+            return false;//拦截复制    
+        }
+        ctl.EventBeforePaste = function (e) {
+            if (!e) return;
+            var clipboardData = e.clipboardData;
+            if (clipboardData == null) {
+                clipboardData = window.clipboardData;
+                console.log("粘贴时没有找到编辑器的剪切板，使用系统剪切板");
+            } else {
+                console.log("粘贴时找到编辑器的剪切板");
+            }
+            var pastedText = clipboardData.getData("Text");//获取剪切板数据       
+            pastedText = pastedText.replace(/[\[\]]/g, "")//去除输入域的前后边框      
+            ctl.DCExecuteCommand('Spechars', false, pastedText);//插入纯文本     
+            return false;//拦截粘贴   
+        }
+        function Copy() {
+            var ctl = document.getElementById("myWriterControl");
+            ctl.DCExecuteCommand('Copy', true, null);
+        }
+    }
+    EventBeforePaste();
+</script>
+
+<script type="text/javascript">
+    ////<![CDATA[
+    //var theForm = document.forms['form1'];
+    //if (!theForm) {
+    //    theForm = document.form1;
+    //}
+    //function __doPostBack(eventTarget, eventArgument) {
+    //    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+    //        theForm.__EVENTTARGET.value = eventTarget;
+    //        theForm.__EVENTARGUMENT.value = eventArgument;
+    //        theForm.submit();
+    //    }
+    //}
+    ////]]>
+
+
+
+
+    function selectText() {
+        var str = document.getElementById('myWriterControl').SelectionText();
+        alert(str);
+    }
+    function validateResult_Click() {
+        var sel = document.getElementById("validateResult");
+        if (sel == null || sel.selectedIndex < 0) {
+            return;
+        }
+        var opt = sel.options[sel.selectedIndex];
+        var result = opt.result;
+        result.Select();
+    }
+
+    function MyValueValidate() {
+        var result = document.getElementById('myWriterControl').DCExecuteCommand("DocumentValueValidate", false, null);
+        var sel = document.getElementById("validateResult");
+        if (sel == null) {
+            return;
+        }
+        while (sel.firstChild != null) {
+            sel.removeChild(sel.firstChild);
+        }
+        if (result != null && result.length > 0) {
+            for (var iCount = 0; iCount < result.length; iCount++) {
+                var item = result[iCount];
+                var opt = document.createElement("option");
+                opt.result = item;
+                opt.appendChild(document.createTextNode(iCount + " |" + item.ElementID + " " + item.Message));
+                //opt.text = iCount + " |" + item.ElementID + " " + item.Message;
+                sel.appendChild(opt);
+            }
+
+        }
+    }
+
+    /*
+    * 插入表格 btn:选择触发器,jquery对象
+   opt:表格选项,{min:[最小列数,最小行数],max:[最大列数,最大行数],insert:确认选择后回调事件}
+    */
+    var insertTable = function (btn, opt) {
+        if (!btn) { return; }
+        this.btn = btn;
+        opt = opt || {};
+        this.box = null;//弹框
+        this.inBox = null;
+        this.pickUnLight = null;
+        this.pickLight = null;
+        this.status = null;
+        this.minSize = opt.min || [5, 5];//最小列数和行数
+        this.maxSize = opt.max || [15, 15];//最大列数和行数
+        this.insert = opt.insert;//回调
+        this.nowSize = [];//当前选择尺寸
+        this.isInit = { create: false, bind: false };
+        this.bind();
+    }
+    insertTable.prototype = {
+        init: function () {
+            if (this.isInit.create) { return; }
+            this.isInit.create = true;
+            var id = 'in_tab_box_' + String(Math.ceil(Math.random() * 100000) + String(new Date().getTime())),
+                html = '<div class="in_tab_box" id="' + id + '">';
+            html += '<div class="itb_con">';
+            html += '<div class="itb_picker_unlight"></div>';
+            html += '<div class="itb_picker_light"></div>';
+            html += '</div>';
+            html += '<div class="itb_picker_status"></div>';
+            html += '</div>';
+            $("body").append(html);
+            this.box = $("#" + id);
+            this.inBox = this.box.find(".itb_con");
+            this.pickAll = this.box.find(".itb_picker_all");
+            this.pickUnLight = this.box.find(".itb_picker_unlight");
+            this.pickLight = this.box.find(".itb_picker_light");
+            this.status = this.box.find(".itb_picker_status");
+            this.setBg(this.minSize[0], 0);
+            this.setBg(this.minSize[1], 1);
+            this.status.text(0 + '列 x ' + 0 + '行');
+        },
+        bind: function () {
+            var T = this,
+                pos,//弹框显示位置
+                m,
+                bPos,//弹框可选区域位置
+                mPos;//鼠标位置
+            this.btn.click(function () {
+                if (!T.isInit.create) { T.init(); }//初始化弹框
+                if (!T.isInit.bind) { B(); }//初始化事件
+                m = $(this);
+                if (T.box.is(":hidden")) {
+                    pos = {
+                        top: m.offset().top,
+                        left: m.offset().left + m.outerWidth() + 2
+                    }
+                    T.box.css({
+                        "top": pos.top,
+                        "left": pos.left
+                    }).fadeIn(100);
+                    bPos = {
+                        top: T.inBox.offset().top,
+                        left: T.inBox.offset().left
+                    }
+                    $(document).bind("click", function () { T.hide(); });
+                } else {
+                    T.hide();
+                }
+                return false;
+            })
+            function B() {
+                T.isInit.bind = true;
+                T.inBox.mousemove(function (e) {
+                    mPos = {
+                        x: e.clientX,
+                        y: e.clientY
+                    }
+                    if (mPos.x < bPos.left || mPos.y < bPos.top) { return; }
+                    T.nowSize[0] = Math.ceil((mPos.x - bPos.left) / 18);//列数
+                    T.nowSize[1] = Math.ceil((mPos.y - bPos.top) / 18);//行数
+                    if (T.nowSize[0] >= T.minSize[0] && T.nowSize[0] < T.maxSize[0]) {
+                        T.setBg(T.nowSize[0] + 1, 0);
+                    } else if (T.nowSize[0] < T.minSize[0]) {
+                        T.setBg(T.minSize[0], 0);
+                    } else {
+                        T.nowSize[0] = T.maxSize[0];
+                    }
+                    if (T.nowSize[1] >= T.minSize[1] && T.nowSize[1] < T.maxSize[1]) {
+                        T.setBg(T.nowSize[1] + 1, 1);
+                    } else if (T.nowSize[1] < T.minSize[1]) {
+                        T.setBg(T.minSize[1], 1);
+                    } else {
+                        T.nowSize[1] = T.maxSize[1];
+                    }
+                    T.pickLight.css({
+                        "width": T.nowSize[0] + 'em',
+                        "height": T.nowSize[1] + 'em'
+                    })
+                    T.status.text(T.nowSize[0] + '列 x ' + T.nowSize[1] + '行');
+                })
+                //单击确认插入表格
+                T.box.click(function () {
+                    if (T.nowSize[0] > 0 && T.nowSize[0] <= T.maxSize[0] && T.nowSize[1] > 0 && T.nowSize[1] <= T.maxSize[1]) {
+                        var rows = T.nowSize[1],
+                            cols = T.nowSize[0];
+                        try { T.insert(rows, cols); } catch (e) { }
+                    }
+                })
+            }
+        },
+        //调整背景区域
+        setBg: function (size, t) {
+            if (t == 0) {
+                this.inBox.width(size + 'em');
+                this.pickUnLight.width(size + 'em');
+            } else {
+                this.inBox.height(size + 'em');
+                this.pickUnLight.height(size + 'em');
+            }
+        },
+        //隐藏弹框
+        hide: function () {
+            var T = this;
+            this.box.fadeOut(100, function () {
+                //重置
+                T.setBg(T.minSize[0], 0);
+                T.setBg(T.minSize[1], 1);
+                T.pickLight.css({
+                    "width": '0',
+                    "height": '0'
+                })
+            });
+        }
+    }
+    new insertTable($("#insert_table"), {
+        min: [4, 4],
+        max: [20, 20],
+        insert: function (rows, cols) {
+            //这里只返回所选行数rows和列数cols,插入后的效果和样式需自定义,以下只是做简单的示例
+            //alert('插入了一个'+rows+'行'+cols+'列的表格');
+
+            var ttt = rows + "," + cols;
+
+            document.getElementById('myWriterControl').DCExecuteCommand('inserttable', true, ttt);
+
+
+            //var html = '<table>';
+            //for (var i = 0; i < rows; i++) {
+            //    html += '<tr>';
+            //    for (var j = 0; j < cols; j++) {
+            //        html += '<td></td>';
+            //    }
+            //    html += '</tr>';
+            //}
+            //html += '</table>';
+            //this.btn.siblings("table").remove();
+            //this.btn.after(html);
+        }
+    });
+    window.onload = function () {
+        var div = document.getElementById('myWriterControl_Dialog');
+        var disX = 0;
+        var disY = 0;
+        document.onmousedown = function (ev) {  //鼠标按下
+            var oEvent = ev || event;       //判断浏览器兼容
+            disX = oEvent.clientX - myWriterControl_Dialog.offsetLeft;    //鼠标横坐标点到div的offsetLeft距离
+            disY = oEvent.clientY - myWriterControl_Dialog.offsetTop;     //鼠标纵坐标点到div的offsetTop距离
+            document.onmousemove = function (ev) {      //鼠标移动
+                var oEvent = ev || event;
+                var l = oEvent.clientX - disX;          //获取div左边的距离
+                var t = oEvent.clientY - disY;          //获取div上边的距离
+                if (l < 0) {        //判断div的可视区，为避免DIV失去鼠标点
+                    l = 0;
+                }
+                else if (l > document.documentElement.clientWidth - div.offsetWidth) {
+                    l = document.documentElement.clientWidth - div.offsetWidth;
+                }
+                if (t < 0) {
+                    t = 0;
+                }
+                else if (t > document.documentElement.clientHeight - div.offsetHeight) {
+                    t = document.documentElement.clientHeight - div.offsetHeight;
+                }
+                div.style.left = l + 'px';      //确定DIV的左边位置
+                div.style.top = t + 'px';       //确定DIV的上边位置
+            }
+            document.onmouseup = function () {      //当鼠标松开后关闭移动事件和自身事件
+                document.onmousemove = null;
+                document.onmouseup = null;
+            }
+            return false;
+        }
+    }
+
+</script>
+

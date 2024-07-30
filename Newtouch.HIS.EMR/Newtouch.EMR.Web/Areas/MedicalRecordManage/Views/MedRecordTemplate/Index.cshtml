@@ -1,0 +1,206 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.Common.Operator;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="mb-add" authorize="yes" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="mb-edit" authorize="yes" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="模板名称/模板编码" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList" style="width:100%;"></table>
+    <div id="gridPager"></div>
+</div>
+
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+            url: "/MedicalRecordManage/MedRecordTemplate/GetGridJson",
+            height: $(window).height() - 128,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: "病历类型", name: "bllx", hidden: true },
+                 { label: '模板名称', name: 'mbmc', width: 150, align: 'left' },
+                 {
+                    label: "来源", name: "Memo", width: 30, align: 'left', formatter: function (val) {
+                        if (val != "" && val!=null)
+                        {
+                            return "[转]";
+                        }
+                        else
+                        {
+                            return "";
+                        }
+                    }
+                 },
+                 { label: "模板权限", name: "mbqx", align: 'left', hidden: true },
+                { label: "模板类型", name: "bllxmc", width: 120, align: 'left' },
+                 {
+                     label: '权限配置', name: 'mbqxmc', width: 80, align: 'center',
+                     formatter: function (val, options, rowObject) {
+                         if (rowObject.mbqx== '@Html.Raw(((int)Enummbqx.prv))')
+                             return "个人"
+                         else if (rowObject.mbqx == '@Html.Raw(((int)Enummbqx.dept))')
+                             return "科室"
+                         else
+                             return "通用";
+                     }
+                 },
+                 { label: '路径', name: 'mblj', width: 200, align: 'left' },
+                 { label: '是否为空', name: 'Isempty', width: 60, align: 'center',
+                    formatter: function (cellvalue) { return cellvalue == "1" ? "是" : "否"; }
+                },
+                {
+                    label: '是否上传医保', name: 'IsYB', width: 80, align: 'center',
+                    formatter: function (cellvalue) { return cellvalue == "1" ? "是" : "否"; }
+                },
+                {
+                    label: '业务类型', name: 'mzbz', width: 80, align: 'center',
+                    formatter: function (cellvalue) { return cellvalue == "1" ? "门诊" : "住院"; }
+                },
+                 { label: "有效", name: "zt", width: 50, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                 { label: '创建人', name: 'CreatorCode', width: 100, align: 'center' },
+                 { label: '创建时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                 { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'center' },
+                 { label: '最后修改时间', name: 'LastModifyTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords:true
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function operAuthCk(ysgh,mbqx)
+    {
+        return true;
+        if ('@opeator.IsRoot' == 'False' && '@opeator.IsAdministrator' == 'False' && '@opeator.IsHospAdministrator' == 'False') {
+            if (ysgh != '@opeator.rygh') {  //仅个人模板可修改删除
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        else
+            return true;
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) { 
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        var rowData = $("#gridList").jqGrid("getRowData", seleRowid);
+        if (operAuthCk(rowData.CreatorCode,rowData.mbqx))
+        {
+            $.modalOpen({
+                id: "Form",
+                title: "修改病历模板",
+                url: "/MedicalRecordManage/MedRecordTemplate/Form?keyValue=" + keyValue + "&bllx=" + rowData.bllx,
+                width: "700px",
+                height: "650px",
+                btn: null,
+                callBack: function (iframeId) {
+                    top.frames[iframeId].submitForm();
+                }
+            });
+        }
+        else
+        {
+            $.modalAlert("权限不足，如需请联系管理员", 'warning');
+        }
+            return;
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新建病历模板",
+            url: "/MedicalRecordManage/MedRecordTemplate/Form",
+            width: "700px",
+            height: "650px",
+            btn: null,
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var rowData = $("#gridList").jqGrid("getRowData", keyValue);
+        if (operAuthCk(rowData.CreatorCode, rowData.mbqx)) {
+            $.deleteForm({
+                url: "/MedicalRecordManage/MedRecordTemplate/DeleteForm",
+                param: { keyValue: keyValue },
+                success: function (data) {
+                    if (data.state == "success") {
+                        $.modalAlert('删除成功', 'success');
+                    }
+                    else {
+                        $.modalAlert(data.message, 'error');
+                    }
+                    $("#gridList").trigger("reloadGrid");
+                }
+            })
+        }
+        else {
+            $.modalAlert("权限不足，如需请联系管理员", 'warning');
+            
+        }
+    }
+
+    function initControl() {
+
+    }
+</script>

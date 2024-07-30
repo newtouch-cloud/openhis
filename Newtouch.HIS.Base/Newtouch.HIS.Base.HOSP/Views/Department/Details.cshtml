@@ -1,0 +1,136 @@
+﻿
+@{
+    ViewBag.Title = "Details";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/Department/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+        //组织对应的科室下拉框加载
+        $("#OrganizeId").bind("change", function () {
+            var organizeId = $(this).val();
+            $("#ParentId").bindSelect({
+                url: "/Department/GetTreeSelectJson?treeidFieldName=Id&organizeId=" + organizeId,
+            });
+        });
+    }
+
+    //验证
+    function validate() {
+        var validator = $("#form1").validate();
+        validator.settings = {
+            rules: {
+                OrganizeId: { required: true },
+                Name: { required: true },
+                Code: { required: true },
+                mzzybz: { required: true }
+            },
+            messages: {
+                OrganizeId: { required: "组织机构必须填写" },
+                Name: { required: "姓名必须填写" },
+                Code: { required: "编码必须填写" },
+                mzzybz: { required: "门诊住院标志必须选择" }
+
+            },
+            showErrors: function (errorMap, errorList) {
+                if (!$.isEmptyObject(errorList)) {
+                    $.modalAlert(errorList[0].message, 'warning');
+                }
+            }
+        }
+        if (!validator.form()) {
+            return false;
+        }
+        return true;
+    }
+
+    function submitForm() {
+        if (!validate()) {
+            return false;
+        }
+        $.submitForm({
+            url: "/Department/SubmitForm?keyValue=" + keyValue,
+            param: $("#form1").formSerialize(),
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>
+<form id="form1" style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+    <table class="form">
+        <tr>
+            <td class="formTitle">组织机构：</td>
+            <td class="formValue">
+                <select id="OrganizeId" name="OrganizeId" class="form-control">
+                    <option value="">==请选择==</option>
+                </select>
+            </td>
+            <td class="formTitle">上级科室：</td>
+            <td class="formValue">
+                <select class="form-control" id="ParentId" name="ParentId">
+                    <option value="">==请选择==</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="formTitle">名称：</td>
+            <td class="formValue"><input type="text" class="form-control" name="Name" id="Name"  placeholder="请输入名称"  /></td>
+            <td class="formTitle">编码：</td>
+            <td class="formValue"><input type="text" class="form-control" id="Code" name="Code"  placeholder="请输入编码"  /></td>
+        </tr>
+        <tr>
+            <td class="formTitle">门诊住院标志：</td>
+            <td class="formValue">
+                <select id="mzzybz" class="form-control" name="mzzybz">
+                    <option value="">==请选择==</option>
+                    <option value="0">通用</option>
+                    <option value="1">门诊</option>
+                    <option value="2">住院</option>
+                </select>
+            </td>
+            <th class="formTitle">选项：</th>
+            <td class="formValue" style="padding-top: 1px;">
+                <div class="ckbox">
+                    <input id="yjbz" name="yjbz" type="checkbox"><label for="yjbz">医技标志</label>
+                </div>
+                <div class="ckbox">
+                    <input id="zt" name="zt" type="checkbox"><label for="zt">有效</label>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="formTitle">创建人员：</td>
+            <td class="formValue">
+                <input id="CreatorCode" name="CreatorCode" type="text" class="form-control" />
+            </td>
+            <td class="formTitle">创建时间：</td>
+            <td class="formValue">
+                <input id="CreateTime" name="CreateTime" type="text" class="form-control" />
+            </td>
+        </tr>
+    </table>
+</form>
+
+

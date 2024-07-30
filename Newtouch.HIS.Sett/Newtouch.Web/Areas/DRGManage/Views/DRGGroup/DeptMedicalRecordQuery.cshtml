@@ -1,0 +1,298 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_IndexV.cshtml";
+    var medicaldrglink = SysConfigReader.String("medicaldrglink");
+}
+<style>
+    .table .thead-blue th {
+        color: #fff;
+        background-color: #68BEF3;
+        border-color: #68BEF3;
+    }
+</style>
+<body style="background-color:white;">
+    <div class="container-fluid">
+        <div id="toolbar">
+            <form class="form-inline" role="form" style="margin-left: 10px">
+                <div class="form-group">
+                    <label for="phone">开始时间：</label>
+                    <input id="kssj" type="text" name="kssj" style="height:20px;" class="form-control input-wdatepicker formClearIgnore
+form-an" value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" />
+                </div>
+                <div class="form-group">
+                    <label for="phone">结束时间：</label>
+                    <input id="jssj" type="text" name="jssj" style="height:20px;" class="form-control input-wdatepicker formClearIgnore
+form-an" value="@DateTime.Now.ToString("yyyy-MM-dd")" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" />
+                </div>
+                <div class="form-group">
+                    <label for="name">科室：</label>
+                    <input id="ksmc" type="text" style="height:20px;" class="form-control" placeholder="科室">
+                </div>
+                <button type="button" onclick="query()" class="btn btn-default" style="background-color: #227BBF;color: #ffffff">查询</button>
+                <button type="button" onclick="querymedical()" class="btn btn-default" style="background-color: #227BBF;color: #ffffff">DRG测算</button>
+            </form>
+
+        </div>
+        <div>
+            <table id="tabksxx"></table>
+        </div>
+        <div>
+            <table id="tabxx"></table>
+        </div>
+    </div>
+</body>
+<script>
+    var medicaldrglink = '@medicaldrglink';//病案首页导出内容跳转页面链接
+    $(function () {
+//$(".container-fluid").height(window.innerHeight);
+        initTableZd();
+        //query();
+    });
+    function query() {
+        $.najax({
+            url: "/DRGManage/DRGGroup/PatMedicalRecordList",
+            data: { zyh: "",kssj: $("#kssj").val(),jssj: $("#jssj").val(), },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                $('#tabksxx').bootstrapTable('load', data);
+            }
+        });
+    }
+    function querymedical() {
+        if ($("#ksmc").attr("data-label") == null || $("#ksmc").attr("data-label")=="") {
+            $.modalAlert("请选择科室进行DRG测算", "error");
+            return;
+        }
+        $.najax({
+            url: "/DRGManage/DRGGroup/DeptDrgGroupByMedRecord",
+            data: { ks: $("#ksmc").attr("data-label"),kssj: $("#kssj").val(),jssj: $("#jssj").val()},
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                if (data.BusData == null) {
+                    $.modalAlert(data.Message, "error");
+                    return;
+                }
+                var drgfzmsg = "";
+                if (data.BusData.code == 10000) {
+                    var fzdata = data.BusData.data;
+                    $("#tabxx").html("");
+                    for (var i = 0; i < fzdata[0].messages.length; i++) {
+                        if (i == fzdata[0].messages.length - 1) {
+                            $("#tabxx").append("<tr><td style='font-size:15px;color:#9b1e64'>" + fzdata[0].messages[i] + "</td> </tr>");
+                        } else {
+                            $("#tabxx").append("<tr><td style='font-size:15px;color:#5698c3'>" + fzdata[0].messages[i] + "</td> </tr>");
+                        }
+                    }
+                }
+                //$('#tabxx').bootstrapTable('load', data);
+            }
+        });
+    }
+    function initTableZd() {
+        $('#tabksxx').bootstrapTable('destroy');
+        $('#tabksxx').bootstrapTable({
+            //请求后台的URL（*）
+            url: '/DRGManage/DRGGroup/PatMedicalRecordList',
+            //请求方式（*）
+            method: 'Post',
+            //请求数据的格式
+            dataType: "json",
+            //工具按钮用哪个容器
+            toolbar: '#toolbar',
+            //是否显示行间隔色
+            striped: true,
+            //当数据为 undefined 时显示的字符
+            undefinedText: "无",
+            //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+            cache: false,
+            //是否显示分页（*）
+            pagination: false,
+            //是否启用排序
+            sortable: true,
+            //排序方式（desc，asc）
+            sortOrder: "asc",
+            //分页方式：client客户端分页，server服务端分页（*）
+            // sidePagination: "server",
+            sidePagination: "client",
+            //初始化加载第一页，默认第一页,并记录
+            pageNumber: 1,
+            //每页的记录行数（*）
+            pageSize: 20,
+            //可供选择的每页的行数（*） 当记录条数大于最小可选择条数时才会出现
+            pageList: [10, 20, 50, 100],
+            paginationPreText: '上一页',
+            paginationNextText: '下一页',
+            //是否显示表格搜索,bootstrap-table服务器分页不能使用搜索功能，可以自定义搜索框
+            search: false,
+            // search: true,
+            strictSearch: true,
+            //是否显示所有的列（选择显示的列）
+            showColumns: false,
+            //是否显示刷新按钮
+            showRefresh: false,
+            //最少允许的列数
+            minimumCountColumns: 2,
+            //单击选中列表
+            clickToSelect: true,
+            //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+            //height: 500,
+            //每一行的唯一标识，一般为主键列
+            uniqueId: "id",
+            //是否显示 切换试图（table/card）按钮
+            showToggle: false,
+            //是否显示详细视图
+            cardView: false,
+            //是否显示父子表
+            detailView: false,
+            theadClasses: "thead-blue",//设置thead-blue为表头样式
+            classes: "table table-bordered table-striped table-sm table-dark", 
+            reorderableRows: true, //设置拖动排序
+            useRowAttrFunc: true, //设置拖动排序
+            showExport: true,                     //是否显示导出
+            exportDataType: "all",              //basic', 'all', 'selected'.
+            //得到查询的参数
+            queryParams: function (params) {
+                debugger;
+                //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+                var temp = {
+                    zyh: "",
+                    kssj: $("#kssj").val(),
+                    jssj: $("#jssj").val(),
+                };
+                return temp;
+            },
+            columns: [{
+                checkbox: false,
+                visible: false  //是否显示复选框
+                // visible: $(this).val() === 'selected'
+            }, {
+                    field: 'bah',
+                title: '病案号',
+                sortable: true
+            }, {
+                    field: 'xb',
+                title: '性别',
+                    sortable: true
+                }, {
+                    field: 'nl',
+                    title: '年龄',
+                    sortable: true
+                }, {
+                    field: 'nlt',
+                    title: '新生儿年龄天',
+                    sortable: true
+                }, {
+                    field: 'cstz',
+                    title: '新生儿出生体重',
+                    sortable: true
+                }, {
+                    field: 'cykb',
+                    title: '出院科室',
+                    sortable: true
+                }, {
+                    field: 'zyts',
+                    title: '住院天数',
+                    sortable: true
+                }, {
+                    field: 'lyfs',
+                    title: '离院方式',
+                    sortable: true
+                }, {
+                    field: 'zfy',
+                    title: '总费用',
+                    sortable: true
+                }, {
+                    field: 'zdlist',
+                    title: '诊断编码',
+                    sortable: true
+                }, {
+                    field: 'sslist',
+                    title: '手术操作编码',
+                    sortable: true
+                }, {
+                    field: 'brxzmc',
+                    title: '医保类型',
+                    sortable: true
+                }
+            ,],
+            onLoadSuccess: function () {
+            },
+            onLoadError: function () {
+                alert("数据加载失败！");
+            },
+            //双击行数据的事件
+            onDblClickRow: function (row, $element) {
+                // var id = row.ID;
+                // EditViewById(id, 'view');
+            },
+            //当选中行，拖拽时的哪行数据，并且可以获取这行数据的上一行数据和下一行数据
+            onReorderRowsDrag: function (table, row) {
+
+            },
+            //拖拽完成后的这条数据，并且可以获取这行数据的上一行数据和下一行数据
+            onReorderRowsDrop: function (table, row) {
+
+            },
+            //当拖拽结束后，整个表格的数据
+            onReorderRow: function (newData) {
+                //这里的newData是整个表格数据，数组形式。如需转json字符串用JSON.stringify();
+                if (newData != null) {
+                    //var zdIds = "";
+                    //for (var i in newData) {
+                    //    zdIds += newData[i].zdId + ",";
+                    //}
+                    //$.ajax({
+                    //    type: "post",
+                    //    url: "/DRGManage/DRGGroup/UpdatePatDiagnosisOrder",
+                    //    data: {
+                    //        "zdIds": zdIds
+                    //    },
+                    //    dataType: "json",
+                    //    success: function (data) {
+                    //        if (data.message == null || data.message == "") {
+                    //            //$.modalAlert("顺序调整成功", "success");
+                    //            $("#tabzd").bootstrapTable("refresh");
+                    //        }
+                    //    },
+                    //    error: function () {
+                    //        $.modalAlert("顺序调整失败",  "error");
+                    //    }
+                    //});
+                }
+            }
+        });
+    }
+    ///科室
+    $("#ksmc").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 300,
+        clickautotrigger: true,
+        filter: function (keyword) {
+            //遍历数据源，用keyword来筛选出结果
+            var resultObjArr = new Array();
+            $.each(top.window.clients.sysDepartList, function (idx, val) {
+                if (((val.py && val.py.toLowerCase().indexOf(keyword) >= 0)
+                    || (val.Name && val.Name.indexOf(keyword) >= 0)
+                    || keyword.trim() == "")) {
+                    resultObjArr.push(val);
+                }
+            });
+            return resultObjArr;
+
+        },
+        caption: "科室",
+        colModel: [
+            { label: '编号', name: 'Code', widthratio: 30 },
+            { label: '名称', name: 'Name', widthratio: 50 },
+            { label: '拼音', name: 'py', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#ksmc").attr("data-label", $thistr.find("td:eq(0)").html());
+            $("#ksmc").val($thistr.find('td:eq(1)').html());
+            return;
+        },
+    });
+</script>

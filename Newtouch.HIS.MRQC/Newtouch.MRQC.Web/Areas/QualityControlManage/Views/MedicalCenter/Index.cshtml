@@ -1,0 +1,671 @@
+﻿@using Newtouch.Common.Operator;
+@using Newtouch.MRQC.Infrastructure;
+@{
+    ViewBag.Title = "质控中心";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+
+<style type="text/css">
+    .dv-left {
+        width: 22%;
+        float: left;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 1%;
+        width: 77%;
+    }
+</style>
+<div class="dv-body">
+    <div class="dv-left">
+        <div class="panel panel-default">
+            @*<div class="panel-heading navb-bg">
+                    筛选条件
+                </div>*@
+            <table class="form" style="width:95%">
+                <tbody>
+                    <tr>
+                        <td class="formValue" colspan="2">
+                            <input type="radio" name="brlx" class="ribbon-group" value="1" checked>
+                            <label>在院病人</label>
+                            <input type="radio" name="brlx" class="ribbon-group" value="2">
+                            <label>出院病人</label>
+                            <input type="radio" name="brlx" class="ribbon-group" value="3">
+                            <label>门诊</label>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="form" style="width:95%">
+                <tbody>
+                    <tr>
+                        <th class="formTitle" style="width:50px" id="thksrq">入院起日期：</th>
+                        <td class="formValue">
+                            <input id="txt_kssj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.AddMonths(-2).ToString("yyyy-MM-01 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" id="thjsrq">入院止日期：</th>
+                        <td class="formValue">
+                            <input id="txt_jssj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formValue" colspan="2">
+                            <input id="txt_srz" type="text" class="form-control" placeholder="姓名/住院号" style="width:84%;float:left;">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="dv-left-tree" id="PatTreeList">
+            <table id="gridListPat"></table>
+        </div>
+    </div>
+    <div class="dv-right">
+        <div class="panel-heading navb-bg">
+            病人信息
+        </div>
+        <form name="form1">
+            <div class="panel panel-default">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle" style="width:50px">姓名：</th>
+                        <td class="formValue">
+                            <label id="xm"></label>
+                        </td>
+                        <th class="formTitle" style="width:50px">性别：</th>
+                        <td class="formValue">
+                            <label id="xb"></label>
+                        </td>
+                        <th class="formTitle" style="width:50px">出生日期：</th>
+                        <td class="formValue">
+                            <label id="csrq"></label>
+                        </td>
+                        <th class="formTitle" style="width:50px">住院/就诊号：</th>
+                        <td class="formValue">
+                            <label id="jzh"></label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="width:50px">科室：</th>
+                        <td class="formValue">
+                            <label id="ks"></label>
+                        </td>
+                        <th class="formTitle" style="width:50px">床号：</th>
+                        <td class="formValue">
+                            <label id="ch"></label>
+                        </td>
+                        <th class="formTitle" style="width:50px">入院日期：</th>
+                        <td class="formValue">
+                            <label id="ryrq"></label>
+                        </td>
+                        <th class="formTitle" style="width:50px">出院日期：</th>
+                        <td class="formValue">
+                            <label id="cyrq"></label>
+                            <input type="hidden" id="jzys"/>
+                            <input type="hidden" id="ryysGh"/>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </form>
+        <ul class="nav nav-tabs navb-bg" role="tablist" id="beveltabs">
+            <li id="linkInfo" name="linkInfo" class="active">
+                <a href="#div_zd" role="tab" data-toggle="tab">诊断</a>
+            </li>
+            <li id="linkycq" name="linkycq">
+                <a href="#div_bl" role="tab" data-toggle="tab">病历</a>
+            </li>
+            <li id="linkyz" name="linkyz">
+                <a href="#div_yz" role="tab" data-toggle="tab">医嘱</a>
+            </li>
+            <li id="linkcf" style="display:none">
+                <a href="#div_cf" role="tab" data-toggle="tab">门诊处方</a>
+            </li>
+            <li id="linkjybg">
+                <a href="#div_jybg" role="tab" data-toggle="tab">检验报告</a>
+            </li>
+            <li id="linkjcbg">
+                <a href="#div_jcbg" role="tab" data-toggle="tab">检查报告</a>
+            </li>
+            <li id="linkscd" style="display:none">
+                <a href="#div_scd" role="tab" data-toggle="tab">三测单</a>
+            </li>
+        </ul>
+        <div class="tab-content" style="width:100%">
+            <div class="tab-pane fade in active" id="div_zd">
+                <table id="gridZdList"></table>
+            </div>
+            <div class="tab-pane fade" id="div_bl">
+                <div>
+                    <table class="form" style="width:95%">
+                        <tbody>
+                            <tr>
+                                <td class="formTitle">
+                                    <input id="btn_zmpf" type="button" class="fui-button" value="病历质量终末评分" onclick="btn_zlpf()"/>
+                                </td>
+                                <td class="formTitle">
+                                    <input id="btn_zkxx" type="button" class="fui-button" value="质控消息" onclick="btn_zkxx()" />
+                                </td>
+                                <td class="formTitle">
+                                    <input id="txt_zmpf" type="button" class="fui-button" value="表单护理记录" style="display:none"/>
+                                </td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+                <div style="width:150px;float:left">
+                    <div class="dv-left-tree" id="PatTreeList">
+                        <table id="gridbltreeList"></table>
+                    </div>
+                </div>
+                <div style="width:82%;float:left">
+                    @Html.Partial("PreView");
+                </div>
+
+
+            </div>
+            <div class="tab-pane fade" id="div_yz">
+                <table class="form" style="width:95%">
+                    <tbody>
+                        <tr>
+                            <td class="formValue" colspan="4">
+                                <input type="radio" name="yzlx" class="ribbon-group" value="qb" checked>
+                                <label>全部</label>
+                                <input type="radio" name="yzlx" class="ribbon-group" value="zx">
+                                <label>查执行</label>
+                                <input type="radio" name="yzlx" class="ribbon-group" value="dr">
+                                <label>查今天</label>
+                                <input type="radio" name="yzlx" class="ribbon-group" value="ls">
+                                <label>查临时</label>
+                                <input type="radio" name="yzlx" class="ribbon-group" value="cq">
+                                <label>查长期</label>
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+                <table id="gridYzList"></table>
+            </div>
+            <div class="tab-pane fade" id="div_cf">
+                处方
+            </div>
+            <div class="tab-pane fade" id="div_jybg">
+                <table class="form" style="width:95%">
+                    <tbody>
+                        <tr>
+                            <th class="formTitle" style="width:50px" id="thksrq">开始时间：</th>
+                            <td class="formValue">
+                                <input id="txt_Jykssj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.ToString("yyyy-MM-01 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                            </td>
+                            <th class="formTitle" id="thjsrq">结束时间：</th>
+                            <td class="formValue">
+                                <input id="txt_Jyjssj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                            </td>
+                            <th class="formTitle">
+                                <button id="btn_Jysearch" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                            </th>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table id="gridJyList"></table>
+            </div>
+            <div class="tab-pane fade" id="div_jcbg">
+                <table class="form" style="width:95%">
+                    <tbody>
+                        <tr>
+                            <th class="formTitle" style="width:50px" id="thksrq">开始时间：</th>
+                            <td class="formValue">
+                                <input id="txt_Jckssj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.ToString("yyyy-MM-01 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                            </td>
+                            <th class="formTitle" id="thjsrq">结束时间：</th>
+                            <td class="formValue">
+                                <input id="txt_Jcjssj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                            </td>
+                            <th class="formTitle">
+                                <button id="btn_Jcsearch" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                            </th>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table id="gridJcList"></table>
+            </div>
+            <div class="tab-pane fade" id="div_scd">
+                三测单
+
+            </div>
+        </div>
+    </div>
+</div>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/jqgrid/jqgrid.min.js")"></script>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/framework-ui.js")"></script>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/jqgrid/grid.locale-cn.js")"></script>
+<script>
+    var last = "";//上一个组号
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body").width($(window).width());
+        });
+        $("#linkcf").hide();
+
+        getLeftPatList();
+        gridZdList();
+        $('#gbox_gridbltreeList').css('width', 150);
+        $('#gview_gridbltreeList').css('width', 150);
+        $("#gbox_gridJcList").attr("style", $(window).width());
+        $("#gbox_gridJyList").attr("style", $(window).width());
+    });
+    $('input[type=radio][name=brlx]').change(function(){
+        var chektype = $('input:radio[name="brlx"]:checked').val();
+        if (chektype == "3") {
+            $("#thksrq").html("就诊起日期");
+            $("#thjsrq").html("就诊止日期");
+            $("#linkyz").hide();
+            //$("#linkcf").show();
+           // $("#linkscd").hide();
+        }
+        else if (chektype == "2") {
+            $("#thksrq").html("出院起日期");
+            $("#thjsrq").html("出院止日期");
+            //$("#linkcf").hide();
+            $("#linkyz").show();
+            //$("#linkscd").show();
+        }
+        else {
+            $("#thksrq").html("入院起日期");
+            $("#thjsrq").html("入院止日期");
+            //$("#linkcf").hide();
+            $("#linkyz").show();
+            //$("#linkscd").show();
+        }
+    })
+    $("#beveltabs a").on("click", function (e) {
+        debugger;
+        var tabname = $(this)[0].hash;
+        if (tabname != "#div_bl") {
+            $('.ui-jqgrid-bdiv').css('height', $(window).height() - 75);
+        }
+        else {
+            $('.ui-jqgrid-bdiv').css('height', 775);
+        }
+    });
+
+    function getLeftPatList() {
+        var $gridListPat = $("#gridListPat");
+        $gridListPat.dataGrid({
+            url: "/QualityControlManage/MedicalCenter/GetPatList",
+            postData: getSearchPostData(),
+            height: $(window).height() - 75,
+            unwritten: false,
+            colModel: [
+                //{ label: 'ID', name: 'Id', hidden: true, key: true },
+                { label: '科室', name: 'DeptName', width: 60, align: 'left' },
+                { label: '床号', name: 'BedName', width: 50, align: 'left' },
+                { label: '姓名', name: 'Xm', width: 80, align: 'left' },
+                {
+                    label: '性别', name: 'Sex', width: 40, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumSex", val);
+                    }
+                 },
+                { label: '年龄', name: 'Age', width: 60, align: 'left' },
+                { label: '入院日期', name: 'Ryrq', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '出院日期', name: 'Cyrq', width: 120, align: 'left' ,formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+                { label: "入院医生", name: 'RyysGh', width: 60, align: 'left',hidden:true },
+                { label: '健康卡号', name: 'HealthCardNo', width: 80, align: 'left' },
+                { label: '(门诊)住院号', name: 'Zyh', width: 60, align: 'left' },
+                { label: '费用类别', name: 'Fylb', width: 60, align: 'left' },
+                { label: '总费用', name: 'TotalFee', width: 60, align: 'left' },
+                { label: '主诊(住院医师)', name: 'ZYYS', width: 60, align: 'left' },
+                { label: '主治医师', name: 'ZZYS1', width: 60, align: 'left' },
+                { label: '(副)主任医师', name: 'ZRYS', width: 60, align: 'left' },
+                { label: '身份证', name: 'Sfzh', width: 60, align: 'left' },
+                { label: '出生日期', name: 'Csrq', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '出生地', name: 'Csd', width: 100, align: 'left' },
+                { label: '联系人', name: 'Lxrxm', width: 60, align: 'left' },
+                { label: '联系电话', name: 'Lxrdh', width: 60, align: 'left' },
+                { label: '联系地址', name: 'Lxrdz', width: 100, align: 'left' },
+                { label: '单位地址', name: 'Gzdwjdz', width: 100, align: 'left' },
+                { label: '归档标志', name: 'Bazt', width: 60, align: 'left' },
+                { label: '医疗证号', name: 'Ylzh', width: 60, align: 'left' },
+                { label: '社保卡号', name: 'Sbkh', width: 60, align: 'left' },
+            ],
+            onSelectRow: function (rowid, status) {
+                var rowData = $("#gridListPat").jqGrid('getRowData', rowid);
+                $("#xm").text(rowData.Xm);
+                $("#xb").text(rowData.Sex);
+                $("#csrq").text(rowData.Csrq);
+                $("#jzh").text(rowData.Zyh);
+                $("#ks").text(rowData.DeptName);
+                $("#ch").text(rowData.BedName);
+                $("#ryrq").text(rowData.Ryrq);
+                $("#cyrq").text(rowData.Cyrq);
+                $("#jzys").val(rowData.ZYYS);
+                $("#ryysGh").val(rowData.RyysGh);
+                loadRightData(rowData.Zyh);
+            },
+        });
+    }
+
+    $('#btn_search').click(function () {
+        $('#gridListPat').jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetPatList",
+            postData: getSearchPostData(),
+            }).trigger('reloadGrid');
+    });
+
+    function getSearchPostData() {
+        return {
+            brbz: $('input:radio[name="brlx"]:checked').val(), ksrq: $("#txt_kssj").val(), jsrq: $("#txt_jssj").val(),
+            srz: $("#txt_srz").val()
+        };
+    };
+    function gridZdList()
+    {
+        var $gridListPat = $("#gridZdList");
+        $gridListPat.dataGrid({
+            unwritten: false,
+            height: $(window).height() - 150,
+            async: true,
+            colModel: [
+                {
+                    label: '诊断类型', name: 'ZdType', width: 100, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumDiagType", val);
+                    }
+                },
+                { label: '诊断编码', name: 'Zddm', width: 120, align: 'left' },
+                { label: '诊断名称', name: 'Zdmc', width: 200, align: 'left' },
+                { label: '录入人', name: 'Zdys', width: 100, align: 'left' },
+                { label: '录入日期', name: 'Zdrq', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+
+            ]
+        });
+
+        var $gridbltreeList = $("#gridbltreeList");
+        $gridbltreeList.dataGrid({
+            unwritten: false,
+            treeGrid: true,
+            width:2,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Blmc",
+            async: true,
+            height: $(window).height() - 96,
+            rownumbers: false,
+            colModel: [
+                { label: "病历关系ID", name: "Id", hidden: true, key: true },
+                {
+                    label: '病历名称', name: 'Blmc', width: 120, align: 'center', formatter: function (cellvalue, options, rowobject) {
+                        if (rowobject.IsRoot!=1) {
+                            return '<span class="glyphicon glyphicon-file" style="color:#6ff3ad; font-size: 13px;"></span> ' + rowobject.Blmc;
+                        }
+                        else {
+                            return rowobject.Blmc;
+                        }
+                    }
+                },
+                {
+                    label: '病历名称', name: 'Blmc1', width: 80, align: 'center', hidden: true, formatter: function (cellvalue, options, rowobject) {
+                        return rowobject.Blmc;
+                    }
+                },
+                { label: 'Zyh', name: 'Zyh', width: 80, align: 'center', hidden: true },
+                { label: 'BlId', name: 'BlId', width: 80, align: 'center', hidden: true },
+                { label: 'Bllx', name: 'Bllx', width: 80, align: 'center',hidden:true },
+                { label: '书写者', name: 'Docname', width: 80, align: 'center' },
+                { label: '病历日期', name: 'Blrq', width: 120, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                {
+                    label: '状态', name: 'Blzt', width: 100, align: 'center', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumRecordStu", val);
+                    }
+                },
+                { label: 'Mblj', name: 'Mblj', width: 80, hidden: true, },
+            ],
+            gridComplete: function () {
+                $('#gbox_gridbltreeList').css('width',150);
+                $('#gview_gridbltreeList').css('width', 150);
+                $('#gview_gridbltreeList').css('height', 800);
+                //$('.ui-jqgrid-bdiv').css('height', 775);
+            }
+        });
+
+        var $gridYzList = $("#gridYzList");
+        $gridYzList.dataGrid({
+            unwritten: false,
+            height: $(window).height() - 75,
+            async: true,
+            colModel: [
+                { label: '医嘱类别', name: 'Yzlb', align: 'center', width: 50 },
+                {
+                    label: '医嘱类型', name: 'Yzlx', align: 'center', width: 50, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumYzlx", val)
+                    }
+                },
+                { label: '开始时间', name: 'Kssj', align: 'center', width: 109, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '医生', name: 'Ysmc', align: 'center', width: 40 },
+                { label: '医嘱名称', name: 'Yzmc', align: 'center', width: 150 },
+                { label: '剂量', name: 'Yzjl', align: 'center', width: 30 },
+                { label: '用法', name: 'Yfmc', align: 'center', width: 30 },
+                { label: '频次', name: 'Yzpcmc', align: 'center', width: 30 },
+                { label: '同组', name: 'Zh', align: 'center', width: 30 },
+                {
+                    label: '停止时间', name: 'Tzsj', align: 'center', width: 110, formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: '停止医生', name: 'Tzr', align: 'center', width: 50 },
+                { label: '执行者', name: 'Zxr', align: 'center', width: 50 },
+                { label: '执行科室', name: 'DeptName', align: 'center', width: 100 },
+                { label: '最后执行时间', name: 'Zxsj', align: 'center', width: 100, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+                {
+                    label: '状态', name: 'Yzzt', align: 'center', width: 60, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumYzzt", val)
+                    }
+                },
+            ],
+            gridComplete: function () {
+                $('#gbox_gridYzList').css('width', 1250);
+                var ids = $("#gridYzList").jqGrid('getDataIDs');
+                for (i = 0; i < ids.length; i++) {
+                    var rowData = $("#gridYzList").jqGrid('getRowData', ids[i]);
+                    //组号生成特殊符号
+                    var returnval = "";
+                    if (rowData.Zh != typeof (undefined) && rowData.Zh !== "" && rowData.Zh !== null) {
+                        if (last == rowData.Zh) {
+                            returnval = "中间";
+                            if (i == (ids.length - 1)) {//最后一个
+                                returnval = "结束";
+                                last = "";
+                            }
+                        } else if (last !== rowData.Zh) {
+                            if (last !== "") {
+                                setlastrowzuhao(ids[i]);
+                            }
+                            returnval = "开始";
+                        }
+                        $("#gridYzList").setCell(ids[i], "Zh", '<img src="../../../../Content/img/' + returnval + '.png" />');//setCell 设置单元格样式 值 或属性
+                    } else if (last !== rowData.Zh && last !== "") {
+                        setlastrowzuhao(ids[i]);
+                    }
+                    last = rowData.Zh;
+                }
+            }
+        });
+
+        var $gridJyList = $("#gridJyList");
+        $gridJyList.dataGrid({
+            unwritten: false,
+            height: $(window).height() - 150,
+            width: $(window).width(),
+            async: true,
+            colModel: [
+                {
+                    label: '申请日期', name: 'Sqsj', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: '送检项目', name: 'Sqxm', width: 150, align: 'left' },
+                { label: '申请医生', name: 'Sqys', width: 100, align: 'left' },
+                { label: '报告日期', name: 'Bgrq', width: 100, align: 'left' },
+                { label: '申请单号', name: 'Sqdh', width: 100, align: 'left' },
+
+            ],
+        });
+        var $gridJcList = $("#gridJcList");
+        $gridJcList.dataGrid({
+            unwritten: false,
+            height: $(window).height() - 150,
+            width: $(window).width(),
+            async: true,
+            colModel: [
+                 {
+                     label: '申请日期', name: 'Sqsj', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                 },
+                { label: '送检部位', name: 'Sqxm', width: 150, align: 'left' },
+                { label: '申请医生', name: 'Sqys', width: 100, align: 'left' },
+                { label: '报告日期', name: 'Bgrq', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '申请单号', name: 'Sqdh', width: 100, align: 'left' },
+            ],
+        });
+    }
+    //设置上一行组号
+    function setlastrowzuhao(rowid) {
+        var lastrow = parseInt(rowid) - 1;
+        $("#gridYzList").setCell(lastrow, "Zh", '<img src="../../../../Content/img/结束.png" />');//setCell 设置单元格样式 值 或属性
+    }
+
+    function loadRightData(jzh) {
+
+        var $gridZdList = $("#gridZdList");
+        $gridZdList.jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetMedicalCenterDiag",
+            postData: { zyh: jzh },
+        }).trigger('reloadGrid');
+
+
+        var $gridbltreeList = $("#gridbltreeList");
+        $gridbltreeList.jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetMedicalCenterBlTree",
+            postData: { zyh: jzh },
+        }).trigger('reloadGrid');
+
+        var $gridYzList = $("#gridYzList");
+        $gridYzList.jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetDoctorsAdviceRecord",
+            postData: { zyh: jzh, yzlx: $('input:radio[name="yzlx"]:checked').val() },
+        }).trigger('reloadGrid');
+
+        var $gridJyList = $("#gridJyList");
+        $gridJyList.jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetInspectionExaminationRecore",
+            postData: { jzh: jzh, ksrq: $("#txt_Jykssj").val(), jsrq: $("#txt_Jyjssj").val(), reportType: "jy", mzzybz: "zy" },
+        }).trigger('reloadGrid');
+
+        var $gridJcList = $("#gridJcList");
+        $gridJcList.jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetInspectionExaminationRecore",
+            postData: { jzh: jzh, ksrq: $("#txt_Jckssj").val(), jsrq: $("#txt_Jcjssj").val(), reportType:"jc" , mzzybz:"zy" },
+        }).trigger('reloadGrid');
+
+        $('input[type=radio][name=yzlx]').change(function () {
+            var $gridYzList = $("#gridYzList");
+            var d = $('input:radio[name="yzlx"]:checked').val();
+            $gridYzList.jqGrid('setGridParam', {
+                url: "/QualityControlManage/MedicalCenter/GetDoctorsAdviceRecord",
+                postData: { zyh: jzh, yzlx: d },
+            }).trigger('reloadGrid');
+        })
+        $('#btn_Jysearch').click(function () {
+            $("#gridJyList").jqGrid('setGridParam', {
+                url: "/QualityControlManage/MedicalCenter/GetInspectionExaminationRecore",
+                postData: { jzh: jzh, ksrq: $("#txt_Jykssj").val(), jsrq: $("#txt_Jyjssj").val(), reportType: "jy", mzzybz: "zy" },
+            }).trigger('reloadGrid');
+        });
+
+        $('#btn_Jcsearch').click(function () {
+            $("#gridJcList").jqGrid('setGridParam', {
+                url: "/QualityControlManage/MedicalCenter/GetInspectionExaminationRecore",
+                postData: { jzh: jzh, ksrq: $("#txt_Jckssj").val(), jsrq: $("#txt_Jcjssj").val(), reportType: "jc", mzzybz: "zy" },
+            }).trigger('reloadGrid');
+        });
+    }
+    function btn_zlpf()
+    {
+        var seleRow = $("#gridbltreeList").jqGridRowValue();
+        if (!!!seleRow) {
+            $.modalAlert("请选中一种病历类型进行评分", "error");
+            return;
+        }
+        $.modalOpen({
+            id: "ScoreFrom",
+            title: "质控评分",
+            url: "/QualityControlManage/MedicalCenter/ScoreFrom?bllx=" + seleRow.Bllx + "&blmc=" + seleRow.Blmc1
+                + "&zyh=" + $("#jzh").text(),
+            width: "750px",
+            height: "500px",
+            btn: null,
+            callBack: function (iframeId, a) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit()
+    {
+        debugger;
+        var seleRow = $("#gridbltreeList").jqGridRowValue();
+        if (seleRow.Bllx == "5")
+            top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病案首页", enName: "", url: "/MRHomePage/MRHomePage/Main?keyValue=" + seleRow.BlId + "&zyh=" + seleRow.Zyh + "&justshow=" + "true", AppId: "EMR" });
+        if (!!seleRow.Mblj)
+        {
+            FileOpen(seleRow.Mblj);
+        }
+    }
+    function btn_zkxx()
+    {
+        var seleRow = $("#gridbltreeList").jqGridRowValue();
+        if (!!!seleRow.Mblj) {
+            $.modalAlert("请选中一份病历文书", "error");
+            return;
+        }
+        var treedata = $("#gridbltreeList").getRowData();
+        var parentbllx = "";
+        var parentbllxmc = "";
+        var curParentId = seleRow.parent;
+        var childrenBllx = "";
+        while (curParentId)
+        {
+            var curbllx = treedata.filter(v=>v.Id == curParentId);
+            curParentId = curbllx[0].parent;
+            if (!childrenBllx)
+                childrenBllx = curbllx[0].Bllx;
+            if (!curParentId) {
+                parentbllx = curbllx[0].Bllx;
+                parentbllxmc = curbllx[0].Blmc1;
+                break;
+            }
+        }
+        $.modalOpen({
+            id: "QcMessageManage",
+            title: "反馈质控消息",
+            url: "/QualityControlManage/MedicalCenter/QcMessageManage?xm=" + $("#xm").text() + "&jzh=" + $("#jzh").text()
+                + "&ks=" + $("#ks").text() + "&ch=" + $("#ch").text() + "&ys=" + $("#jzys").val() + "&Blmc=" + seleRow.Blmc1
+                + "&parentBllx=" + parentbllx + "&parentbllxmc=" + parentbllxmc + "&childrenBllx=" + childrenBllx + "&ryysGh=" + $("#ryysGh").val(),
+            width: "750px",
+            height: "500px",
+            btn: null,
+            callBack: function (iframeId, a) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+</script>
+

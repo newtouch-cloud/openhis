@@ -1,0 +1,77 @@
+﻿using FrameworkBase.MultiOrg.Domain.Entity;
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Newtouch.HIS.Domain.Entity
+{
+    /// <summary>
+    /// 系统收费附加大类（17楼）
+    /// </summary>
+    [Table("xt_fjsfdl")]
+    public class SysChargeAdditionalCategoryEntity : IEntity<SysChargeAdditionalCategoryEntity>
+    {
+        /// <summary>
+        /// 大类编号
+        /// </summary>
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public int dlbh { get; set; }
+
+        /// <summary>
+        /// 组织机构Id（有具体业务的医院）
+        /// </summary>
+        public string OrganizeId { get; set; }
+
+        /// <summary>
+        /// 大类
+        /// </summary>
+        public string dl { get; set; }
+
+        /// <summary>
+        /// 大类名称
+        /// </summary>
+        public string dlmc { get; set; }
+
+        /// <summary>
+        /// 拼音
+        /// </summary>
+        public string py { get; set; }
+
+        /// <summary>
+        /// 门诊住院标志（0 通用 1 门诊 2住院）
+        /// </summary>
+        public string mzzybz { get; set; }
+
+        /// <summary>
+        /// 排序
+        /// </summary>
+        public int? px { get; set; }
+
+        /// <summary>
+        /// 状态
+        /// </summary>
+        public string zt { get; set; }
+
+        /// <summary>
+        /// 创建用户ID
+        /// </summary>
+        public string CreatorCode { get; set; }
+
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime CreateTime { get; set; }
+
+        /// <summary>
+        /// 最后修改时间
+        /// </summary>
+        public DateTime? LastModifyTime { get; set; }
+
+        /// <summary>
+        /// 最后修改用户ID
+        /// </summary>
+        public string LastModifierCode { get; set; }
+
+    }
+}

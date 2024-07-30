@@ -1,0 +1,387 @@
+﻿
+@{
+    ViewBag.Title = "prescriptionquery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //获取打印处方配置
+    var mzcfdPrinturl = SysConfigReader.OrgReportLink("mzcfdPrint");  //处方单
+    var mzzcycfPrint = SysConfigReader.OrgReportLink("mzzcycfPrint");  //中草药处方单
+    var mzjyjcPrinturl = SysConfigReader.OrgReportLink("jcjyPrint");//检验检查单
+    var mzjcPrinturl = SysConfigReader.OrgReportLink("jcPrint");//检查检查单
+    var mzwhdPrinturl = SysConfigReader.OrgReportLink("whdPrint");//雾化单
+    var mzzszPrinturl = SysConfigReader.OrgReportLink("mzzszPrint");//注射单 zszPrint
+    var mzjzdPrinturl = SysConfigReader.OrgReportLink("jzdPrint");//就诊单
+    var mzcgcfPrinturl = SysConfigReader.OrgReportLink("mzcgcfPrint");//门诊常规项目处方单
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 230px;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+
+    .dv-grid {
+        width: 100%;
+    }
+</style>
+<div class="dv-body">
+    <div class="dv-left">
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                筛选条件
+            </div>
+            <table class="form" style="width:95%">
+                <tbody>
+                    <tr>
+                        <th class="formTitle">姓名/门诊号：</th>
+                        <td class="formValue">
+                            <input id="keyword" type="text" class="form-control">
+                        </td>
+                    </tr>
+                   
+                </tbody>
+            </table>
+        </div>
+        <div class="dv-left-title">
+            患者列表
+        </div>
+        <div class="dv-left-tree" id="PatTreeList"></div>
+    </div>
+    <div class="dv-right">
+        <table class="form" style="background-color:white">
+            <tr>
+                <td class="formTitle">姓名：</td>
+                <td class="formValue"><label id="hzxm"></label></td>
+                <td class="formTitle">性别：</td>
+                <td class="formValue" style="width:170px"><label id="sex"></label></td>
+                <td class="formTitle">年龄：</td>
+                <td class="formValue"><label id="nl"></label></td>
+                <td class="formTitle"> <input id="mzh"  hidden /></td>
+                <td class="formValue"></td>
+                <td class="formTitle"> </td>
+                <td class="formValue"></td>
+            </tr>
+            <tr>
+                <td class="formTitle"> 开立日期：</td>
+                <td class="formValue" colspan="2">
+                    <input id="txt_klrq" type="text" class="form-control input-wdatepicker" style="width:70%;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+
+                </td>
+                @*<td class="formTitle" style="width:10px"> -</td>
+                    <td class="formValue">
+                        <input id="txt_zxrqend" type="text" class="form-control input-wdatepicker" style="width:100%;"
+                               onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })"
+                               onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd 23:59:59")" />
+                    </td>*@
+                <td class="formTitle">
+                    执行类别：
+                </td>
+                <td class="formValue" colspan="2">
+                    <select class="form-control" id="cfdlb">
+                        <option value="">请选择</option>
+                        <option value="xycf">西药处方单</option>
+                        <option value="zycf">中药处方单</option>
+                        <option value="jycf">检验处方单</option>
+                        <option value="jccf">检查处方单</option>
+                        <option value="zscf">注射处方单</option>
+                        @*<option value="sycf">输液处方单</option>*@
+                        <option value="kfcf">康复处方单</option>
+                        <option value="cgcf">常规处方单</option>
+                    </select>
+
+                </td>
+                <td class="formValue">
+
+                    <div class="btn-group">
+                        <a id="btn_search" class="btn btn-primary">
+                            查询
+                        </a>
+                    </div>
+
+                </td>
+
+                <td class="formValue" colspan="3">
+                    <a id="ExecutionChecked" class="btn btn-primary" onclick="bingliprit()">
+                        <i class="fa fa-pencil-square-o"></i>病历打印
+                    </a>
+                    <a id="ExecutionChecked" class="btn btn-primary" onclick="ExecutionChecked()">
+                        <i class="fa fa-pencil-square-o"></i>打印
+                    </a>
+
+                </td>
+            </tr>
+        </table>
+        <br />
+        <div class="gridPanel">
+            <table id="gridList"></table>
+        </div>
+    </div>
+</div>
+<script  type="text/javascript">
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 35;
+    $(".dv-right").width(rightWidth);
+    $(".dv-left-tree").height($(window).height() - 70);
+    var jzid = "";
+    $(function() {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body").width($(window).width());
+        });
+
+        getPatTreeList();
+        gridList("");
+        //搜索病人信息
+        $('#keyword').keyup(function () {
+            getPatTreeList();
+        });
+    });
+
+    function getPatTreeList() {
+        $("#PatTreeList").treeview({
+            height: $(window).height() - 175,
+            slimscroll: false,
+            showcheck: false,
+            url: "/OutpatientNurse/GetPatcfTree?keyword=" + $('#keyword').val(),
+            onnodeclick: function (item) {
+                if (item.id && item.Ex1 == "c") {
+                    jzid = item.id;
+                    $('#hzxm').html(item.Ex4);
+                    $('#sex').html(item.Ex2);
+                    $('#nl').html(item.Ex3);
+                    $('#mzh').val(item.value);
+                    reloadGrid(jzid);
+                    //$('#gridList').jqGrid('setGridParam', {
+                    //    postData: { zyh: zyh, zxsj: $('#txt_zxrq').val(), zxdlb: $('#zxdlb').val()  }
+                    //}).trigger("reloadGrid");
+                }
+            }
+            //oncheckboxclick: function (item, s) {
+            //    getOrderExecutionList(item, s);
+            //}
+        });
+
+        $("#btn_search").click(function () {
+            var patcheck = $("#PatTreeList").getCurrentNode();
+            if (!!patcheck && patcheck.Ex1 === "c") {
+                reloadGrid(jzid);
+            }
+
+        });
+
+        $("#cfdlb").change(function () {
+            var patcheck = $("#PatTreeList").getCurrentNode();
+            if (!!patcheck && patcheck.Ex1 == "c") {
+                reloadGrid(jzid);
+            }
+
+        });
+    }
+
+    function reloadGrid(jzid) {
+        var klrq = $('#txt_klrq').val();
+        var cfdlb = $('#cfdlb').val();
+        $('#gridList').jqGrid('setGridParam', {
+            postData: {
+                jzid: jzid, klrq: klrq, cfdlb: cfdlb
+            }
+        }).trigger("reloadGrid");
+    }
+
+    var checkTrigger = false;
+    var list = new Array();
+    var liststu = false;
+    var j = 0;
+    function gridList(patjzid) {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            multiselect: true,
+            postData: { jzid: jzid, klrq: $('#txt_klrq').val(), cfdlb: $('#cfdlb').val() },
+            url: "/OutpatientNurse/prescriptionfrom",
+            height: $(window).height() - 125,
+            colModel: [
+                { label: '处方明细ID', name: 'cfmxId', align: 'center', width: 50, key: true, hidden: true },
+                { label: '处方号', name: 'cfh', align: 'center', width: 140 },
+                { label: 'cfid', name: 'cfid', align: 'center', hidden: true },
+                { label: 'mzh', name: 'mzh', align: 'center', hidden: true },
+                { label: 'blh', name: 'blh', align: 'center', hidden: true },
+                { label: '组号', name: 'zh', align: 'center', width: 50 },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '处方内容', name: 'cfmxnr', align: 'center', width: 230 },
+                { label: '用法', name: 'ypyfmc', align: 'center', width: 60 },
+                { label: 'ypcode', name: 'ypcode', align: 'center', hidden: true },
+                { label: '开立医生', name: 'ysmc', align: 'center', width: 60 },
+                { label: '处方类型', name: 'cflx', align: 'center', width: 60, formatter: function (val) { return val == 1 ? "西药处方" : val == 2 ? "中药处方" : val == 3 ? "康复处方" : val == 4 ? "检验处方" : val == 5 ? "检查处方" : val == 6 ?"常规处方":"" }},
+                { label: 'ypyfdm', name: 'yfcode', align: 'center', hidden: true },
+                { label: 'barcode', name: 'barcode', align: 'center', hidden: true }
+            ],
+            pager: "#gridPager",
+            rowNum: 100,
+            sortname: 'zh asc,kssj asc',
+            viewrecords: true,
+            multiselect: true,
+            onSelectRow: function (rowIndex, s) {
+                if (!checkTrigger) {
+                    var len = 0;
+                    var rowData = $("#gridList").jqGrid('getRowData', rowIndex);
+                    var ids = $("#gridList").jqGrid('getRowData_AllLine');
+
+                    liststu = s; //同步状态
+                    for (var i = 0; i < ids.length; i++) {
+                        if ("xycf" == $('#cfdlb').val()) {
+		                    if (ids[i].cfh == rowData.cfh && ids[i].cfh != "") {
+			                    if (s == true) {
+                                    if (rowIndex != ids[i].cfmxId) {
+                                        list[len] = ids[i].cfmxId;
+					                    len += 1;
+				                    }
+			                    }
+			                    else {
+                                    if (rowIndex != ids[i].cfmxId) {
+                                        list[len] = ids[i].cfmxId;
+					                    len += 1;
+				                    }
+			                    }
+		                    }
+                    	} else {
+                    		if (ids[i].cfh == rowData.cfh && ids[i].cfh != "") {
+			                    if (s == true) {
+                                    if (rowIndex != ids[i].cfmxId) {
+                                        list[len] = ids[i].cfmxId;
+					                    len += 1;
+				                    }
+			                    }
+			                    else {
+                                    if (rowIndex != ids[i].cfmxId) {
+                                        list[len] = ids[i].cfmxId;
+					                    len += 1;
+				                    }
+			                    }
+		                    }
+	                    }
+                    	
+                    }
+                    checkTrigger = true;
+                }
+
+                if (list.length > 0) {
+
+                    for (j = j; j < list.length; j++) {
+                        if (liststu) //同组选中
+                        {
+                            j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j - 1], true);
+
+                        }
+                        else { //同组取消选中
+                            //j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j], false);      //取消不触发onselectrow
+                        }
+
+                    }
+                }
+
+                j = 0;
+                checkTrigger = false;
+                list = new Array();
+                liststu = false;
+            },
+        });
+    }
+
+    function ExecutionChecked() {
+        //选中的id
+        var cfdlb = $('#cfdlb').val();
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请先选中需打印的处方", 'warning');
+            return;
+        }
+
+        if (!cfdlb) {
+            $.modalAlert("请先选择处方单类别", 'warning');
+            return;
+        }
+        var listarry = new Array();
+        var mzh = "";
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (listarry.length==0) {
+                listarry.push(rowData.cfid);
+            } else {
+                //for (var k = 0; k < listarry.length; k++) {
+                    if (listarry.indexOf(rowData.cfid)==-1) {
+                        listarry.push(rowData.cfid)
+                    }
+               // }
+            }
+            mzh = rowData.mzh;
+        }
+        //console.log(listarry);
+        var rpturl = "";
+        if (cfdlb == 'zscf') {
+            rpturl = '@Html.Raw(mzzszPrinturl)';
+        } else if (cfdlb == 'jycf' || cfdlb == 'jccf') {
+            rpturl = cfdlb == "jycf" ? '@Html.Raw(reportUrl)' + "?tempCode=24&systemCode=CIS&orgId=" + '@curOpr.OrganizeId' : '@Html.Raw(reportUrl)' + " ?tempCode = 23 & orgId=" + '@curOpr.OrganizeId';
+
+        } else if (cfdlb == 'zycf') {
+            rpturl = "?tempCode=22&orgId=" + '@curOpr.OrganizeId' + "&systemCode=" + '@reportSystemCode';
+        } else if (cfdlb == 'cgcf') {
+            rpturl = '@Html.Raw(reportUrl)' + "?tempCode=20&orgId=" + '@curOpr.OrganizeId' + "&systemCode=" + '@reportSystemCode';
+        } else {
+            rpturl = '@Html.Raw(reportUrl)' + "?tempCode=14&orgId=" + '@curOpr.OrganizeId' + "&systemCode=" + '@reportSystemCode';
+        }
+        for (var i = 0; i < listarry.length; i++) {
+            if (cfdlb == 'jycf' || cfdlb == 'jccf') {
+                var cfid = listarry[i];
+                var aaa = "";
+                rpturl = rpturl + "&barcode=" + aaa + "&mzh=" + mzh + "&cfId=" + cfid;
+                window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+              
+            } else {
+                window.open(rpturl + "&mzh=" + mzh + "&cfId=" + listarry[i], "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+            }
+        }
+    }
+
+    function bingliprit() {
+        var mzh = $('#mzh').val();
+        if (mzh == null || mzh == "") {
+            $.modalAlert("请选择病人！", "error");
+            return;
+        }
+        window.open('@Html.Raw(reportUrl)' + "?tempCode=13&mzh=" + mzh + "&systemCode=" + '@reportSystemCode' + "&orgId=" + '@curOpr.OrganizeId', "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+    }
+   
+</script>

@@ -1,0 +1,163 @@
+﻿@{
+    ViewBag.Title = "新增/修改";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .formTitle span {
+        color: red;
+    }
+</style>
+<form>
+    <div class="container" style="margin-top:10px;width: 500px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>收费大类：</th>
+                <td class="formValue">
+                    <select class="form-control" id="selSfdl"></select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>收费项目：</th>
+                <td class="formValue">
+                    <select class="form-control" id="selSfxm">
+                        <option value="">==请选择项目==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>物资类型：</th>
+                <td class="formValue">
+                    <select class="form-control" id="selProductType"></select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>物资：</th>
+                <td class="formValue">
+                    <select class="form-control" id="selProduct">
+                        <option value="">==请选择物资==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">状态：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<script lang="javascript">
+    var keyWord = $.request("keyValue");
+    $(function () {
+        Init();
+        if (!!keyWord) {
+            $.najax({
+                url: "/ProductManage/ProductSfxm/GetProductSfxmFormJson",
+                data: { keyWord: keyWord },
+                dataType: "json",
+                success: function (data) {
+                    fillInput(data);
+                }
+            });
+        }
+        $("#selSfdl").change(function () {
+            //加载收费项目
+            $("#selSfxm").html("");
+            $("#selSfxm").bindSelect({
+                url: "/ProductManage/ProductSfxm/GetSfmxBySfdl?sfdlCode=" + $("#selSfdl").val(),
+                id: "sfxmCode",
+                text: "sfxmmc"
+            });
+        });
+        $("#selProductType").change(function () {
+            //加载物资
+            $("#selProduct").html("");
+            $("#selProduct").bindSelect({
+                url: "/ProductManage/Product/GetProductbyType?typId=" + $("#selProductType").val(),
+                id: "Id",
+                text: "name"
+            });
+        });
+    });
+
+    //初始化
+    function Init() {
+        //加载项目大类
+        $("#selSfdl").bindSelect({
+            url: "/ProductManage/ProductSfxm/GetAllSfdl"
+        });
+        //加载物资类别
+        $("#selProductType").bindSelect({
+            url: "/ProductManage/ProductType/GetPatientTreeSelectJson"
+        });
+    }
+
+    //回填input
+    function fillInput(data) {
+        if (data == null) return;
+        $("#zt").attr("checked", data.zt === "1" ? true : false);
+        $("#selSfdl").val(data.sfdlCode).trigger("change");
+        $("#selProductType").val(data.productTypeId).trigger("change");
+        $("#selSfxm").val(data.sfxmCode).trigger("change");
+        $("#selProduct").val(data.productId).trigger("change");
+    }
+
+
+    //提交
+    function AcceptClick(callback) {
+        if (!DataValidate()) {
+            return;
+        }
+        var postData = {
+            key: keyWord,
+            zt: ($('#zt').is(":checked") ? "1" : "0"),
+            productId: $("#selProduct").val(),
+            sfxmCode: $("#selSfxm").val(),
+            sfxmmc: $("#selSfxm").find("option:selected").text(),
+            sfdlCode: $("#selSfdl").val(),
+            sfdlmc: $("#selSfdl").find("option:selected").text()
+        };
+        $.submitForm({
+            url: "/ProductManage/ProductSfxm/SubmitForm",
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+                $.modalClose();
+                callback();
+            }
+        });
+    }
+
+    //数据效验
+    function DataValidate() {
+        if ($("#belongedId").val() === "") {
+            $.modalAlert("证照所属必选", 'warning');
+            return false;
+        }
+        if ($("#licenceTypeId").val() === "") {
+            $.modalAlert("证照类型必选", 'warning');
+            return false;
+        }
+        if ($("#licenceNo").val() === "") {
+            $.modalAlert("证照号必填", 'warning');
+            return false;
+        }
+        if ($("#objectName").val() === "") {
+            $.modalAlert("对象名必填", 'warning');
+            return false;
+        }
+        if ($("#qxrq").val() === "") {
+            $.modalAlert("起始日期不能为空", 'warning');
+            return false;
+        }
+        if ($("#sxrq").val() === "") {
+            $.modalAlert("失效日期不能为空", 'warning');
+            return false;
+        }
+        return true;
+    }
+</script>

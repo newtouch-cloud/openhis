@@ -1,0 +1,159 @@
+﻿@using Newtouch.Common.Operator;
+@using Newtouch.MRQC.Infrastructure;
+@{
+    ViewBag.Title = "质控病历申请";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">申请日期：</th>
+                <td class="formValue" colspan="3">
+                    <input id="ksrq" type="text" class="form-control input-wdatepicker" style="width: 42%; float: left;" value="@DateTime.Now.ToString("yyyy-MM-01 ")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left: 2%; float: left;">—</span>
+                    <input id="jsrq" type="text" class="form-control input-wdatepicker" style="width: 41%; float: left; margin-left: 2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <td class="formValue" colspan="2">
+                    <input type="radio" name="spzt" class="ribbon-group" value="" checked>
+                    <label>全部</label>
+                    <input type="radio" name="spzt" class="ribbon-group" value="0">
+                    <label>未审批</label>
+                    <input type="radio" name="spzt" class="ribbon-group" value="1">
+                    <label>已审批</label>
+                </td>
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_sh" class="btn btn-primary btn-md" style="margin-left: 10px;display:none; width: 40px;" value="审核" />
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        gridListData();
+    });
+    function gridListData() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 160,
+            url: "/QualityControlManage/Apply/GetBlApplyList",
+            multiselect: true,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true, key: true },
+                { label: "申请科室", name: "ApplyDeptName", width: 100, align: "left", },
+                { label: "床号", name: "Bed", width: 60, align: "left", },
+                { label: "姓名", name: "PatName", width: 80, align: "left", },
+                { label: "申请医师", name: "ApplyDoctorName", width: 80, align: "left", },
+                {
+                    label: "申请类型", name: "ApplyType", width: 80, align: "left", formatter: function (val) {
+                        return $.enum.getDescByValue("ApplyTypeEnum", val);
+                    }
+                },
+                { label: "申请病历名称", name: "MedicalName", width: 120, align: "left", },
+                { label: "病历质控完成时间", name: "CompletionDate", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "申请时间", name: "ApplyDate", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "申请完成时间", name: "ApplyCompletionDate", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "申请原因", name: "ApplyReason", width: 80, align: "left", },
+                {
+                    label: "申请状态", name: "ApplyStatus", width: 80, align: "left", formatter: function (val) {
+                        return $.enum.getDescByValue("ApplyStatusEnum", val);
+                    }
+                },
+                { label: "批准科室", name: "ApproverDeptName", width: 80, align: "left", },
+                { label: "批准人", name: "ApproverName", width: 80, align: "left", },
+                {
+                    label: "批准时间", name: "ApprovalDate", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                {
+                    label: "入院时间", name: "Ryrq", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                {
+                    label: "出院时间", name: "Cyrq", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                }
+            ],
+            pager: "#gridPager",
+            sortname: " ApplyDate desc",
+            viewrecords: true
+        });
+
+        $("#btn_search").click(function () {
+            reload();
+        });
+
+    }
+    function reload()
+    {
+        $('#gridList').jqGrid("clearGridData");//先清空明细
+        $('#gridList').jqGrid('setGridParam', {
+            postData: getSearchPostData(),
+            url: "/QualityControlManage/Apply/GetBlApplyList",
+        }).trigger('reloadGrid');
+    }
+    function getSearchPostData() {
+        var status = $('input:radio[name="spzt"]:checked').val();
+        var ksrq = $("#ksrq").val()+" 00:00:00";
+        var jsrq = $("#jsrq").val()+" 23:59:59";
+        return {
+            applyStutas: status, ksrq: ksrq, jsrq: jsrq
+        };
+    };
+    $('input[type=radio][name=spzt]').change(function () {
+        reload();
+        var spzt = $('input:radio[name="spzt"]:checked').val();
+        if (spzt == "0") {
+            $("#btn_sh").show();
+        } else {
+            $("#btn_sh").hide();
+        }
+    });
+    $("#btn_sh").click(function () {
+        debugger;
+        var shbhlist = [];
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds.length == 0) {
+            $.modalAlert("请先选中需审核的申请", 'warning');
+            return;
+        }
+        $.each(selRowIds, function (i, item) {
+            shbhlist.push(item);
+        })
+        
+        shbhlist = shbhlist.join(',')
+        $.ajax({
+            type: "POST",
+            url: "/QualityControlManage/Apply/ApprovalApply",
+            data: { shbhlist: shbhlist },
+            dataType: "json",
+            cache: false,
+            async: false,
+            success: function (ajaxref) {
+                $.modalAlert(ajaxref.message, ajaxref.state);
+                reload();
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                $.modalAlert("审批失败：[" + ex + "]", 'error');
+                return;
+            }
+        });
+    });
+</script>

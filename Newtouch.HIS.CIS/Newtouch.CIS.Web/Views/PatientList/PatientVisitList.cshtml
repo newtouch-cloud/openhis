@@ -1,0 +1,554 @@
+﻿@using Newtouch.Infrastructure;
+@{
+	ViewBag.Title = "就诊信息查询";
+	Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+	#btn_search {
+		width: 45px;
+		font-weight: bolder;
+	}
+</style>
+<div class="panel panel-default">
+	<div class="panel-heading navb-bg">
+		筛选条件
+	</div>
+	<table class="form">
+		<tr>
+			<td class="formTitle"><span style="color:#ff0000;">*</span>就诊时间：</td>
+			<td class="formValue">
+				<input id="txt_kssj" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="    WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.AddMonths(-12).ToString("yyyy-MM-dd")">
+			</td>
+			<td class="formTitle" style="width:10px">至</td>
+			<td class="formValue">
+				<input id="txt_jssj" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="    WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+			</td>
+			<td class="formTitle">就诊类型：</td>
+			<td class="formValue formDdlSelectorTd">
+				<select class="form-control" id="sel_jzlx">
+					<option value="">===全部===</option>
+					<option value="0">门诊</option>
+					<option value="1">住院</option>
+				</select>
+			</td>
+			<td class="formTitle">结算状态：</td>
+			<td class="formValue formDdlSelectorTd">
+				<select class="form-control" id="sel_jszt">
+					<option value="">===全部===</option>
+					<option value="0">未结算</option>
+					<option value="1">已结算</option>
+				</select>
+			</td>
+			<td class="formTitle">患者姓名：</td>
+			<td class="formValue">
+				<input type="text" class="form-control" id="txtxm" placeholder="患者姓名" />
+			</td>
+			<td class="formTitle">卡号：</td>
+			<td class="formValue">
+				<input type="text" class="form-control" id="txtkh" placeholder="卡号" />
+			</td>
+			<td class="formValue">
+				<input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+			</td>
+		</tr>
+	</table>
+</div>
+<div class="gridPanel" style="width: 35%;float:left;">
+	<table id="gridPatList"></table>
+	<div id="gridPatPager" rel="form"></div>
+</div>
+<div class="gridPanel" id="divPatInfo" style="margin-left: 0.5%; width: 64%; float: left; background-color: aliceblue; border-style: solid; border-width: 1px; border-color:gainsboro;">
+	<div style="padding: 2px; padding-right: 20px;overflow-y: auto;">
+		<form id="form1">
+			<table id="table1" class="form">
+				<tr>
+					<th class="formTitle">门诊号：</th>
+					<td class="formValue">
+						<input id="mzh" name="xuetang" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle" hidden>诊疗开始时间：</th>
+					<td class="formValue" hidden>
+						<input id="zlkssj" name="zlkssj" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">就诊科室：</th>
+					<td class="formValue">
+						<input id="ghksmc" name="ghksmc" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">医保卡：</th>
+					<td class="formValue">
+						<input id="sbbh" name="sbbh" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">就诊医生：</th>
+					<td class="formValue">
+						<input id="ghys" name="ghys" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">婚姻：</th>
+					<td class="formValue">
+						<input id="hymc" name="hymc" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<td class="formValue" colspan="2">
+						<div id="cfzbz" style="margin-left:30px">
+							<label><input type="radio" name="cfzbzRadios" class="optionsRadios formClearIgnore" value="0" data-label="初诊" />初诊</label>
+							<label><input type="radio" name="cfzbzRadios" class="optionsRadios formClearIgnore" value="1" data-label="复诊" />复诊</label>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">身高：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-7">
+								<input id="shengao" name="xuetang" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-5">
+								<label>cm</label>
+							</div>
+						</div>
+					</td>
+					<th class="formTitle">体重：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-7">
+								<input id="tizhong" name="xuetang" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-5">
+								<label>kg</label>
+							</div>
+						</div>
+					</td>
+					<th class="formTitle">体温：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-7">
+								<input id="tiwen" name="tiwen" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-5">
+								<label>℃</label>
+							</div>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">脉搏：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-7">
+								<input id="maibo" name="maibo" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-5">
+								<label>次/分</label>
+							</div>
+						</div>
+					</td>
+					<th class="formTitle">呼吸：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-7">
+								<input id="huxi" name="huxi" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-5">
+								<label>次/分</label>
+							</div>
+						</div>
+					</td>
+					<th class="formTitle">血糖：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-7">
+								<input id="xuetang" name="xuetang" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-5">
+								<label>mmol/L</label>
+							</div>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">发病日期：</th>
+					<td class="formValue">
+						<input id="fbsj" name="fbsj" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">收缩压：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-10">
+								<input id="shousuoya" name="shousuoya" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-1">
+								<label>mmHg</label>
+							</div>
+						</div>
+					</td>
+					<th class="formTitle">舒张压：</th>
+					<td class="formValue">
+						<div class="row">
+							<div class="col-md-10">
+								<input id="shuzhangya" name="shuzhangya" type="text" class="form-control form-an vitalsignschange" />
+							</div>
+							<div class="col-md-1">
+								<label>mmHg</label>
+							</div>
+						</div>
+					</td>
+				</tr>
+			</table>
+			<table class="form">
+				<tr>
+					<th class="formTitle">主诉：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="zs" name="zs" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">现病史：</th>
+					<td class="formValue" colspan="4" id="xbsform">
+						<textarea id="xbs" name="xbs" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">既往史：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="jws" name="jws" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">月经史：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="yjs" name="yjs" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">过敏史：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="gms" name="gms" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">查体：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="ct" name="ct" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">处理：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="clfa" name="clfa" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">辅助检查：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="fzjc" name="fzjc" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+						<i class="fa fa-times" aria-hidden="true" hidden></i>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">西医诊断：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="tablexyzd" name="tablexyzd" class="form-control activeValue focusInput" style="height:60px;"></textarea>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">中医诊断：</th>
+					<td class="formValue" colspan="4">
+						<textarea id="tablezyzd" name="tablezyzd" class="form-control activeValue focusInput" style="height:60px;"></textarea>
+					</td>
+				</tr>
+				@*<tr>
+			<th class="formTitle">西医诊断：</th>
+			<td class="formValue" colspan="4">
+				<div style="height: 35px; border-bottom: 1px solid LightGrey; overflow: auto;">
+					<table id="tablexyzd">
+					</table>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<th class="formTitle">中医诊断：</th>
+			<td class="formValue" colspan="4">
+				<div style="height: 35px; overflow: auto;">
+					<table id="tablezyzd">
+					</table>
+				</div>
+			</td>
+		</tr>*@
+			</table>
+		</form>
+
+		<form id="form2">
+			<table id="table1" class="form supercompact" style="margin-left: 1.3%;">
+				<tr>
+					<th class="formTitle">住院号：</th>
+					<td class="formValue">
+						<input id="zyh" name="zyh" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">病人性质：</th>
+					<td class="formValue">
+						<input id="brxz" name="brxz" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">在院状态：</th>
+					<td class="formValue">
+						<input id="zybz" name="zybz" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle" hidden>科室名称</th>
+					<td class="formValue" hidden>
+						<input id="ksmc" name="ksmc" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+
+				</tr>
+				<tr>
+					<th class="formTitle">住院医师：</th>
+					<td class="formValue">
+						<input id="zyys" name="zyys" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">主治医生：</th>
+					<td class="formValue">
+						<input id="zzys" name="zzys" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">主任医生：</th>
+					<td class="formValue">
+						<input id="zrys" name="zrys" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">入院日期：</th>
+					<td class="formValue">
+						<input id="ryrq" name="ryrq" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+					<th class="formTitle">出院日期：</th>
+					<td class="formValue">
+						<input id="cyrq" name="cyrq" readonly="readonly" type="text" class="form-control form-an vitalsignschange" />
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">入院诊断：</th>
+					<td class="formValue" colspan="6">
+						<textarea id="tableryzd" name="tableryzd" class="form-control activeValue focusInput" style="height:60px;"></textarea>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">出院诊断：</th>
+					<td class="formValue" colspan="6">
+						<textarea id="tablecyzd" name="tablecyzd" class="form-control activeValue focusInput" style="height: 60px;"></textarea>
+					</td>
+				</tr>
+				@*<tr>
+					<th class="formTitle">入院诊断：</th>
+					<td class="formValue" colspan="5">
+						<div style="height: 200px; border-bottom: 1px solid LightGrey; overflow: auto;">
+							<table id="tableryzd">
+							</table>
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle">出院诊断：</th>
+					<td class="formValue" colspan="5">
+						<div style="height: 200px; overflow: auto;">
+							<table id="tablecyzd">
+							</table>
+						</div>
+					</td>
+				</tr>*@
+			</table>
+		</form>
+	</div>
+</div>
+<script>
+    var $gridList = $("#gridPatList");
+    var currentMzh = "";
+	$(function () {
+		$('input:not(#txt_kssj, #txt_jssj, #txtxm, #txtkh,#btn_search)').prop('disabled', true);
+		$('textarea').prop('disabled', true);
+		$("#form1").height($(window).height() - 100);
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+
+        });
+        Initial();
+        $("#btn_search").click(function () {
+            currentMzh = "";
+            $gridList.jqGrid('setGridParam',
+            {
+				url: "/PatientList/SelectPatientVisitList",
+				postData: getGridPatPar(),
+				pager: "#gridPatPager",
+				rowNum: '20'
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger("click");
+    });
+
+    $('#txtmzh ,#txtfph,#txtsfkssj,#txtsfjssj').change(function () {
+        currentMzh = "";
+        $gridList.jqGrid('setGridParam',
+        {
+			url: "/PatientList/SelectPatientVisitList",
+			postData: getGridPatPar(),
+			pager: "#gridPatPager",
+			rowNum: '20'
+        }).trigger('reloadGrid');
+    });
+
+    //回车事件绑定
+    $(window).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //初始化
+	function Initial() {
+		$('#form2').hide();
+        gridList();
+    }
+
+    //组装患者信息查询条件
+	function getGridPatPar() {
+		return { kh: $("#txtkh").val(), xm: $("#txtxm").val(), jzlx: $("#sel_jzlx").val(), kssj: $("#txt_kssj").val(), jssj: $("#txt_jssj").val(), jszt: $("#sel_jszt").val() }
+    }
+
+    //主表信息
+    function gridList() {
+        //患者信息
+        $gridList.dataGrid({
+			url: "/PatientList/SelectPatientVisitList",
+            postData: getGridPatPar(),
+            height: $(window).height() - document.getElementById('gridPatList').offsetTop - 70,
+			colModel: [
+				{ label: '就诊类型', name: 'jzlxmc', width: 80, align: 'center' },
+				{ label: 'jzlx', name: 'jzlx', width: 100, align: 'center', hidden: true },
+                { label: '姓名', name: 'xm', width: 80, align: 'center' },
+				{ label: '科室', name: 'ksmc', width: 150, align: 'center' },
+				{ label: '日期', name: 'sj', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+				{ label: '结算状态', name: 'jsztmc', width: 100, align: 'center' },
+				{ label: '卡号', name: 'kh', width: 100, align: 'center' },
+				{ label: 'jzId', name: 'jzId', width: 100, align: 'center', hidden: true },
+				{ label: '门诊/住院号', name: 'mzzyh', width: 100, align: 'center' },
+            ],
+            pager: "#gridPatPager",
+            rowNum: '20',
+            sortname: 'xm',
+			ondblClickRow: function (rowid) {
+				ondblClickRowData(rowid);
+            }
+		});
+	}
+
+	function ondblClickRowData(rowid){
+		var rowData = $gridList.jqGrid('getRowData', rowid);
+		jzlx = rowData.jzlx;
+		if (jzlx == "0") {
+			$('#form1').show();
+			$('#form2').hide();
+			jzId = rowData.jzId;
+			$.najax({
+				type: "POST",
+				url: "/MedicalRecord/SelectNodeContent",
+				data: { jzId: jzId },
+				loadingtext: '病历数据加载中，请稍后…',
+				success: function (ajaxresp) {
+					//填充所有文本、处方、历史处方、grid列表
+					fillMzData(ajaxresp);
+				}
+			});
+		}
+		else {
+			$('#form1').hide();
+			$('#form2').show();
+			var zyh = rowData.mzzyh;
+			$.najax({
+				type: "POST",
+				url: "/PatientList/GetInPatientInfo",
+				data: { zyh: zyh },
+				loadingtext: '病历数据加载中，请稍后…',
+				success: function (ajaxresp) {
+					//填充所有文本、处方、历史处方、grid列表
+					fillZyData(ajaxresp);
+				}
+			});
+		}
+	}
+
+	//填充页面数据
+	function fillMzData(ajaxresp){
+
+            //就诊中（或者是从已就诊列表双击进来，并且选中的是已结束的记录）    直接呈现到当前文本里
+            //或选的是病历模板
+        	$('#form1').formSerialize(ajaxresp);
+        	if (ajaxresp.cfzbz=="1") {
+        		$("input[name='cfzbzRadios'][value='0']").prop('checked',false);
+        		$("input[name='cfzbzRadios'][value='1']").prop('checked',true);
+        	} else {
+        		$("input[name='cfzbzRadios'][value='1']").prop('checked',false);
+		        $("input[name='cfzbzRadios'][value='0']").prop('checked',true);
+	        }
+
+		    //2.填充文本
+		    $('#mzh').text(ajaxresp.mzh);
+		    $('#ghksmc').text(ajaxresp.ghksmc);
+		    ajaxresp.zlkssj = ajaxresp.zlkssj == undefined ? '' : $.getTime({ date: ajaxresp.zlkssj });
+		    $("#zlkssj").text(ajaxresp.zlkssj);
+		    ajaxresp.fbsj = ajaxresp.fbsj == undefined ? '' : $.getDate({ date: ajaxresp.fbsj });
+		    $("#fbsj").val(ajaxresp.fbsj);
+			$('#sbbh').text(ajaxresp.sbbh);
+			$('#ghys').text(ajaxresp.ghys);
+			//清空主诊断
+		$('#tablexyzd').val("");
+		$('#tablezyzd').val("");
+            //3.填充诊断
+		if (ajaxresp.xyzdList && ajaxresp.xyzdList.length && ajaxresp.xyzdList.length > 0) {
+			var $newTr = "";
+				for (var i = 0; i < ajaxresp.xyzdList.length; i++) {
+					var $newTr = $newTr + "\n" + ajaxresp.xyzdList[i].icd10 + "  " + ajaxresp.xyzdList[i].zdmc;
+			}
+			$('#tablexyzd').val($newTr.substring(1));
+            }
+		if (ajaxresp.zyzdList && ajaxresp.zyzdList.length && ajaxresp.zyzdList.length > 0) {
+			var $newTr = "";
+				for (var i = 0; i < ajaxresp.zyzdList.length; i++) {  
+					var $newTr = $newTr + "\n" + ajaxresp.zyzdList[i].icd10 + "  " + ajaxresp.zyzdList[i].zdmc;
+			} $('#tablezyzd').val($newTr.substring(1));
+            }
+	}
+	//填充页面数据
+	function fillZyData(ajaxresp) {
+		//2.填充文本
+		$('#zyh').val(ajaxresp.zyh);
+		$('#ksmc').val(ajaxresp.ksmc);
+		$("#zyys").val(ajaxresp.zyys);
+		$("#zzys").val(ajaxresp.zzys);
+		$('#zrys').val(ajaxresp.zrys);
+		$('#brxz').val(ajaxresp.brxz);
+		ajaxresp.ryrq = ajaxresp.ryrq == undefined ? '' : $.getTime({ date: ajaxresp.ryrq });
+		$('#ryrq').val(ajaxresp.ryrq);
+		ajaxresp.cyrq = ajaxresp.cyrq == undefined ? '' : $.getTime({ date: ajaxresp.cyrq });
+		$('#cyrq').val(ajaxresp.cyrq);
+		$('#zybz').val(ajaxresp.zybz);
+		//清空主诊断
+		$('#tableryzd').val("");
+		$('#tablecyzd').val("");
+		//3.填充诊断
+		if (ajaxresp.ryzdList && ajaxresp.ryzdList.length && ajaxresp.ryzdList.length > 0) {
+			var $newTr = "";
+			for (var i = 0; i < ajaxresp.ryzdList.length; i++) {
+				var $newTr = $newTr + "\n" + ajaxresp.ryzdList[i].icd10+"  "+ ajaxresp.ryzdList[i].zdmc;
+			} $('#tableryzd').val($newTr.substring(1));
+		}
+		if (ajaxresp.cyzdList && ajaxresp.cyzdList.length && ajaxresp.cyzdList.length > 0) {
+			var $newTr = "";
+			for (var i = 0; i < ajaxresp.cyzdList.length; i++) {
+				var $newTr = $newTr + "\n" + ajaxresp.cyzdList[i].icd10 + "  " + ajaxresp.cyzdList[i].zdmc;
+			} $('#tablecyzd').val($newTr.substring(1));
+		}
+	}
+</script>

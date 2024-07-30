@@ -1,0 +1,93 @@
+﻿<script>
+
+    function GetblData(jydm, blId) {
+        if (!!jydm) {
+            $.najax({
+                url: "/MedicalRecordManage/MedicalRecord/GetBlxxbyJydm",
+                data: { blId: blId, jydm: jydm },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    if (data != null && data != undefined) {
+                        var ret = Upload(data);
+                        if (ret == 1) {
+                            $.najax({
+                                url: "/MedicalRecordManage/MedicalRecord/UpdateYBUploadStu",
+                                data: { blId: blId},
+                                dataType: "json",
+                                async: false,
+                                success: function (data) {
+                                    if (data.state == "success") {
+                                        $.modalAlert(data.message, "success");
+
+                                    }
+                                    else {
+                                        $.modalAlert(data.message, "error");
+                                    }
+                                }
+                            });
+                        }
+                        return ret;
+                    }
+                    else {
+                        $.modalAlert("上传失败，请查看日志", "error");
+                    }
+                }
+            });
+        }
+        return 0;
+    }
+    //病案首页
+    function GetbasyData(zyh,jydm) {
+        var ret = 0;
+        if (!!jydm) {
+            $.najax({
+                url: "/MRHomePage/MRHomePage/HomePageUploadJS",
+                data: { zyh: zyh, jydm: jydm },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    if (data != null && data != undefined) {
+                        ret = Upload(data);
+                    }
+                    else {
+                        $.modalAlert("上传失败，请查看日志", "error");
+                    }
+                }
+            });
+        }
+        return ret;
+    }
+
+
+    function Upload(jsondata) {
+        $.najax({
+            url: "http://127.0.0.1:33333/api/QHDSmartCheck/MedicalRecordUpload",//智能审核
+            dataType: "json",
+            data: jsondata,      
+            type: "POST",
+            async: true,
+            success: function (ajaxdata) {
+                if (!!ajaxdata) {
+                    var resp = JSON.parse(ajaxdata);
+                    if (resp.code == "-1") {
+                        $.modalAlert("上传失败" + resp.message, "error");
+                    }
+                    else {
+                        $.modalAlert("上传成功", "success");
+                        return 1;
+                    }
+                }
+                else
+                    $.modalAlert("上传失败，请查看日志", "error");
+
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                $.modalAlert("上传失败." + jqXHR.readyState + ";" + errorThrown, "error");
+            },
+        });
+
+        return 0;
+    }
+
+</script>

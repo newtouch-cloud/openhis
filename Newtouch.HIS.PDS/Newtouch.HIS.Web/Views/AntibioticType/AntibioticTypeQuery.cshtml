@@ -1,0 +1,247 @@
+﻿
+@{
+    ViewBag.Title = "AntibioticTypeQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .dv-left {
+        float: left;
+        width: 39%;
+        border: solid 1px #ddd;
+        overflow: hidden;
+    }
+</style>
+<div class="dv-left">
+    <div style="height:32px;text-align:right;padding-right:8px;padding-top:5px;background-color:white;">
+        <input type="button" id="btn_addtype" class="btn btn-primary" onclick="AntibioticTypeForm('','1','')" value="新增" />
+        <input type="button" id="btn_edittype" class="btn btn-primary" onclick="gridEditRow('1')" value="修改" />
+        <input type="button" id="btn_droptype" class="btn btn-primary" onclick="DropType('1')" value="删除" />
+    </div>
+    <div>
+        <table id="gridList"></table>
+    </div>
+</div>
+<div class="panel panel-default" style="width:60%; float:right; ">
+    <input type="hidden" id="parentId" name="parentId" />
+    <table id="DetailList"></table>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new[] { 3, 4, 6 },
+    F3Text = "新增",
+    F4Text = "修改",
+    F6Text = "删除"
+})
+<script>
+    var $gridList = $("#gridList");
+    $(".toolbar").width(350);
+
+    $(function () {
+        $gridList.dataGrid({
+            url: "/AntibioticType/SelectGridList?typelevel=1",
+            height: window.$(window).height() - 85,
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '分类名称', name: 'typeName', width: 150, align: 'left' },
+                {
+                    label: '分类等级', name: 'typelevel', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue === "1") {
+                            return "一级分类";
+                        }
+                        else if (cellvalue === "2") {
+                            return "二级分类";
+                        }
+                        else {
+                            return "error";
+                        }
+                    }
+                },
+                { label: '权限级别', name: 'qxjbmc', width: 120, align: 'left' },
+                { label: 'qxjb', name: 'qxjb', hidden: true, align: 'left' },
+                { label: 'parentId', name: 'parentId', hidden: true, align: 'left' }
+            ],
+            sortname: 'CreateTime asc',
+            viewrecords: true,
+            onSelectRow: function (rowid) {
+                SelectGridlistRow(rowid);
+            },
+            ondblClickRow: function (rowid) {
+                gridEditRow('1');
+            }
+        });
+        initChargeItemGrid([]);
+    });
+
+    function SelectGridlistRow(rowid) {
+        var rowdata = $("#gridList").getRowData(rowid);
+        if (!rowdata || !rowdata.Id) {
+            return;
+        }
+        $("#parentId").val(rowdata.Id);
+        $.ajax({
+            url: "/AntibioticType/SelectGridList?typelevel=2",
+            data: { parentId: rowdata.Id },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                $("#DetailList").clearGridData();
+                initChargeItemGrid(data);
+            }
+        });
+    }
+
+    //jGrid声明
+    function initChargeItemGrid(data) {
+        $('#DetailList').newtouchLocalDataGrid({
+            height: $(window).height() - 130,
+            unwritten: false,
+            caption: "抗生素详细分类",
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '分类名称', name: 'typeName', width: 150, align: 'left' },
+                {
+                    label: '分类等级', name: 'typelevel', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == "1") {
+                            return "一级分类"
+                        }
+                        else if (cellvalue == "2") {
+                            return "二级分类";
+                        }
+                        else {
+                            return "error";
+                        }
+                    }
+                },
+                { label: 'qxjb', name: 'qxjb', hidden: true, align: 'left' },
+                { label: '权限级别', name: 'qxjbmc', width: 120, align: 'left' },
+                { label: 'parentId', name: 'parentId', hidden: true, align: 'left' }
+            ],
+            ondblClickRow: function (rowid) {
+                gridEditRow('2');
+            }
+        }, data);
+    }
+
+    //新增子类别
+    function newtouch_event_f3() {
+        parentId = $("#parentId").val();
+        if (parentId == "") {
+            $.modalAlert("请先选择所在的大类", 'warning');
+            return;
+        }
+        AntibioticTypeForm("", "2", parentId);
+    }
+
+
+    //修改
+    function newtouch_event_f4() {
+        gridEditRow("2");
+    }
+
+    function gridEditRow(level) {
+        if (level == "1") {
+            var rowid = $('#gridList').jqGrid('getGridParam', 'selrow');
+            var rowData = $('#gridList').getRowData(rowid);
+            if (!rowid) {
+                $.modalAlert("请先选择要修改的大类", 'warning');
+                return;
+            }
+            AntibioticTypeForm(rowData.Id, level, "");
+        }
+        else if (level == "2") {
+            var rowid = $('#DetailList').jqGrid('getGridParam', 'selrow');
+            var rowData = $('#DetailList').getRowData(rowid);
+            if (!rowid) {
+                $.modalAlert("请先选择要修改的子类", 'warning');
+                return;
+            }
+            AntibioticTypeForm(rowData.Id, level, rowData.parentId);
+        }
+    }
+
+    function AntibioticTypeForm(Id, level, parentId) {
+        $.modalOpen({
+            id: "AntibioticTypeSetting",
+            title: "抗生素分类录入",
+            url: "/AntibioticType/AntibioticTypeSettingForm?Id=" + Id + "&level=" + level + "&parentId=" + parentId,
+            width: "400px",
+            height: "245px",
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId, isClose) {
+                if (level == "1") {
+                    var ret = top.frames[iframeId].AcceptClick(function () {
+                        $("#gridList").trigger("reloadGrid");
+                        $("#DetailList").clearGridData();
+                        if (isClose === undefined || isClose === true) {
+                            top.frames[iframeId].$.modalClose();
+                        }
+                    });
+                }
+                else if (level == "2") {
+                    var rowid = $('#gridList').jqGrid('getGridParam', 'selrow');
+                    var ret = top.frames[iframeId].AcceptClick(function () {
+                        SelectGridlistRow(rowid);
+                        if (isClose === undefined || isClose === true) {
+                            top.frames[iframeId].$.modalClose();
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    //删除
+    function newtouch_event_f6() {
+        DropType("2");
+    }
+
+    function DropType(level) {
+        if (!window.confirm("删除后，已设置该分类的抗生素药品需重新设置。\r\n是否确定要删除该抗生素分类？\r\n")) {
+            return;
+        }
+        if (level == "1") {
+            var rowid = $('#gridList').jqGrid('getGridParam', 'selrow');
+            var rowData = $('#gridList').getRowData(rowid);
+            if (!rowid) {
+                $.modalAlert("请先选择要删除的大类", 'warning');
+                return;
+            }
+            var Id = rowData.Id;
+            if (Id) {
+                $.najax({
+                    url: "/AntibioticType/DeleteData",
+                    dataType: "json",
+                    data: { Id: Id },
+                    type: "POST",
+                    success: function (data) {
+                        $("#gridList").trigger('reloadGrid');
+                        $("#DetailList").clearGridData();
+                        $.modalAlert("删除成功", 'warning');
+                    }
+                });
+            }
+        }
+        else if (level == "2") {
+            var rowid = $('#DetailList').jqGrid('getGridParam', 'selrow');
+            var rowData = $('#DetailList').getRowData(rowid);
+            if (!rowid) {
+                $.modalAlert("请先选择要删除的子类", 'warning');
+                return;
+            }
+            var Id = rowData.Id;
+            if (Id) {
+                $.najax({
+                    url: "/AntibioticType/DeleteData",
+                    dataType: "json",
+                    data: { Id: Id },
+                    type: "POST",
+                    success: function (data) {
+                        var rowid = $('#gridList').jqGrid('getGridParam', 'selrow');
+                        SelectGridlistRow(rowid);
+                        $.modalAlert("删除成功", 'warning');
+                    }
+                });
+            }
+        }
+    }
+</script>

@@ -1,0 +1,197 @@
+﻿
+@{
+    ViewBag.Title = "收费大类详细信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">收费大类：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="feetypecode" name="feetypecode" class="form-control" onchange="FeeChanged()">
+                        <option value=""> ==请选择== </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">搜索：</th>
+                <td class="formValue">
+                    <input id="txt_keyword" type="text" class="form-control" placeholder="收费项目/收费大类" style="width: 180px;float:left;">
+                   
+                        <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                    
+                </td>
+            </tr>
+            <tr>
+                @*<th class="formTitle">列表：</th>*@
+                <table id="gridList"></table>
+                <div id="gridPager"></div>
+            </tr>
+            <tr>
+                @*<th class="formTitle">按钮：</th>*@
+                <td class="formValue formDdlSelectorTd">
+                    <a class='btn btn-default' id="submit" style='width:80px;background:#00CD66;color:#eee;height:20px;font-size:13px;padding-top:5px;' onclick="saveSelected();"><span class="glyphicon glyphicon-ok">保存已选</span></a>
+                    <a class='btn btn-default' id="submit" style='width:80px;background:#00CD66;color:#eee;height:20px;font-size:13px;padding-top:5px;' onclick="saveAll();"><span class="glyphicon glyphicon-ok">保存全部</span></a>
+
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        getSelectBind();
+        initSel();
+        //GridInit();
+    });
+
+    function getSelectBind() {
+        $("#feetypecode").bindSelect({
+            url: "/RecordManage/MrFeeRel/GetFeeSel",
+            id: "code",
+            text: "name",
+            minimumResultsForSearch: 0
+        });
+    }
+
+	function initSel() {
+        if (!!keyValue) {
+            $.ajax({
+                url: "/RecordManage/MrFeeRel/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    GridInit(data.feetypecode);
+                    //var code = data.feetypecode;
+                    //$("#gridList").jqGrid('setGridParam', {
+                    //    postData: { code: code }, page: 1
+                    //}).trigger('reloadGrid');
+                }
+            });
+        }
+    }
+
+    var idList = []; 
+    function GridInit(code) {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/RecordManage/MrFeeRel/GetPagintionList",
+            postData: { code: code },
+            autowidth: true,
+            height: $(window).height() - 250,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "收费项目", name: "sfxm", width: 80, align: 'left' },
+                { label: "收费项目名称", name: "sfxmmc", width: 100, align: 'left' },
+                { label: "收费大类", name: "feetypecode", width: 80, align: 'left' },
+                { label: "收费大类名称", name: "name", width: 100, align: 'left' }
+
+            ],
+            sortname: "ID desc",
+            rowNum: 13,
+            pager: "#gridPager",
+            viewrecords: true,
+            multiselect: true,
+            ondblClickRow: function () {
+                btn_edit();
+            },
+            onSelectRow: function (row) {
+                //获取多选勾选的Id
+                var rowIds = $('#gridList').jqGrid('getGridParam', 'selarrrow');
+                idList = rowIds;
+            },
+            onSelectAll: function (rowids, statue) {
+                if (statue == true) {
+                    //全选
+                    idList = rowids;
+                } else {
+                    //清空
+                    idList = [];
+                }
+            },
+            gridComplete: function () {
+                //默认全选
+                //var count = $("#gridList").getGridParam("reccount");
+                //for (var i = 1; i <= count; i++) {
+                //    $("#gridList").jqGrid('setSelection', i);
+                //}
+            },
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), code:""}, page: 1
+            }).trigger('reloadGrid');
+            //获取全部列表
+            //var code = $("#feetypecode option:selected").val();
+            //var allIdList = window.$("#gridList").getDataIDs();
+            //var dataList = [];
+            //for (var i = 0; i < allIdList.length; i++) {
+            //    var dataObj = window.$("#gridList").getRowData(allIdList[i]);
+            //    dataList.push(dataObj);
+            //    if (dataObj.feetypecode == code) {
+            //        //选中
+            //        $("#gridList").jqGrid('setSelection', allIdList[i]);
+            //    }
+            //}
+        });
+    }
+
+    //更换收费大类时,重新加载列表
+    function FeeChanged() {
+        var code = $("#feetypecode option:selected").val();
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { code: code }, page: 1
+        }).trigger('reloadGrid');
+    }
+
+    //保存已选
+    function saveSelected() {
+        var code = $("#feetypecode option:selected").val();
+        var allIdList = window.$("#gridList").getDataIDs();
+        var dataList = [];
+        for (var i = 0; i < idList.length; i++) {
+            var dataObj = window.$("#gridList").getRowData(idList[i]);
+            dataObj.feetypecode = code;
+            dataList.push(dataObj);
+        }
+        save(dataList);
+
+    }
+
+    //保存全部
+    function saveAll() {
+        var allIdList = window.$("#gridList").getDataIDs();
+        var code = $("#feetypecode option:selected").val();
+        var dataList = [];
+        for (var i = 0; i < allIdList.length; i++) {
+            var dataObj = window.$("#gridList").getRowData(allIdList[i]);
+            dataObj.feetypecode = code;
+            dataList.push(dataObj);
+        }
+        save(dataList);
+    }
+
+    function save(postData) {
+        if (postData.length==0) {
+            window.$.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        $.submitForm({
+            url: "/RecordManage/MrFeeRel/Save",
+            param: { list: postData },
+            success: function () {
+                $("#gridList").resetSelection();
+                $("#gridList").trigger("reloadGrid");
+                
+                $.modalClose();
+            }
+        });
+    }
+
+</script>

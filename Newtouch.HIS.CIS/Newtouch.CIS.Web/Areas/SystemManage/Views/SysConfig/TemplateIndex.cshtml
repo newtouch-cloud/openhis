@@ -1,0 +1,135 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_addTmp()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_editTmp()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_deleteTmp()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keywordTmp" type="text" class="form-control" placeholder="配置名称/配置编码" style="width: 200px;">
+                        <span class="input-group-btn">
+                            <button id="btn_searchTmp" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridListTmp"></table>
+    @*<div id="gridPager"></div>*@
+</div>
+<script>
+    $(function () {
+        gridListTmp()
+    })
+
+    function gridListTmp()
+    {
+        var $gridListTmp = $("#gridListTmp");
+        $gridListTmp.dataGrid({
+            postData: { keyword: $("#txt_keywordTmp").val() },
+            url: "/SystemManage/SysConfig/GetGridJsonTmp",
+            height: $(window).height() - 100,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: "有效", name: "zt", width: 50, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: "名称", name: "Name", width: 100, align: 'left' },
+                { label: '编码', name: 'Code', width: 80, align: 'left' },
+                { label: '说明', name: 'Memo', width: 100, align: 'left' },
+                { label: "默认值", name: "DefaultVal", width: 100, align: 'left' },
+                { label: '排序', name: 'px', width: 40, align: 'left' },
+                { label: '创建人', name: 'CreatorCode', width: 80, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 80, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ],
+            ondblClickRow: function (rowid) { btn_editTmp(); }
+        });
+        $("#btn_searchTmp").click(function () {
+            $("#gridListTmp").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keywordTmp").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function btn_addTmp() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增配置模板",
+            url: "/SystemManage/SysConfig/TemplateForm",
+            width: "450px",
+            height: "350px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridListTmp").resetSelection();
+                    $("#gridListTmp").trigger("reloadGrid");
+                    $.currentWindow().$("#gridList").resetSelection();
+                    $.currentWindow().$("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_editTmp() {
+        var keyValue = $("#gridListTmp").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改配置",
+            url: "/SystemManage/SysConfig/TemplateForm?keyValue=" + keyValue,
+            width: "450px",
+            height: "350px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridListTmp").resetSelection();
+                    $("#gridListTmp").trigger("reloadGrid");
+                    $.currentWindow().$("#gridList").resetSelection();
+                    $.currentWindow().$("#gridList").trigger("reloadGrid");
+
+                });
+
+            }
+        });
+    }
+
+    function btn_deleteTmp()
+    {
+        var keyValue = $("#gridListTmp").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/SystemManage/SysConfig/DeleteFormTmp",
+            param: { keyValue: keyValue },
+            success: function () {
+                $("#gridListTmp").resetSelection();
+                $("#gridListTmp").trigger("reloadGrid");
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

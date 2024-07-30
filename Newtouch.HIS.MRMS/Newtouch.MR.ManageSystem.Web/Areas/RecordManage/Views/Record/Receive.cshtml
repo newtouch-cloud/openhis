@@ -1,0 +1,544 @@
+﻿@using Newtouch.Common.Operator;
+@using Newtouch.MR.ManageSystem.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+
+<script src="/Content/js/BootstrapMenu.min.js"></script>
+
+<style>
+    ul, li {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+        ul#allKindPat {
+            width: 25px;
+            float: left;
+        }
+
+            ul#allKindPat li.selectedli {
+                background-color: rgba(111, 243, 173, 0.5);
+                text-decoration-color: white;
+            }
+
+            ul#allKindPat li {
+                background-color: rgba(215, 242, 252, 0.86);
+                margin-bottom: 2px;
+                text-align: center;
+                vertical-align: middle;
+                touch-action: manipulation;
+                cursor: pointer;
+                user-select: none;
+                padding: 3px 6px;
+                border-width: 1px;
+                border-style: solid;
+                border-color: transparent;
+                border-image: initial;
+                border-radius: 4px;
+            }
+
+    .dv-left {
+        width: 58%;
+        float: left;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+        width: 40%;
+        /*background-color:*/
+    }
+
+    #patList {
+        float: left;
+        background-color: #FFF;
+    }
+
+    .clearboth {
+        clear: both;
+    }
+</style>
+<div id="patList" class="gridPanel dv-left">
+    <div class="topPanel">
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="患者姓名/住院号" style="width: 130px;">
+                            <span class="input-group-btn">
+                                <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                            <span class="input-group-btn">
+                                <button id="btn_receive" onclick="btn_receive()" type="button" class="btn btn-primary" style="width:50px;margin-left:8px;">签收</button>
+                            </span>
+                            <span class="input-group-btn">
+                                <button id="btn_back" onclick="btn_back()" type="button" class="btn btn-primary" style="width:50px;margin-left:10px;border-bottom-left-radius:5px;border-top-left-radius:5px;">退回</button>
+                            </span>
+                            <span class="input-group-btn">
+                                <button id="btn_Exportdata" onclick="btn_Exportdata()" type="button" class="btn btn-primary" style="width:50px;margin-left:10px;border-bottom-left-radius:5px;border-top-left-radius:5px;">导出</button>
+                            </span>
+                        </div>
+                    </td>
+                    <td class="formValue" colspan="2">
+                        <input id="txt_ksrq" type="text" class="form-control input-wdatepicker" style="float:left;width:30%;height:18px;margin-left:15px;margin-top:10px;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { Timeclick(); } })" value="@DateTime.Now.ToString("yyyy-MM-01")">
+                        <span style="float:left;margin-left:10px;">--</span>
+                        <input id="txt_jsrq" type="text" class="form-control input-wdatepicker" style="float:left;width:30%;height:18px;margin-left:12px;margin-top:10px;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { Timeclick(); } })" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+		<ul id="allKindPat" role="tablist">
+			@*<li role="presentation">
+			<a role="tab" data-toggle="tab" onclick="init(0)">我的病人</a>
+		</li>*@
+			<li role="presentation" class="selectedli">
+				<a href="#div_inPatlist" role="tab" data-toggle="tab" onclick="init(1)">已提交</a>
+			</li>
+			<li role="presentation">
+				<a href="#div_inPatlist" role="tab" data-toggle="tab" onclick="init(2)">已退回</a>
+			</li>
+			<li role="presentation">
+				<a href="#div_outPatlist" role="tab" data-toggle="tab" onclick="init(3)">已签收</a>
+			</li>
+			<li role="presentation">
+				<a href="#div_outPatlist" role="tab" data-toggle="tab" onclick="init(4)">尚未提交</a>
+			</li>
+		</ul>
+        <div id="div_Patlist" style="margin-left: 25px;margin-right:10px;">
+            <table id="gridListPat"></table>
+            <div id="gridPagerPat"></div>
+        </div>
+    </div>
+</div>
+<div id="dv_Medlist" class="gridPanel dv-right">
+    <div class="topPanel">
+        <div class="toolbar" style="float:left;margin-right: 5px;">
+            <div id="divPatientBasicInfo" style="top: 10px;z-index: 100009;width: 29%;line-height: 40px;font-size: 18px;white-space: nowrap;text-overflow: ellipsis;left: 40%;text-align:left;padding-left: 18px;color:#07bbf1;">
+                <input type="hidden" id="inpzyh" name="inpzyh" />
+            </div>
+        </div>
+        <div class="toolbar" style="float:right;margin-right: 5px;">
+            @*<div class="btn-group">
+                <a class="btn btn-primary" onclick="Refresh()"><span class="fa fa-refresh"></span></a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>病历新建</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>病历修改</a>
+            </div>*@
+            @*<div class="btn-group">
+                    <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>病历删除</a>
+                </div>*@
+        </div>
+    </div>
+    <table id="gridList"></table>
+</div>
+<script>
+    var currentobj = [];
+    var flag = 0; //初次加载患者树标志
+    var currentPatId = "";
+    var curPatinfo = [];
+    var zyh = "";
+    var Stuzt =1;
+
+     var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgIds = '@(ViewBag.OrgId)';
+    var CurUserCode = '@ViewBag.CurUserCode';
+
+
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新加载jqGrid的宽
+            window.initLayout("div_Patlist");
+            window.initLayout("dv_Medlist");
+        });
+
+        $("#allKindPat").children().click(function () {
+            $("#allKindPat").children().removeClass("selectedli")
+
+            $(this).addClass("selectedli")
+        });
+
+
+        if (flag == 0) {
+            currentobj = JSON.parse(sessionStorage.getItem('currentobj'));
+
+            if (currentobj != null) {
+                GetPatList(currentobj);
+                gridList(currentobj);
+
+
+                $('#divPatientBasicInfo').html("患者信息：" + currentobj.xm
+                        + '&nbsp;/&nbsp;' + $.getGender(currentobj.sex)
+                        + '&nbsp;/&nbsp;' + currentobj.age + "岁"
+                        + '&nbsp;/&nbsp;' + currentobj.brxzmc
+                        + '&nbsp;/&nbsp;<span id="patzyh">' + currentobj.zyh + "</span>");
+                $('#inpzyh').val(currentobj.zyh);
+                curPatinfo = currentobj;
+                zyh = curPatinfo.zyh;
+                currentobj = null;
+            //JSON.parse(sessionStorage.removeItem('currentobj'));
+sessionStorage.removeItem('currentobj');
+            }
+            else {
+                GetPatList();
+               gridList();
+            }
+
+            flag = 1;
+        }
+        else {
+            GetPatList();
+            gridList();
+        }
+
+    })
+
+    //患者病历列表树
+    function gridList(currentobj) {
+        var zyh = "";
+        if (currentobj != null) {
+            zyh = currentobj.zyh
+        }
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Blzt",
+            url: "/RecordManage/Record/GetMedRecordTree",
+            postData: { zyh: zyh },
+            height: $(window).height() - 96,
+            colModel: [
+                { label: "病历关系ID", name: "Id", hidden: true, key: true },
+                { label: "病历大类ID", name: "BllxId", hidden: true },
+                { label: "住院号", name: "zyh", hidden: true },
+                { label: "病历ID", name: "BlId", hidden: true },
+                { label: "病历类型标识", name: "bllx", hidden: true },
+                { label: "文件读取编辑权限控制标志", name: "ctrlLevel", hidden: true },
+                {
+                    label: '病历名称', name: 'Name', width: 200, align: 'left',
+                    formatter: function (cellvalue, options, rowobject) {
+                        if (rowobject.parentId == null) {
+                            return cellvalue ;
+                        }
+                        else
+                            return '<span class="glyphicon glyphicon-file" style="color:#6ff3ad; font-size: 13px;"></span> ' + cellvalue;
+                    }
+                },
+                {
+                    label: "病历状态", name: "Blzt", width: 100, align: "center", formatter: function (cellvalue) {
+                        if (cellvalue == "1")
+                            return "已签名";
+                        else if (cellvalue == "0")
+                            return "未签名";
+                        else
+                            return "";
+                    }
+                },
+                { label: '医生名称', name: 'Docname', width: 100, align: 'center', hidden: true },
+                { label: "医生工号", name: "Doccode", hidden: true },
+                { label: '病历日期', name: 'Blrq', width: 130, hidden: true, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '更新日期', name: 'LastModifierCode', width: 130, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+
+            ],
+            //onSelectRow: function (rowid, status) {
+            //    if (status == true) {
+
+            //        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+            //        var patData = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+            //        if (patData != null && patData != "undefied") {
+            //            if (rowData.parent == null || rowData.parent == "") {//禁用条件
+            //                btn_add();
+            //            }
+            //        }
+            //        else {
+            //            $.modalAlert("请选择患者1", 'warning');
+            //        }
+            //    }
+            //},
+            onDoubleClickRow: function () { },
+            onRightClickRow: function (rowid, irow, icol, e) {
+                var rowData = $("#gridList").jqGrid('getRowData', rowid);
+                if (rowData.zyh != "") {
+                    initrightMenu(rowData);
+                }
+            }
+
+
+        });
+    }
+
+    //回车触发查询事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    $("#btn_search").click(function () {
+        $("#gridListPat").jqGrid('setGridParam', {
+            postData: { keyword: $("#txt_keyword").val(), zyh: "", kssj: $('#txt_ksrq').val(), jssj: $('#txt_jsrq').val() },
+        }).trigger('reloadGrid');
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: "" },
+        }).trigger('reloadGrid');
+        $('#divPatientBasicInfo').html("");
+        $('#inpzyh').val("");
+    });
+
+
+    function Refresh() {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: $('#inpzyh').val() },
+        }).trigger('reloadGrid');
+    }
+
+    function initrightMenu(rowData) {
+        var p = '.gridPanel tr[id=' + rowData.Id + ']';
+        var menu = new BootstrapMenu(p, {
+            //fetchElementData获取元数据
+            fetchElementData: function ($rowElem) {
+                var data = rowData;
+                return data;    //return的目的是给下面的onClick传递参数
+            },
+            actions: [{
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 浏览病历',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.bllx ==@((int)EnumBllx.basy)) {
+                        //window.open("/ReportManage/Report/EMRBasyPrintReport?zyh=" + obj.zyh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                        //window.open("/ReportManage/Report/EMRBasyPrintReport_2?zyh=" + obj.zyh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                        window.open(reportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%e8%a5%bf%e5%8c%bb%e7%97%85%e6%a1%88%e9%a6%96%e9%a1%b5part1&rs:Command=Render&orgId=" + orgIds+"&zyh=" + obj.zyh);
+                        window.open(reportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%e8%a5%bf%e5%8c%bb%e7%97%85%e6%a1%88%e9%a6%96%e9%a1%b5part2&rs:Command=Render&orgId=" + orgIds + "&zyh=" + obj.zyh);
+
+                    }
+                    else {
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病历操作", enName: "", url: "/RecordManage/Record/PreView?blid=" + obj.BlId + "&bllx=" + obj.bllx + "&zyh=" + obj.zyh, AppId: "EMR" });
+                    }
+                }
+            }
+           ]
+        });
+    }
+
+    init(1);
+    function init(type) {
+        Stuzt = type;
+        $("#gridListPat").jqGrid('setGridParam', {
+            postData: { blzt: type, kssj: $('#txt_ksrq').val(), jssj: $('#txt_jsrq').val()},
+		}).trigger('reloadGrid');
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: "", kssj: "", jssj: "" },
+        }).trigger('reloadGrid');
+        $('#divPatientBasicInfo').html("");
+		$('#inpzyh').val("");
+        if (type == @((int)EnumRecordStu.ytj)) {//已提交,签收 退回按钮可用
+			$("#btn_receive").removeAttr("disabled");
+			$("#btn_back").removeAttr("disabled");
+        }
+        else if (type ==@((int)EnumRecordStu.yqs))
+        {
+            $("#btn_receive").attr('disabled', "true");
+            $("#btn_back").removeAttr("disabled");
+        }
+        else {
+			$("#btn_receive").attr('disabled', "true");
+			$("#btn_back").attr('disabled', "true");
+		}
+    }
+
+
+
+    //患者列表
+    var idList = [];//勾选的患者Id
+    function GetPatList(currentobj) {
+        var zyh = "";
+        if (currentobj != null) {
+            zyh = currentobj.zyh
+        }
+        var $gridListPat = $("#gridListPat");
+        $gridListPat.dataGrid({
+            url: "/RecordManage/Record/PatList",
+            postData: { zyh: zyh, type: 2, blzt: 1, kssj: $('#txt_ksrq').val(), jssj: $('#txt_jsrq').val()},
+            //postData: { zyh: zyh, type: 2, blzt: "" },
+            height: $(window).height() - 150,
+            colModel: [
+                { label: 'ID', name: 'Id', hidden: true, key: true },
+                {
+                    label: '状态', name: 'zybz', width: 30, align: 'left', formatter: function (val) {
+                        if (val == '@((int)EnumZYBZ.Djz)' || val == '@((int)EnumZYBZ.Ycy)') {
+                            return "出院";
+                        }
+                        else if (val == '@((int)EnumZYBZ.Bqz)') {
+                            return "在院";
+                        }
+                        else if (val == '@((int)EnumZYBZ.Zq)') {
+                            return "转区";
+                        }
+                        else if (val == '@((int)EnumZYBZ.Wry)')
+                        {
+                            return "取消入院";
+                        }
+                        else{ return "其他"; }
+                    }
+                },
+                { label: '住院号', name: 'zyh', width: 50, align: 'left' },
+                { label: '姓名', name: 'xm', width: 50, align: 'left' },
+                { label: '出院科室', name: 'DeptName', width: 80, align: 'left' },
+                {
+                    label: '性别', name: 'sex', width: 30, align: 'left', formatter: function (val) {
+                        if (val == '@((int)EnumSex.F)') {
+                            return "女";
+                        }
+                        else if (val == '@((int)EnumSex.M)') {
+                            return "男";
+                        }
+                        else { return "其他"; }
+                    }
+                },
+                {
+                    label: '出院时间', name: 'cqrq', width: 120, align: 'left', formatter: function (val) {
+                        return val.replace("T", " ");
+                    }
+                },
+				{ label: '卡号', name: 'cardno', hidden: true },
+                { label: '入院诊断', name: 'zdmc', width: 120, align: 'left' },
+                { label: '出院诊断', name: 'cyzdmc', width: 120, align: 'left' },
+                { label: '是否当前', name: 'isCheck', hidden: true },
+
+            ],
+            pager: "#gridPagerPat",
+            sortname: 'isCheck desc',
+            viewrecords: true,
+            multiselect: true,
+            onSelectRow: function (row) {
+                //获取多选勾选的Id
+                var rowIds = $('#gridListPat').jqGrid('getGridParam', 'selarrrow');
+                idList = rowIds;
+
+                var rowData = $('#gridListPat').jqGrid('getRowData', row);
+                if (rowData != currentPatId && currentPatId != "" && flag == 0) {
+                    $("#gridListPat tr[id=" + currentPatId + "]").find("td").css("background-color", "");
+                }
+
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { zyh: rowData.zyh }
+                }).trigger('reloadGrid');
+
+                $('#divPatientBasicInfo').html("患者信息：" + rowData.xm
+                    + '&nbsp;/&nbsp;' + $.getGender(rowData.sex)
+                    //+ '&nbsp;/&nbsp;' + window.currentobj.age + "岁"
+                    //+ '&nbsp;/&nbsp;' + window.currentobj.brxzmc
+                    + '&nbsp;/&nbsp;' + rowData.zyh);
+                $('#inpzyh').val("");
+
+            },
+            onSelectAll: function (rowids, statue) {
+                if (statue == true) {
+                    //全选
+                    idList = rowids;
+                } else {
+                    //清空
+                    idList = [];
+                }
+            },
+            gridComplete: function () {
+
+                var ids = $("#gridListPat").getDataIDs();
+                //$("#gridListPat").jqGrid('setSelection', ids[0]);
+                for (i = 0; i < ids.length; i++) {
+                    var rowData = $("#gridListPat").getRowData(ids[i]);
+                    if (rowData.isCheck == 1) {
+                        currentPatId = ids[i];
+                    }
+                    break;
+                }
+                if (currentPatId != "" && flag == 0) {
+                    $("#gridListPat tr[id=" + currentPatId + "]").find("td").css("background-color", "#fff6e5");
+                }
+                else if (currentPatId != "") {
+                    $("#gridListPat tr[id=" + currentPatId + "]").find("td").css("background-color", "");
+                }
+            }
+
+        });
+    }
+
+    //根据Id批量签收病历
+    function btn_receive() {
+		submitForm(3);
+	}
+
+	//根据Id批量退回病历
+    function btn_back() {
+        $.modalConfirm("确定退回当前病历？", function (flag) {
+            if (flag) {
+                submitForm(2);
+            }
+        });
+	}
+
+	//提交, 修改病案状态
+	function submitForm(blzt) {
+		if (idList.length == 0) {
+			$.modalAlert("请选中一条信息", 'warning');
+			return false;
+		} else {
+			var Id = "";
+			for (var i = 0; i < idList.length; i++) {
+				Id += "'" + idList[i] + "',";
+			}
+			if (Id.indexOf(",") != -1) {
+				Id = Id.substring(0, Id.length - 1);
+			}
+			$.ajax({
+				url: "/RecordManage/Record/updateRecordStu?Id=" + Id + "&blzt=" + blzt,
+				dataType: "json",
+				async: false,
+				success: function (data) {
+					$("#gridListPat").resetSelection();
+					$("#gridListPat").trigger("reloadGrid");
+					//init(3);
+					idList = [];//清空已勾选列表
+				}
+			});
+		}
+    }
+
+    //导出数据
+    function btn_Exportdata() {
+        var txt_keyword = $("#txt_keyword").val();
+        var url = '@reportUrl' + "?tempCode=" + "1292" + "&orgId=" + orgIds+ "&systemCode=" + '@reportSystemCode';
+        window.open(url + "&keyword=" + txt_keyword + "&ysgh=" + CurUserCode + "&RecordStu=" + Stuzt + "&kssj=" + $("#txt_ksrq").val()+ "&jssj=" + $("#txt_jsrq").val());
+
+    }
+
+
+    /*function Timeclick() {
+        $("#gridListPat").jqGrid('setGridParam', {
+            postData: { kssj: $("#txt_ksrq").val(), jssj: $("#txt_jsrq").val(), type: Stuzt },
+        }).trigger('reloadGrid');
+    }*/
+
+    function Timeclick() {
+        if (Stuzt > 1) {
+            $("#gridListPat").jqGrid('setGridParam', {
+                postData: { kssj: $("#txt_ksrq").val(), jssj: $("#txt_jsrq").val(), type: Stuzt },
+            }).trigger('reloadGrid');
+        } else {
+            $("#gridListPat").jqGrid('setGridParam', {
+                postData: { kssj: $("#txt_ksrq").val(), jssj: $("#txt_jsrq").val(), type: 2 },
+            }).trigger('reloadGrid');
+        }
+    }
+
+
+
+</script>

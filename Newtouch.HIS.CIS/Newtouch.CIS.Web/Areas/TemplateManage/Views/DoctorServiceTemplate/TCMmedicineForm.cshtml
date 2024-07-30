@@ -1,0 +1,590 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "TCMmedicineForm";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .ui-jqgrid .ui-jqgrid-btable tbody tr.jqgrow td {
+        border: 1px solid #ddd;
+    }
+    #gridmedicinePager_center{
+        display: none;
+    }
+    #linkMedicine .ui-th-ltr, #linkkfcf .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr {
+        border: solid 1px #ddd;
+    }
+</style>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/cispage.css", false)" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/wmgridmenu.css", false)" rel="stylesheet" />
+
+
+<div id="linkMedicine" style="width:100%;">
+    <table id="gridmedicine"></table>
+    <div id="gridmedicinePager"></div>
+    @Html.Partial("_TemplateFooter")
+</div>
+
+<script>
+    var mbId = $.request("mbId");
+    var localdata = [];
+    $(function () {
+        gridMedicine();
+
+        $("#mblx").bindSelect({
+            url: "/MedicalRecord/GetMbqxSelectJson",
+        });
+
+        if (mbId) {
+            $.najax({
+                url: "/DoctorManage/DoctorsAdvice/GetMBDetailByMainId",
+                dataType: "json",
+                data: { Id: mbId },
+                type: "POST",
+                success: function (localdata) {
+                    if (localdata !== typeof (undefined) && localdata.length > 0) {
+                        $.each(localdata, function () {
+                            this.action = getTCMActionStr();
+                        });
+                        $("#gridmedicine").jqGrid('setGridParam', {
+                            datatype: 'local',
+                            data: localdata
+                        }).trigger("reloadGrid");
+                        $('#mblx').val(localdata[0].tcfw).trigger("change");
+                        $('#mbmc').val(localdata[0].tcmc);
+                    }
+                }
+            });
+        }
+    });
+
+    //列表
+    function gridMedicine() {
+        var $gridmedicine = $("#gridmedicine");
+        $gridmedicine.jqGrid({
+            datatype: 'local',
+            data: localdata,
+            height: $(window).height() - 200,
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                {
+                    label: 'Id', name: 'Id', width: 120, editwidth: '81%', align: 'center', hidden: true
+                },
+                {
+                    label: '组号', name: 'zh', width: 40, editwidth: '100%', align: 'center', editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    MatchTCMZuhaoInfo(rowid);   //同一组号需匹配用法、频次、天数、截止日期
+                                }
+                            }
+                        ]
+                    }, editable: true
+                },
+                {
+                    label: '<span class="required">*</span>名称', name: 'xmmc', width: 200, editwidth: '100%', align: 'center', editable: true, editrules: { required: true }
+                },
+                { label: 'xmdm', name: 'xmdm', width: 100, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '<span class="required">*</span>规格', name: 'ypgg', hidden: true, editwidth: '100%', align: 'center', editable: true, editrules: { required: true } },
+                {
+                    label: '<span class="required">*</span>剂量', name: 'ypjl', width: 60, editwidth: '100%', align: 'center', editable: true, editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var cellval = $(this).val();
+                                    if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                        $.modalAlert("剂量为空，请确认。", 'warning');
+                                        return;
+                                    }
+                                    if (isNaN(cellval)) {
+                                        $.modalAlert("剂量：请填写数字", 'warning');
+                                        $(this).val('')
+                                        return;
+                                    }
+                                }
+                            }
+                        ]
+                    }, editrules: { required: true }
+                },
+                {
+                    label: '<span class="required">*</span>单位', name: 'dw', width: 65, editwidth: '70%', align: 'center', editable: true, edittype: "select", editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    $("#" + rowid + "_dwwwwwww").val($(this).find("option:selected").text());
+                                    //用作保存选中的dw的值
+                                    $("#" + rowid + "_dwlb").val($(this).val());
+                                }
+                            }
+                        ]
+
+                    }, editrules: { required: true }   //注意：剂量单位必须定位在剂量下面，因为下方是根据这个机构来找剂量单位的。（因为select没有id的属性）
+                },
+                { label: 'dwlb', name: 'dwlb', editwidth: '', align: 'center', editable: true, hidden: true },  //不可去掉
+                { label: 'redundant_jldw', name: 'redundant_jldw', editwidth: '', align: 'center', editable: true, hidden: true },  //不可去掉
+                { label: 'dwwwwwww', name: 'dwwwwwww', width: 40, editwidth: '', align: 'center', editable: true, hidden: true },  //不可去掉
+                {
+                    label: '<span class="required">*</span>用法', name: 'yfmc', width: 70, editwidth: '70%', align: 'center', edittype: "select", editable: true, editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    $("#" + rowid + "_ypyfdm").val($(this).val());
+                                    $("#" + rowid + "_yfmcval").val($(this).find("option:selected").text());
+                                }
+                            }
+                        ]
+
+                    }, editrules: { required: true }
+                },
+                { label: 'yfmcval', name: 'yfmcval', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: 'ypyfdm', name: 'ypyfdm', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '<span class="required">*</span>频次', name: 'pcmc', width: 60, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: 'pcCode', name: 'pcCode', editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: 'zxcs', name: 'zxcs', editable: true, hidden: true },
+                { label: 'zxzq', name: 'zxzq', editable: true, hidden: true },
+                { label: 'zxzqdw', name: 'zxzqdw', editable: true, hidden: true },
+                { label: '嘱托', name: 'ztnr', width: 120, editwidth: '100%', align: 'center', editable: true },
+                { label: '操作', name: 'action', width: 60, align: 'center' },
+                { name: 'yzlx', hidden: true },
+                { label: 'jlzhxs', name: 'jlzhxs', editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: 'zyzhxs', name: 'zyzhxs', editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '总量', name: 'sl', width: 50, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { name: 'jxCode', width: 50, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { name: 'zxksdm', width: 50, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { name: 'qzfs', width: 50, editwidth: '100%', editable: true, hidden: true }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            pager: "gridmedicinePager",
+            loadComplete: function () {
+                if (localdata && localdata.length == 0) {
+                    newTCMPresData();
+                }
+            },
+            gridComplete: function () {
+                var ids = $("#gridmedicine").getDataIDs();
+                if (ids !== typeof (undefined) && ids.length>0) {
+                    $.each(ids, function () {
+                        var rowid = String(this);
+                        //打开编辑模式
+                        $("#gridmedicine").jqGrid('editRow', rowid, false, initWMInlineFunc);
+                        //给每次剂量单位填充option
+                        var jldw = $("#" + rowid + "_redundant_jldw").val();    //剂量单位 药品字典表的单位
+                        var dw = $("#" + rowid + "_dwwwwwww").val();     //住院单位
+                        if (!!dw) {
+                            //这种找元素的方法不可取，但由于select没有id属性
+                            $("#" + rowid + "_ypjl").parent().next().children('select').html('');
+
+                            if (jldw == dw) {
+                                $("#" + rowid + "_ypjl").parent().next().children('select').append('<option value="1">' + jldw + '</option>');
+                            }
+                            else {
+                                var dwlb = $("#" + rowid + "_dwlb").val(); //存在单位类别时，代表已存在选中的单位，页面选中
+                                var jldwlb = 1, dwdwlb = 4;
+                                if (!!dwlb) {
+                                    if (jldwlb == dwlb) {
+                                        jldwlb = 4, dwdwlb = 1;
+                                    }
+                                }
+                                if (!!jldw) {
+                                    $("#" + rowid + "_ypjl").parent().next().children('select').append('<option value="' + jldwlb + '">' + jldw + '</option>');
+                                }
+                                if (!!dw) {
+                                    $("#" + rowid + "_ypjl").parent().next().children('select').append('<option value="' + dwdwlb + '">' + dw + '</option>');
+                                }
+                                $("#" + rowid + "_ypjl").parent().next().children('select').val(dwlb);
+                            }
+                        }
+                    });
+                }
+                //隐藏grid底部滚动条
+                $gridmedicine.closest(".ui-jqgrid-bdiv").css({ "overflow-x": "hidden" });
+            }
+        });
+
+        //二级菜单
+        $gridmedicine.jqGrid('setGroupHeaders', {
+            useColSpanStyle: true,
+            groupHeaders: [
+                 {
+                    startColumnName: 'ypjl',
+                    numberOfColumns: 2,
+                    titleText: '每次剂量'
+                }]
+        });
+
+        //自定义按钮
+        $gridmedicine.navGrid('#gridmedicinePager',
+            { edit: false, add: false, del: false, search: false, refresh: false, view: false, position: "left", cloneToTop: false })
+            .navButtonAdd('#gridmedicinePager',
+            {
+                buttonicon: "glyphicon glyphicon-new-window",
+                title: "新明细",
+                caption: "新明细",
+                position: "first",
+                onClickButton: function () {
+                    newTCMPresData();
+                },
+            })
+
+    }
+
+    //同一组号需匹配用法、频次、天数、截止日期
+    function MatchTCMZuhaoInfo(rowid) {
+        var currRowZh = $("#" + rowid + "_zh").val();
+        if (currRowZh) {
+            var allData = $("#gridmedicine").jqGrid('getRowData_AllLine');
+            $.each(allData, function () {
+                var objId = $(this.zh).attr('rowid');
+                var objzh = $("#" + objId + "_zh").val();
+
+                if (objzh == currRowZh && objId != rowid) {
+                    var objyfmcval = $("#" + objId + "_yfmcval").val();
+                    var objypyfdm = $("#" + objId + "_ypyfdm").val();
+                    var objpcmc = $("#" + objId + "_pcmc").val();
+                    var objpcCode = $("#" + objId + "_pcCode").val();
+                    var objzxcs = $("#" + objId + "_zxcs").val();
+                    var objzxzq = $("#" + objId + "_zxzq").val();
+                    var objzxzqdw = $("#" + objId + "_zxzqdw").val();
+                    var currentjx = $("#" + rowid + "_jxCode").val();
+
+                    var jxyfdy = top.top.clients.ypjxyfdy;
+                    var jxyf = top.top.clients.ypyf;//所有用法
+                    $("#" + rowid + "_dwwwwwww").parent().next().children('select').html("");
+                    //用法下拉框
+                    if (currentjx !== null && currentjx !== "") {//当前药品剂型
+                        $.each(jxyfdy, function (idx, val) {//剂型用法对应
+                            if (val.jxCode === currentjx) {//找到当前剂型
+                                var yfCode = val.yfCode;//获取当前用法
+                                if (currRowZh !== "" && objypyfdm !== "" && yfCode.indexOf(objypyfdm) < 0) {//同组用法之前已存在
+                                    $.modalAlert($("#" + rowid + "_xmmc").val() + "不存在" + objyfmcval + "用法", "warning");
+                                    $("#" + rowid + "_zh").val("");
+                                    $("#" + rowid + "_zh").focus();
+                                    return false;
+                                }
+                                $.each(jxyf, function (i, v) {
+                                    if (yfCode.indexOf(v.yfCode) > '-1') {
+                                        var append = "<option value=" + v.yfCode + ">" + v.yfmc + "</option>";
+                                        $("#" + rowid + "_dwwwwwww").parent().next().children('select').append(append);
+                                    }
+                                });
+                                $("#" + rowid + "_dwwwwwww").parent().next().children('select').val(objypyfdm);
+                            }
+                        });
+                    }
+
+                    $("#" + rowid + "_yfmcval").val(objyfmcval);        //用法
+                    $("#" + rowid + "_ypyfdm").val(objypyfdm);
+                    $("#" + rowid + "_pcmc").val(objpcmc);       //频次
+                    $("#" + rowid + "_pcCode").val(objpcCode);
+                    $("#" + rowid + "_zxcs").val(objzxcs);//执行次数
+                    $("#" + rowid + "_zxzq").val(objzxzq);//执行周期
+                    $("#" + rowid + "_zxzqdw").val(objzxzqdw);//执行周期单位
+                }
+            });
+        }
+        return true;
+    }
+
+    //初始化 浮层
+    function initWMInlineFunc(rowid) {
+        //部分列只读
+        $("#" + rowid + "_ypgg").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_dw").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_pcmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        ///生成用法下拉框
+        Generateypyfoption(rowid);
+
+            //药品浮层  //中药西药 会重复么 ‘"#" + rowid + "_xmmc"’
+        $("#" + rowid + "_xmmc").sfxmFloatingSelector({
+            djDecimalPlaces: 4,
+                //leftshift: 150,
+                showgg: true,
+                searchType: "yp.kc",
+                ajaxparameters: function ($thisinput) {
+                    return "mzzybz=2&dllb=1&sfdllx=TCM&keyword=" + $.trim($thisinput.val());
+                },
+                itemdbclickhandler: function ($this) {
+                    $("#" + rowid + "_xmmc").val($this.attr('data-sfxmmc'));
+                    $("#" + rowid + "_xmdm").val($this.attr('data-sfxmCode'));
+                    $("#" + rowid + "_ypgg").val($this.attr('data-gg'));
+                    $("#" + rowid + "_redundant_jldw").val($this.attr('data-jldw'));
+                    $("#" + rowid + "_dw").val($this.attr('data-dw'));
+                    $("#" + rowid + "_jlzhxs").val($this.attr('data-jldwzhxs'));
+                    $("#" + rowid + "_zyzhxs").val($this.attr('data-cls'));
+                    $("#" + rowid + "_zxksdm").val($this.attr('data-yfbmCode'));
+                    $("#" + rowid + "_qzfs").val($this.attr('data-zyqzlx') == "1" ? "day" : "times"); 
+                    //这种找元素的方法不可取，但由于select没有id属性
+                    var jldw = $this.attr('data-jldw');    //剂量单位
+                    var dw = $this.attr('data-dw');     //住院单位
+                    $("#" + rowid + "_ypjl").parent().next().children('select').html('');
+                    if (jldw == dw) {
+                        $("#" + rowid + "_ypjl").parent().next().children('select').append('<option value="1">' + jldw + '</option>');
+                    }
+                    else {
+                        if (!!jldw) {
+                            $("#" + rowid + "_ypjl").parent().next().children('select').append('<option value="1">' + jldw + '</option>');
+                        }
+                        if (!!dw) {
+                            $("#" + rowid + "_ypjl").parent().next().children('select').append('<option value="4">' + dw + '</option>');
+                        }
+                    }
+                    //初始化单位和单位类别的值，否则没有值传到后台
+                    //默认剂量单位，不存在剂量单位，默认住院单位，都不存在，不赋值
+                    if (!!jldw) {
+                        $("#" + rowid + "_dwwwwwww").val(jldw);
+                        $("#" + rowid + "_dwlb").val("1");
+                    } else if (!!dw) {
+                        $("#" + rowid + "_dwwwwwww").val(dw);
+                        $("#" + rowid + "_dwlb").val("4");
+                    }
+                    $("#" + rowid + "_jxCode").val($this.attr('data-ypjxCode'));
+                    //生成组号下拉框
+                    Generateypyfoption(rowid);
+                }
+            });
+        //频次浮层
+        $("#" + rowid + "_pcmc").pcFloatingSelector({
+            showtext: 'yzpcmc',
+            attrcols: ['yzpcmc', 'yzpcCode', 'zxcs', 'zxzq', 'zxzqdw'],
+            isinputchangetriggered: false,
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_pcmc").val($this.attr('data-yzpcmc'));
+                $("#" + rowid + "_pcCode").val($this.attr('data-yzpcCode'));
+                $("#" + rowid + "_zxcs").val($this.attr('data-zxcs'))
+                $("#" + rowid + "_zxzq").val($this.attr('data-zxzq'))
+                $("#" + rowid + "_zxzqdw").val($this.attr('data-zxzqdw'));
+            }
+        });
+
+        //嘱托浮层
+        $("#" + rowid + "_ztnr").ztFloatingSelector({
+            height: 100,
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_ztnr").val($this.attr('data-ztmc'));
+            },
+        });
+    }
+
+    //新处方 按钮
+    function newTCMPresData() {
+        var dataRow = {
+            Id: Math.random().toString() + new Date().getMilliseconds(),
+            yzlx: @Html.Raw(((int)EnumYzlx.zcy).ToString()),
+            action: getTCMActionStr(),
+            pcmc: "ST",
+            pcCode: "00",
+            zxcs: "1",
+            zxzq: "1",
+            zxzqdw: "1"
+        };
+        $("#gridmedicine").jqGrid("addRowData", undefined, dataRow, "first");
+    }
+
+    //新增同个组号的药品明细
+    function addWMRowData(selRowId) {
+        var zh = $('#' + $($("#gridmedicine").getRowData(selRowId).zh).attr('id')).val();
+        if (zh.replace(/(^\s*)|(\s*$)/g, "") == "") {
+            $.modalAlert("组号为空，请确认。", 'warning');
+            return;
+        }
+        if (isNaN(zh)) {
+            $.modalAlert("组号：请填写数字", 'warning');
+            return;
+        }
+        var row = $("#gridmedicine").getRowData(selRowId);
+
+        //新加一行
+        var dataRow = {
+            Id: Math.random().toString() + new Date().getMilliseconds(),
+            zh: zh,
+            action: getTCMActionStr(),
+            yzlx: @Html.Raw(((int)EnumYzlx.zcy).ToString()),
+            yfmcval: $("#" + selRowId + "_yfmcval").val(),
+            ypyfdm: $("#" + selRowId + "_ypyfdm").val(),
+            pcmc: $("#" + selRowId + "_pcmc").val(),
+            pcCode: $("#" + selRowId + "_pcCode").val(),
+            zxcs: $("#" + selRowId + "_zxcs").val(),
+            zxzq: $("#" + selRowId + "_zxzq").val(),
+            zxzqdw: $("#" + selRowId + "_zxzqdw").val()
+        };
+        $("#gridmedicine").jqGrid("addRowData", undefined, dataRow, "after", selRowId);
+    }
+
+    //删除明细
+    function deleteWMRowData(selRowId) {
+        if (!!selRowId) {
+            $("#gridmedicine").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    function getTCMActionStr() {
+        return "<input class='btn btn-default btn-md btn_add' type='button' value='Add' onclick='addWMRowData($(this).parent().parent().attr(\"id\"))'/><input class='btn btn-default btn-md btn_del' type='button' value='Delete' onclick='deleteWMRowData($(this).parent().parent().attr(\"id\"))'/>";
+    }
+
+    //保存
+    function Save() {
+        if (Validate()) {//验证数据
+            //获取所有行Id，遍历使编辑框处于保存状态
+            var rowIds = $("#gridmedicine").jqGrid('getDataIDs');
+
+            for (var i = 0; i < rowIds.length; i++) {
+                if (MatchTCMZuhaoInfo(rowIds[i])) {
+                    var saveResult = $("#gridmedicine").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+                    if (!saveResult) {
+                        return;   //保存失败，则return
+                    }
+                } else {
+                    return;
+                }
+
+            }
+            var gridmedicineData = $("#gridmedicine").jqGrid('getRowData_AllLine', null, true);
+            if (gridmedicineData.length < 1) {
+                $.modalAlert("当前没有保存的套餐内容", 'warning');
+            }
+            $.each(gridmedicineData, function () {    //去掉action
+                for (var i = 0; i < $(this).length; i++) {
+                    delete $(this)[i].action;
+                    $(this)[i].sl = 1;
+                }
+            });
+            submitService(gridmedicineData);
+        }
+    }
+
+    //提交到后台
+    function submitService(gridmedicineData) {
+        //套餐表
+        var mbObj = {
+            Id: mbId,
+            tcfw: $('#mblx').val(),
+            tclx: @Html.Raw(((int)EnumYzlx.zcy).ToString()),
+            tcmc: $('#mbmc').val()
+        }
+        $.najax({
+            url: "@Url.Action("Submit")",
+            dataType: "json",
+            data: { mbObj: mbObj, mbDetailList: gridmedicineData },
+            type: "POST",
+            loadingtext: "套餐数据保存中，请稍后...",
+            success: function (data) {
+                   $.modalMsg("保存成功", 'success');
+                   if(!mbId && data.data){
+                    mbId = data.data;
+                    $.currentWindow().expandyzlx = @Html.Raw(((int)EnumYzlx.zcy).ToString());
+                   
+                }
+                $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                location.href = "/TemplateManage/DoctorServiceTemplate/TCMmedicineForm?mbId=" + mbId;
+            }
+        });
+    }
+
+    //验证
+    function Validate() {
+        //是否有数据
+        var data = $("#gridmedicine").jqGrid('getRowData_AllLine', null, true);
+        if (data.length == 0) {
+            $.modalAlert("缺少套餐数据", 'warning');
+            return false;
+        }
+
+        if (!$('#mbmc').val()) {
+            $.modalAlert("缺少套餐名称", 'warning');
+            return false;
+        }
+        if (!$('#mblx').val()) {
+            $.modalAlert("缺少套餐类型", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    function Delete() {
+        if (mbId == null || mbId == "") {
+            $.modalAlert("缺少套餐", "warning");
+            return;
+        }
+            $.najax({
+            url: "@Url.Action("Delete")",
+            dataType: "json",
+            data: { mbId: mbId},
+            type: "POST",
+            loadingtext: "套餐数据删除中，请稍后...",
+            success: function (data) {
+                $.modalMsg("删除成功", 'success');
+                $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                location.href = "/TemplateManage/DoctorServiceTemplate/TCMmedicineForm?mbId=";
+            }
+        });
+    }
+
+    ///生成药品用法下拉框
+    function Generateypyfoption(rowid) {
+        var currentjx = $("#" + rowid + "_jxCode").val();
+        var curzh = $("#" + rowid + "_zh").val();
+        var curyfdm = $("#" + rowid + "_ypyfdm").val();
+        var curyfmc = $("#" + rowid + "_yfmcval").val();
+        var jxyfdy = top.top.clients.ypjxyfdy;
+        var jxyf = top.top.clients.ypyf;//所有用法
+        var basejx = false;//当前药品是否维护剂型对应，默认否
+        $("#" + rowid + "_dwwwwwww").parent().next().children('select').html("");
+        //用法下拉框
+        if (currentjx !== null && currentjx !== "") {//当前药品剂型
+            $.each(jxyfdy, function (idx, val) {//剂型用法对应
+                if (val.jxCode === currentjx) {//找到当前剂型
+                    basejx = true;
+                    var yfCode = val.yfCode;//获取当前用法
+                    if (curzh !== "" && curyfdm !== "" && yfCode.indexOf(curyfdm) < 0) {//同组用法之前已存在
+                        $.modalAlert($("#" + rowid + "_xmmc").val() + "不存在" + curyfmc + "用法", "warning");
+                        $("#" + rowid + "_zh").val("");
+                        $("#" + rowid + "_zh").focus();
+                    }
+                    var firstval = 0;
+                    $.each(jxyf, function (i, v) {
+                        if (yfCode.indexOf(v.yfCode) > '-1') {
+                            firstval++;
+                            var append = "<option value=" + v.yfCode + ">" + v.yfmc + "</option>";
+                            $("#" + rowid + "_dwwwwwww").parent().next().children('select').append(append);
+                            if ((curyfdm == "" || isNaN(curyfdm)) && firstval == 1) {
+                                $("#" + rowid + "_yfmcval").val(v.yfmc);
+                                $("#" + rowid + "_ypyfdm").val(v.yfCode);
+                            } else if (curyfdm == v.yfCode) {
+                                $("#" + rowid + "_yfmcval").val(v.yfmc);
+                            }
+                        }
+                    });
+                    if (curyfdm !== "" && !isNaN(curyfdm)) {
+                        $("#" + rowid + "_dwwwwwww").parent().next().children('select').val(curyfdm);
+                        $("#" + rowid + "_ypyfdm").val(curyfdm);
+                    }
+                }
+            });
+
+            if (!basejx) {
+                $.modalAlert($("#" + rowid + "_xmmc").val() + "对应的剂型缺少用法维护", "warning");
+                $("#" + rowid + "_yfmcval").val("");
+                $("#" + rowid + "_ypyfdm").val("");
+                $("#" + rowid + "_dwwwwwww").parent().next().children('select').html('');
+                return;
+            }
+        }
+    }
+</script>
+
+

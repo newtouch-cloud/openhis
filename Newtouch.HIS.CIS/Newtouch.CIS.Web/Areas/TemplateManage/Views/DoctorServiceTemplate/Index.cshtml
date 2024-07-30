@@ -1,0 +1,96 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_LayoutIndex.cshtml";
+}
+@using Newtouch.Infrastructure;
+<style>
+    .beveltabsli {
+        width: 25% !important;
+        text-align: center !important;
+    }
+
+    #beveltabs a {
+        padding: 0 7px !important;
+    }
+    .ui-layout-pane-west {
+       border:none !important;
+       background-color:white;
+    }
+</style>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <div class="ui-layout-west">
+        <ul id="beveltabs">
+            <li><a href="#" name="#personal" data-type=@Html.Raw(((int)EnumCfMbLx.personal).ToString())>个人</a></li>
+            <li><a href="#" name="#department" data-type=@Html.Raw(((int)EnumCfMbLx.department).ToString())>科室</a></li>
+            @*@if (ViewBag.bhbq)
+            {
+            <li><a href="#" name="#ward" data-type=@Html.Raw(((int)EnumTcfw.Ward).ToString())>病区</a></li>
+            }*@
+            <li><a href="#" name="#hospital" data-type=@Html.Raw(((int)EnumCfMbLx.hospital).ToString())>全院</a></li>
+        </ul>
+        <div id="treeContent">
+            <div id="personal">
+                <div id="personalTree"></div>
+            </div>
+            <div id="department">
+                <div id="departmentTree"></div>
+            </div>
+            @*<div id="ward">
+                <div id="wardTree"></div>
+            </div>*@
+            <div id="hospital">
+                <div id="hospitalTree"></div>
+            </div>
+        </div>
+    </div>
+    <iframe class="ui-layout-center" id="iframerightiframerightiframeright" name="iframerightiframerightiframeright"></iframe>
+</div>
+
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/beveltabs.css", false)" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/Content/js/beveltabs.js", false)"></script>
+
+<script type="text/javascript">
+    $(function ($) {
+        $('#layout').layout();
+        $("#beveltabs a:first").trigger('click');
+        if ('@ViewBag.bhbq'=='True') {
+            //$('#beveltabs li').css("width","25% !important");
+            $('#beveltabs li').width("33%");
+        }
+    });
+
+    var expandyzlx = null;
+
+    $("#beveltabs a").on("click", function (e) {
+        var tempExpandyzlx = expandyzlx;    //有效期为一次
+        expandyzlx = null;
+        $($(this).attr('name') + "Tree").treeview({
+            height: $(window).height() - 100,
+            slimscroll: false,
+            url: "/TemplateManage/DoctorServiceTemplate/GetTreeList?tcfw=" + $('#current').attr('data-type') + "&tclx=0" + "&expandyzlx=" + tempExpandyzlx,
+            onnodeclick: function (item) {
+                if (!item.value) {
+                    return;
+                }
+
+                if (item.value == '@Html.Raw(((int)EnumYzlx.Yp).ToString())') {   //药品
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/MedicineForm?mbId=" + item.Ex1);  //item.Ex1为模板Id
+                } else if (item.value == '@Html.Raw(((int)@EnumYzlx.Wz).ToString())') {   //文字
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/WordForm?mbId=" + item.Ex1);
+                } else if (item.value == '@Html.Raw(((int)@EnumYzlx.sfxm).ToString())') {   //项目
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/ItemForm?mbId=" + item.Ex1);
+                } else if (item.value == '@Html.Raw(((int)@EnumYzlx.Cydy).ToString())') {   //出院带药
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/TakeMedicineForm?mbId=" + item.Ex1);
+                }else if (item.value == '@Html.Raw(((int)@EnumYzlx.ssyz).ToString())') {   //膳食医嘱
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/FoodForm?mbId=" + item.Ex1);
+                }else if (item.value == '@Html.Raw(((int)@EnumYzlx.zcy).ToString())') {   //中草药
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/TCMmedicineForm?mbId=" + item.Ex1);
+                }else if(item.value == '@Html.Raw(((int)@EnumYzlx.rehab).ToString())'){    //康复
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/DoctorServiceTemplate/RehabForm?mbId=" + item.Ex1);
+                }
+            }
+        });
+    });
+
+</script>

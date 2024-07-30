@@ -1,0 +1,122 @@
+﻿@{
+    ViewBag.Title = "调价盈亏查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">开始日期：</td>
+                <td class="formValue" style="width: 120px;"><input type="text" id="startTime" style="width: 120px;" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd 00:00' })" /></td>
+                <td class="formTitle" style="width:30px;padding-right: 5px;">至： </td>
+                <td class="formValue" style="width:120px;"><input type="text" id="endTime" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm'})" /></td>
+                <td class="formTitle" style="padding-right:5px;width:70px;">关键字：</td>
+                <td class="formValue" style="padding-right:5px;width:100px;">
+                    <input type="text" id="Srm" class="form-control" placeholder="物资拼音/名称" />
+                </td>
+                <th class="formTitle" style="width:50px;padding-right:5px;">库房：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="ddlkfbm" class="form-control required">
+                        <option>全部</option>
+                    </select>
+                </td>
+                <td style="width:120px;">
+                    <input type="checkbox" value="显示零库存记录" id="checkLkc" style="margin-left:10px;float: left;" />
+                    <span style="display: block;float: left; margin: 3px 0 0 2px;">显示零库存记录</span>
+                </td>
+                <td class="formValue" style="width:120px;" align="center">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" style="width:50px;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<div class="gridPanel" style="margin-top:10px">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initYfbmDdl(); //加载药房部门ddl
+        gridList(); //加载Grid
+    });
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/ProductManage/PriceAdjustment/GetPriceAdjustmentProfitLoss?r=" + Math.random(),
+            height: $(window).height() - document.getElementById('gridList').offsetTop - 70,
+            postData: getSearchPostData(),
+            colModel: [
+                { label: "主键", name: "TjsyId", hidden: true, key: true },
+                { label: '类别', name: 'lbmc', width: 80, align: 'left' },
+                { label: '物资名称', name: 'wzmc', width: 120, align: 'left' },
+                { label: '规格', name: 'gg', width: 80, align: 'left' },
+                { label: '生产厂家', name: 'supplierName', width: 120, align: 'left' },
+                { label: '当时数量', name: 'dssl', width: 50, align: 'right' },
+                { label: '定价单位', name: 'dwmc', width: 60, align: 'center' },
+                { label: '调整文件', name: 'tjwj', width: 80, align: 'left' },
+                {
+                    label: '原零售价', name: 'ylsj', width: 70, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(4);
+                    }
+                },
+                {
+                    label: '新零售价', name: 'xlsj', width: 70, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(4);
+                    }
+                },
+                {
+                    label: '零价利润', name: 'lsjtjlr', width: 70, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                {
+                    label: '有效', name: 'zt', width: 40, align: 'center',
+                    formatter: function (cellvalue) {
+                        return cellvalue === "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>";
+                    }
+                },
+                { label: '操作人员', name: 'CreatorCode', width: 50, align: 'left' },
+                {
+                    label: '调整时间', name: 'tjsj', width: 50, align: 'left',
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' }
+                },
+                { label: 'productId', name: 'productId', hidden: true }
+            ],
+            pager: "#gridPager",
+            sortname: 'tjsj desc'
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function getSearchPostData() {
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+        var srm = $("#Srm").val();
+        var ddlkfbm = $("#ddlkfbm").val();
+        var lkc = $("#checkLkc").is(':checked') ? 1 : 0;
+        return { startTime: startTime, endTime: endTime, keyWord: srm, kfbm: ddlkfbm, lkc: lkc };
+    }
+
+    function initYfbmDdl() {
+        $("#ddlkfbm").bindSelect({
+            url: "/ProductManage/PriceAdjustment/GetCurrentUserKfList",
+            id: "kfId",
+            text: "kfName"
+        });
+    }
+
+</script>

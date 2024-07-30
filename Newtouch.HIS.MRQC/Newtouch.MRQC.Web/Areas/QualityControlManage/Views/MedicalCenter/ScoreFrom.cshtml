@@ -1,0 +1,181 @@
+﻿@using Newtouch.MRQC.Infrastructure;
+@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "质控评分";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+
+<form id="form1">
+    <div style="padding-top: 1px; margin-right: 30px; ">
+        <div class="gridPanel" style="margin-top:1%">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+    <div>
+        <div style="width:40%; float:left;margin-left:5px">
+            <label>得分：</label>
+            <input type="text"  class="fui-input" id="total" style="width:50px" value="100" readonly="readonly"/>
+            <input type="text"  class="fui-input" id="dj" style="width:50px" value="甲" readonly="readonly"/>
+        </div>
+        <div style="width:17%; float:right;margin-right:30px">
+            <input type="button" class="btn btn-primary" onclick="btnPinfen()" value="评分" />
+            <input type="button" class="btn btn-primary" onclick="btnSave()" value="保存" />
+            <input type="button" class="btn btn-primary" onclick="btnClose()" value="关闭" />
+        </div>
+    </div>
+    
+</form>
+
+<script>
+    var bllx = $.request("bllx");
+    var blmc = $.request("blmc");
+    var zyh = $.request("zyh");
+    $(function () {
+        $('#gridList').newtouchLocalDataGrid({
+            //caption: '',
+            height: $(window).height() - 100,
+            unwritten: false,
+            editurl: "clientArray",
+            //rownumbers: true,
+            colModel: [
+                { label: "Zyh", name: "Zyh", hidden: true },
+                { label: "Score", name: "Score", width: 80, hidden: true, editable: true },
+                 {
+                     label: 'total', name: 'total', width: 80, align: 'center', hidden: true, editable: true, formatter: function (cellvalue, options, rowobject) {
+                         return rowobject.Score * rowobject.qxs;
+                     }
+                 },
+                { label: "BlmbId", name: "BlmbId", hidden: true },
+                { label: "Code", name: "Code", hidden: true },
+                { label: "评分项目", name: "Name", width: 300, align: "left", },
+                { label: "评分说明", name: "Remark", width: 150, align: "left", },
+                {
+                    label: "缺陷数", name: "qxs", width: 80, align: "left", editable: true, editrules: { numeric: true, minValue: 0.0, maxValue: 100 },
+                    editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("数值为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (cellval < 0 || cellval > 20) {
+                                            $.modalAlert("缺陷数：填写数值必须为0~20之间", 'warning');
+                                            $(this).val('0')
+                                            return;
+                                        }
+                                        var sum = $("#" + rowid + "_Score").val() * $("#" + rowid + "_qxs").val();
+                                        $("#" + rowid + "_total").val(sum);
+                                    }
+                                }
+                        ]
+                    }
+                },
+                { label: "已审查", name: "ysc", width: 80, align: "left" },
+            ],
+            //multiselect: true,
+            gridComplete: function (e) {
+                //启用行内编辑框
+                EnableInlineEditBox();
+                btnPinfen();
+            },
+            onSelectRow: function (rowid) {
+                EnableInlineEditBox();
+                $("#" + $.jgrid.jqID(rowid) + "_qxs").focus();
+            }
+
+        });
+        ajaxLoad();
+    });
+
+    function ajaxLoad() {
+        $.najax({
+            type: "POST",
+            url: "/QualityControlManage/MedicalCenter/Getybbxbldata",
+            data: { bllx: bllx, zyh: zyh },
+            dataType: "json",
+            //async: false,
+            success: function (data) {
+                $("#gridList").newtouchLocalDataGrid(null, data);
+            }
+        });
+    }
+      //启用行内编辑框
+    function EnableInlineEditBox() {
+        //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").jqGrid('editRow', rowIds[i], true, null, null, null, null, function (callbackRowId) {    
+
+            });
+
+        }
+    }
+    function btnPinfen()
+    {
+        debugger;
+        var res = true;
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) {
+                res = false;
+            }, null, null);
+        }
+
+        var sum_TotalSocre = $('#gridList').jqGrid('getCol', 'total', false, 'sum');
+        var basyTotalScore = 100 - sum_TotalSocre;
+        $("#total").val(basyTotalScore);
+        switch (!!basyTotalScore) {
+            case (basyTotalScore > 90):
+                $("#dj").val("甲");
+                break;
+            case (basyTotalScore > 80):
+                $("#dj").val("乙");
+                break;
+            case (basyTotalScore < 80):
+                $("#dj").val("丙");
+                break;
+        }
+    }
+
+    function btnSave()
+    {
+        debugger;
+        var res = true;
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) {
+                res = false;
+            }, null, null);
+        }
+        //if (!res) {
+        //    return;
+        //}
+        //获取所有选中行数据
+        var data = $("#gridList").jqGrid('getRowData_AllLine', false);
+        $.najax({
+            url: "/QualityControlManage/MedicalCenter/SaveScoreDate",
+            dataType: "json",
+            data: { entity: data, bllx: bllx,  blmc: blmc, zyh:zyh },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'success');
+                $.loading(false);
+            },
+            error: function (request, error, ex) {
+                $.modalAlert("服务不可访问", 'error');
+            }
+        });
+    }
+    function btnClose() {
+        $.modalClose("ScoreFrom");
+    }
+</script>

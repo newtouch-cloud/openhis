@@ -1,0 +1,326 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<style>
+    #GridListPager_center {
+    display:none;
+    }
+    .ui-pg-div {
+        color: #fff;
+        background-color: #31b0d5;
+        border-color: #269abc;
+        padding: 4px 8px;
+        line-height: 1.3333333;
+        border-radius: 6px;
+        font-size: xx-small;
+    }
+    .contentPanel {
+    border:1px solid #ddd
+    }
+</style>
+<div style="float:left;width:17.4%; border:solid 1px #ddd;">
+    <table id="gridList"></table>
+</div>
+<div class="panel panel-default" style="width:80.5%; float:right; margin-right: 10px; border:solid 1px #ddd;">
+    <div class="panel-heading">
+        组套信息
+    </div>
+    <div style="padding:2px;padding-right:20px;">
+        <form id="form1">
+            <table class="form">
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>名称：</th>
+                    <td class="formValue">
+                        <input id="ztId" type="text" hidden />
+                        <input id="ztmc" name="ztmc" type="text" class="form-control required" value="" placeholder="请输入组套名称" />
+                    </td>
+                    <th class="formTitle">描述：</th>
+                    <td class="formValue">
+                        <input id="Description" name="Description" type="text" class="form-control" value="" placeholder="请输入描述" />
+                    </td>
+                    <th class="formTitle">注意事项：</th>
+                    <td class="formValue">
+                        <input id="Remark" name="Remark" type="text" class="form-control" value="" placeholder="请输入注意事项" />
+                    </td>
+                    <th class="formTitle">选项：</th>
+                    <td class="formValue" style="padding-top: 1px;">
+                        <div class="ckbox">
+                            <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </form>
+            <div class="contentPanel">
+                <div style="background-color: #fff;">
+                    <table id="xmDetailListGridList"></table>
+                    <div id="GridListPager"></div>
+                </div>
+            </div>
+       
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+    {
+        ShowKeyList = new int[] { 3, 4, 6, 8 },
+        F3Text = "新增组套",
+        F6Text = "删除"
+    })
+</div>
+
+
+<script>
+    var type = $.request("type")=="jy"?@((int)EnumjyjczutaoLx.jy):$.request("type")=="jc"?@((int)EnumjyjczutaoLx.jc):"";
+    var sfdllx = $.request("type") == "jy" ? 'Inspection' : 'Examination';
+    var itemlocaldata = new Array();
+    $(function () {
+        initChargeItemGrid();
+        if (type) {
+            var $gridList = $("#gridList");
+            $gridList.dataGrid({
+                url: "/TemplateManage/GroupPackage/SelectGridList?type=" + type,
+                height: $(window).height() - 50,
+                colModel: [
+                    { label: 'ztId', name: 'ztId', width: 100, align: 'left',hidden:true },
+                    { label: '名称', name: 'ztmc', width: 100, align: 'left' },
+                ],
+                sortname: 'ztmc asc',
+                viewrecords: true,
+                rowNum: 50,
+                onSelectRow: function (rowid) {
+                    var rowdata = $("#gridList").getRowData(rowid);
+                    if (!rowdata || !rowdata.ztId) {
+                        return;
+                    }
+                    itemlocaldata = new Array();
+                    $.najax({
+                        url: "/TemplateManage/GroupPackage/GetGroupPackageDetail",
+                        data: { ztId: rowdata.ztId },
+                        dataType: "json",
+                        async: false,
+                        success: function (data) {
+                            $("#form1").formSerialize(data.ztEntity);   //文本赋值
+                            if (data.ztEntity != null) {
+                                data.ztEntity.zt == '1' ? $('#zt').prop('checked', true) : $('#zt').prop('checked', false);
+                            }
+                            $("#xmDetailListGridList").clearGridData();
+                            itemlocaldata = data.ztxmList;
+                            $.each(itemlocaldata, function () {
+                                this.action = getActionStr()
+                            });
+                            //再次打开该页面
+                            $("#xmDetailListGridList").jqGrid('setGridParam', {
+                                datatype: 'local',
+                                data: itemlocaldata
+                            }).trigger("reloadGrid");
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    //jGrid声明
+    function initChargeItemGrid() {
+        $('#xmDetailListGridList').jqGrid({
+            datatype: 'local',
+            data: itemlocaldata,
+            height: 280,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            pager: "#GridListPager",
+            caption: "收费项目",
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '收费项目', name: 'sfxmCode', hidden: true, editable: true },
+                { label: '收费项目名称', name: 'sfxmmc', width: 300, align: 'center', editwidth: '93%', editable: true },
+                { label: 'sfdl', name: 'sfdl', hidden: true, align: 'center', editwidth: '93%',editable: true },
+                { label: '收费大类', name: 'sfdlmc', width: 120, align: 'center', editwidth: '93%', editable: true },
+                { label: '单价', name: 'dj', width: 100, align: 'center', editwidth: '93%', editable: true },
+                { label: '单位', name: 'dw', width: 100, align: 'center', editwidth: '93%', editable: true },
+                { label: '数量', name: 'sl', width: 100, align: 'center', editable: true, hidden: type ==@((int)EnumjyjczutaoLx.jy)? true : false },
+                { label: '操作', name: 'action', width: 40, align: 'center'}
+            ],
+            gridComplete: function () {
+                EnableInlineEditBox();
+            }
+        });
+
+        //自定义按钮
+        $('#xmDetailListGridList').navGrid('#GridListPager',
+            { edit: false, add: false, del: false, search: false, refresh: false, view: false, position: "left", cloneToTop: false })
+            .navButtonAdd('#GridListPager',
+            {
+                buttonicon: "glyphicon glyphicon-new-window",
+                title: "新项目",
+                caption: "新项目",
+                position: "last",
+                onClickButton: function () {
+                    newsfxmData();
+                },
+            })
+    }
+
+      //新医嘱 按钮
+    function newsfxmData() {
+        var dataRow = {
+            Id: Math.random().toString() + new Date().getMilliseconds(),
+            action: getActionStr(),
+            sl:1
+        };
+        $("#xmDetailListGridList").jqGrid("addRowData", undefined, dataRow, "last");
+    }
+
+    function EnableInlineEditBox() {
+        var ids = $("#xmDetailListGridList").getDataIDs();
+        $.each(ids, function () {
+            var rowid = String(this);
+            //打开编辑模式
+            $("#xmDetailListGridList").jqGrid('editRow', rowid, false, initInlineFunc);
+        })
+    }
+    function initInlineFunc(rowid) {
+        $("#" + rowid + "_sfdl").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_dj").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_dw").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_sfdlmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        //项目浮层
+        $("#" + rowid + "_sfxmmc").sfxmFloatingSelector({
+            djDecimalPlaces: 4,
+            searchType: 'sfxm',
+            leftshift: 150,
+            ajaxparameters: function ($thisinput) {
+                return "mzzybz=1&dllb=2&sfdllx=" + sfdllx + "&keyword=" + $.trim($thisinput.val());
+            },
+            itemdbclickhandler: function ($thistr) {
+                var returnFlag = false;
+                var allData = $("#xmDetailListGridList").getRowData_AllLine(undefined, true);
+                $.each(allData, function () {
+                    if (!returnFlag) {
+                        var sfxmCode = this["sfxmCode"];
+                        if (sfxmCode && sfxmCode == $thistr.attr('data-sfxmCode')) {
+                            returnFlag = true;
+                            return;
+                        }
+                    }
+                });
+                if (returnFlag) {
+                    $.modalAlert("不可重复添加", 'warning');
+                    return;
+                }
+                $("#" + rowid + "_sfxmmc").val($thistr.attr('data-sfxmmc'));
+                $("#" + rowid + "_sfxmCode").val($thistr.attr('data-sfxmCode'));
+                $("#" + rowid + "_sfdlmc").val($thistr.attr('data-sfdlmc'));
+                $("#" + rowid + "_sfdl").val($thistr.attr('data-sfdlCode'));
+                $("#" + rowid + "_dj").val($thistr.attr('data-dj'));
+                $("#" + rowid + "_dw").val($thistr.attr('data-dw'));
+            },
+        });
+    }
+
+    function getActionStr() {
+        return "<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;' onclick='deleteItemRowData($(this).parent().parent().attr(\"id\"));return false;'></i>";
+    }
+    
+    //删除明细
+    function deleteItemRowData(selRowId, recalc) {
+        if (!!selRowId) {
+            var Id = $("#xmDetailListGridList").jqGrid('getRowData', selRowId).Id;
+            $("#xmDetailListGridList").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    }
+
+    //保存
+    function newtouch_event_f8()
+    {
+        //必填信息验证  （主诉、发病时间）
+        if (!$('#form1').formValid()) {
+            $.modalAlert("必填信息尚未完善", 'warning');
+            return;
+        }
+
+        //套餐
+        var ztobj = {
+            ztId: $('#ztId').val(),
+            ztmc:$('#ztmc').val(),
+            Type:type,
+            Description:$('#Description').val(),
+            Remark: $('#Remark').val(),
+            zt: $('#zt').prop('checked') == false ?'0':'1'
+        }
+
+        var rowIds = $("#xmDetailListGridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#xmDetailListGridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+            if (!saveResult) {
+                EnableInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                return;   //保存失败，则return
+            }
+        }
+
+        //项目
+        var ztxmlist = $("#xmDetailListGridList").jqGrid('getRowData_AllLine', null, true);
+        $.each(ztxmlist, function () {    //去掉action
+            delete this.action;   //去掉action
+        })
+        $.najax({
+            url: "/TemplateManage/GroupPackage/SaveData",
+            dataType: "json",
+            data: { ztobj: ztobj, ztxmlist: ztxmlist },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'warning');
+                //清空
+                newtouch_globalevent_f4();
+                $("#xmDetailListGridList").clearGridData();
+                //刷新
+                $("#gridList").jqGrid('setGridParam', {
+                    page: 1,
+                }).trigger('reloadGrid');
+            }
+        });
+    }
+
+    //新增组套
+    function newtouch_event_f3()
+    {
+        newtouch_globalevent_f4();
+        $("#xmDetailListGridList").clearGridData();
+    }
+
+    function newtouch_event_f4() {
+        $("#xmDetailListGridList").clearGridData();
+    }
+
+
+    //删除
+    function newtouch_event_f6()
+    {
+        var ztId = $('#ztId').val();
+        if(ztId){
+            $.najax({
+                url: "/TemplateManage/GroupPackage/DeleteData",
+                dataType: "json",
+                data: { ztId: ztId },
+                type: "POST",
+                success: function (data) {
+                    $("#gridList").trigger('reloadGrid');
+                    $.modalAlert("删除成功", 'warning');
+                }
+            });
+        }
+    }
+
+
+</script>
+

@@ -1,0 +1,157 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form>
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">在院状态：</th>
+                <td class="formValue">
+                    <select id="zybz" name="zybz" class="form-control">
+                        <option value="">==请选择==</option>
+                        <option value="0,1,2,7">在院</option>
+                        <option value="3">已出院</option>
+                        <option value="9">已作废</option>
+                    </select>
+                </td>
+                <th class="formTitle">关键字：</th>
+                <td class="formValue">
+                    <input id="txt_keyword" type="text" class="form-control form-an" placeholder="姓名/病历号/住院号">
+                </td>
+                <th class="formTitle">结算开始日期：</th>
+                <td class="formValue" colspan="2">
+                    <input id="jsksrq" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddMonths(-6).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:1%;float:left">—</span>
+                    <input id="jsjsrq" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="查询" />
+                </td>
+                <th class="formTitle"></th>
+                <td class="formValue"></td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "@Url.Action("GridInPatientGridJson")",
+            height: $(window).height() - 180,
+            postData: getpostData(),
+            footerrow: true,
+            colModel: [
+                { label: '住院号', name: 'zyh', width: 50, align: 'left', key: true },
+                { label: '姓名', name: 'xm', width: 60, align: 'left' },
+                { label: '年龄', name: 'nlshow', width: 40, align: 'left' },
+                { label: '科室', name: 'ks', width: 60, align: 'left' },
+                { label: '主治医生', name: 'zzys', width: 60, align: 'left' },
+                { label: '入院时间', name: 'ryrq', width: 60, align: 'left' },
+                { label: '入院诊断', name: 'ryzd', width: 100, align: 'left' },
+                { label: '出院时间', name: 'cyrq', width: 60, align: 'left' },
+                { label: '出院诊断', name: 'cyzd', width: 200, align: 'left' },
+                { label: '收费时间', name: 'sfsj', width: 110, align: 'left' },
+                { label: '总费用', name: 'zje', width: 60, align: 'left'},
+                { label: '现金', name: 'xj', width: 60, align: 'left' },
+                { label: '记账', name: 'jz', width: 60, align: 'left' },
+                { label: '结算类型', name: 'jslx', width: 60, align: 'left' },
+                { label: '操作员', name: 'czy', width: 60, align: 'left' },
+                //{
+                //    label: '在院状态', name: 'zybz', width: 60, align: 'left', formatter: function (cellvalue) {
+                //        if (cellvalue) {
+                //            switch (cellvalue) {
+                //                case "0":
+                //                case "1":
+                //                case "2":
+                //                case "7":
+                //                    return "在院";
+                //                    break;
+                //                case "3":
+                //                    return "已出院";
+                //                    break;
+                //                case "9":
+                //                    return "已作废";
+                //                    break;
+
+                //            }
+                //        }
+                //    }
+                //},
+                //{ label: '结算开始日期', name: 'jsksrq', width: 140, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                //{ label: '结算结束日期', name: 'jsjsrq', width: 140, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                //{ label: '总金额', name: 'zje', width: 80, align: 'left', formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 } },
+                //{ label: '结算时间', name: 'CreateTime', width: 150, align: 'left' },
+                //{ label: '结算人员', name: 'CreatorCode', width: 100, align: 'left' },
+                //{
+                //    label: '结算状态', name: 'jszt', width: 80, align: 'left', formatter: function (cellvalue) {
+                //        if (cellvalue == "1") {
+                //            return "已结";
+                //        }
+                //        if (cellvalue == "2") {
+                //            return "已退";
+                //        }
+                //        return "其他"
+                //    }
+                //},
+                //{
+                //    label: '结算性质', name: 'jsxz', width: 80, align: 'left', formatter: function (cellvalue) {
+                //        if (cellvalue == "1") {
+                //            return "出院结算";
+                //        }
+                //        if (cellvalue == "2") {
+                //            return "费用结算";
+                //        }
+                //        return "其他"
+                //    } }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            gridComplete: completeMethod//表格加载后执行统计方法
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getpostData(),
+            }).trigger('reloadGrid');
+        });
+    }
+    function completeMethod() {
+        var zje = $(this).getCol('zje', false, 'sum');
+        var xj = $(this).getCol('xj', false, 'sum');
+        var jz = $(this).getCol('jz', false, 'sum');
+        $(this).footerData('set', { "sfsj": '合计:', zje: zje, xj: xj, jz: jz }, false);
+    }
+    jQuery("#grid").jqGrid('navGrid', '#pager', {
+        edit: false,
+        add: false,
+        del: false,
+        search: false
+    });
+    function getpostData() {
+        return {
+            keyword: $("#txt_keyword").val(), jsksrq: $("#jsksrq").val(), jsjsrq: $("#jsjsrq").val(),zybz:$('#zybz').val()
+        };
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    $('#zybz').change(function () {
+        $('#btn_search').trigger('click');
+    });
+</script>

@@ -1,0 +1,471 @@
+﻿
+@{
+    ViewBag.Title = "SysMedicineAdd";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .formTitle span {
+        color: red;
+    }
+</style>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function() {
+        initControl();
+        $.ajax({
+            url: "/Medicine/GetMedicineInfoJson",
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function(data) {
+                $("#form1").formSerialize(data);
+                $.currentWindow().$("#kh").val(data.kh);
+            }
+        });
+        $('#myTab a:first').tab('show');
+    });
+
+    function initControl() {
+        //报销政策
+        $("#").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysPatientNatureList, function (idx, val) {
+                    if ((val.py && val.py.toLowerCase().indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "病人性质",
+            colModel: [
+                { label: '编号', name: 'brxzbh', widthratio: 25 },
+                { label: '代码', name: 'brxz', widthratio: 25 },
+                { label: '名称', name: 'brxzmc', widthratio: 25 },
+                { label: '拼音', name: 'py', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#brxz").attr("data-label", $thistr.find("td:eq(0)").html() + "-" + $thistr.find("td:eq(1)").html());
+                $("#brxz").val($thistr.find('td:eq(2)').html());
+                return;
+            }
+        });
+        //地域
+        $("#").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.dataItems) {
+                    $.each(top.clients.dataItems, function (idx, val) {
+                        if (idx === "AreaCity") {
+                            $.each(val, function (key, value) {
+                                $('#dy').append('<option value="' + key + '">' + value + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+    }
+
+    function submitForm() {
+        var result = checkNotNull();
+        if (result) {
+            var data = $("#form1").formSerialize();
+            data["brxz"] = $("#brxz").attr("data-label");
+            data["dy"] = $("#dy").attr("data-label");
+            $.submitForm({
+                url: "/PatientManage/HospiterRes/SubmitForm",
+                param: data,
+                success: function () {
+                    $.loading(false);
+                    if ($.currentWindow().$("#txtkh").length == 1) {
+                        //门诊挂号免卡登记
+                        $.currentWindow().LoadPatientInfo(data.kh);
+                    }
+                    else {
+                        //住院病人基本信息登记 免卡
+                        var kh = $.currentWindow().$("#kh").val();
+                        getSysBasicInfoByCardNo(kh);
+                    }
+                    $.currentWindow().DisableSysBasicInfo(true); //true:标志是从免卡登记或根据卡号查询返回明细, false:页面加载时，可以输kh
+                }
+            })
+        }
+    }
+
+    function getSysBasicInfoByCardNo() {
+        var kh = $.currentWindow().$("#kh").val();
+        $.ajax({
+            url: "/PatientManage/HospiterRes/GetBasicInfoByCardNo?keyValue=" + kh,
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (data) {
+                $.currentWindow().$("#kh").val(data.kh);
+                $.currentWindow().$("#xm").val(data.xm);
+                $.currentWindow().$("#xb").val(data.xb);
+                $.currentWindow().$("#csny").val(data.csny);
+                $.currentWindow().$("#kh").val(data.kh);
+                $.currentWindow().$("#zjh").val(data.zjh);
+                if (data.xb == 0) {
+                    $.currentWindow().$("input[name=xb]:eq(1)").attr("checked", 'checked');//女
+                    $.currentWindow().$("input[name=xb]:eq(1)").parent().addClass('active');
+                } else {
+                    $.currentWindow().$("input[name=xb]:eq(0)").attr("checked", 'checked');//男
+                    $.currentWindow().$("input[name=xb]:eq(0)").parent().addClass('active');
+                }
+                $.currentWindow().$("#nl").val(data.nl);
+                $.currentWindow().$("#blh").val(data.blh);
+                $.currentWindow().$("#dh").val(data.dh);
+                $.currentWindow().$("#dy").val(data.dy);
+                $.currentWindow().$("#hf").val(data.hf);
+                $.currentWindow().$("#patid").val(data.patid);
+                if (data.zjlx) {
+                    var type = data.zjlx.trim();
+                    switch (type) {
+                        case "0": type = "身份证"; break;
+                        case "1": type = "护照"; break;
+                        case "2": type = "军官证"; break;
+                        default: break;
+
+                    }
+                    $.currentWindow().$("#zjlx").html(type);
+                }
+                if (data.cs_sheng) {
+                    $.currentWindow().$("#cs_sheng").val(data.cs_sheng);
+                }
+                if (data.cs_shi) {
+                    $.currentWindow().$("#cs_shi").val(data.cs_shi);
+                }
+                if (data.cs_xian) {
+                    $.currentWindow().$("#cs_xian").val(data.cs_xian);
+                }
+                if (data.xian_dz) {
+                    $.currentWindow().$("#xian_dz").val(data.xian_dz);
+                }
+                if (data.xian_sheng) {
+                    $.currentWindow().$("#xian_sheng").val(data.xian_sheng);
+                }
+                if (data.xian_shi) {
+                    $.currentWindow().$("#xian_shi").val(data.xian_shi);
+                }
+                if (data.xian_xian) {
+                    $.currentWindow().$("#xian_xian").val(data.xian_xian);
+                }
+                if (data.hu_dz) {
+                    $.currentWindow().$("#hu_dz").val(data.hu_dz);
+                }
+                if (data.hu_sheng) {
+                    $.currentWindow().$("#hu_sheng").val(data.hu_sheng);
+                }
+                if (data.hu_shi) {
+                    $.currentWindow().$("#hu_shi").val(data.hu_shi);
+                }
+                if (data.hu_xian) {
+                    $.currentWindow().$("#hu_xian").val(data.hu_xian);
+                }
+                $.loading(false);
+            }
+        });
+    }
+
+    function checkNotNull() {
+        var validator = $('#form1').validate();
+        validator.settings = {
+            rules: {
+                xm: { required: true },
+                brxz: { required: true },
+                nl: { required: true },
+                hf: { required: true },
+                zjh: { isIdentity: true },
+                email: { email: true },
+                phone: { isMobile: true }
+            },
+            messages: {
+                xm: { required: "姓名必须填写" },
+                brxz: { required: "病人性质必须填写" },
+                nl: { required: "年龄必须填写" },
+                hf: { required: "婚否必须选择" },
+                blh: { required: "婚否必须选择" },
+                zjh: { isIdentity: "身份证格式不正确" },
+                email: { email: "邮箱格式不正确" },
+                phone: { isMobile: "手机格式不正确" }
+            },
+            showErrors: function (errorMap, errorList) {
+                if (!$.isEmptyObject(errorList)) {
+                    $.modalAlert(errorList[0].message, 'warning');
+                }
+            }
+        }
+        if (!validator.form()) {
+            return false;
+        }
+        //病历号
+        var blh = $("#").val();
+        if (!blh) {
+            $.modalAlert("病历号为空！", 'warning');
+            return false;
+        }
+        //拼音
+        var py = $("#").val();
+        if (!py) {
+            $.modalAlert("拼音为空！", 'warning');
+            return false;
+        }
+        //性别
+        var xb = false;
+        $('input[name="xb"]').each(function () {
+            var $this = $(this);
+            if ($this.parent().hasClass("active")) {
+                xb = true;
+                $("#xb").val()
+            }
+        });
+        if (!xb) {
+            $.modalAlert("请选中性别！", 'warning');
+            return false;
+        }
+        return true;
+    }
+</script>
+
+<form>
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            基本信息
+        </div>
+        <table class="form" style="width:98%;border:0">
+            <tr>
+                <td class="formTitle">
+                    药品名称<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">大类</td>
+                <td class="formValue"><input type="text" id="blh" class="form-control"></td>
+                <td class="formTitle">拼音<span>*</span></td>
+                <td class="formValue">
+                    <input type="text" id="brxz" name="brxz" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">商品名称</td>
+                <td class="formValue">
+                    <input type="text" id="brxz" name="brxz" class="form-control">
+                </td>
+                <td class="formTitle">代码</td>
+                <td class="formValue">
+                    <input type="text" id="zjh" name="zjh" class="form-control">
+                </td>
+                <td class="formTitle">医保代码</td>
+                <td class="formValue">
+                    <input type="text" id="zjh" name="zjh" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">药厂名称<span>*</span></td>
+                <td class="formValue"><input type="text" id="nl" name="nl" class="form-control"></td>
+                <td class="formTitle">剂型</td>
+                <td class="formValue">
+                    <input type="text" id="nl" name="nl" class="form-control">
+                </td>
+                <td class="formTitle">批准文号</td>
+                <td class="formValue">
+                    <input type="text" id="nl" name="nl" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">使用量</td>
+                <td class="formValue">
+                    <input type="text" id="nl" name="nl" class="form-control">
+                </td>
+                <td class="formTitle">药品分类<span>*</span></td>
+                <td class="formValue">
+                    <input type="text" id="nl" name="nl" class="form-control">
+                </td>
+                <td class="formTitle">药品规格</td>
+                <td class="formValue"><input type="text" id="dh" class="form-control"></td>
+            </tr>
+            <tr>
+                <td class="formTitle">自付比例</td>
+                <td class="formValue">
+                    <input type="text" id="dh" class="form-control">
+                </td>
+                <td class="formTitle">自负性质</td>
+                <td class="formValue">
+                    <select class="form-control">
+                        <option value="">请选择</option>
+                        <option value="">可报</option>
+                        <option value="">自费</option>
+                        <option value="">分类自负</option>
+                    </select>
+                </td>
+                <td class="formTitle">供货商</td>
+                <td class="formValue">
+                    <input type="text" id="dh" class="form-control">
+                </td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="formTitle">执行时间</td>
+                <td class="formValue">
+                    <input id="txtPY" type="text" class="form-control input-wdatepicker" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" />
+                </td>
+                @*<td>有效</td>
+                    <td class="formValue">
+                        <input type="text" id="xian_shi" class="form-control" style="width:90px;float:left" />
+                    </td>*@
+                <td class="formTitle">建档人员</td>
+                <td class="formValue">
+                    <input type="text" id="xian_xian" class="form-control newtouch_Readonly" />
+                </td>
+                <td class="formTitle">建档日期</td>
+                <td class="formValue">
+                    <input type="text" id="xian_dz" class="form-control newtouch_Readonly" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            单位转换
+        </div>
+        <table class="form" style="width:90%;border:0">
+            <tr>
+                <td class="formTitle">
+                    住院单位<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    住院转换系数<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    零售价<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">
+                    门诊单位<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    门诊转换系数<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    批发价<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">
+                    药库单位<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    药库转换系数<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    门急诊标志<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">
+                    最小单位<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    最小转换系数<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+                <td class="formTitle">
+                    最小单位零售价<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">
+                    零售标志<span>*</span>
+                </td>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control">
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            药品属性
+        </div>
+        <div class="panel panel-default" style="margin-bottom:0; margin-top:40px;width:95%">
+            <div class="panel-heading">
+                药品属性
+            </div>
+            <table class="form" style="width:98%;border:0">
+                <tr>
+                    <td class="formTitle">中标标志</td>
+                    <td class="formValue">
+                        <select class="formValue">
+                            <option value="">请选择</option>
+                            <option value="1">无需招标</option>
+                            <option value="1">市招标</option>
+                            <option value="1">区招标</option>
+                            <option value="1">竞价</option>
+                            <option value="1">询问</option>
+                        </select>
+                    </td>
+                    <td class="formTitle">药品属性</td>
+                    <td class="formValue"><input type="text" id="qxdm" class="form-control" /></td>
+                    <td class="formTitle">病区记账类型</td>
+                    <td class="formValue">
+                        <select class="formValue">
+                            <option value="">请选择</option>
+                            <option value="1">每天取整</option>
+                            <option value="1">每次取整</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+

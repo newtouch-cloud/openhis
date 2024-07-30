@@ -1,0 +1,165 @@
+﻿
+@{
+    Layout = null;
+}
+
+<form id="formapply" class="form-horizontal" role="form">
+    <fieldset>
+        <div class="form-group">
+
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><span class="required">*</span>拟手术名称：</label>
+            <div class="col-sm-10" style="height:20%;">
+                <select id="sel_ssmc" name="sel_ssmc" class="form-control" multiple="multiple">
+                </select>
+            </div>
+            @*<div class="col-sm-1"></div>
+            <div class="col-sm-1">
+                <a class="btn btn-default" title="重置"><i class="fa fa-refresh"></i></a>
+            </div>*@
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><span class="required">*</span>手术时间：</label>
+            <div class="col-sm-7">
+                <input id="sssj" type="text" class="form-control input-wdatepicker formClearIgnore required" style="width:70%;" value="" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" autocomplete="off" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">手术部位：</label>
+            <div class="col-sm-7">
+                <input id="ssbw" type="text" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">麻醉方式：</label>
+            <div class="col-sm-7">
+                <select id="AnesCode" name="AnesCode" class="form-control">
+                    <option value="">===请选择=== </option>
+                    <option value="1"> 全身麻醉 </option>
+                    <option value="2">局部麻醉</option>
+                    <option value="3">针刺麻醉</option>
+                    <option value="4">复合麻醉</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><span class="required">*</span>主刀医生：</label>
+            <div class="col-sm-7">
+                <input id="zdysgh" type="hidden" />
+                <input id="ysgh" data-id attr-code="" attr-zjm="" name="ysgh" type="text" class="form-control required" autocomplete="off" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">麻醉医师：</label>
+            <div class="col-sm-7">
+                <input id="mzysgh" type="hidden" />
+                <input id="mzys" data-name attr-code="" attr-zjm="" name="mzys" type="text" class="form-control" autocomplete="off" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label"><span class="required">*</span>是否隔离：</label>
+            <div class="col-sm-7">
+                <select id="isgl" name="isgl" class="form-control required" style="width:95%;float:left;" data-enumtype="EnumIsgl"></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-2 control-label">手术申请编号：</label>
+            <div class="col-sm-7">
+                <input id="Applyno" name="Applyno" type="text" class="form-control" style="border: none; background: none; color: #00a0ea; font-weight: bold; font-size:16px;" disabled />
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-2">
+            </div>
+            <div class="col-sm-2" id="dv_apply_btn">
+                <a class='btn btn-default  btn-lg' style="border: 1px solid #398439; color: #398439;" onclick="submitApply();"><i class="fa fa-check"></i> 提交申请</a>
+            </div>
+            <div class="col-sm-1">
+            </div>
+            <div class="col-sm-2" id="dv_cancel_btn">
+                <a class='btn btn-default btn-lg  btn-block' style="border: 1px solid #ac2925; color: #ac2925;" onclick="submitCancel();"><i class="fa fa-remove"></i> 撤销申请</a>
+            </div>
+            <div class="col-sm-1">
+            </div>
+            <div class="col-sm-2" id="dv_back_btn">
+                <a class='btn btn-default btn-lg btn-block' style="border: 1px solid #398439;"  onclick="backMainPage();"><i class="fa fa-angle-double-left"></i> 返回</a>
+            </div>
+        </div>
+    </fieldset>
+</form>
+<script>
+    $(function () {
+        $("#AnesCode").bindSelect({
+            url: "/Operation/Common/GetAneslist",
+            id: "AnesCode",
+            text: "AnesName",
+            minimumResultsForSearch: 0
+        });
+        $("#ysgh").staffFloatingSelector({
+            organizeId: '',
+            width: 200,
+            itemdbclickhandler: function ($this) {
+                $("#ysgh").val($this.attr('data-name')).attr("attr-code", $this.attr('data-id')).attr("attr-zjm", $this.attr('data-zjm'));
+                var name = $("#zdysgh").val($this.attr('data-name')).val();
+                var code = $("#zdysgh").val($this.attr('data-code')).val();
+                $("#ysgh").html(name);
+                $("#zdysgh").html(code);
+            }
+        });
+        $("#mzys").staffFloatingSelector({
+            organizeId: '',
+            width: 200,
+            itemdbclickhandler: function ($this) {
+                $("#mzys").val($this.attr('data-name')).attr("attr-code", $this.attr('data-id')).attr("attr-zjm", $this.attr('data-zjm'));
+                var name = $("#mzysgh").val($this.attr('data-name')).val();
+                var code = $("#mzysgh").val($this.attr('data-code')).val();
+                $("#mzys").html(name);
+                $("#mzysgh").html(code);
+            }
+        });
+    });
+
+
+    //撤销手术申请详情
+    function submitCancel() {
+        var keyValue = $("#Applyno").val();
+        $.deleteForm({
+            prompt: "注：请确认是否撤销此项手术申请？",
+            url: "/Operation/OpApply/DeleteApply",
+            param: { keyValue: keyValue },
+            success: function () {
+                $('#myTab [href="#linkpat"').trigger('click');
+            }
+        });
+    }
+
+    function submitApply() {
+        var postData = $("#formpat").formSerialize();
+        postData.ssdm = $('#sel_ssmc').val();
+        postData.ssmcn = getMultiSelectText("sel_ssmc").split(",");
+        postData.ysgh = $("#zdysgh").val();
+        postData.ysxm = $("#ysgh").val();
+        postData.mzys = $("#mzysgh").val();
+        postData.sssj = $("#sssj").val();
+        postData.isgl = $("#isgl").val();
+        postData.ssbw = $("#ssbw").val();
+        postData.AnesCode = $("#AnesCode").val();
+        $.submitForm({
+            url: "/Operation/OpApply/SubmitForm?keyValue=" + $("#Applyno").val(),
+            param: postData,
+            success: function (data) {
+                //debugger
+                $("#Applyno").val(data.data.applyno);
+                $('#myTab [href="#linkpat"').trigger('click');
+            }
+        });
+    }
+
+    function backMainPage() {
+        showOpApply();
+        $('#myTab [href="#linkpat"').trigger('click');
+        patOpTableRefresh();
+    }
+
+</script>

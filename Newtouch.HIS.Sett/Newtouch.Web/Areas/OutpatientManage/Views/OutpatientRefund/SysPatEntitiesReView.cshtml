@@ -1,0 +1,226 @@
+﻿@{
+    ViewBag.Title = "退费查询时预览病人信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var from = (ViewBag.from as string) ?? "";
+}
+<style>
+    .table-responsive {
+        border: 0;
+    }
+
+    .ui-jqgrid .ui-jqgrid-pager .ui-pager-table {
+        width: 90%;
+    }
+</style>
+
+<div style="border-bottom:1px solid rgb(221, 221, 221);margin:0px 10px 0px 10px;">
+    <div class="search">
+        <table class="form">
+            <tr>
+                <th class="formTitle" style="width:60px;">病历号：</th>
+                <td class="formValue">
+                    <input id="txt_blh" name="txt_blh" type="text" class="form-control form-an" placeholder="请输入病历号" />
+                </td>
+                <th class="formTitle" style="width:60px;">门诊号：</th>
+                <td class="formValue">
+                    <input id="txt_mzh" name="txt_mzh" type="text" class="form-control form-an" placeholder="请输入门诊号" />
+                </td>
+                <th class="formTitle" style="width:60px;">姓名：</th>
+                <td class="formValue">
+                    <input id="txt_xm" name="txt_xm" type="text" class="form-control form-an form-an-end" placeholder="请输入姓名或首拼" />
+                </td>
+
+            </tr>
+            <tr>
+                <th class="formTitle" style="width:60px;">收费日期：</th>
+                <td class="formValue" colspan="3">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:2%;float:left;">—</span>
+                    <input id="jssj" type="text" class="form-control input-wdatepicker" style="width :41%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <th></th>
+                <td style="padding-left: 20px;">
+                    <button type="button" id="btn_search" class="btn btn-primary btn-md" style="width:50px;">查询</button>
+                    @if ("outpatcharge" == ViewBag.fromName)
+                    {
+                        <button type="button" id="btn_freeReg" class="btn btn-primary btn-md" style="width:50px;">免费挂号</button>
+                    }
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<!--患者信息 包括病历号  姓名 -->
+<form id="formPatSer" style="margin:2px;margin-top:10px;">
+    <div class="gridPanel">
+        <table id="patGridList" rel="formPatSer"></table>
+        <div id="gridPager" style="padding-right:20%"></div>
+    </div>
+</form>
+
+<script>
+    var $patGridList = $("#patGridList");
+    //上一个window对象
+    var prevWindow;
+    if ('@(from)' !== '') {
+        prevWindow = top.top.frames['@(from)'];
+    }
+    else {
+        prevWindow = $.currentWindow();
+    }
+
+    var jiuzhenbiaozhi = $.request("jiuzhenbiaozhi");
+
+    $(function () {
+        var obj = new Object;
+        obj.mzh = $.request("mzh");
+        obj.blh = $.request("blh");
+        var searInfo = new PatSearchInfo();
+        //加载数据
+        searInfo.init(obj);
+
+        $('#txt_xm').keyupEnterEvent(function () {
+            $('#btn_search').trigger('click');
+        });
+
+        //查询
+        $("#btn_search").click(function () {
+            $patGridList.jqGrid('setGridParam', {
+                postData: {
+                    blh: $("#txt_blh").val(), mzh: $("#txt_mzh").val(), xm: $("#txt_xm").val(),
+                    kssj: $("#kssj").val(), jssj: $("#jssj").val()
+                    , jiuzhenbiaozhi: jiuzhenbiaozhi
+                },
+                url: "@Url.Action("PatSearchInfo")"
+            }).trigger('reloadGrid');
+        });
+        $("#btn_freeReg").click(function () {
+            if (!rowData) {
+                $.modalAlert("请选择病人", 'warning');
+                return;
+            }
+            $.modalOpen({
+                id: "RegForRree",
+                title: "免挂号费登记",
+                url: "/OutpatientManage/OutpatCharge/GhLayer?blh=" + rowData.blh,
+                width: "800px",
+                height: "400px",
+                //btn: null,
+                callBack: function (iframeId) {
+                    $.currentWindow(iframeId).AcceptClick(function (obj) {
+                        //var parentDoc = window.parent.document.querySelectorAll('iframe[data-id="/OutpatientManage/OutpatCharge/Index2018"]')[0].contentWindow;
+                        prevWindow.GetQueryFphAjax({ mzh: obj.mzh, kh: "", zjh: "", cardType: "", isTF: false })
+                        //关闭窗口
+                        $.modalClose("RegForRree");
+                        ReceiptCancle();
+                    });
+                }
+            });
+            rowData = null;
+        });
+    });
+    var PatSearchInfo = (function () {
+        //加载列表
+        var loadGrid = function (data) {
+            $patGridList.dataGrid({
+                height: $(window).height() - 200,
+                autowidth: false,
+                width: $("#formPatSer").width() - 10,
+                url: "@Url.Action("PatSearchInfo")",
+                postData: { blh: $("#txt_blh").val(), mzh: $("#txt_mzh").val(), xm: $("#txt_xm").val(), kssj: $("#kssj").val(), jssj: $("#jssj").val(), jiuzhenbiaozhi: jiuzhenbiaozhi },
+                caption: '患者信息列表',
+                colModel: [
+                    { label: '病历号', name: 'blh', width: 100, align: 'left' },
+                    {
+                        label: '挂号时间', name: 'ghsj', width: 120, align: 'left', formatter: function (cellvalue) {
+                            return cellvalue.length > 19 ? cellvalue.substring(0, 19).replace(/T/g, ' ') : ""
+                        }
+                    },
+                    { label: '姓名', name: 'xm', width: 120, align: 'left' },
+                    { label: '出生年月', name: 'csny', hidden: true, width: 100, align: 'left' },
+                    {
+                        label: '性别', name: 'xb', width: 60,  align: 'left', formatter: function (cellvalue) {
+                            return $.getGender(cellvalue);
+                        }
+                    },
+                    {
+                        label: '年龄', name: 'nl', width: 60, align: 'left', formatter: function (cellvalue, options, rowObject) {
+                            return getAgeFromBirthTime({ begin: rowObject.csny }).text;
+                        }
+                    },
+                    { label: 'brxz', name: 'brxz', hidden: true },
+                    { label: 'brxzmc', name: 'brxzmc', hidden: true },
+                    { label: '门诊号', name: 'mzh', hidden: true },
+                    { label: '主键', name: 'patid', hidden: true },
+                ],
+                pager: "#gridPager",
+                sortname: 'ghsj desc',
+                viewrecords: true,
+                unwritten: false,
+                onSelectRow: function (rowid) {
+                    rowData = $patGridList.jqGrid('getRowData', rowid);
+                },
+            });
+        };
+
+        var myPatSearchInfo = function (data) {}
+
+        //加载事件
+        myPatSearchInfo.prototype.init = function (data) {
+            if (data.blh === "null") {
+                $("#txt_blh").val("");
+            } else {
+                $("#txt_blh").val(data.blh);
+            }
+            if (data.mzh === "null") {
+                $("#txt_mzh").val("");
+            } else {
+                $("#txt_mzh").val(data.mzh);
+            }
+            loadGrid(data);
+        };
+        return myPatSearchInfo;
+    }());
+
+    //jqGrid 双击选中某行
+    function btn_edit() {
+        PatSearchConfirm();
+    }
+    var rowData = null;
+    function PatDbGrid() {
+        var SelectData = $patGridList.jqGrid("getGridParam", "selrow");
+        if (SelectData) {
+            rowData = $patGridList.jqGridRowValue();
+            if (!rowData.mzh || "" == rowData.mzh) {
+                //无挂号信息
+                //$("#btn_freeReg").trigger("click");
+                $.modalMsg("缺少收费信息", "warning");
+                return;
+            }
+
+            var obj = new Object();
+            obj.blh = rowData.blh;
+            obj.mzh = rowData.mzh;
+            obj.nlshow = rowData.nlshow;
+            obj.xm = rowData.xm;
+            obj.xb = rowData.xb;
+            obj.brxz = rowData.brxz;
+            obj.brxzmc = rowData.brxzmc;
+            obj.patid = rowData.patid;
+            prevWindow.GetQueryFphAjax(obj);
+            //关闭窗口
+            ReceiptCancle();
+        } else {
+            $.modalAlert("请选择病人", 'warning');
+        }
+    }
+    //确定 主页面调用
+    function PatSearchConfirm() {
+        PatDbGrid();
+    }
+
+    //取消
+    function ReceiptCancle() {
+        $.modalClose();
+    }
+</script>

@@ -1,0 +1,258 @@
+﻿@{
+    ViewBag.Title = "Chat";
+    Layout = null;
+}
+<style>
+
+    body {
+        padding: 0px;
+        margin: 0px;
+    }
+
+    li {
+        list-style: none;
+    }
+
+    input {
+        border-radius: 5px;
+    }
+
+    .leftbar ul {
+        padding: 0px;
+    }
+
+    .leftbar li {
+        padding: 10px;
+    }
+
+    .leftbar {
+        background-color: #212e3e;
+        width: 50px;
+        height: 100%;
+        color: grey;
+        padding: 0px;
+        text-align: center;
+        position: absolute;
+    }
+
+    .container {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        margin: 0;
+    }
+
+    .chatbox {
+        margin: auto;
+        height: 100%;
+        width: 100%;
+        box-shadow: 0 0 0 1px gray;
+        display: flex;
+    }
+
+    .chatleft {
+        background-color: #ffffff;
+        width: 25%;
+        left: 0;
+        height: 100%;
+    }
+
+        .chatleft .top {
+            height: 10%;
+            color: grey;
+            background-color: #F7F9F9;
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+        }
+
+    .searchbtn {
+        height: 36px;
+        width: 36px;
+        border-radius: 18px;
+        background-color: #1f94bf;
+        color: #ECF0F1;
+        margin-left: 10px;
+    }
+
+        .searchbtn:hover {
+            cursor: pointer;
+        }
+
+    .chatleft .center {
+        overflow-y: scroll;
+        height: 80%;
+    }
+
+        .chatleft .center ul {
+            padding-left: 10px;
+        }
+
+        .chatleft .center li {
+            margin: 10px;
+        }
+
+    .chatright {
+        background-color: #ffffff;
+        width: 100%;
+        height: 100%;
+    }
+
+        .chatright .top {
+            height: 10%;
+            display: flex;
+            align-items: center;
+            padding-left: 30px;
+        }
+
+        .chatright .center {
+            background-color: #edf5f8;
+            height: 70%;
+            overflow-y: scroll;
+        }
+
+            .chatright .center ul {
+                padding: 10px;
+            }
+
+            .chatright .center li {
+                margin: 10px;
+                width: 100%;
+            }
+
+            .chatright .center p {
+                display: inline-block;
+            }
+
+    .msgcardleft {
+        float: left;
+        margin: 0 10px 0 10px;
+        background-color: white;
+        border-radius: 10px;
+        padding: 10px;
+        max-width: 60%;
+    }
+    .msgcardright {
+        float: right;
+        margin: 0 10px 0 10px;
+        background-color: white;
+        border-radius: 10px;
+        padding: 10px;
+        max-width: 60%;
+    }
+    .touxiangleft {
+        float: left;
+        margin: 0 10px 0 10px;
+        background-color: #1f94bf;
+        border-radius: 50px;
+        padding: 10px;
+        max-width: 100%;
+    }
+    .touxiangright {
+        float: right;
+        margin: 0 10px 0 10px;
+        background-color: #1f94bf;
+        border-radius: 50px;
+        padding: 10px;
+        max-width: 100%;
+    }
+    .msgleft {
+        width: 99%;
+        float: left;
+    }
+
+    .msgright {
+        width: 99%;
+        float: right;
+    }
+
+    .chatright .footer {
+        height: 25%;
+        background-color: #FBFCFC;
+        text-align: right;
+    }
+
+    .sendbtn {
+        height: 40px;
+        width: 80px;
+        border-radius: 10px;
+        background-color: #58D68D;
+        color: white;
+        font-weight: bold;
+        margin: 10px 20px 0 0;
+    }
+</style>
+<input type="hidden" id="displayname" />
+<div class="container">
+    <div class="chatbox">
+        <div class="chatright">
+            <div class="center">
+                <ul id="discussion">
+                </ul>
+            </div>
+            <div class="footer">
+                <textarea id="message" maxlength="800" rows="5" cols="40" style="width: 100%; resize: none; border: none; " placeholder="请在此输入要发送的内容..."></textarea>
+                <button id="sendbtn" class="sendbtn">发送</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*<h2></h2>
+    <div class="container">
+        
+        <div style="width:100%;height:80%">
+            <ul id="discussion"></ul>
+        </div>
+            <div>
+                <input type="text" id="message" />
+                <input type="button" id="sendmessage" value="发送" />
+            </div>
+    </div>*@
+<!--jQuery库是必需的,默认情况下在_Layout.cshtml引用. -->
+<!--引用SignalR库. -->
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+<!--引用自动生成的SignalR 集线器(Hub)脚本.在运行的时候在浏览器的Source下可看到. -->
+<script src="~/signalr/hubs"></script>
+<script>
+    $(function () {
+        // 引用自动生成的集线器代理 必须用小写字母开头.
+        var chat = $.connection.chatHub;
+
+        // 定义服务器端调用的客户端addNewMessageToPage来处理接收到的消息.
+        chat.client.addNewMessageToPage = function (name, message) {
+            if (name == $('#displayname').val()) {
+                $('#discussion').append('<li class="msgright"><p class="touxiangright">' + htmlEncode(name)+'</p><p class="msgcardright">' + htmlEncode(message) + '</p></li >');
+            }
+            else {
+                $('#discussion').append('<li class="msgleft"><p class="touxiangleft">' + htmlEncode(name) +'</p><p class="msgcardleft">' + htmlEncode(message) + '</p></li >');
+            }
+            // 将消息添加到ul上.
+            //$('#discussion').append('<li class="msgleft"><p class="msgcardleft>' + htmlEncode(name)+htmlEncode(message)
+            //    + '</p></li>');
+        };
+
+        // 获取用户名.
+        $('#displayname').val(prompt('请输入你的名字:', ''));
+
+        // 设置焦点到输入框.
+        $('#message').focus();
+
+        // 开始连接服务器 done函数表明建立连接成功后为发送按钮注册了一个click事件.
+        $.connection.hub.start().done(function () {
+            $('#sendbtn').click(function () {
+                // 调用服务器端集线器的Send方法 也要小写开头.
+                chat.server.send($('#displayname').val(), $('#message').val());
+                // 清空输入框信息并获取焦点.
+                $('#message').val('').focus();
+            });
+        });
+    });
+
+    // 这个可选功能将html-encodes消息显示在页面上.
+    function htmlEncode(value) {
+        var encodedValue = $('<div />').text(value).html();
+        return encodedValue;
+    }
+</script>

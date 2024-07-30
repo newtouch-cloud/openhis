@@ -1,0 +1,132 @@
+﻿
+@{
+    ViewBag.Title = "YBSBSC_JMQuery";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+
+<div class="rows">
+	<div class="panel panel-default">
+		<table class="form">
+			<tr>
+				<th class="formTitle">开始日期：</th>
+				<td class="formValue">
+					<input id="ksrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-01")" />
+				</td>
+				<th class="formTitle">结束日期：</th>
+				<td class="formValue">
+					<input id="jsrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+				</td>
+				<th class="formTitle"></th>
+				<td class="formValue" style="padding-left:20px;">
+					<input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+				</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<p style="color:red;">查询有数据会弹出下载提示</p>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+	<ul id="myTab" class="nav nav-tabs">
+		<li class="active"><a href="#mjz" data-toggle="tab" onclick="tabchange('Q')">城镇居民门急诊#Q</a></li>
+		<li><a href="#zy" data-toggle="tab" onclick="tabchange('R')">城镇居民住院#R</a></li>
+	</ul>
+	<div class="tab-pane fade in active" id="mjz">
+		<iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+				scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+	</div>
+	<div class="tab-pane fade" id="zy">
+		<iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerighttttsc" name="iframerightiframerightiframerighttttsc"
+				scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+	</div>
+</div>
+
+<script>
+	var tabaction = "Q";//切换卡片 默认门诊
+	 var isHospAdministrator = '@(ViewBag.IsHospAdministrator)';
+    var curUserCode = '@(ViewBag.CurUserCode)';
+    var OrgId = '@(ViewBag.OrgId)';
+	var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+	$(function () {
+		var h = $(window).height() - 100;
+		$('#layout iframe').css('height', h);
+	});
+
+
+	function tabchange(action) {
+		tabaction = action;
+		submit();
+	}
+	function submit() {
+		if ($('#ksrq').val().length == 0 || $('#jsrq').val().length == 0) {
+			$.modalAlert("请选择时间范围", "error");
+			return;
+		}
+
+		switch (tabaction) {
+			case "Q":
+				$("#mjz").show();
+				$("#zy").hide();
+				var uri = '@Html.Raw(reportUrl)' + "?tempCode=1235" + "&orgId=" + OrgId + "&ksrq=" + $('#ksrq').val() + "&jsrq=" + $('#jsrq').val() + "&systemCode=" + '@reportSystemCode';
+				$("#iframerightiframerightiframerightttt").attr('src', uri);
+				break;
+			case "R":
+				$("#mjz").hide();
+				$("#zy").show();
+				var uri = '@Html.Raw(reportUrl)' + "?tempCode=1238" + "&orgId=" + OrgId + "&ksrq=" + $('#ksrq').val() + "&jsrq=" + $('#jsrq').val() + "&systemCode=" + '@reportSystemCode';
+				$("#iframerightiframerightiframerighttttsc").attr('src', uri);
+				break;
+			default:
+
+				break;
+		}
+		DCQuery(tabaction);
+	}
+
+	function DCQuery(type) {
+		if ($('#ksrq').val().length == 0 || $('#jsrq').val().length == 0) {
+			$.modalAlert("请选择时间范围", "error");
+			return;
+		}
+		var predata = {
+			types: type,
+			ksrq: $('#ksrq').val(),
+			jsrq: $('#jsrq').val(),
+		};
+		$.ajax({
+			type: "POST",
+			url: "/Report/DCQuery_dbf",
+			data: predata,
+			dataType: "json",
+			async: false,
+			success: function (data) {
+				var refinfo = data;
+				console.log(data);
+
+				if (refinfo.path != "") {
+					window.location.target = "_blank";
+					window.location.href = refinfo.path;
+					//window.open(refinfo.path);
+				}
+			},
+			error: function(ex) {
+				console.log(ex);
+			}
+		});
+	}
+
+	$("#iframerightiframerightiframerightttt").load(function () {
+		$.loading(false);
+	});
+	$("#iframerightiframerightiframerighttttsc").load(function () {
+		$.loading(false);
+	});
+
+</script>

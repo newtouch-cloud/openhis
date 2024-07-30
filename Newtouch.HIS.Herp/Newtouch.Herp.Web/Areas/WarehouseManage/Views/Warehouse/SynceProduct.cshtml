@@ -1,0 +1,223 @@
+﻿@{
+    ViewBag.Title = "库房物资同步";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:0;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">大类：</th>
+                <td class="formValue">
+                    <select id="productTypeId" name="productTypeId" class="form-control">
+                        <option value="">==请选择==</option>
+                    </select>
+                    <input type="hidden" id="hdId" value="" />
+                </td>
+                <th class="formTitle">关键字：</th>
+                <td class="formValue">
+                    <input id="productKeyWord" name="productKeyWord" type="text" class="form-control" />
+                </td>
+                <td class="formTitle">
+                    <input type="button" id="btn_searchProduct" class="btn btn-md btn-primary" style="width:50px; margin-left:10px;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="tbwzGridList"></table>
+        <div id="tbwzGridListPager" rel="form1"></div>
+    </div>
+</form>
+
+<script lang="javascript">
+    var keyWord = $.request("keyValue");
+    var $gridList = $("#tbwzGridList");
+    var sData = [];
+    $(function () {
+        initControl();
+        $("#btn_searchProduct").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: { wId: keyWord, keyWord: $("#productKeyWord").val(), wzlb: $("#productTypeId").val() }
+                }).trigger('reloadGrid');
+        });
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_searchProduct").trigger("click");
+        }
+    });
+
+    //初始化
+    function initControl() {
+        $("#productTypeId").bindSelect({
+            url: "/ProductManage/ProductType/GetPatientTreeSelectJson"
+        });
+        tbwzGridList();
+    }
+
+    //获取物资
+    function tbwzGridList() {
+        $gridList.dataGrid({
+            url: "/WarehouseManage/Warehouse/GettbwzGridJson",
+            postData: { wId: keyWord, keyWord: $("#productKeyWord").val(), wzlb: $("#productTypeId").val() },
+            height: 370,
+            colModel: [
+                { label: "主键", name: "productId", hidden: true, key: true },
+                { label: "类别", name: "wzlb", width: 120, align: 'left' },
+                { label: '物资', name: 'productName', width: 150, align: 'left' },
+                { label: '规格', name: 'gg', width: 90, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 60, align: 'left' },
+                { label: '单位', name: 'bmdw', width: 70, align: 'left' },
+                { label: '生产厂家', name: 'sccj', width: 150, align: 'left' },
+                {
+                    label: "有效",
+                    name: "zt",
+                    width: 50,
+                    align: "center",
+                    formatter: function (cellvalue, options, rowObject) {
+                        return rowObject.zt === "1"
+                            ? "<i class=\"fa fa-toggle-on\"></i>"
+                            : "<i class=\"fa fa-toggle-off\"></i>";
+                    }
+                },
+                {
+                    label: '操作',
+                    name: '操作',
+                    width: 100,
+                    align: 'center',
+                    formatter: function (cellvalue, options, rowObject) {
+                        if (rowObject.Id !== "") {
+                            var ophtml = "";
+                            if (rowObject.zt === "1") {
+                                ophtml = "<input type=\"button\" class=\"btn btn-default btn-md\" value=\"控制\" onclick=\"controlWz('" +
+                                    rowObject.Id +
+                                    "','0');\" />";
+                            } else {
+                                ophtml = "<input type=\"button\" class=\"btn btn-default btn-md\" value=\"取消控制\" onclick=\"controlWz('" +
+                                    rowObject.Id +
+                                    "','1');\" />";
+                            }
+                            ophtml +=
+                                "<input type=\"button\" class=\"btn btn-default btn-md\" value=\"修改单位\" onclick=\"updateUnit('" +
+                                rowObject.Id +
+                                "','1');\" />";
+                            return ophtml;
+                        } else {
+                            return "";
+                        }
+                    }
+                },
+                { label: 'zxdw', name: 'zxdw', hidden: true },
+                { label: 'Id', name: 'Id', hidden: true }
+            ],
+            pager: "#tbwzGridListPager",
+            sortname: 'Id asc , productName asc',
+            viewrecords: true,
+            multiselect: true,
+            gridComplete: function (data) {
+                sData = [];
+                var ids = $gridList.getDataIDs();
+                if (ids != null && ids.length > 0) {
+                    for (var i = 0; i < ids.length; i++) {
+                        var d = $gridList.getRowData(ids[i]);
+                        if (d.Id !== '') {
+                            $("#jqg_tbwzGridList_" + ids[i]).attr("checked", true);
+                            sData.push(ids[i]);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    //提交 operateType 0:添加  1：删除
+    function Save(items, opereateType, callback) {
+        $.najax({
+            type: "POST",
+            url: "/WarehouseManage/Warehouse/FreshWhAndwzRelList",
+            dataType: "json",
+            data: { "productIds": items, "opereateType": opereateType, "keyWord": keyWord },
+            success: function (ajaxresp) {
+                if (ajaxresp.state === 'success') {
+                    $("#btn_searchProduct").click();
+                    $.currentWindow().$("#gridList").trigger("reloadGrid");
+                    callback();
+                }
+            }
+        });
+    }
+
+    //控制物资
+    function controlWz(relId, op) {
+        $.najax({
+            type: "POST",
+            url: "/WarehouseManage/Warehouse/ControlWz",
+            dataType: "json",
+            data: { relId: relId, wId: keyWord, op: op },
+            success: function (ajaxresp) {
+                if (ajaxresp.state === 'success') {
+                    $("#btn_searchProduct").click();
+                }
+            }
+        });
+    }
+
+    //提交
+    function AcceptClick(callback) {
+        debugger;
+        var newPro = AssembleNewPro();
+        if (newPro != null && newPro.length > 0) {
+            Save(newPro, 0, callback);
+        }
+        var deletePro = AssembleDeletePro();
+        if (deletePro != null && deletePro.length > 0) {
+            Save(deletePro, 1, callback);
+        }
+    }
+
+    //组装新增物资
+    function AssembleNewPro() {
+        var result = [];
+        $.each($('input:checkbox:checked'), function () {
+            var proId = $(this).attr("Id").replace("jqg_tbwzGridList_", "");//cb_tbwzGridList
+            if ($.inArray(proId, sData) < 0 && proId !== "cb_tbwzGridList") {
+                result.push(proId);
+            }
+        });
+        return result;
+    }
+
+    //组装剔除物资
+    function AssembleDeletePro() {
+        var result = [];
+        $.each($('input:checkbox:not(:checked)'), function () {
+            var proId = $(this).attr("Id").replace("jqg_tbwzGridList_", "");//cb_tbwzGridList
+            if ($.inArray(proId, sData) > -1 && proId !== "cb_tbwzGridList") {
+                result.push(proId);
+            }
+        });
+        return result;
+    }
+
+    //修改库房物资单位
+    function updateUnit(relId) {
+        $.modalOpen({
+            id: "ProductUnit",
+            title: "新增库房",
+            url: "/WarehouseManage/Warehouse/ProductUnit?relId=" + relId,
+            width: "300px",
+            height: "300px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $gridList.jqGrid("clearGridData"); //清除明细的grid
+                    $gridList.resetSelection();
+                    $gridList.trigger("reloadGrid");
+                });
+            }
+        });
+    }
+</script>

@@ -1,0 +1,500 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "远程诊疗管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<script src="~/Content/js/bootstrap-multiselect.js"></script>
+<link href="~/Content/js/bootstrap-multiselect.css" rel="stylesheet" />
+<style>
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+</style>
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">姓名：</th>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="xm" type="text" class="form-control" style="width:90px;float:left;" />
+                </td>
+                <th class="formTitle">证件号：</th>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="zjh" type="text" class="form-control" style="width:90px;float:left;" />
+                </td>
+                <th class="formTitle">诊疗时间：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <td class="formValue" style="width:10%;float:left;"><label style="position:relative;top:5px;">至</label></td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formTitle">科室：</td>
+                <td class="formValue">
+                    <input type="text" id="ks" class="form-control" autocomplete="off" style="width: 100px" />
+                    <input type="text" id="ksCode" class="form-control" style="display:none;" />
+                </td>
+                <td class="formTitle">医生：</td>
+                <td class="formValue">
+                    <input id="txt_doctor" name="txt_doctor" type="text" data-StaffGh="" class="form-control required" />
+                </td>
+                <td style="width: 20px"></td>
+                <th class="formTitle">状态：</th>
+                <td class="formValue">
+                    <select class="form-control" id="sqzt">
+                        <option value="0" selected>全部</option>
+                        <option value="1">待确认</option>
+                        <option value="2">就诊中</option>
+                        <option value="3">已结束</option>
+                        <option value="4">已退回</option>
+                    </select>
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        initControl();
+        //查询列表
+        gridList();
+    });
+
+
+    var ksCode = "";
+    function initControl() {
+        //科室浮层
+        $('#ks').ksFloatingSelector({
+            itemdbclickhandler: function ($this) {
+                $('#ks').attr('data-code', $this.attr('data-Code'))
+                    .val($this.attr('data-Name'));
+                $('#ksCode').attr('data-code', $this.attr('data-Code'))
+                    .val($this.attr('data-Code'));
+                ksCode = $this.attr('data-Code');
+            },
+        });
+
+        //医生浮层
+        $("#txt_doctor").dutyStaffFloatingSelector({
+            dutyCode: 'Doctor'
+        });
+    }
+
+    //列表检索条件
+    function getPostData() {
+        return postData = {
+            xm: $("#xm").val(),
+            zjh: $("#zjh").val(),
+            kssj: $("#kssj").val(),
+            jssj: $("#jssj").val(),
+            ksCode: $("#ks").val() == "" || $("#ks").val() == undefined ? "" : $("#ksCode").val(),
+            ysgh: $("#txt_doctor").val() == "" || $("#txt_doctor").val == undefined?"": $("#txt_doctor").attr("data-StaffGh"),
+            sqzt: $("#sqzt").val()
+        }
+    }
+
+    //申请列表查询
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: getPostData() ,
+            height: $(window).height() - 160,
+            width: "100px",
+            url: "/ClinicManage/ClinicApply/GetClinicApplyGridJson",
+            colModel: [
+                { label: 'Id', name: 'Id', width: 100, align: 'center', key:true,hidden: true },
+                { label: '姓名', name: 'xm', align: 'center', width: 100 },
+                {
+                    label: '性别', name: 'xb', width: 120, align: 'center', formatter: function (val) {
+                        if (val == "1") {
+                            return "男";
+                        } else { return "女"; }
+                    }
+                },
+                { label: '证件号', name: 'zjh', width: 160, align: 'center' },
+                { label: '病人性质', name: 'brxzmc', width: 120, align: 'center' },
+                { label: '科室', name: 'ks', width: 120, align: 'center', hidden: true },
+                { label: '医生', name: 'ysgh', width: 120, align: 'center', hidden: true },
+                { label: '申请科室', name: 'deptName', width: 120, align: 'center' },
+                { label: '申请医生', name: 'ysxm', width: 120, align: 'center' },
+                { label: '诊疗时间', name: 'jzsj', width: 120, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '创建时间', name: 'CreateTime', width: 120, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                {
+                    label: '状态', name: 'sqzt', align: 'center', width: 120, formatter: function (val) {
+                        return $.enum.getDescByValue("Emunzlzt", val);
+                    }},
+                {
+                    label: '操作区', name: 'action', width: 200, align: 'center', formatter: function (cellvalue, op, row) {
+                        if (row.sqzt == 1) {//待确认
+                            return "<a class='btn btn-default' onclick='accept(\"" + row.Id + "\")'>同意</a>"
+                                + "<a class='btn btn-default' onclick='back(\"" + row.Id + "\")'>退回</a>"
+                        }
+                        else if (row.sqzt == 2 ) {//就诊中 
+                            return "<a class='btn btn-default' onclick='detail(\"" + row.Id + "\")'>查看详情</a>"
+                                + "<a class='btn btn-default' onclick='enterMeeting(\"" + row.Id + "\")'>开始诊疗</a>"
+                                + "<a class='btn btn-default' onclick='closeMeeting(\"" + row.Id + "\")'>关闭会议</a>"
+                        }   
+                        else if (row.sqzt == 3) {//已结束
+                            return "<a class='btn btn-default' onclick='detail(\"" + row.Id + "\")'>查看详情</a>"
+                                + "<a class='btn btn-default' onclick='closeMeeting(\"" + row.Id + "\")'>关闭会议</a>";
+                        }
+
+                        else
+                            return '';
+                    },
+                },
+                { label: '卡号', name: 'kh', width: 120, align: 'center', hidden: true },
+                { label: '会议号', name: 'mettingId', width: 120, align: 'center', hidden: true },
+                { label: '申请流水号', name: 'sqlsh', width: 120, align: 'center', hidden: true },
+
+            ],
+            pager: "#gridPager",
+            sortname: " CreateTime asc",
+            rownumbers: true,  //是否显示序号
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");//先清空明细
+            $gridList.jqGrid('setGridParam', {
+                postData:  getPostData(),
+                url: "/ClinicManage/ClinicApply/GetClinicApplyGridJson",
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //同意
+    function accept(id) {
+
+        var rowData = $("#gridList").jqGrid('getRowData', id);
+        $.najax({
+            type: "POST",
+            url: "/ClinicManage/ClinicApply/Accept",
+            data: { applyInfo:rowData },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+                $.modalMsg("操作成功", 'success');
+
+                $('#gridList').jqGrid("clearGridData");//先清空明细
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: getPostData(),
+                    url: "/ClinicManage/ClinicApply/GetClinicApplyGridJson",
+                }).trigger('reloadGrid');
+                
+                var postData = {
+                    "rtcuserid": ajaxresp.data.rtcuserid,
+                    "roomid": ajaxresp.data.roomid,
+                    "username": ajaxresp.data.username,
+                    "roompath": ajaxresp.data.roompath,
+                    "organization": ajaxresp.data.organization,
+                    "device": ajaxresp.data.device,
+                };
+
+                //跳转到视频会议页面
+                var mettingUrl = ajaxresp.mettingUrl;
+
+                window.newWin=window.open(mettingUrl, "_blank", "height = 500, width = 950, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+
+                setTimeout(() => {
+                    window.newWin.postMessage(postData, mettingUrl);
+                }, 2000);
+                
+            }
+        });
+    }
+
+
+    ////退回
+    //function back(id) {
+    //    $.najax({
+    //        type: "POST",
+    //        url: "/ClinicManage/ClinicApply/Updatesqzt",
+    //        data: { id: id, sqzt: 4 },
+    //        dataType: "json",
+    //        async: false,
+    //        success: function (ajaxresp) {
+    //            $.modalMsg("操作成功", 'success');
+
+    //            $('#gridList').jqGrid("clearGridData");//先清空明细
+    //            $("#gridList").jqGrid('setGridParam', {
+    //                postData: getPostData(),
+    //                url: "/ClinicManage/ClinicApply/GetClinicApplyGridJson",
+    //            }).trigger('reloadGrid');
+    //        }
+    //    });
+    //}
+
+    //退回
+    function back(id) {
+        var rowData = $("#gridList").jqGrid('getRowData', id);
+        $.najax({
+            type: "POST",
+            url: "/ClinicManage/ClinicApply/Back",
+            data: { applyInfo: rowData },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+                $.modalMsg("操作成功", 'success');
+
+                $('#gridList').jqGrid("clearGridData");//先清空明细
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: getPostData(),
+                    url: "/ClinicManage/ClinicApply/GetClinicApplyGridJson",
+                }).trigger('reloadGrid');
+            }
+        });
+    }
+
+
+    //查看详情
+    function detail(id) {
+        
+        window.location.href = "/MainBusiness/Index?pageType=yczl&Id="+id;
+        $('#myTab [href="#linkbl"').trigger('click'); //初始化显示哪个tab
+
+        //跳转到病历页
+        //$('#myTab [href="#linkbl"').trigger('click'); //初始化显示哪个tab
+
+        //跳转到病历页
+        //window.init_MedicalRecord();
+    }
+
+    //进入会议
+    function enterMeeting(id) {
+
+        var rowData = $("#gridList").jqGrid('getRowData', id);
+        $.najax({
+            type: "POST",
+            url: "/ClinicManage/ClinicApply/EnterMetting",
+            data: { applyInfo: rowData },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+                $.modalMsg("操作成功", 'success');
+
+                $('#gridList').jqGrid("clearGridData");//先清空明细
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: getPostData(),
+                    url: "/ClinicManage/ClinicApply/GetClinicApplyGridJson",
+                }).trigger('reloadGrid');
+                
+                var postData = {
+                    "rtcuserid": ajaxresp.data.rtcuserid,
+                    "roomid": ajaxresp.data.roomid,
+                    "username": ajaxresp.data.username,
+                    "roompath": ajaxresp.data.roompath,
+                    "organization": ajaxresp.data.organization,
+                    "device": ajaxresp.data.device,
+                };
+                
+                //跳转到视频会议页面
+                var mettingUrl = ajaxresp.mettingUrl;
+
+                window.newWin=window.open(mettingUrl, "_blank", "height = 500, width = 950, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+
+                setTimeout(() => {
+                    window.newWin.postMessage(postData, mettingUrl);
+                }, 2000);
+                
+            }
+        });
+    }
+
+    function closeMeeting(id) {
+        var rowData = $("#gridList").jqGrid('getRowData', id);
+        $.najax({
+            type: "POST",
+            url: "/ClinicManage/ClinicApply/EnterMetting",
+            data: { applyInfo: rowData },
+            dataType: "json",
+            async: false,
+            success: function (ajaxresp) {
+                var postData = {
+                    "rtcuserid": ajaxresp.data.rtcuserid,
+                    "roomid": ajaxresp.data.roomid,
+                    "username": ajaxresp.data.username,
+                    "roompath": ajaxresp.data.roompath,
+                    "organization": ajaxresp.data.organization,
+                    "device": ajaxresp.data.device,
+                };
+
+                //关闭会议室
+                var mettingUrl = ajaxresp.mettingUrl;
+
+                //window.newWin = window.open(mettingUrl, "_blank", "height = 500, width = 950, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+
+                setTimeout(() => {
+                    //window.newWin.postMessage({ close: true }, mettingUrl);
+                    window.newWin.close();
+                }, 2000);
+
+            }
+        });
+        
+    }
+
+     
+
+    window.init_MedicalRecord = function () {
+        $('#zcfsj').text("");
+        $("#zcfsj").attr("title", "");
+        var jzObject = window.currPatientInfo;
+        //if (!!!jzObject || JSON.stringify(jzObject) == '{}') {
+        //    $.modalAlert("患者信息异常，当前病人已结束就诊。", 'warning');
+        //    return;
+        //}
+        if (mrflag == 0) {
+            clickjzid = jzObject.jzId;
+            reloadTreeView();   //加载树
+            if (jzObject.jzId) {
+                //默认加载双击进来的就诊内容
+                if ($('span[data-id="' + jzObject.jzId + '"]').length == 1) {
+                    setTimeout("$('span[data-id=\"" + jzObject.jzId + "\"]').trigger('click');", 10);
+                }
+                else {
+
+                }
+            }
+            mrflag = 1;
+            //获取最后收取诊查费时间
+            $.ajax({
+                type: "POST",
+                url: "/MedicalRecord/GetLastzcf",
+                data: { blh: jzObject.blh },
+                dataType: "json",
+                async: false,
+                success: function (ajaxresp) {
+                    var resp = JSON.parse(ajaxresp.data);
+                    if (!!resp) {
+                        $('#zcfsj').text(resp.zcfsj);
+                        $("#zcfsj").attr("title", "收费项目详情:" + resp.zcfsfxm);
+                    }
+
+                }
+            });
+        }
+        ybnhlx = "";
+        if (window.currPatientInfo.brxzCode == "1") {
+            ybnhlx = "yb";
+        }
+        if (window.currPatientInfo.brxzCode == "8") {
+            ybnhlx = "nh";
+        }
+        $._data($('#tablexyzd .zdText').get(0), 'events')['click'] = undefined;
+        $._data($('#tablezyzd .zdText').get(0), 'events')['click'] = undefined;
+        bindXyzdFloatingSelector($("#tablexyzd .zdText"));
+        bindZyzdFloatingSelector($("#tablezyzd .zdText"));
+        //$('#tablexyzd .minusToggleCircle').trigger('click');
+        $('#tablexyzd .zdText').on('input', function () {
+            var zdname = $(this).val();
+            var zdcode = $(this).attr('data-zdCode');
+            if (!zdname) {
+                $(this).attr('data-zdCode', '');
+                $(this).attr('data-icd10', '');
+            }
+        });
+        $('#tablezyzd .zdText').on('input', function () {
+            var zdname = $(this).val();
+            var zdcode = $(this).attr('data-zdCode');
+            if (!zdname) {
+                $(this).attr('data-zdCode', '');
+                $(this).attr('data-icd10', '');
+            }
+        });
+        $("input").attr('autocomplete', 'off');
+        zycyzdLoad(0);
+        xycyzdLoad(0);
+        //var defaults = {
+        //    url: '/MedicalRecord/Getcyzd?type=2',
+        //    width: 300,
+        //    height: 200,
+        //    clickautotrigger: true,
+        //    caption: "选择诊断",
+        //    ajaxparameters: null,
+        //    itemdbclickhandler: function ($thistr) {
+        //        $($('#tablezyzd .zdText')[0]).val($thistr.attr('data-zdmc'));
+        //        $($('#tablezyzd .zdText')[0]).attr("data-zdCode",$thistr.attr('data-zdCode'));
+        //        $($('#tablezyzd .zdText')[0]).attr("data-icd10",$thistr.attr('data-icd10'));
+        //    },
+        //    colModel: [{ label: '编码', name: 'zdCode', widthratio: 25 },
+        //    { label: '诊断名称', name: 'zdmc', widthratio: 50 },
+        //    { label: 'icd10', name: 'icd10', widthratio: 25}]
+        //};
+        //var options = $.extend(defaults, options);
+
+        //$('#zycyzdoption').newtouchFloatingSelector(options);
+
+        //var defaults2 = {
+        //    url: '/MedicalRecord/Getcyzd?type=1',
+        //    width: 300,
+        //    height: 200,
+        //    clickautotrigger: true,
+        //    caption: "选择诊断",
+        //    ajaxparameters: null,
+        //    itemdbclickhandler: function ($thistr) {
+        //        $($('#tablexyzd .zdText')[0]).val($thistr.attr('data-zdmc'));
+        //        $($('#tablexyzd .zdText')[0]).attr("data-zdCode",$thistr.attr('data-zdCode'));
+        //        $($('#tablexyzd .zdText')[0]).attr("data-icd10",$thistr.attr('data-icd10'));
+        //    },
+        //    colModel: [{ label: '编码', name: 'zdCode', widthratio: 25 },
+        //    { label: '诊断名称', name: 'zdmc', widthratio: 50 },
+        //    { label: 'icd10', name: 'icd10', widthratio: 25 }]
+        //};
+        //var options2 = $.extend(defaults2, options2);
+
+        //$('#xycyzdoption').newtouchFloatingSelector(options2);
+    };
+    
+
+</script>

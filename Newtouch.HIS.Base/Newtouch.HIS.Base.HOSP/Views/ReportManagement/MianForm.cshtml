@@ -1,0 +1,107 @@
+﻿@{
+    ViewBag.Title = "MianForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="widget-body">
+        <div class="step-content" id="wizard-steps" style="border-left: none; border-bottom: none; border-right: none;">
+            <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">表单信息</h3>
+                    </div>
+                    <div class="panel-body" style="width: 98%; margin-left: -34px;">
+                        <table class="form">
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>组织机构：</th>
+                                <td class="formValue formDdlSelectorTd">
+                                    <select id="HospitalCode" name="HospitalCode" class="form-control required">
+                                        <option value="">==请选择==</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">系统名称：</th>
+                                <td class="formValue">
+                                    <input id="SystemName" name="SystemName" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>报表类型：</th>
+                                <td class="formValue">
+                                    <select id="ReportType" name="ReportType" class="form-control required">
+                                        <option value="1" selected="selected">程序报表</option>
+                                        <option value="2">查询报表</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">报表名称：</th>
+                                <td class="formValue">
+                                    <input id="ReportName" name="ReportName" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">排序：</th>
+                                <td class="formValue">
+                                    <input id="px" name="px" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr hidden="hidden">
+                                <td class="formValue">
+                                    <input id="SystemCode" name="SystemCode" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var ReportId = $.request("ReportId");
+    $(function () {
+        initControl();
+        $.najax({
+            url: "/ReportManagement/GetReportMXTree",
+            data: { ReportId: ReportId },
+            dataType: "json",
+            success: function (data) {
+                $("#SystemName").val(data.SystemName);
+                $("#SystemCode").val(data.SystemCode);
+                $("#SystemName").prop("disabled", true);
+            }
+        });
+    })
+    function initControl() {
+        //组织机构下拉框
+        $("#HospitalCode").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+    }
+    function submitForm() {
+        var postData = $("#form1").formSerialize();
+        if ($("#HospitalCode").val()=="") {
+            $.modalAlert("请选择医院", 'warning');
+            return;
+        }
+        postData["ReportID"]=ReportId;
+        $.submitForm({
+            url: "/ReportManagement/SubmitFormMain",
+            param: postData,
+            success: function (res) {
+                if (res.message != "") {
+                    $.modalAlert("报表新建失败：" + res.message, 'warning');
+                }
+                else {
+                    $.modalAlert("报表新建成功", 'success');
+                }
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

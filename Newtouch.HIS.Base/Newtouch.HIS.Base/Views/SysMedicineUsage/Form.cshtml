@@ -1,0 +1,87 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>名称：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control required" id="yfmc" name="yfmc" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>编码：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control required" id="yfCode" name="yfCode" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>首拼：</th>
+                <th class="formValue">
+                    <input type="text" class="form-control required" id="py" name="py" />
+                </th>
+            </tr>
+            <tr>
+                <th class="formTitle">有效：</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var yfId = $.request("yfId");
+    $(function () {
+        if (!!yfId) {
+            $.najax({
+                url: "/SysMedicineUsage/GetFormJson",
+                data: { yfId: yfId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+        else {
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?orgIdIsStar=true&topOrgIdIsStar=true&initFieldLength=8&fieldName=xt_ypyf.yfCode&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#yfCode').val(data.data);
+                }
+            });
+        }
+    })
+
+    //首拼
+    $('#yfmc').keyup(function () {
+        $('#py').val($(this).toShouPin());
+    })
+
+    //提交
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/SysMedicineUsage/SubmitForm?yfId=" + yfId,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>
+
+

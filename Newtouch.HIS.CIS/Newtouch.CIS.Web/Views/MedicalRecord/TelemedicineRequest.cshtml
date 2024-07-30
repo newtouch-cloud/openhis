@@ -1,0 +1,237 @@
+﻿
+@{
+    ViewBag.Title = "TelemedicineRequest";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<script src="~/Scripts/jquery.form.js"></script>
+<style>
+    .file {
+        position: relative;
+        display: inline-block;
+        border: 1px solid #99D3F5;
+        border-radius: 4px;
+        margin-left:10px;
+        padding: 4px 12px;
+        overflow: hidden;
+        color: #1E88C7;
+        text-decoration: none;
+        text-indent: 0;
+        line-height: 20px;
+    }
+
+    .file input {
+        position: absolute;
+        font-size: 100px;
+        right: 0;
+        top: 0;
+        opacity: 0;
+    }
+
+    .file:hover {
+        background: #AADFFD;
+        border-color: #78C3F3;
+        color: #004974;
+        text-decoration: none;
+    }
+</style>
+<table class="form" style="width: 99%;height: 120px;">
+    <tr>
+        <td class="formTitle">姓名：</td>
+        <td class="formValue">
+            <input class="form-control" id="xm"  readonly/>
+        </td>
+        <td class="formTitle">卡号：</td>
+        <td class="formValue">
+            <input class="form-control" id="kh" readonly/>
+        </td>
+    </tr>
+    <tr>
+        <td class="formTitle">门诊号：</td>
+        <td class="formValue" colspan="2">
+            <input class="form-control" id="mzh" readonly/>
+        </td>
+    </tr>
+    <tr>
+        <td class="formTitle">上传报告类型：</td>
+        <td colspan="2">
+            <div class="ckbox">
+                <input id="jy" name="checkbox0" type="checkbox" value="检验" autocomplete="off"><label for="jy">检验</label>
+            </div>
+            <div class="ckbox">
+                <input id="xd" name="checkbox0" type="checkbox" value="心电" autocomplete="off"><label for="xd">心电</label>
+            </div>
+            <div class="ckbox">
+                <input id="dtxd" name="checkbox0" type="checkbox" value="动态心电" class="btn" autocomplete="off"><label for="dtxd">动态心电</label>
+            </div>
+            <div class="ckbox" style="display: none;">
+                <input id="yx" name="checkbox0" type="checkbox" value="影像" autocomplete="off"><label for="yx">影像</label>
+            </div>
+        </td>
+    </tr>
+    <tr id="dtxdtx">
+        <td class="formTitle">
+        </td>
+        <td class="formValue" colspan="3" style="color: red;">
+            若要上传动态心电数据，请使用7Z压缩，并使用下方文件名称命名！
+        </td>
+    </tr>
+    <tr id="dtxdDiv">
+        <td class="formTitle">
+            压缩文件命名：
+        </td>
+        <td class="formValue" colspan="3">
+            <input id="7zName"  class="form-control" value="03-020-qingzhen-XD&500FDF7A-6682-4BC7-AF6B-DA724973A6E2.7z" readonly/>
+        </td>
+    </tr>
+    <tr id="dtxdup">
+        <td><a href="javascript:;" id="btn_choose" style="background:#D0EEFF" class="file">
+                选择文件
+                <input id="fileUpload" type="file" multiple="multiple"/>
+            </a>
+        </td>
+        <td colspan="3">
+            <div id="attachments" role="tabpanel" style="height: 60px; border: 1px solid #D0EEFF; margin-top: 6px; ">
+
+                <ul id='content'></ul>
+            </div>
+        </td>
+    </tr>
+</table>
+<script>
+    var blh;
+    var files = [];
+    var SiteCostEarningVO = {};
+    $(function () {
+        $("tr[id^='dtxd']").hide();
+        var currentobj = JSON.parse(sessionStorage.getItem('currPatientInfo'));
+        var dtxdmc = sessionStorage.getItem('dtxdmc');
+        blh = currentobj.blh;
+        $("#mzh").val(currentobj.mzh);
+        $("#xm").val(currentobj.xm);
+        $("#kh").val(currentobj.kh);
+        $("#7zName").val(dtxdmc);
+        sessionStorage.removeItem("currentobj");
+        $(".form").formSerialize(currentobj);
+        $("input[name='checkbox0']").click(function () {
+            //设置当前选中checkbox的状态为checked
+            $("input[name='checkbox0']").removeAttr("checked");
+            $(this).prop('checked', true);
+            if ($(this).val() == "动态心电") {
+                if (!$("#7zName").val()) {
+                    $.modalAlert("找不到该患者已收费的动态心电申请!", 'warning');
+                    $(this).prop('checked', false);
+                    return;
+                }
+                $("#fileUpload").removeAttr('disabled');
+                $("tr[id^='dtxd']").show();
+            } else {
+                $("#fileUpload").prop('disabled', 'disabled');
+                $("tr[id^='dtxd']").hide();
+            }
+        });
+    });
+    $("#fileUpload").change(function(e) {
+        //   var file = e.delegateTarget.files[0];
+        //window.uploadfile = file;
+        //var str = '';
+        var t_files = this.files;
+        for (var i = 0, len = t_files.length; i < len; i++) {
+            if (t_files[i].name === "") {
+            } else {
+                //$('#loadedfile').removeAttr("href").html('');
+                var n1 = t_files[i].name.lastIndexOf('.') + 1;
+                fileExt = t_files[i].name.substring(n1, n1 + 3).toLowerCase();
+                fjmc = t_files[i].name;
+               
+                if (fileExt !== "7Z" && fileExt !== "7z") {
+                    $.modalAlert("远程动态心电数据上传仅支持7Z压缩格式后缀文件上传!", 'warning');
+                    $("#fileUrl").val("");
+                    return false;
+                }
+                if (fjmc != $("#7zName").val()) {
+                    $.modalAlert("所上传的远程动态心电数据名称必须为：" + $("#7zName").val(), 'warning');
+                    $("#fileUrl").val("");
+                    return false;
+                }
+                if (t_files[i].size / 1024 / 2014 > 10) {
+                    $.modalAlert("文件大小不能超过10M!", 'warning');
+                    $("#fileUrl").val("");
+                    return false;
+                }
+                files.push(t_files[i]);
+            }
+        }
+        renderFiles();
+    });
+
+    function updataFiles() {
+        if (files && files.length > 0) {
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].Id !== null && files[i].Id !== undefined) {
+                    var fjxx = {};
+                    fjxx.ContentType = files[i].ContentType;
+                    fjxx.fjmc = files[i].fjmc;
+                    fjxx.fjPath = files[i].fjPath;
+                    SiteCostEarningVO.fjxx.push(fjxx);
+                }
+            }
+
+        }
+    }
+
+    // 渲染附件信息到页面上
+    function renderFiles() {
+        var htmlstring = '';
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            htmlstring += '<li style="list-style-type: none;height:20px;margin-left:-30px;">名称：';
+            if (file.Id != null && file.Id != undefined) {
+                htmlstring += "<a id='file" +
+                    i +
+                    "' href='javascript:;'>" +
+                    rtndata.fjxx[i].fjmc +
+                    "</a>";
+            } else {
+                htmlstring += file.name;
+            }
+            htmlstring +=
+                '<i class="fa fa-times" aria-hidden="true" hidden="" style="display: inline;" onclick="removeFile(' +
+                i +
+                ')"></i></li> ';
+        }
+        $('#content').html(htmlstring);
+    }
+    function removeFile(idx) {
+        files.splice(idx, 1);
+        renderFiles();
+    }
+    function submitForm() {
+        updataFiles();
+        var formData = new FormData();
+        for (var i = 0; i < files.length; i++) {
+            if (files[i].Id == undefined || files[i].Id == "") {
+                formData.append('file' + i, files[i]);
+            }
+        }
+        formData.append('fjxx', JSON.stringify(SiteCostEarningVO.fjxx));
+        formData.append('patid', blh);
+        formData.append('mzh', $('#mzh').val());
+        formData.append('jy', $('#jy').prop('checked'));
+        formData.append('yx', $('#yx').prop('checked'));
+        formData.append('xd', $('#xd').prop('checked'));
+        formData.append('dtxd', $('#dtxd').prop('checked'));
+        var options = {
+            url: "@Url.Action("submitTelRequest")",
+            data: formData,
+            type: "POST",
+            cache: false,
+            async:false,
+            processData: false,
+            contentType: false,
+            loadingtext: "正在进行远程医疗上传，请稍后…",
+            success: function (data) {
+                $.modalClose();
+            }}
+        $.najax(options);
+    }
+</script>

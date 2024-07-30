@@ -1,0 +1,168 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" style="margin-left: 4%;">
+            <li role="presentation"><a role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" id="divPatInfo" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 30px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>病历号：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control form-an" style="width:56%; float:left" id="blh" required />
+                            &nbsp;&nbsp;<input type="button" class="btn btn-default btn-md btn-default-color" title="选择病人" style="width: 25px;" id="btnsyy" value="查询" onclick="GetPatSerarchView($('#blh').val());">
+
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>病人内码：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control newtouch_Readonly" id="patId" required />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">姓名：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control newtouch_Readonly" id="xm" required />
+                        </td>
+                        <th class="formTitle">年龄：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control newtouch_Readonly" id="nlshow" required />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>开始日期：</th>
+                        <td class="formValue">
+                            <input id="ksrq" type="text" class="form-control input-wdatepicker form-an" value="" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" required />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>结束日期：</th>
+                        <td class="formValue">
+                            <input id="jsrq" type="text" class="form-control input-wdatepicker form-an"value="" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" required />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>总次数：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control form-an" id="zcs" name="zcs" required />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>剩余次数：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control newtouch_Readonly" id="sycs" name="sycs" required/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">有效</th>
+                        <td class="formValue">
+                            <div class="ckbox">
+                                <input id="zt" type="checkbox" checked="checked" class="form-an"><label for="zt"></label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var ybbabId = $.request("ybbabId");
+    $(function () {
+        if (!!ybbabId) {
+            $('#btnsyy').attr('disabled', 'disabled');
+            $.ajax({
+                url: "/KnowledgeBaseManage/MedicalInsurance/GetFormJson?r=" + Math.random(),
+                data: { ybbabId: ybbabId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    //格式化UTC日期
+                    $("#CreateTime").val(new Date(data.CreateTime).format("yyyy-MM-dd hh:mm:ss"));
+                    $("#ksrq").val((data.ksrq && data.ksrq.length >= 10 ? data.ksrq.substring(0, 10) : ""));
+                    $("#jsrq").val((data.jsrq && data.jsrq.length >= 10 ? data.jsrq.substring(0, 10) : ""));
+                }
+            });
+        }
+    })
+
+    //病人查询
+    function GetPatSerarchView(blh) {
+        if (!!!blh) {
+            blh = '';
+        }
+        $.modalOpen({
+            id: "PatSerarch",
+            title: "患者查询",
+            width: "500px",
+            height: "600px",
+            url: "/PatientManage/AccountManage/PatOnlyBlhSearchView?from=PatSerarchView&t=" + Math.random() + "&blh=" + blh + "&xm=" + "",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatDbGrid();
+            }//窗口点确定的回调函数
+        });
+    }
+
+    //选择的病人
+    function getPatInfoAjax(selePatInfo) {
+        $('#blh').val(selePatInfo.blh);
+        $('#patId').val(selePatInfo.patId);
+        $('#xm').val(selePatInfo.xm);
+        $('#nlshow').val(selePatInfo.nlshow);
+    }
+
+    //根据blh获取patId和姓名
+    function ajaxLoadDataResult() {
+        var blh = $("#blh").val();
+        $('#blh').val(blh.toUpperCase());
+        $.najax({
+            url: "/NonTreatmentItemManage/NonTreatmentItem/SelectPatientInfoByblhOrzyh?blh=" + blh + "&zyh=" + "" + "&xm=" + "" + "&r=" + Math.random(),
+            dataType: "json",
+            async: true,
+            alertbierror: false,
+            success: function (data) {
+                if (data) {
+                    $('#divPatInfo').formSerialize(data);
+                    $('#patId').val(data.patId);
+                } else {
+                    $.modalAlert("未查到该病历号信息", 'warning');
+                    return;
+                }
+            }
+        });
+    }
+
+    //回车
+    $('#blh').keydownEnterEvent(function () {
+        ajaxLoadDataResult();
+    })
+
+    //默认 剩余次数=总次数
+    $('#zcs').change(function () {
+        $('#sycs').val($('#zcs').val());
+    })
+
+    //提交
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        if ($('#ksrq').val() > $('#jsrq').val()) {
+            $.modalAlert("开始日期不能大于结束日期", 'warning');
+            return;
+        }
+        var params = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/KnowledgeBaseManage/MedicalInsurance/SubmitForm?ybbabId=" + ybbabId,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+</script>
+

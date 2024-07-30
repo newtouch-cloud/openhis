@@ -1,0 +1,136 @@
+﻿@{
+    ViewBag.Title = "TemperatureChartIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var EnableLinkToOR = SysConfigReader.String("EnableLinkToOR");
+}
+<style type="text/css">
+    .tabTwdSearch .form .formValue {
+        padding: 1px 5px;
+    }
+</style>
+<form name="form1" class="tabTwdSearch">
+    <div class="panel panel-default" style="margin-bottom:2px;">
+        <div style="width:1000px;padding: 2px 0;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle"  >日期：</th>
+                    <td class="formValue" colspan="2"  >
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:1%;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input id="zyh" type="text" class="form-control" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_zyh" class="btn btn-default" value="住院号" />
+                    </td>
+                    <td class="formValue" colspan="3">
+                        &nbsp;&nbsp;
+                        <input type="button" id="btn_search" class="btn btn-primary" value=" 查 询 " />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <input type="button" id="btn_print" class="btn btn-primary" value="打印预览" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+@if (EnableLinkToOR=="ON")
+{
+    <div class="panel panel-default">
+        @Html.Partial("_TemperatureChartForCQ")
+    </div>
+}
+else
+{
+    <div class="panel panel-default">
+        @Html.Partial("_TemperatureChartForCQ")
+    </div>
+}
+
+<script>
+    $(function () {
+        var zyhtimes = $.request("zyh");
+        var yshsbz = $.request("yshsbz");
+        if (yshsbz) {
+            if (yshsbz == "1") {
+                $('#btn_print').hide();
+            }
+        }
+        var currentobj = JSON.parse(sessionStorage.getItem('currentpatobj'));//护士患者一览
+        initControl();
+
+        draw([], 0);
+        if (zyhtimes) {
+            $('#zyh').val(zyhtimes);
+            zyhtime(zyhtimes);
+            //sessionStorage.removeItem("currentpatobj");
+            $('#btn_search').trigger('click');
+        }
+    });
+
+    function initControl() {
+        $('#btn_zyh').click(function () {
+            $.modalOpen({
+                id: "patSearch",
+                title: "住院患者查询",
+                url: "/PatientList/InPatSearchView?allowunselected=true&zybz=1,2,3,7&t=" + Math.random() + "&zyh=" + '',
+                width: "700px",
+                height: "600px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].AcceptClick(function (patData) {
+                        if (patData && patData.zyh) {
+                            $('#zyh').val(patData.zyh);
+                            $('#kssj').val(patData.ryrq.substring(0, 10));
+                        }
+                        else {
+                            $('#zyh').val('');
+                        }
+                    });
+                }
+            });
+        });
+
+        $('#btn_search').click(function () {
+            var zyh = $('#zyh').val();
+            //zyhtime(zyh)
+            var kssj = $('#kssj').val();
+            var jssj = $('#jssj').val();
+            search(kssj, jssj, zyh);
+        });
+
+        $('#zyh').keyupEnterEvent(function () {
+            $('#btn_search').trigger('click');
+        });
+
+        
+
+        $('#btn_print').click(function () {
+            var kssj = $('#kssj').val();
+            var jssj = $('#jssj').val();
+            var zyh = $('#zyh').val();
+            if (!(kssj && jssj && zyh)) {
+                $.modalAlert('请完善筛选条件', 'error');
+                return;
+            }
+            if (!(tempData && tempData.length)) {
+                $.modalAlert('请先筛选出结果', 'warning');
+                return;
+            }
+            var printHasNext = true;
+            window.open('/NurseManage/InpatientVitalSigns/FullScreenTemperatureChartIndex?kssj=' + kssj + "&jssj=" + jssj + "&zyh=" + zyh);
+        });
+    }
+    function zyhtime(zyh) {
+        $.ajax({
+            url: "/NurseManage/InpatientVitalSigns/Getzyhrq",
+            data: { zyh: zyh },
+            async: false,
+            success: function (data) {
+                $('#kssj').val(new Date(data).format("yyyy-MM-dd"));
+            }
+        });
+    }
+</script>
