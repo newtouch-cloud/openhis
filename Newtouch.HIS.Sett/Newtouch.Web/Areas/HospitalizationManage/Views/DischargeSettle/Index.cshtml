@@ -1,0 +1,1215 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //是否可结算 病区中的患者
+    var isSettContainsBQZ = SysConfigReader.Bool("HOSP_Sett_Contains_BQZ", false).Value;
+    var brzybzType = ((int)EnumZYBZ.Djz).ToString();
+    if (isSettContainsBQZ)
+    {
+        brzybzType += "," + ((int)EnumZYBZ.Bqz).ToString();
+    }
+    //有与CPOE互通接口
+    //var interfaceWithCPOE = SysConfigReader.Bool("HOSP_INTERFACE_WITH_CPOE", false).Value;
+    //医保所属地
+    var medicalInsurance = SysConfigReader.String("Outpatient_MedicalInsurance");
+    //是否和医保交易
+    var openYbSett = SysConfigReader.Bool("Inpatient_Sett_OpenYbSett");
+    //是否和新农合交易
+    var openXnhSett = SysConfigReader.Bool("Inpatient_Sett_OpenXnhSett");
+
+    //收费成功之后是否直接打印收据
+    var autoPrintFP = SysConfigReader.Bool("Inpatient_Sett_AutoPrint");
+    //收费票据打印方式
+    var invoicePrintMethod = SysConfigReader.String("Inpatient_Sett_Invoice_PrintMethod");
+    //收据报表链接
+    var invoiceReportUrl = SysConfigReader.OrgReportLink("NewInpatientSetts");
+
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+@Html.Partial("_YibaoCommonView")
+<div class="rows" style="margin-bottom: 1%;">
+    <div class="panel panel-default" style="margin-bottom:0;">
+        <div class="panel-heading navb-bg">
+            住院患者信息
+        </div>
+        <table class="form" style="width:96%;">
+            <tbody>
+                <tr>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input class="form-control" type="text" id="search_zyh" value="" />
+                    </td>
+                    <td class="formTitle" style="width:40px">
+                        <input type="button" class="btn btn-default btn-md btn-default-color" title="选择住院患者" id="zy_btnsyy" value="查询" onclick="GetPatSerarchView();">
+                    </td>
+                    <td class="formValue" style="width:140px">
+                        @if (openYbSett == true || openXnhSett == true)
+                        {
+                            @Html.Partial("YibaoRedCardCommon")
+                        }
+                    </td>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <label id="xm"></label>
+                    </td>
+                    <th class="formTitle">性别：</th>
+                    <td class="formValue">
+                        <label id="xb"></label>
+                    </td>
+                    <th class="formTitle">年龄：</th>
+                    <td class="formValue">
+                        <label id="nlshow"></label>
+                    </td>
+                    <th class="formTitle">出院诊断：</th>
+                    <td class="formValue">
+                        <label id="cyzd"></label>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr>
+                    <th class="formTitle"></th>
+                    <td class="formValue">
+                        <label></label>
+                    </td>
+                    <th class="formTitle">费用性质：</th>
+                    <td class="formValue">
+                        <label id="brxzmc"></label>
+                    </td>
+                    <th class="formTitle">住院天数：</th>
+                    <td class="formValue">
+                        <label id="zyts"></label>
+                    </td>
+                    <th class="formTitle">出生日期：</th>
+                    <td class="formValue">
+                        <label id="csny"></label>
+                    </td>
+                    <th class="formTitle">入院日期：</th>
+                    <td class="formValue">
+                        <label id="ryrq"></label>
+                    </td>
+                    <th class="formTitle">出院日期：</th>
+                    <td class="formValue">
+                        <label id="cyrq"></label>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="gridPanel" style="margin-top:1%">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 4, 8 },
+    F8Text = "结算",
+    //F9Text = "转自费收费",
+    //F9ExtInlineStyle = "color:black;"
+})
+
+<script>
+    var openYbSett = '@openYbSett' === 'True'; //开关配置：医保患者是否使用医保交易流程
+    var openXnhSett = '@openXnhSett' === 'True'; //开关配置：新农合患者是否使用新农合医保交易流程
+    var isYbjyjz; //当前是否走医保交易的就诊
+    var isXnhjyjz;//当前是否走新农合交易的就诊
+    var curTime = '@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")';//当前时间
+    var isnewyb = "0";//0  国家医保 1 上海五期医保
+    var ybkCardType = "@((int)EnumCardType.YBJYK)";//医保卡类型
+    var xnkCardType = "@((int)EnumCardType.XNK)";//虚拟卡类型
+    var medicalInsurance = '@medicalInsurance';//医保所属地配置:区分医院所属医保区域
+    var ybIsReadCard = false;
+    $(function () {
+        gridListData();
+    });
+    $("#readCard").show();
+    //回车查询
+    $('#search_zyh').keydownEnterEvent(function () {
+        ajaxLoadDataResult({ zyh: $('#search_zyh').val() ,ver:'2'});
+    })
+
+    //病人查询(住院)
+    function GetPatSerarchView() {
+        $.modalOpen({
+            id: "patSearch",
+            title: "患者查询",
+            url: "/PatientManage/AccountManage/PatSearchView?brzybzType=" + '@(brzybzType)' + "&t=" + Math.random() + "&zyh=" + $("#search_zyh").val(),
+            width: "700px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatDbGrid(); //在弹出窗口事件
+                //调用查询卡号和住院号
+            }//窗口点确定的回调函数
+        });
+    }
+
+    //手输社保卡号
+    function GetPatSbkh() {
+        $.modalOpen({
+            id: "sbkhInput",
+            title: "卡号输入",
+            url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random(),
+            width: "300px",
+            height: "150px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatSbkhData();
+            }
+        });
+    }
+
+    //选择的病人 callback
+    function getPatInfoAjax(selePatInfo) {
+        if (selePatInfo && selePatInfo.zyh) {
+            ajaxLoadDataResult({ zyh: selePatInfo.zyh,ver:'2' });
+        }
+        else {
+            $('#search_zyh').val('');
+        }
+    }
+
+    //
+    var patModel = null;
+    //
+    var jszje = 0.00;
+
+    //根据zyh 病人基本信息、计费信息
+    function ajaxLoadDataResult(obj, funcSuccCallback) {
+        //清一下
+        newtouch_globalevent_f4();
+
+        $.najax({
+            type: "POST",
+            url: "/HospitalizationManage/DischargeSettle/GetInpatientSettleStatusDetail",
+            data: obj,
+            dataType: "json",
+            success: function (ajaxresp) {
+                debugger;
+                //住院病人信息
+                patModel = ajaxresp.data.InpatientSettPatInfo;
+                cqPatInfo.zymzh = patModel.zyh;//住院号
+                $('#search_zyh').val(patModel.zyh);
+
+                isYbjyjz = openYbSett && (patModel.brxzlb != '0');
+                isXnhjyjz = openXnhSett && patModel.brxz == '8' && patModel.CardType == "@((int)Newtouch.Infrastructure.EnumCardType.XNHJYK)";
+
+                $('#xm').html(patModel.xm);
+                $('#xb').html($.getGender(patModel.xb));
+                $('#nlshow').html(getAgeFromBirthTime({ begin: patModel.csny }).text);
+                //$('#ryzd').html(patModel.ryzdmc);
+                $('#brxzmc').html(patModel.brxzmc);
+                $('#cyzd').html(patModel.cyzd);
+                $('#zyts').html(patModel.zyts);
+                $('#csny').html(patModel.csny ? patModel.csny.substring(0, 10) : '');
+                $('#ryrq').html(patModel.ryrq ? patModel.ryrq.substring(0, 10) : '');
+                $('#cyrq').html(patModel.cyrq ? patModel.cyrq.substring(0, 10) : '');
+                if (isYbjyjz) {
+                    var bkbz = cqPatInfo.accountattr ? cqPatInfo.accountattr.substr(11, 1) : "";
+                    var gbbz = cqPatInfo.accountattr ? cqPatInfo.accountattr.substr(1, 1) : "";//干保 1
+                    if (bkbz == "G" || bkbz == "A" || gbbz == "1") {
+                        isnewyb = "1";
+                    }
+                }
+                if (ajaxresp.data.GroupFeeVOList && ajaxresp.data.GroupFeeVOList.length) {
+                    loadJfmxByZyh(ajaxresp.data.GroupFeeVOList);
+                }
+                else {
+                    $.modalAlert("尚未产生费用，不能结算", 'warning');
+                    return false;
+                }
+            },
+            errorCallback: function (data) {
+                newtouch_globalevent_f4();
+                $('#search_zyh').trigger('focus');
+            }
+        });
+    }
+
+    //总金额合计
+    function loadJfmxByZyh(data) {
+        //$('#gridList').jqGrid("clearGridData");   //早F4过了
+        $("#gridList").newtouchLocalDataGrid(null, data);
+        //总金额
+        var zje = 0.00;
+        $.each(data, function () {
+            if (this.je) {
+                zje += this.je;
+            }
+        });
+        if (zje) {
+            jszje = zje.toFixed(2);
+            $("#yeCon").text(ovpraseFloat(zje).toFixed(2));
+        }
+    }
+
+    function newtouch_event_f4() {
+        $('#search_zyh').val('');
+        $('#xm').html('');
+        $('#xb').html('');
+        $('#nlshow').html('');
+        //$('#ryzd').html('');
+        $('#brxzmc').html('');
+        $('#cyzd').html('');
+        $('#zyts').html('');
+        $('#csny').html('');
+        $('#ryrq').html('');
+        $('#cyrq').html('');
+        patModel = null;
+        jszje = 0.00;
+        $('#yeCon').text('0.00');
+        $('#gridList').jqGrid("clearGridData");
+    }
+
+    //绑定grid
+    function gridListData() {
+        var captionCon = "计费明细&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;总金额：<label style='color:red;'>￥</label></span>&nbsp;<span id='yeCon' class='moneybg' style='font-size:large;'>" + "0.00" + "</span>元";
+        var $gridList = $("#gridList");
+        $gridList.newtouchLocalDataGrid({
+            height: $(window).height() - 225,
+            unwritten: false,
+            caption: captionCon,
+            colModel: [
+                { label: '费用类别', name: 'dlmc', width: 100, align: 'left' },
+                {
+                    label: '金额', name: 'je', width: 500, align: 'left', formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+                },
+            ],
+        });
+    }
+
+    //保存结算
+    function newtouch_event_f8() {
+        debugger;
+        if (!patModel || !patModel.zyh) {
+            $.modalAlert("住院号为空", 'warning');
+            return;
+        }
+        var data = $("#gridList").jqGrid('getRowData_AllLine');
+        if (!(data && data.length)) {
+            $.modalAlert("尚未产生费用，不能结算.", 'warning')
+            return;
+        }
+        if (!patModel.ryrq) {
+            $.modalAlert("入院日期为空", 'warning');
+            return;
+        }
+
+        if (isYbjyjz) {
+            if (!ybIsReadCard) {
+                $.modalAlert("医保患者结算，请先读卡！", 'warning');
+                return;
+            }
+            if (isnewyb == "1") {
+                setTimeout(function () {
+                    shybmxsc(
+                        function (mxxx) {
+                            $.loading(true, '正在进行医保结算，请稍后...');
+                            setTimeout(function () {
+                                shybjs(mxxx);
+                            });
+                        });
+                },
+                    50);
+            }
+            else {
+                $.loading(true, '正在进行就诊登记修改，请稍后...');
+                setTimeout(function () {
+                    CQjzdj(function (jzxx) {
+                        $.loading(true, '正在进行出院办理，请稍后...');
+                        setTimeout(function () {
+                            CQmxsc(jzxx,
+                                function (mxxx) {
+                                    $.loading(true, '正在进行医保结算，请稍后...');
+                                    setTimeout(function () {
+                                        CQybjs(jzxx, mxxx);
+                                    });
+                                });
+                        },
+                            50);
+                    });
+                },
+                    50);
+            }
+        }
+        else {
+            hisSubmit();
+        }
+    }
+    function newtouch_event_f9() {
+        if (!patModel || !patModel.zyh) {
+            $.modalAlert("住院号为空", 'warning');
+            return;
+        }
+        var data = $("#gridList").jqGrid('getRowData_AllLine');
+        if (!(data && data.length)) {
+            $.modalAlert("尚未产生费用，不能结算.", 'warning')
+            return;
+        }
+        if (!patModel.ryrq) {
+            $.modalAlert("入院日期为空", 'warning');
+            return;
+        }
+        if (!isYbjyjz) {
+            $.modalAlert("该患者不是医保患者，无需转自费，请直接收费", 'warning');
+            return;
+        }
+        var xmzje = waitSubmitItems();
+        $.modalConfirm("将转为自费结算，是否确认自费结算？",
+            function (flag) {
+                if (!flag) {
+                    return;
+                } else {
+                    isYbjyjz = false;
+                    hisSubmit();
+                }
+            });
+    }
+    //
+    function shybhisSubmit(isYbjyjz, ybjyFeeReturn, isXnhjyjz, xnhjyFeeReturn) {
+        //
+        var zyh = patModel.zyh;
+        var ryrq = $.getDate({ date: patModel.ryrq });
+        var cyrq = patModel.cyrq;
+        var zje = ovpraseFloat(jszje).toFixed(2);
+        //
+        var widthpx = "700px";
+        var heightpx = "550px";
+        var hzjslx = "0";//0自费  1医保  8农保
+        var s13OtherResponseDto;
+        if (isYbjyjz && ybjyFeeReturn) {
+            sessionStorage.setItem('ybjyFeeReturn', JSON.stringify(ybjyFeeReturn));
+            sessionStorage.setItem('cqPatInfo', JSON.stringify(cqPatInfo));
+            widthpx = "700px";
+            heightpx = "600px";
+            hzjslx = "1";
+        }
+
+		var openUrl = "/HospitalizationManage/DischargeSettle/SettConfirmForm?zyh=" + zyh;
+        openUrl += "&ryrq=" + (!!ryrq ? ryrq : '');
+        openUrl += "&zje=" + (!!zje ? ovpraseFloat(zje).toFixed(2) : '');
+        openUrl += "&xjzfys=" + (!!zje ? ovpraseFloat(zje).toFixed(2) : '');
+        openUrl += "&patid=" + patModel.patId;
+        openUrl += "&isXnhjy=" + (!!isXnhjyjz);
+        openUrl += "&isYbjy=" + (!!isYbjyjz) + "&brxz=" + patModel.brxz + "&brxzmc=" + patModel.brxzmc,
+        $.modalOpen({
+            id: "ConfirmFeeForm",
+            title: "出院结算",
+            url: openUrl,
+            width: widthpx,
+            height: heightpx,
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (feeRelated, outTradeNo) {
+                    feeRelated.ver = "2";
+                    feeRelated.ybjslsh = ybjyFeeReturn.lsh;
+                    //HIS确认结
+                    $.najax({
+                        url: "/HospitalizationManage/DischargeSettle/SaveSettle",
+                        dataType: "json",
+                        data: { zyh: zyh, expectedcyrq: feeRelated.cyrq, fph: feeRelated.fph, feeRelated: feeRelated, ybfeeRelated: ybjyFeeReturn, xnhfeeRelated: s13OtherResponseDto, jslx: hzjslx, outTradeNo: outTradeNo },
+                        type: "POST",
+                        success: function (ajaxresp) {
+                            var message = "";
+
+                            var isYbjyjzTemp = isYbjyjz;
+                            var ybjyFeeReturnTemp = $.deepClone.clone(ybjyFeeReturn);
+
+                            $.modalMsg("结算成功" + message, 'success');
+                            $.modalClose("ConfirmFeeForm");
+                            newtouch_event_f4();
+
+                            //打印发票
+                            if (ajaxresp.data && ajaxresp.data.jsnm) {
+                                if ('@(autoPrintFP)' == 'True') {
+                                    //否则报表打印
+                                    var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + ajaxresp.data.jsnm;
+                                    window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                                    
+                                }
+                            }
+                        }
+                    });
+                });
+                return;
+            },
+            cancelCallBack: function (iframeId) {
+                //取消出院结算，出院办理回退
+                if (isYbjyjz) {
+                    var cqybjyDenySettleReturn;
+                    var payoptype = {
+                        hisId: zyh, 'operatorId': '@(opr.rygh)', 'operatorName': '@(opr.UserName)','xsywlx':"1",
+                        'carddata': cqPatInfo.carddata, 'cardtype': cqPatInfo.cardtype, "insuplc_admdvs": cqPatInfo.xzqh,
+                        'sflx': "2", 'translsh': ybjyFeeReturn.lsh, 'totalexpense': ybjyFeeReturn.totalexpense, 'cxly': "0"
+                    };
+                    	$.ajax({
+		                    type: "POST",
+                            url: "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SK01",
+		                    dataType: "json",
+		                    data: payoptype,
+		                    async: false,
+		                    success: function (data) {
+			                    cqybjyDenySettleReturn = eval('(' + data + ')');
+		                    }
+	                    });
+                    if (cqybjyDenySettleReturn.xxfhm === "P001") {
+                        //UpOutMdtrtinfo(payoptype);
+	                    } else {
+	                    }
+	                    $.loading(false);
+                }
+            }
+        });
+    }
+    function hisSubmit(isYbjyjz, ybjyFeeReturn, isXnhjyjz, xnhjyFeeReturn) {
+        //
+        var zyh = patModel.zyh;
+        var ryrq = $.getDate({ date: patModel.ryrq });
+        var cyrq = patModel.cyrq;
+        var zje = ovpraseFloat(jszje).toFixed(2);
+        //
+        var widthpx = "700px";
+        var heightpx = "550px";
+        var hzjslx = "0";//0自费  1医保  8农保
+        var s13OtherResponseDto;
+        if (isYbjyjz && ybjyFeeReturn) {
+            sessionStorage.setItem('ybjyFeeReturn', JSON.stringify(ybjyFeeReturn));
+            sessionStorage.setItem('cqPatInfo', JSON.stringify(cqPatInfo));
+            widthpx = "700px";
+            heightpx = "600px";
+            hzjslx = "1";
+            ybjyFeeReturn.cqtczf = ybjyFeeReturn.hifp_pay;
+            ybjyFeeReturn.zhzf = ybjyFeeReturn.acct_pay;
+            ybjyFeeReturn.cqxjzf = ybjyFeeReturn.psn_cash_pay;
+            ybjyFeeReturn.gwybz = ybjyFeeReturn.cvlserv_pay;
+            ybjyFeeReturn.delpje = ybjyFeeReturn.hifob_pay;
+            ybjyFeeReturn.dbzddyljgdz = ybjyFeeReturn.hosp_part_amt;
+            ybjyFeeReturn.zhye = ybjyFeeReturn.balc;
+            ybjyFeeReturn.jylsh = ybjyFeeReturn.setl_id;
+            ybjyFeeReturn.zxjssj = ybjyFeeReturn.setl_time;
+        }
+
+		var openUrl = "/HospitalizationManage/DischargeSettle/SettConfirmForm?zyh=" + zyh;
+        openUrl += "&ryrq=" + (!!ryrq ? ryrq : '');
+        openUrl += "&zje=" + (!!zje ? ovpraseFloat(zje).toFixed(2) : '');
+        openUrl += "&xjzfys=" + (!!zje ? ovpraseFloat(zje).toFixed(2) : '');
+        openUrl += "&patid=" + patModel.patId;
+        openUrl += "&isXnhjy=" + (!!isXnhjyjz);
+        openUrl += "&isYbjy=" + (!!isYbjyjz) + "&brxz=" + patModel.brxz + "&brxzmc=" + patModel.brxzmc,
+        $.modalOpen({
+            id: "ConfirmFeeForm",
+            title: "出院结算",
+            url: openUrl,
+            width: widthpx,
+            height: heightpx,
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (feeRelated, outTradeNo) {
+                    feeRelated.ver = "2";
+                    if (isYbjyjz)
+                        feeRelated.ybjslsh=ybjyFeeReturn.setl_id;
+                    //HIS确认结
+                    $.najax({
+                        url: "/HospitalizationManage/DischargeSettle/SaveSettle",
+                        dataType: "json",
+                        data: { zyh: zyh, expectedcyrq: feeRelated.cyrq, fph: feeRelated.fph, feeRelated: feeRelated, ybfeeRelated: ybjyFeeReturn, xnhfeeRelated: s13OtherResponseDto, jslx: hzjslx, outTradeNo: outTradeNo },
+                        type: "POST",
+                        success: function (ajaxresp) {
+                            var message = "";
+
+                            var isYbjyjzTemp = isYbjyjz;
+                            var ybjyFeeReturnTemp = $.deepClone.clone(ybjyFeeReturn);
+
+                            $.modalMsg("结算成功" + message, 'success');
+                            $.modalClose("ConfirmFeeForm");
+                            newtouch_event_f4();
+
+                            //打印发票
+                            if (ajaxresp.data && ajaxresp.data.jsnm) {
+                                if ('@(autoPrintFP)' == 'True') {
+                                    //否则报表打印
+                                    var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + ajaxresp.data.jsnm;
+                                    window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                                    
+                                }
+                            }
+                        }
+                    });
+                });
+                return;
+            },
+            cancelCallBack: function (iframeId) {
+                //取消出院结算，出院办理回退
+                if (isYbjyjz) {
+                        var cqybjyDenySettleReturn;
+                        var payoptype = { hisId:zyh,'setl_id': ybjyFeeReturn.setl_id, 'operatorId': '@(opr.rygh)', 'operatorName': '@(opr.UserName)', 'mdtrt_id': ybjyFeeReturn.mdtrt_id, 'psn_no': cqPatInfo.grbh, "insuplc_admdvs": cqPatInfo.xzqh };
+                    	$.ajax({
+		                    type: "POST",
+		                    url: "http://127.0.0.1:33333/api/YiBao/HospitaUpSettlement_2305",
+		                    dataType: "json",
+		                    data: payoptype,
+		                    async: false,
+		                    success: function (data) {
+			                    cqybjyDenySettleReturn = eval('(' + data + ')');
+		                    }
+	                    });
+                    	if (cqybjyDenySettleReturn.infcode == "0") {
+                    	    UpOutMdtrtinfo(payoptype);
+	                    } else {
+                    	    $.modalAlert('住院结算冲正失败：' + cqybjyDenySettleReturn.err_msg + '【此时医保已经结算成功，请联系his开发商处理】', 'success');
+	                    }
+	                    $.loading(false);
+                }
+            }
+        });
+    }
+</script>
+<script type="text/javascript">
+    //医保逻辑
+
+	//医保
+    function CQjzdj(funcSuccCallback) {
+	    $.ajax({
+		    type: "POST",
+		    url: "/PatientManage/HospiterRes/GetCQjzdjInfo",
+		    data: { zyh: patModel.zyh },
+		    dataType: "json",
+		    cache: false,
+		    async: false,
+		    success: function (payoptype) {
+		    	if (!payoptype) {
+				    $.loading(false);
+				    $.modalAlert("获取住院就诊登记失败", 'error');
+				    return;
+		    	}
+		    	payoptype.mdtrt_cert_type = cqPatInfo.ybklx;
+		    	payoptype.orgId = "@opr.OrganizeId";
+		        cqPatInfo.grbh = payoptype.psn_no;
+		        var jzxx = { mdtrt_id: payoptype.mdtrt_id, med_type: payoptype.med_type, djxx: payoptype };
+		        funcSuccCallback(jzxx);
+		        //$.ajax({
+		        //    type: "POST",
+		        //    url: "http://127.0.0.1:33333/api/YiBao/HospitaMdtrtinfo_2403",
+		        //    dataType: "json",
+		        //    data: payoptype,
+		        //    async: false,
+		        //    success: function (data) {
+		        //        var medicalReg = eval('(' + data + ')');
+		        //        if (medicalReg) {
+		        //            if (medicalReg.infcode == "0") {
+		        //                var jzxx = { mdtrt_id: payoptype.mdtrt_id, med_type: payoptype.med_type, djxx: payoptype };
+		        //                funcSuccCallback(jzxx);
+		        //            }
+		        //            else {
+		        //                $.loading(false);
+		        //                $.modalAlert("住院信息变更失败：" + medicalReg.err_msg, 'error');
+		        //                return;
+		        //            }
+		        //        }
+		        //    }
+		        //});
+		    }
+	    });
+    }
+    function shybmxsc(funcSuccCallback) {
+        var n = 1;
+        var ybzje = 0.00;
+        var succTimes = 0;
+        var mxnum = 0;
+        var isuccer = true;//明细上传是否成功
+        //var zfzje = 0.00;
+        var cyrq;
+
+        $.najax({
+            type: "GET",
+            data: {
+                zyh: patModel.zyh, jssj: $.getDate() + " 23:59:59", jsbz: "1"
+            },
+            url: "/HospitalizationManage/DischargeSettle/ValialUploadDataShyb",
+            dataType: "json",
+            async: false,
+            loading: false,
+            success: function (ajaxResp) {
+                var jfbh = ajaxResp.jfbh;
+                if (jfbh) {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert(jfbh + "未上传至医保,请至预结算页面查询并进行上传!", 'error');
+                    return;
+                }
+                else {
+                    $.najax({
+                        type: "GET",
+                        data: {
+                            mzzyh: patModel.zyh, jssj: $.getDate() + " 23:59:59"
+                        },
+                        url: "/HospitalizationManage/DischargeSettle/GetCQAlreadyUploadFeeDetailsV2",
+                        dataType: "json",
+                        async: false,
+                        loading: false,
+                        success: function (ajaxResp) {
+                            ybzje = ajaxResp.ybzje;
+                            cyrq = ajaxResp.csrq;
+                        }
+                    });
+                }
+            }
+        });
+
+        $.loading(false);
+        if (funcSuccCallback && isuccer) {
+            setTimeout(function () {
+                var mxxx = { ybzje: ybzje, cyrq: cyrq };
+                funcSuccCallback(mxxx);
+            }, 50);
+        }
+    }
+    function CQmxsc(jzxx,funcSuccCallback) {
+	    var n = 1;
+	    var ybzje = 0.00;
+	    var succTimes = 0;
+	    var mxnum = 0;
+	    var isuccer = true;//明细上传是否成功
+        //var zfzje = 0.00;
+	    var cyrq;
+
+	    $.najax({
+	        type: "GET",
+	        data: {
+	            zyh: patModel.zyh, jssj: $.getDate() + " 23:59:59", jsbz: "1"
+	        },
+	        url: "/HospitalizationManage/DischargeSettle/ValialUploadData",
+	        dataType: "json",
+	        async: false,
+	        loading: false,
+	        success: function (ajaxResp) {
+	            var jfbh = ajaxResp.jfbh;
+	            if (jfbh) {
+	                $.loading(false);
+	                isuccer = false;
+	                $.modalAlert(jfbh + "未上传至医保,请至预结算页面查询并进行上传!", 'error');
+	                return;
+	            }
+	            else {
+	                $.najax({
+	                    type: "GET",
+	                    data: {
+	                        mzzyh: patModel.zyh, jssj: $.getDate() + " 23:59:59"
+	                    },
+	                    url: "/HospitalizationManage/DischargeSettle/GetCQAlreadyUploadFeeDetailsV2",
+	                    dataType: "json",
+	                    async: false,
+	                    loading: false,
+	                    success: function (ajaxResp) {
+	                        ybzje = ajaxResp.ybzje;
+	                        cyrq = ajaxResp.csrq;
+	                    }
+	                });
+	                $.ajax({
+	                    type: "POST",
+	                    url: "http://127.0.0.1:33333/api/YiBao/HospitaUpSettlement_2402",
+	                    dataType: "json",
+	                    data: jzxx.djxx,
+	                    async: false,
+	                    success: function (data) {
+	                        var cyblReg = eval('(' + data + ')');
+                            if (cyblReg.infcode == "0" || cyblReg.infcode == 0) {
+	                        }
+	                        else {
+	                            $.loading(false);
+	                            isuccer = false;
+	                            $.modalAlert("出院办理失败：" + cyblReg.err_msg, 'error');
+	                            return;
+	                        }
+	                    },
+	                    error: function (request, error, ex) {
+	                        $.loading(false);
+	                        isuccer = false;
+	                        $.modalAlert("医保服务【2402】(出院办理)不可访问：[" + ex + "]", 'error');
+	                        return;
+	                    }
+	                });
+	            }
+	        }
+	    });
+	    
+	    $.loading(false);
+	    if (funcSuccCallback && isuccer) {
+		    setTimeout(function () {
+			    var mxxx = {ybzje: ybzje,cyrq:cyrq };
+			    funcSuccCallback(mxxx);
+		    }, 50);
+	    }
+    }
+    function shybjs(mxxx) {
+        var jzlx = cqPatInfo.ybklx
+        var predata = {
+                    operatorId: '@(opr.rygh)',
+                    operatorName: '@(opr.UserName)',
+                    insuplc_admdvs: cqPatInfo.insuplc_admdvs,
+                    orgId: '@(opr.OrganizeId)',
+                    hisId: patModel.zyh,//住院号
+                    personspectag: cqPatInfo.accountattr.substr(3, 1),//0：普通 1：离休 2：伤残 3：干部保健定点,
+                    yllb: "S21",
+                    persontype: "0",
+                    gsrdh: "",
+                    xsywlx: "1",
+                    cyjsbz: "0"
+                };
+        var ybjsSettReturn1;
+        var ybjsSettReturn;
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SI51",
+            data: predata,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                ybjsSettReturn1 = eval('(' + data + ')');
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                $.modalAlert("医保服务【SI51】(预结算)不可访问：[" + ex + "]", 'error');
+                return;
+            }
+        });
+        if (ybjsSettReturn1) {
+            if (ybjsSettReturn1.xxfhm === "P001") {
+                predata.jssqxh = ybjsSettReturn1.xxnr.jssqxh;
+                $.ajax({
+                    type: "POST",
+                    url: "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SI52",
+                    data: predata,
+                    dataType: "json",
+                    async: false,
+                    success: function (data) {
+                        ybjsSettReturn = eval('(' + data + ')');
+                    }
+                });
+                if (ybjsSettReturn) {
+                    $.loading(false);
+                    if (ybjsSettReturn.xxfhm === "P001") {
+                        var ybjyCqFeeReturn = ybjsSettReturn.xxnr;
+                        //his结算确认（包括医保结算确认）
+                        //根据后台查询出的结果，如果该患者有开立自立的项目（没有医保代码），则结算时的总金额，填写总的汇总金额
+                        //如果只有医保项目，则以医保结算的医保返回结果为准进行结算
+                        ybjyCqFeeReturn.his_hisfyze = jszje;
+                        ybjyCqFeeReturn.ybzje = mxxx.ybzje;
+                        //ybjyCqFeeReturn.jzid = jzxx.mdtrt_id;
+                        shybhisSubmit(true, ybjyCqFeeReturn, false, null);
+                    } else {
+                        $.loading(false);
+                        $.modalAlert(ybjsSettReturn.fhxx, 'error');
+                        return;
+                    }
+                } else {
+                    $.loading(false);
+                    $.modalAlert("调用医保接口失败", 'error');
+                    return;
+                }
+            } else {
+                $.loading(false);
+                $.modalAlert(ybjsSettReturn1.fhxx, 'error');
+                return;
+            }
+        } else {
+            $.loading(false);
+            $.modalAlert("调用医保接口【SI52】预结算失败,请重试!", 'error');
+            return;
+        }
+
+    }
+    function CQybjs(jzxx,mxxx) {
+        var jzlx = cqPatInfo.jzlx
+        var predata = {
+            psn_no: cqPatInfo.grbh,
+            mdtrt_cert_type:jzlx,
+            mdtrt_cert_no: jzlx == "3" ? cqPatInfo.ecToken : (jzlx == "4" ? cqPatInfo.sfzh : cqPatInfo.sbkh),
+            medfee_sumamt: mxxx.ybzje,
+            psn_setlway: "01",
+            mdtrt_id: jzxx.mdtrt_id,
+            insutype: cqPatInfo.xzlx,
+            mid_setl_flag: "0",
+            insuplc_admdvs: cqPatInfo.xzqh,
+            operatorId: '@(opr.rygh)',
+            operatorName: '@(opr.UserName)',
+            hisId: patModel.zyh,
+            acct_used_flag: "1",
+            dscgTime: mxxx.cyrq
+        };
+        var ybjsSettReturn1;
+        var ybjsSettReturn;
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/HospitaSettlement_2303",
+            data: predata,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                ybjsSettReturn1 = eval('(' + data + ')');
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                $.modalAlert("医保服务【2303】(预结算)不可访问：[" + ex + "]", 'error');
+            }
+        });
+        if (ybjsSettReturn1) {
+            if (ybjsSettReturn1.infcode == "0"||ybjsSettReturn1.infcode == 0) {
+                $.ajax({
+                    type: "POST",
+                    url: "http://127.0.0.1:33333/api/YiBao/HospitaSettlement_2304",
+                    data: predata,
+                    dataType: "json",
+                    async: false,
+                    success: function (data) {
+                        ybjsSettReturn = eval('(' + data + ')');
+                    }
+                });
+                if (ybjsSettReturn) {
+                    $.loading(false);
+                    if (ybjsSettReturn.infcode == "0" || ybjsSettReturn.infcode == 0) {
+                        var ybjyCqFeeReturn = ybjsSettReturn.output.setlinfo;
+                        //his结算确认（包括医保结算确认）
+                        //根据后台查询出的结果，如果该患者有开立自立的项目（没有医保代码），则结算时的总金额，填写总的汇总金额
+                        //如果只有医保项目，则以医保结算的医保返回结果为准进行结算
+                        ybjyCqFeeReturn.his_hisfyze = jszje;
+                        ybjyCqFeeReturn.ybzje = mxxx.ybzje;
+                        ybjyCqFeeReturn.jzid = jzxx.mdtrt_id;
+                        hisSubmit(true, ybjyCqFeeReturn, false, null);
+                    } else {
+                        var payoptype = { hisId: patModel.zyh, 'operatorId': '@(opr.rygh)', 'operatorName': '@(opr.UserName)', 'mdtrt_id': jzxx.mdtrt_id, 'psn_no': cqPatInfo.grbh, "insuplc_admdvs": cqPatInfo.xzqh };
+                        UpOutMdtrtinfo(payoptype);
+                        $.loading(false);
+                        $.modalAlert(ybjsSettReturn.err_msg, 'error');
+                        return;
+                    }
+                } else {
+                    $.loading(false);
+                    $.modalAlert("调用医保接口失败", 'error');
+                    return;
+                }
+            } else {
+                var payoptype = { hisId: patModel.zyh, 'operatorId': '@(opr.rygh)', 'operatorName': '@(opr.UserName)', 'mdtrt_id': jzxx.mdtrt_id, 'psn_no': cqPatInfo.grbh, "insuplc_admdvs": cqPatInfo.xzqh };
+                UpOutMdtrtinfo(payoptype);
+                $.loading(false);
+                $.modalAlert(ybjsSettReturn1.err_msg, 'error');
+                return;
+            }
+        } else {
+            var payoptype = { hisId: patModel.zyh, 'operatorId': '@(opr.rygh)', 'operatorName': '@(opr.UserName)', 'mdtrt_id': jzxx.mdtrt_id, 'psn_no': cqPatInfo.grbh, "insuplc_admdvs": cqPatInfo.xzqh };
+            UpOutMdtrtinfo(payoptype);
+            $.loading(false);
+            $.modalAlert("调用医保接口【2303】预结算失败,请重试!", 'error');
+            return;
+        }
+
+    }
+    function UpOutMdtrtinfo(payoptype)
+    {
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/HospitaUpOutMdtrtinfo_2405",
+            dataType: "json",
+            data: payoptype,
+            async: true,
+            success: function (data) {
+                var cxcyReturn = eval('(' + data + ')');
+                if (cxcyReturn.infcode != '0') {
+                    $.modalAlert('出院撤销失败：' + cxcyReturn.err_msg + '【请联系his开发商处理】', 'success');
+                }
+            }
+        });
+    }
+
+    function upLoadReturnData(retdata) {
+        $.najax({
+            url: '/HospitalizationManage/DischargeSettle/upLoadReturnData',
+            data: { upReturnData: retdata, patzyh: zyh },
+            type: 'POST',
+            success: function () {
+
+            }
+        });
+    }
+    //查询条件
+    function getSearchPostData(n) {
+        var zyh = patModel.zyh;
+        var pagination = {
+            rows: 50,
+            page: n + 1,
+            sidx: 'yka105 asc'
+        };
+        return { pagination: pagination, zyh: zyh };
+
+    }
+    //查询条件
+    function getSearchCQPostData(n) {
+	    var zyh = patModel.zyh;
+	    var pagination = {
+	        rows: 10,
+	        page: 1,
+		    //page: n + 1,
+		    sidx: ' cxmxlsh asc'
+	    };
+	    return { pagination: pagination, zyh: zyh };
+
+    }
+    function ovpraseFloat(val) {
+        if (!val) {
+            val = 0.00;
+        }
+        return parseFloat(val);
+    }
+    //获取结算患者 患者信息
+    function funcGetSettPatientInfo(funcSuccCallback) {
+        $.najax({
+            url: '/HospitalizationManage/DischargeSettle/GetInpatientSettYbPatInfo?zyh=' + patModel.zyh,
+            loadingtext: "正在请求患者出院信息，请稍后...",
+            type: 'POST',
+            success: function (ajaxResp) {
+                //
+                if (funcSuccCallback) {
+                    setTimeout(function () {
+                        funcSuccCallback(ajaxResp.data);
+                    }, 50);
+                }
+            }
+        });
+    }
+    //住院结算
+    function realSettle(gzyb_CyblOut, ybRealSettleReq) {
+        var ybjyPreSettReturn;// = $.guianyibao.ZyFeejs(JSON.stringify(ybPreSettleReq));
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:12345/api/YiBao/ZyFeejs",
+            contentType: 'application/json',
+            data: JSON.stringify(ybRealSettleReq),
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                ybjyPreSettReturn = eval('(' + data + ')');
+            }
+        });
+        //
+        $.loading(false);
+        if (ybjyPreSettReturn.Code == 0) {
+            var ybReturnData = ybjyPreSettReturn.Data;
+            ybReturnData.astr_jylsh = ybjyPreSettReturn.jylsh;
+            ybReturnData.astr_jyyzm = ybjyPreSettReturn.jyyzm;
+            //his结算确认（包括医保结算确认）
+            //组装请求参数
+            ybReturnData.prm_akc190 = ybRealSettleReq.prm_akc190,
+                ybReturnData.prm_yab003 = ybRealSettleReq.prm_yab003,
+                ybReturnData.prm_aka130 = ybRealSettleReq.prm_aka130,
+                ybReturnData.prm_ykb065 = ybRealSettleReq.prm_ykb065,
+                ybReturnData.prm_hisfyze = ybRealSettleReq.prm_hisfyze,
+                ybReturnData.prm_yka110 = ybRealSettleReq.prm_yka110,
+                ybReturnData.prm_aae013 = ybRealSettleReq.prm_aae013,
+                ybReturnData.prm_aae011 = ybRealSettleReq.prm_aae011,
+                ybReturnData.prm_ykc141 = ybRealSettleReq.prm_ykc141,
+                //
+                ybReturnData.his_hisfyze = jszje,
+                //
+                ybReturnData.cyblastr_jylsh = gzyb_CyblOut.jylsh,
+                ybReturnData.cyblastr_jyyzm = gzyb_CyblOut.jyyzm,
+                hisSubmit(true, ybReturnData,false,null);
+        }
+        else {
+            var ybReturn;
+            var cyblhtData = {
+                prm_akc190: ybRealSettleReq.prm_akc190,
+                prm_aac001: ybRealSettleReq.prm_aac001,
+                prm_yab003: ybRealSettleReq.prm_yab003,
+                prm_aka130: ybRealSettleReq.prm_aka130,
+                prm_aae036: "",
+                prm_ykb065: ybRealSettleReq.prm_ykb065,
+                prm_ykc141: "ly"
+            };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:12345/api/YiBao/ZyCyblht",
+                contentType: 'application/json',
+                data: JSON.stringify(cyblhtData),
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    ybReturn = eval('(' + data + ')');
+                }
+            });
+            if (ybReturn.Code == 0) {
+                var parameter = { "astr_jylsh": ybReturn.jylsh, "astr_jyyzm": ybReturn.jyyzm };
+                $.ajax({
+                    url: "http://127.0.0.1:12345/api/YiBao/YibaoConfirm",
+                    data: parameter,
+                    dataType: "json",
+                    async: false,
+                    success: function (data) {
+                    }
+                });
+            }
+            $.modalAlert(ybjyPreSettReturn.ErrorMsg, 'error');
+            return;
+        }
+    }
+
+    //医保预结算
+    function preSettle(ybPreSettleReq, funcSuccCallback) {
+        //预结算
+        var ybReturn;
+        var mnjsData = {
+            prm_akc190: ybPreSettleReq.prm_akc190,
+            prm_aac001: ybPreSettleReq.prm_aac001,
+            prm_yab003: ybPreSettleReq.prm_yab003,
+            prm_aka130: ybPreSettleReq.prm_aka130,
+            prm_ykb065: ybPreSettleReq.prm_ykb065,
+            prm_hisfyze: ybPreSettleReq.prm_hisfyze //用医保部分的费用总额（不包括不和医保交易的全自费部分）
+        };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:12345/api/YiBao/ZyMnjs",
+            contentType: 'application/json',
+            data: JSON.stringify(mnjsData),
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                ybReturn = eval('(' + data + ')');
+            }
+        });
+        $.loading(false);
+        if (ybReturn && ybReturn.Code==0) {
+            setTimeout(function () {
+                funcSuccCallback();
+            }, 50);
+        }
+        else {
+            $.loading(false);
+            $.modalAlert(ybReturn.ErrorMsg, 'error');
+            return;
+        }
+    }
+
+    //贵州医保出院办理操作-住院号
+    function gzyb_Cybl(funcSuccCallback) {
+        if (!patModel.cyrq) {
+            $.loading(false);
+            $.modalAlert("出院日期为空", 'error');
+            return;
+        }
+        var isSuccess = false;
+        var gzyb_CyblOut;
+        $.najax({
+            url: "/PatientManage/HospiterRes/GetGuianRyblOutInfoByZyh",
+            data: { zyh: patModel.zyh },
+            dataType: 'json',
+            async: false,
+            success: function (rep) {
+                if (rep) {
+                    var gzyb_Cybl = new Object();
+                    gzyb_Cybl.prm_akc190 = rep.prm_akc190; //就诊编号
+                    gzyb_Cybl.prm_aac001 = rep.prm_aac001; //卡号
+                    gzyb_Cybl.prm_aka130 = rep.prm_aka130; //支付类别
+                    gzyb_Cybl.prm_akc195 = "9"; //出院原因 (1、治愈；2、好转；3、死亡；4转院;5精神病中途结算(只有精神病按日包干的中途结算使用);9 其他)
+                    gzyb_Cybl.prm_akc194 = patModel.cyrq.replace('T', ' '); //出院日期
+                    gzyb_Cybl.prm_akc196 = patModel.cyzdicd10; //出院诊断
+                    gzyb_Cybl.prm_ykc015 = patModel.ksmc; //出院科室(科室为中文,不能为编码)
+                    gzyb_Cybl.prm_ykc016 = patModel.cw; //出院床位
+                    gzyb_Cybl.prm_ykc017 = '@(opr.UserName)'; //经办人姓名
+                    //gzyb_Cybl.prm_ykc018 = curTime; //出院经办时间
+                    gzyb_Cybl.prm_ykc018 = $.getTime(); //出院经办时间
+                    $.najax({
+                        url: "/Com/GetSysNowDate",
+                        data: { format: "yyyy-MM-dd HH:mm:ss" },
+                        dataType: 'text',
+                        async: false,
+                        success: function (strTime) {
+                            gzyb_Cybl.prm_ykc018 = strTime; //出院经办时间
+                        }
+                    });
+                    gzyb_Cybl.prm_yab003 = rep.prm_yab003; //分中心编号
+                    gzyb_Cybl.prm_ykd065 = ""; //出院附属诊断代码
+                    gzyb_Cybl.prm_ykd018 = ""; //第一出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd019 = ""; //第二出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd020 = ""; //第三出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd021 = ""; //第四出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd022 = ""; //第五出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd023 = ""; //第六出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd024 = ""; //第七出院疾病诊断代码
+                    gzyb_Cybl.prm_ykd025 = ""; //第八出院疾病诊断代码
+                    gzyb_Cybl.prm_ykb065 = rep.prm_ykb065; //社会保险办法
+                   // var gzyb_CyblOut;// = $.guianyibao.ZyCybl(JSON.stringify(gzyb_Cybl)); //调用出院办理接口
+                    $.ajax({
+                        type: "POST",
+                        url: "http://127.0.0.1:12345/api/YiBao/ZyCybl",
+                        contentType: 'application/json',
+                        data: JSON.stringify(gzyb_Cybl),
+                        dataType: "json",
+                        async: false,
+                        success: function (data) {
+                            gzyb_CyblOut = eval('(' + data + ')');
+                        }
+                    });
+                    if (gzyb_CyblOut) {
+                        if (gzyb_CyblOut.Code != 0) {
+                            $.loading(false);
+                            $.modalAlert("医保出院办理失败：" + gzyb_CyblOut.ErrorMsg, 'error');
+                            return;
+                        }
+                        else{
+                            isSuccess = true;
+                        }
+                    } else {
+                        $.loading(false);
+                        $.modalAlert("获取医保出院办理反馈信息失败", 'error');
+                        return;
+                    }
+                } else {
+                    $.loading(false);
+                    $.modalAlert("无法获取入院办理医保信息", 'error');
+                    return;
+                }
+            }
+        });
+
+        $.loading(false);
+        //
+        if (isSuccess && funcSuccCallback) {
+            setTimeout(function () {
+                funcSuccCallback(gzyb_CyblOut);
+            }, 50);
+        }
+    }
+</script>
+<script type="text/javascript">
+    //
+
+    function ReadCardCall(readCardObj) {
+        cqPatInfo.jslx = "2";
+        ybIsReadCard = true;
+        ajaxLoadDataResult({ kh: readCardObj.yibaoCardInfo.kh, sfz: readCardObj.yibaoCardInfo.qtjz, cardType: readCardObj.ybkCardType, ver: '2' });
+    }
+
+    /*****************************************新农合****************************************/
+    //选中家庭参合人列表返回数据
+    function GetSelectedpatient(obj) {
+        if (!!obj) {
+            obj.readCardCardType = $('#readCardCardType').val();
+            $.ajax({
+                type: "POST",
+                url: "@Url.Action("GetZyhByGrbm")",
+                data: { xnhgrbm: obj.xnhgrbm, sfjs: "0" },
+            dataType: "json",
+            async: false,
+            success: function (resp) {
+                if (!!resp.data) {
+                    ajaxLoadDataResult({ zyh: resp.data });
+                }
+                else {
+                    $.modalAlert("新农合个人编码【" + obj.xnhgrbm+"】没有查询到已出区、待结账的住院患者,请确认该患者已出区！", 'warning');
+                    return;
+                     }
+            }
+         });
+        }
+    }
+</script>

@@ -1,0 +1,84 @@
+﻿@using Newtouch.Herp.Infrastructure.Enum
+@{
+    ViewBag.Title = "修改库房物资单位";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .formTitle span {
+        color: red;
+    }
+
+    .tab-content #basicInfo table tr td {
+        border: 0;
+        height: 30px;
+    }
+</style>
+<form id="form1">
+    <div class="container" style="padding:0;">
+        <div class="tab-content" style="margin-top:10px;">
+            <div id="basicInfo" role="tabpanel" class="tab-pane fade in active" style="padding-right:10px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>单位：</th>
+                        <td class="formValue">
+                            <select id="unitId" name="unitId" class="form-control"></select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+<script lang="javascript">
+    var relId = $.request("relId");
+    $(function () {
+        initControl();
+        if (!!relId) {
+            $.najax({
+                url: "/WarehouseManage/Warehouse/GetKfWzUnit",
+                data: { relId: relId },
+                dataType: "json",
+                success: function (data) {
+                    if (data != null) {
+                        $("#unitId").val(data.unitId).trigger("change");
+                    }
+                }
+            });
+        }
+    });
+
+    //初始化
+    function initControl() {
+        $("#unitId").bindSelect({
+            url: "/WarehouseManage/Warehouse/GetUnitByProId?relId=" + relId,
+            id: "unitId",
+            text: "unitName"
+        });
+    }
+
+    //提交
+    function AcceptClick(callback) {
+        if (!DataValidate()) {
+            return;
+        }
+        var postData = $("#form1").formSerialize();
+        postData["relId"] = relId;
+        $.submitForm({
+            url: "/WarehouseManage/Warehouse/UpdateKfWzUnit?relId=" + relId + "&unitId=" + $("#unitId").val(),
+            success: function () {
+                $.modalClose();
+                callback();
+            }
+        });
+    }
+
+    //数据效验
+    function DataValidate() {
+        if ($("#unitId").val() === "") {
+            $.modalAlert("单位必选", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+</script>

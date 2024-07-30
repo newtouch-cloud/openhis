@@ -1,0 +1,342 @@
+﻿@{
+    ViewBag.Title = "住院工作量";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<head>
+    <meta charset="utf-8">
+    <script src="~/Content/js/echarts.min.js"></script>
+    <style>
+
+        .bk {
+            border-radius: 10px;
+            background-color: white;
+        }
+
+        .selectbtn {
+            border: 0px;
+            background-color: white;
+        }
+        .down_border {
+            border-bottom: 1px solid #e6e6e6;
+        }
+        .ui-jqgrid .ui-jqgrid-bdiv {
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+
+<div class="panel panel-default">
+    <input type="hidden" id="kssj" />
+    <input type="hidden" id="jssj" />
+    <table class="form">
+        <tr>
+
+            <th class="formTitle" id="xzsjtext">类型：</th>
+            <td class="formValue" style="width:150px">
+                <select id="dateType" class="form-control" onchange="updateSjType()">
+                    <option value="1">年</option>
+                    <option value="2">月</option>
+                    <option value="3">日</option>
+                </select>
+            </td>
+            <th class="formTitle" id="xzsjtext">时间：</th>
+            <td class="formValue" style="width:150px">
+                <input id="rSJ" type="text" class="form-control input-wdatepicker" @*onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"*@>
+            </td>
+
+            <td class="formValue" style="padding-left:20px;">
+                <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+            </td>
+
+        </tr>
+    </table>
+</div>
+<div id="main_div" style="display:flex;flex-direction:column;justify-content:space-between;flex-wrap:wrap;">
+
+    <div style="display:flex;flex-direction:row;justify-content:space-between;flex-wrap:wrap;height:50%">
+        <div style="width:33%;display:flex;flex-direction:column" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-area-chart fa-lg" style="margin-right:5px;"></i>出院人数趋势
+            </div>
+            <div id="main1" style="width:100%;height:100%;"></div>
+        </div>
+        <div style="width:33%;display:flex;flex-direction:column" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-area-chart fa-lg" style="margin-right:5px;"></i>入院人数趋势
+            </div>
+            <div id="main2" style="width:100%;height:100%;"></div>
+        </div>
+
+        <div style="width:33%;display:flex;flex-direction:column" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-area-chart fa-lg" style="margin-right:5px;"></i>转诊人数趋势
+            </div>
+            <div id="main3" style="width:100%;height:100%;"></div>
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:100%;height:24%" class="bk">
+
+        <div style="text-align:left;">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>住院科室工作量明细
+            </div>
+            <table id="gridJSListhzrjfyfx"></table>
+        </div>
+
+    </div>
+
+    <div style="display:flex;flex-direction:column;width:100%;height:24%" class="bk">
+        <div class="panel-heading down_border">
+            <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>医生工作量明细
+        </div>
+        <table id="gridJSListmzxyfx"></table>
+    </div>
+</div>
+
+<script>
+    var myDate = new Date();
+    $(function () {
+        $('#main_div').height($(window).height() - 60);
+        init();
+        gridJSListData();
+        GetMonthNumChart();
+    });
+
+    function init() {
+        $("#dateType").val("2");
+        $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+        $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        getSearchData();
+    }
+    function initEcharts(time,ry,cy,zz) {
+
+        var myChart1 = echarts.init(document.getElementById('main1'));
+        var myChart2 = echarts.init(document.getElementById('main2'));
+        var myChart3 = echarts.init(document.getElementById('main3'));
+        window.addEventListener('resize', function () {
+            myChart1.resize();
+            myChart2.resize();
+            myChart3.resize();
+        });
+        var option1 = {
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: time
+            },
+            yAxis: {
+                type: 'value'
+            },
+            tooltip: {
+                trigger: 'item' 
+            },
+            series: [
+                {
+                    data: cy,
+                    type: 'line',
+                    areaStyle: {}
+                }
+            ]
+        };
+
+        var option2 = {
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: time
+            },
+            yAxis: {
+                type: 'value'
+            },
+            tooltip: {
+                trigger: 'item'
+            },
+            series: [
+                {
+                    data: ry,
+                    type: 'line',
+                    areaStyle: {}
+                }
+            ]
+        };
+
+        var option3 = {
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: time
+            },
+            yAxis: {
+                type: 'value'
+            },
+            tooltip: {
+                trigger: 'item'
+            },
+            series: [
+                {
+                    data: zz,
+                    type: 'line',
+                    areaStyle: {}
+                }
+            ]
+        };
+
+        myChart1.setOption(option1);
+        myChart2.setOption(option2);
+        myChart3.setOption(option3);
+    }
+
+    function gridJSListData() {
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListhzrjfyfx");
+        $gridJsList.dataGrid({
+            height: 120,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/HospitalizationWorkload/DepartmentWorkload",
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val()},
+            colModel: [
+                { label: '住院科室', name: 'bqmc', align: 'left' },
+                { label: 'bqCode', name: 'bqCode', align: 'left', hidden: true },
+                { label: '出院人数', name: 'cysl', align: 'left' },
+                { label: '入院人数', name: 'rysl', align: 'left' },
+                { label: '转诊人数', name: 'zysl', align: 'left' },
+                { label: '手术人数', name: 'ssrs', align: 'left' },
+                { label: '平均住院日', name: 'pjzyr', align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true,
+            onCellSelect: function (row) {
+                var rowObj = $gridJsList.jqGrid('getRowData', row);
+                console.log("bqCode", rowObj.bqCode)
+                var $gridysList = $("#gridJSListmzxyfx");
+                $gridysList.jqGrid('setGridParam', {
+                    postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), bq: rowObj.bqCode },
+                    page: 1,
+                    
+                    url: "/DeanInquiryManage/HospitalizationWorkload/StaffWorkload",
+                }).trigger('reloadGrid');
+
+            }, loadComplete: function (data) {
+                if (data.length > 0) {
+                    var firstRow = data[0];
+                    //var $gridysList = $("#gridJSListmzxyfx");
+                    //$gridysList.jqGrid('setGridParam', {
+                    //    postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), bq: firstRow.bqCode },
+                    //    page: 1,
+                    //    url: "/DeanInquiryManage/HospitalizationWorkload/StaffWorkload",
+                    //}).trigger('reloadGrid');
+                    YSGZMXList(firstRow.bqCode)
+                } else {
+                    $("#gridJSListmzxyfx").jqGrid("clearGridData", true);
+                }
+            }
+        });
+    }
+    function YSGZMXList(bqCode) {
+        var gridSort = 'CreateTime asc';
+        var $gridysList = $("#gridJSListmzxyfx");
+        $gridysList.dataGrid({
+            height: 120,
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            url: "/DeanInquiryManage/HospitalizationWorkload/StaffWorkload",
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), bq: bqCode },
+            colModel: [
+                { label: '医生', name: 'Name', align: 'left' },
+                { label: '出院人数', name: 'cysl', align: 'left' },
+                { label: '入院人数', name: 'rysl', align: 'left' },
+                { label: '转诊人数', name: 'zysl', align: 'left' },
+                { label: '手术人数', name: 'ssrs', align: 'left' },
+                { label: '平均住院日', name: 'pjzyr', align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+    }
+    function GetMonthNumChart() {
+        var time = [];
+        var ryqs = [];
+        var cyqs = [];
+        var zzqs = [];
+        $.ajax({
+            type: "POST",
+            url: "/DeanInquiryManage/HospitalizationWorkload/ConsumaPersonNumber",
+            data: { kssj: $('#kssj').val(), jssj: $('#jssj').val() },
+            dataType: "json",
+            async: false,
+            success: function (lastdata) {
+                if (lastdata != null) {
+                    for (var i = 0; i < lastdata.length; i++) {
+                       
+                        ryqs[i] = lastdata[i].rysl;
+                        time[i] = lastdata[i].mount;
+                        cyqs[i] = lastdata[i].cysl;
+                        zzqs[i] = lastdata[i].zysl;
+                    }
+                }
+               
+                initEcharts(time, ryqs, cyqs, zzqs);
+            }
+        });
+    }
+
+    function submit() {
+        getSearchData();
+        GetMonthNumChart();
+        var $gridJsList = $("#gridJSListhzrjfyfx");
+        $gridJsList.jqGrid('setGridParam', {
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val() },
+        }).trigger('reloadGrid');
+    }
+
+    //改变时间类型
+    function updateSjType() {
+        $('#rSJ').val("");
+        let dateType = $("#dateType").val();
+        if (dateType == "1") {//年
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy' })");
+            $('#rSJ').val(myDate.getFullYear());
+        }
+        if (dateType == "2") {//月
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        }
+        if (dateType == "3") {//日
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM-dd' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1) + "-" + myDate.getDate());
+        }
+        getSearchData();
+    }
+
+    //组装请求参数
+    function getSearchData() {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+
+        $('#kssj').val(ksrq);
+        $('#jssj').val(jsrq);
+    }
+
+    //根据年月获取月天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+</script>

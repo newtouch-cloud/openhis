@@ -1,0 +1,118 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div style="margin:5px 100px 0 5px;color:#666;">
+    算法（配置）说明：<span style="color:red;">1</span>) '收费大类 + 收费项目'不可重复配置；<span style="color:red;">2</span>) 比例、固定金额两种方式至少配置一种，都有配置则取和
+</div>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="大类编码/大类名称/项目编码/项目名称" style="width: 220px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    $(function () {
+        gridList()
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val() },
+            url: "/KPI/MedicalOrg/GetConfigGridJson",
+            height: $(window).height() - 120,
+            colModel: [
+                 { label: "主键", name: "Id", hidden: true, key: true },
+                 { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                 { label: "收费大类名称", name: "sfdlmc", width: 100, align: 'left' },
+                 { label: "收费项目编码", name: "sfxmCode", width: 100, align: 'left' },
+                 { label: "收费项目名称", name: "sfxmmc", width: 150, align: 'left' },
+                 { label: "项目固定成本", name: "xmgdcb", width: 90, align: 'left', formatter: function (cellvalue, options, rowObject) { if (!!cellvalue) { return cellvalue; } else { if (!!rowObject.sfxmCode && !!!rowObject.blhgdje) return 0; else return ""; } } },
+                 { label: "比例", name: "bl", width: 70, align: 'left', formatter: function (cellvalue) { if (!!cellvalue || cellvalue == 0) { return cellvalue + "%" } else { return ""; } } },
+                 { label: '固定金额', name: 'blhgdje', width: 100, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue; } else { return ""; } } },
+                 { label: '备注', name: 'bz', width: 300, align: 'left' },
+                { label: '排序', name: 'px', width: 40, align: 'left' },
+                { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ],
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增配置",
+            url: "/KPI/MedicalOrg/ConfigForm",
+            width: "500px",
+            height: "570px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改配置",
+            url: "/KPI/MedicalOrg/ConfigForm?keyValue=" + keyValue,
+            width: "500px",
+            height: "570px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+</script>
+

@@ -1,0 +1,215 @@
+﻿
+@{
+    ViewBag.Title = "observationFrom";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+        <div class="panel-default" style="padding-right:10px;">
+            <table id="tabledjlg" class="form">
+                <tr>
+                    <td>
+                        <div class="panel-heading navb-bg">
+                            基础信息
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <label id="xm" class="formClearIgnore"></label>
+                    </td>
+                    <th class="formTitle">性别：</th>
+                    <td class="formValue">
+                        <label id="xb" class="formClearIgnore"></label>
+                    </td>
+                    <th class="formTitle">年龄：</th>
+                    <td class="formValue">
+                        <label id="nlshow" class="formClearIgnore"></label>
+                    </td>
+                    <th class="formTitle">民族：</th>
+                    <td class="formValue">
+                        <label id="mzmc" class="formClearIgnore"></label>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">身份证：</th>
+                    <td class="formValue">
+                        <label id="zjh" class="formClearIgnore"></label>
+                    </td>
+                    <th class="formTitle">联系电话：</th>
+                    <td class="formValue">
+                        <label id="lxdh" class="formClearIgnore"></label>
+                    </td>
+                    <th class="formTitle"></th>
+                    <td class="formValue"></td>
+                    <th class="formTitle"></th>
+                    <td class="formValue"></td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="panel-heading navb-bg">
+                            登记留观填写
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle" style="margin-left:20px;">
+                        <i id="msCircle" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="width:30px;margin-left: 10px; color: #6ff3ad; font-size: large;"></i>
+                        登记原因：
+                    </th>
+                    <td class="formValue" colspan="2">
+                        <input id="txt_lgdjid" name="txt_lgdjid" type="hidden" />
+                        <input id="txt_syxxid" name="txt_syxxid" type="hidden" />
+                        <input id="txt_miaoshu" name="txt_miaoshu" type="text" class="form-control required msinput" />
+                    </td>
+                    <th class="formTitle">留观时间：</th>
+                    <td class="formValue" colspan="3">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                        <span style="margin-left:1%;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.AddMinutes(30).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </form>
+<script>
+    var syxxids = $.request("keyValue");
+    var PatDxObjdel = null;//记录作废数据
+    $(function() {
+        getlgjl();
+    });
+    //辅助诊断 新增icon
+    $('#tabledjlg .plusToggleCircle').click(function () {
+
+        var number = $('#tabledjlg .msinput').length;// + 1;
+        var $newTr = $("<tr><th class='formTitle' style='margin-left:20px;'><i id='" + number + "' class='fa fa-minus minusToggleCircle' aria-hidden='true' style='width:30px;margin-left: 10px; color: #6ff3ad; font-size: large;'></i>登记原因：</th><td class='formValue' colspan='2'><input id='txt_lgdjid" + number + "' name='txt_lgdjid" + number + "' type='hidden'  /><input id='txt_syxxid" + number + "' name='txt_syxxid" + number + "' type='hidden'  /><input id='txt_miaoshu" + number + "' name='txt_miaoshu" + number + "' type='text' class='form-control required msinput' /></td><th class='formTitle'>留观时间：</th><td class='formValue' colspan='3'><input id='kssj" + number + "' type='text' class='form-control input-wdatepicker' style='width:42%; float:left;' value='@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")' onfocus='WdatePicker({ dateFmt: &quot;yyyy-MM-dd HH:mm:ss&quot; })' /><span style='margin-left:1%;float:left'>—</span><input id='jssj" + number + "' type='text' class='form-control input-wdatepicker' style='width:43%; float:left;margin-left:1%;' value='@DateTime.Now.AddMinutes(30).ToString("yyyy-MM-dd HH:mm:ss")' onfocus='WdatePicker({ dateFmt: &quot;yyyy-MM-dd HH:mm:ss&quot; })' /></td></tr>");
+
+        $newTr.appendTo($(this).closest('table'));
+    });
+
+    //删除icon
+    $('#form1').on('click', '.minusToggleCircle', function () {
+        var id = this.id;
+        PatDxObjdel = {
+            lgjlid: $("#txt_lgdjid" + id).val(),
+            syxxid: $("#txt_syxxid" + id).val(),
+            miaoshu: $("#txt_miaoshu" + id).val(),
+            lgksrq: $("#kssj" + id).val(),
+            lgjsrq: $("#jssj" + id).val(),
+            deltag:true
+        };
+        $(this).closest('tr').remove();
+    })
+
+    function getlgjl() {
+        $.najax({
+            type: "GET",
+            url: "/NurseManage/Infusion/Getlgjl",
+            data: { syxxids: syxxids },
+            dataType: "json",
+            success: function (reflist) {
+                var data = reflist.rows;
+                var i = 1;
+                var datacount = reflist.rows.length;
+                $.each(data,
+                    function (n, item) {
+
+                        if (i==1) {
+                            $("#xm").text(item.xm == null ? "" : item.xm);
+                            $("#xb").text(item.xb == null ? "" : item.xb);
+                            $("#nlshow").text(item.nlshow == null ? "" : item.nlshow);
+                            $("#mzmc").text(item.mzmc == null ? "" : item.mzmc);
+                            $("#zjh").text(item.zjh == null ? "" : item.zjh);
+                            $("#lxdh").text(item.lxdh == null ? "" : item.lxdh);
+                            $("#txt_syxxid").val(item.syxxid);
+                        }
+                        if (item.lgjlid!=null) {
+                            if (i == 1) {
+                                $("#txt_lgdjid").val(item.lgjlid);
+                                $("#txt_syxxid").val(item.syxxid);
+                                $("#txt_miaoshu").val(item.miaoshu);
+                                $("#kssj").val($.getTime({ date: item.lgksrq }));
+                                $("#jssj").val($.getTime({ date: item.lgjsrq }));
+                            }
+
+                            if (datacount > 1) {
+                                if (i > 1) {
+                                    var num = i - 1;
+                                    $('#tabledjlg .plusToggleCircle').click();
+                                    $("#txt_lgdjid" + num).val(item.lgjlid);
+                                    $("#txt_syxxid" + num).val(item.syxxid);
+                                    $("#txt_miaoshu" + num).val(item.miaoshu);
+                                    $("#kssj" + num).val($.getTime({ date: item.lgksrq }));
+                                    $("#jssj" + num).val($.getTime({ date: item.lgjsrq }));
+                                }
+                            }
+                        }
+                        i++;
+                    });
+            }
+        });
+    }
+
+
+    function SavaOutArea() {
+
+        var lgdjList = [];
+
+        if (PatDxObjdel!=null) {
+            lgdjList.push(PatDxObjdel);
+        }
+
+        var PatDxObj = {
+            lgjlid: $("#txt_lgdjid").val(),
+            syxxid: $("#txt_syxxid").val(),
+            miaoshu: $("#txt_miaoshu").val(),
+            lgksrq: $("#kssj").val(),
+            lgjsrq: $("#jssj").val()
+        };
+        if (PatDxObj.miaoshu == "" || PatDxObj.miaoshu == "") {
+            $.modalAlert('还没有填写登记原因，不能进行保存', 'warning');
+            return;
+        }
+        lgdjList.push(PatDxObj);
+       
+        var number = $('#tabledjlg .msinput').length-1;
+        for (var i = 1; i <= number; i++) {
+            var syxxid = "";
+            if ($("#txt_syxxid" + i).val()==null) {
+                syxxid = $("#txt_syxxid" + i).val();
+            } else {
+                syxxid = $("#txt_syxxid").val();
+            }
+            PatDxObj = {
+                lgjlid: $("#txt_lgdjid"+i).val(),
+                syxxid: syxxid,
+                miaoshu: $("#txt_miaoshu"+i).val(),
+                lgksrq: $("#kssj"+i).val(),
+                lgjsrq: $("#jssj"+i).val()
+            };
+            if (PatDxObj.miaoshu == "" || PatDxObj.miaoshu == "") {
+                $.modalAlert('还没有填写登记原因，不能进行保存', 'warning');
+                return;
+            }
+            lgdjList.push(PatDxObj);
+        }
+		$.ajax({
+			type: "POST",
+            url: "/NurseManage/Infusion/SavaLgdj",
+            data: { lgdjList: lgdjList },
+			dataType: "json",
+			async: false,
+			success: function (ajaxresp) {
+				if (ajaxresp.state === "success") {
+					$.modalMsg('保存成功', 'success');
+				}
+				else {
+					$.modalAlert(ajaxresp.message, 'warning');
+				}
+				//clearData();
+			}
+		});
+
+	}
+</script>

@@ -1,0 +1,437 @@
+﻿
+@{
+    ViewBag.Title = "RegularItemForm";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+@using Newtouch.Infrastructure;
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/RegularItemgridmenu.css", false)" rel="stylesheet" />
+
+<div id="linkcgxmcf" style="width:100%;">
+    <table id="gridcgxmcf"></table>
+    @Html.Partial("_TemplateFooterAmt")
+</div>
+
+<script>
+    var mbId = $.request("mbId");
+    var localdata = [];
+    $(function () {
+        gridcgxmcf();
+
+        $("#mblx").bindSelect({
+            url: "/MedicalRecord/GetMbqxSelectJson",
+        });
+
+        if(mbId){
+            $.najax({
+                url: "/TemplateManage/PresTemplate/SelectPresTemplateDetailByMbId",
+                dataType: "json",
+                data: { mbId: mbId },
+                type: "POST",
+                success: function (data) {
+
+                    localdata = data.mbmxList;
+                    $.each(localdata, function () {
+                        this.action = getRegularItemActionStr()
+                    });
+                    $("#gridcgxmcf").jqGrid('setGridParam', {
+                        datatype: 'local',
+                        data: localdata
+                    }).trigger("reloadGrid");
+                    $('#mblx').val(data.mblx).trigger("change");
+                    $('#mbmc').val(data.mbmc);
+                    var ids = $("#gridcgxmcf").getDataIDs();
+                    $.each(ids, function () {
+                        var dj = $("#" + this + "_dj").val();
+                        var sl = $("#" + this + "_mczll").val();
+                        zje[this] = parseFloat(sl) * parseFloat(dj);
+                    });
+                    getgridTotalAmt("gridcgxmcf");
+                }
+            });
+        }
+    });
+
+
+      function Delete() {
+        if (mbId == null || mbId == "") {
+            $.modalAlert("缺少模板", "warning");
+            return;
+        }
+        $.najax({
+            url: "@Url.Action("Delete")",
+            dataType: "json",
+            data: { mbId: mbId },
+            type: "POST",
+            loadingtext: "套餐数据删除中，请稍后...",
+            success: function (data) {
+                $.modalMsg("删除成功", 'success');
+                $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                location.href = "/TemplateManage/PresTemplate/WMForm?mbId=";
+            }
+        });
+    }
+
+    //处方列表
+    function gridcgxmcf() {
+        var $gridcgxmcf = $("#gridcgxmcf");
+        $gridcgxmcf.jqGrid({
+            datatype: 'local',
+            data: localdata,
+            height: $(window).height() - 130,
+            //altRows: true,//隔行换色
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                {
+                    label: 'mbId', name: 'mbId', width: 120, editwidth: '81%', align: 'center',hidden:true
+                },
+                {
+                    label: 'xmCode', name: 'xmCode', width: 120, editwidth: '100%', align: 'center', editable: true, hidden: true
+                },
+                {
+                    label: '<span class="required">*</span>项目名称', name: 'xmmc', width: 125, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true
+                },
+                {
+                    label: 'zxks', name: 'zxks', editwidth: '100%', align: 'center', editable: true, hidden: true
+                },
+				{
+				    label: '<span class="required">*</span>执行科室', name: 'zxksmc', width: 100, editwidth: '100%', align: 'center', editrules: { required: true },editable: true
+				},
+                {
+                    label: '<span class="required">*</span>单价', name: 'dj', width: 80, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true
+                },
+                { label: '<span class="required">*</span>单位', name: 'dw', width: 80, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: 'dwjls', name: 'dwjls', width: 80, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: 'jjcl', name: 'jjcl', width: 80, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                {
+                    label: '<span class="required">*</span>每次治疗量', name: 'mczll', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true, editrules: { integer: true, minValue: 1 }, editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if(cellval.replace(/(^\s*)|(\s*$)/g, "") == ""){
+                                            $.modalAlert("每次治疗量为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if(isNaN(cellval)){
+                                            $.modalAlert("每次治疗量：请填写数字", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+
+                                        calculateSlAndJe(rowid);   //计算 明细总量、明细金额和处方金额
+                                    }
+                                }
+                        ]
+                    }
+                },
+                { label: '<span class="required">*</span>频次', name: 'pcmc', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: 'pcCode', name: 'pcCode', width: 100, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                {
+                    label: '<span class="required">*</span>数量', name: 'sl', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true, editrules: { integer: true, minValue: 1 }, editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if(cellval.replace(/(^\s*)|(\s*$)/g, "") == ""){
+                                            $.modalAlert("数量为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if(isNaN(cellval)){
+                                            $.modalAlert("数量：请填写数字", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+
+                                        calculateSlAndJe(rowid);   //计算 明细总量、明细金额和处方金额
+                                    }
+                                }
+                        ]
+                    }
+                },
+                { label: '部位', name: 'bw', width: 100, editwidth: '100%', align: "center", editable: true },
+                { label: '<span class="required">*</span>总量', name: 'zl', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: '<span class="required">*</span>金额', name: 'je', width: 100, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: '操作', name: 'action', width: 110, editwidth: '81%', align: 'center' }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            rowNum:20,
+            loadComplete: function () {
+                if (localdata && localdata.length == 0) {
+                    newRegularItemPresData();
+                }
+            },
+            gridComplete: function () {
+                var ids = $("#gridcgxmcf").getDataIDs();
+                $.each(ids, function () {
+                    $gridcgxmcf.jqGrid('editRow', this, true, initRegularItemInlineFunc);  //editRow：打开编辑模式 initRegularItemInlineFunc:初始化浮层
+
+                    calculateSlAndJe(this);   //计算 明细总量、明细金额和处方金额
+                });                
+            }
+        });
+
+        //二级菜单
+        $gridcgxmcf.jqGrid('setGroupHeaders', {
+            useColSpanStyle: true,
+            groupHeaders: [
+            {
+                startColumnName: 'xmmc',
+                numberOfColumns: 6,
+                titleText: '基本信息'
+            }, {
+                startColumnName: 'mczll',
+                numberOfColumns: 5,
+                titleText: '项目用法'
+            }]
+        });
+
+    }
+
+    //初始化 浮层
+    function initRegularItemInlineFunc(rowid) {
+        //部分列只读
+        $("#" + rowid + "_dj").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_dw").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_pcmc").attr('readonly','true');
+        $("#" + rowid + "_zl").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_je").css('background-color','#f6f7fb').attr('readonly','true');
+        $("#" + rowid + "_zxksmc").attr('autocomplete', 'off');
+        //项目浮层
+        $("#" + rowid + "_xmmc").sfxmFloatingSelector({
+            djDecimalPlaces: 4,
+            searchType : 'sfxm.dwjls',
+            //leftshift:150,
+            ajaxparameters : function($thisinput) {
+                return "mzzybz=1&dllb=2&sfdllx=RegularItem&keyword=" + $.trim($thisinput.val());
+            },
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_xmmc").val($this.attr('data-sfxmmc'))
+                $("#" + rowid + "_xmCode").val($this.attr('data-sfxmCode'))
+                $("#" + rowid + "_dwjls").val($this.attr('data-dwjls'))
+                $("#" + rowid + "_jjcl").val($this.attr('data-jjcl'));
+                $("#" + rowid + "_dj").val($this.attr('data-dj'));
+                $("#" + rowid + "_dw").val($this.attr('data-dw'));
+
+                calculateSlAndJe(rowid);   //计算 明细总量、明细金额和处方金额
+            },
+        });
+        //频次浮层
+        $("#" + rowid + "_pcmc").pcFloatingSelector({
+            showtext: 'yzpcmc',
+            attrcols: ['yzpcmc', 'yzpcCode', 'zxcs', 'zxzq', 'zxzqdw'],
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_pcmc").val($this.attr('data-yzpcmc'))
+                $("#" + rowid + "_pcCode").val($this.attr('data-yzpcCode'))
+            },
+        });
+        //部位浮层
+        $("#" + rowid + "_bw").bwFloatingSelector({
+            showtext: 'bwmc',
+            attrcols: ['bwmc', 'bwCode'],
+            checkItemActivity: function ($li, $thisinput) {
+                var selected = false;//默认没有选中当前值
+                var selectval = $thisinput.val();
+                if (selectval) {
+                    selectval = selectval.split(',');
+                    $.each(selectval, function () {
+                        if (this == $li.html()) {
+                            selected = true;
+                        }
+                    });
+                }
+                return selected;
+            },
+            itemdbclickhandler: function ($this) {
+                var mcval = "";
+                if (typeof ($this) !== "undefined") {
+                    $.each($this, function () {
+                        mcval += this.attr('data-bwmc') + ",";
+
+                    });
+                    if (mcval.length > 0) {
+                        mcval = mcval.substring(0, mcval.length - 1);
+                    };
+                }
+                $("#" + rowid + "_bw").val(mcval);
+            },
+        });
+        //执行科室浮层
+        $("#" + rowid + "_zxksmc").newtouchBatchFloatingSelector({
+            height: 170,
+            width: 300,
+            caption: "选择科室",
+            url: '/Rehab/GetSfxmZxksSelectJson',
+            clickautotrigger: true,
+            ajaxparameters: function ($thisinput) {
+                return 'sfxmCode=' + $("#" + rowid + "_xmCode").val();
+            },
+            colModel: [
+				{ label: '编号', name: 'Code', widthratio: 40 },
+				{ label: '名称', name: 'Name', widthratio: 60 },
+				{ label: '拼音', name: 'py', hidden: true }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#" + rowid + "_zxks").val($thistr.find("td:eq(0)").html());
+                $("#" + rowid + "_zxksmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+    }
+
+    //计算明细里的数量和金额
+    function calculateSlAndJe(rowid) {
+        var obj = new Object();
+
+        obj.currRowZl = 0;  //初始值
+        obj.currRowZe = 0;  //初始值
+
+        var currRowZll = $('#' + rowid + '_mczll').val();
+        var currRowDwjls = $('#' + rowid + '_dwjls').val();
+        var currRowSl = $('#' + rowid + '_sl').val();
+
+        var currRowDj = $('#' + rowid + '_dj').val();
+
+        if (parseFloat(currRowZll) > 0 && parseFloat(currRowDwjls) > 0 && parseFloat(currRowSl) > 0) {
+            //治疗量 单位计数量 数量 不为空
+            obj.currRowZl = (parseInt(currRowZll) / parseInt(currRowDwjls)) * parseFloat(currRowSl);
+        }
+        if (obj.currRowZl && obj.currRowZl > 0 && currRowDj) {
+            obj.currRowZe = roundingBy4she6ru5chengshuang(parseFloat(currRowDj) * parseFloat(obj.currRowZl), 2);
+        }
+
+        $('#' + rowid + '_zl').val(obj.currRowZl);  //赋值
+        $('#' + rowid + '_je').val(obj.currRowZe)   //赋值
+        if (parseFloat(obj.currRowZe) > 0) {
+            zje[rowid] = obj.currRowZe;
+            getgridTotalAmt("gridcgxmcf");
+        }
+    }
+
+    //新处方 按钮
+    function newRegularItemPresData() {
+        var dataRow = {
+            xmmc: '',
+            dj: '',
+            dw: '',
+            mczll: '',
+            pc: '',
+            sl: '',
+            bw: '',
+            zl: '',
+            je: '',
+            action: getRegularItemActionStr()
+        };
+        $("#gridcgxmcf").jqGrid("addRowData", undefined, dataRow, "first");
+
+    }
+
+    //新增明细
+    function addRegularItemRowData(selRowId) {
+        var dataRow = {
+            xmmc: '',
+            dj: '',
+            dw: '',
+            mczll: '',
+            pc: '',
+            sl: '',
+            bw: '',
+            zl: '',
+            je: '',
+            action: getRegularItemActionStr()
+        };
+        $("#gridcgxmcf").jqGrid("addRowData", undefined, dataRow, "last");
+    }
+
+    //删除明细
+    function deleteRegularItemRowData(selRowId) {
+        if (!!selRowId) {
+            $("#gridcgxmcf").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    function getRegularItemActionStr() {
+        return "<input class='btn btn-default btn-md btn_add' type='button' value='Add' onclick='addRegularItemRowData($(this).parent().parent().attr(\"id\"))'/><input class='btn btn-default btn-md btn_del' type='button' value='Delete' onclick='deleteRegularItemRowData($(this).parent().parent().attr(\"id\"))'/>";
+    }
+
+
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    }
+
+    //保存
+    function Save() {
+        //必填信息验证  （主诉、发病时间）
+        if (!$('#form1').formValid(valOptions)) {
+            $.modalAlert("必填信息尚未完善", 'warning');
+            return;
+        }
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridcgxmcf").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#gridcgxmcf").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+            if (!saveResult) {
+                return;   //保存失败，则return
+            }
+        }
+        var gridcgxmcfData = $("#gridcgxmcf").jqGrid('getRowData_AllLine', null, true);
+        if(!gridcgxmcfData || gridcgxmcfData.length==0){
+            $.modalAlert("模板明细不能为空", 'warning');
+            return;
+        }
+        $.each(gridcgxmcfData, function () {    //去掉action
+            for (var i = 0; i < $(this).length; i++) {
+                delete $(this)[i].action;
+            }
+        });
+
+        //模板表
+        var mbObj = {
+            mbId: mbId,
+            mblx: $('#mblx').val(),//$.currentWindow().$('#current').attr('data-type'),
+            //ksCode: '',   //根据type 后台赋值
+            cflx: @Html.Raw(((int)EnumCflx.RegularItemPres).ToString()),
+            mbmc: $('#mbmc').val().trim(),
+            //ysgh: ''    //根据type 后台赋值
+        }
+
+        //保存数据
+        $.najax({
+            url: "/TemplateManage/PresTemplate/SaveData",
+            dataType: "json",
+            data: { mbObj: mbObj, mxList: gridcgxmcfData },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'warning');
+                //window.$("#gridcgxmcf").clearGridData();
+                //$('#mbmc').val('');
+                if(!mbId && data.data){
+                    mbId = data.data;
+                    $.currentWindow().expandCflx = @Html.Raw(((int)EnumCflx.RegularItemPres).ToString());
+                    $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                }
+                $.currentWindow().$("#beveltabs a[id='current']").trigger('click');
+                location.href = "/TemplateManage/PresTemplate/RegularItemForm?mbId=" + mbId;
+            }
+        });
+
+    }
+
+  
+</script>
+

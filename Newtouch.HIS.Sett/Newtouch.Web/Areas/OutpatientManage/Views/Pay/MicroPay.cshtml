@@ -1,0 +1,83 @@
+﻿@{
+    ViewBag.Title = "MicroPay";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle">付款说明：</td>
+                <td class="formValue">
+                    <span id="subject"></span>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">付款金额：</td>
+                <td class="formValue">
+                    <span id="total_amount"></span>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>付款码：</td>
+                <td class="formValue">
+                    <input id="auth_code" name="auth_code" type="text" class="form-control required" placeholder="请输入编码" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<script>
+    var out_trade_no = $.request("out_trade_no");
+    var subject = $.request("subject");
+    var total_amount = $.request("total_amount");
+    $(function () {
+        initControl();
+
+        $('#subject').html(subject);
+        $('#total_amount').html(total_amount);
+    });
+
+    function initControl() {
+
+    }
+
+    var func = null;
+
+    function AcceptClick(callBack) {
+        if (!$('#form').formValid()) {
+            return false;
+        }
+        var auth_code = $('#auth_code').val();
+        if (!out_trade_no || !subject || !total_amount || !auth_code) {
+            return false;
+        }
+        var postData = {
+            out_trade_no: out_trade_no,
+            subject: subject,
+            total_amount: total_amount,
+            auth_code: auth_code,
+        };
+        $.najax({
+            url: "/OutpatientManage/Pay/MicroPaySubmit",
+            data: postData,
+            type: "post",
+            loadingtext: "收款中...",
+            success: function (ajaxResp) {
+                //收款成功
+                $.modalMsg('收款成功', 'success', 800);
+                //
+                func = function () {
+                    console.log(ajaxResp.data);
+                    callBack(ajaxResp.data);
+                    $.modalClose();
+                };
+                setTimeout('func();', 1000);
+            },
+            errorCallback: function () {
+                //收款失败
+
+            }
+        });
+    }
+</script>

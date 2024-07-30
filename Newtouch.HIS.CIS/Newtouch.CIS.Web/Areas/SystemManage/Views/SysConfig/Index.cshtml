@@ -1,0 +1,176 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+            @if (opeator.IsAdministrator || opeator.IsRoot || true)
+            {
+                <a class="btn btn-primary dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
+                <ul class="dropdown-menu pull-right">
+                    <li><a onclick="btn_template()" href="javascript:void()">配置模板管理</a></li>
+                </ul>
+            }
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="配置名称/配置编码" style="width: 200px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    @*<div style="float:right;padding-right:100px;">
+        <a title="查看所有配置项" onclick="btn_ShowAllConfig()" style="cursor:pointer;color:blue;text-decoration:underline;">查看所有配置项</a>
+    </div>*@
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    @*<div id="gridPager"></div>*@
+</div>
+
+<script>
+    $(function () {
+        gridList();
+
+    })
+
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val() },
+            url: "/SystemManage/SysConfig/GetGridJson",
+            height: $(window).height() - 100,
+            colModel: [
+                 { label: "主键", name: "Id", hidden: true, key: true },
+                { label: "有效", name: "zt", width: 80, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                  { label: "名称", name: "Name", width: 200, align: 'left'},
+                  { label: '编码', name: 'Code', width: 150, align: 'left' },
+                  { label: 'Value', name: 'Value', width: 150, align: 'left' },
+                  { label: '说明', name: 'Memo', width: 200, align: 'left' },
+                    { label: '排序', name: 'px', width: 40, align: 'left' },
+                { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ],
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增配置",
+            url: "/SystemManage/SysConfig/Form",
+            width: "550px",
+            height: "350px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改配置",
+            url: "/SystemManage/SysConfig/Form?keyValue=" + keyValue,
+            width: "550px",
+            height: "350px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    //删除
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var IsA='@opeator.IsAdministrator';
+        var IsR='@opeator.IsRoot';
+        if (IsA == "False" && IsR == "False")
+        {
+            if ($("#gridList").jqGridRowValue().Value == "")
+            {
+                // == ""? 不好
+                $.modalAlert("该模板配置不可删除", 'warning');
+                return;
+            }
+        }
+        $.deleteForm({
+            url: "/SystemManage/SysConfig/DeleteForm",
+            param: { keyValue: keyValue },
+            success: function () {
+                $("#gridList").resetSelection();
+                $("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+
+    function btn_ShowAllConfig() {
+        $.modalOpen({
+            id: "Form",
+            title: "查看所有配置项",
+            url: "/SystemManage/SysConfig/ConfigsPreviewIndex",
+            width: "850px",
+            height: "570px",
+            btn: null
+        });
+    }
+
+    function btn_template()
+    {
+        $.modalOpen({
+            id: "Template",
+            title: "配置模板",
+            url: "/SystemManage/SysConfig/TemplateIndex",
+            width: "900px",
+            height: "500px",
+            btn: null,
+        });
+
+    }
+
+</script>

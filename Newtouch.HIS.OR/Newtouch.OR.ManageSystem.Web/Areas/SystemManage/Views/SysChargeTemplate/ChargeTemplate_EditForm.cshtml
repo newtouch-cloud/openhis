@@ -1,0 +1,215 @@
+﻿@{
+    ViewBag.Title = "ChargeTemplate_EditForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+        <div style="padding-top: 20px; margin-right: 30px;">
+            <table id="tb_xm" class="form">
+                @*<tr>
+                    <th class="formTitle">权限科室：</th>
+                    <td class="formValue">
+                        <select id="dllDepartment" name="dllDepartment" class="form-control">
+                            <option>==请选择==</option>
+                        </select>
+                    </td>
+                </tr>*@
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>模板名称：</th>
+                    <td class="formValue">
+                        <input id="sfmbmc" name="sfmbmc" type="text" class="form-control required" value="" placeholder="请输入模板名称" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>模板编码：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <input id="sfmb" name="sfmb" type="text" class="form-control required" value="" placeholder="请输入模板编码" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>数量：</th>
+                    <td class="formValue">
+                        <input type="text" id="sl" class="form-control required" value="1">
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle"><b><span class="required">*</span>添加项目：</b></th>
+                    <td class="formValue">
+                        <input id="txtSFXMSel" type="text" class="form-control" placeholder="请输入项目名称或拼音" />
+                    </td>
+                    <th class="formTitle">选项：</th>
+                    <td class="formValue" style="padding-top: 1px;">
+                        <div class="ckbox">
+                            <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                        </div>
+                    </td>
+                    <td>
+                        &nbsp;&nbsp;&nbsp;
+                        <i class="fa fa-minus-circle fa-lg" id="btn_Remove" style="cursor: pointer;" onclick="btn_removeItem()"></i>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+<div class="rows" style="margin: 1% 5%;" id="divPatOutHospitalChargeListInfo">
+    <table id="xmDetailListGridList"></table>
+</div>
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.ajax({
+                url: "/SystemManage/SysChargeTemplate/ChargeTemplate_EditForm_Data",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data.TemplateEntity);
+
+                    initChargeItemGrid(data.SysList);
+                }
+            });
+        }
+        else {
+            initChargeItemGrid([]);
+        };
+    });
+
+    function initControl() {
+
+    }
+
+    //jGrid声明
+    function initChargeItemGrid(data) {
+        $('#xmDetailListGridList').newtouchLocalDataGrid({
+            height: 200,
+            unwritten: false,
+            caption: "手术收费项目",
+            colModel: [
+                { label: '收费项目', name: 'sfxmCode', hidden: true, key: true },
+                { label: '收费项目名称', name: 'sfxmmc', width: 200, align: 'left' },
+                { label: '拼音', name: 'py', hidden: true, align: 'left' },
+                { label: '单位', name: 'dw', width: 80, align: 'left' },
+                { label: '数量', name: 'sl', width: 80, align: 'left' },
+                { label: '部位', name: 'bw', width: 100, align: 'left' },
+                { label: '收费大类', name: 'sfdlmc', width: 100 }
+
+            ]
+        }, data);
+    }
+
+    //收费项目选择浮层
+    $('#txtSFXMSel').sfxmFloatingSelector({
+        djDecimalPlaces: 4,
+        searchType: 'sfxm',
+        ajaxparameters: function ($thisinput) {
+            return "dllb=" + '2' + "&keyword=" + $.trim($('#txtSFXMSel').val());
+        },
+        itemdbclickhandler: function ($thistr) {
+            var returnFlag = false;
+            //2020-3-31 chl
+            var opallData = $("#xmDetailListGridList").getRowData_AllLine(undefined, true);
+            $.each(opallData,
+                function() {
+                    var itemsfxm = this["sfxmCode"];
+                    if (itemsfxm && itemsfxm == $thistr.attr('data-sfxmCode')) {
+                        returnFlag = true;
+                        return;
+                    }
+                });
+
+            if (returnFlag) {
+                return; //不能重复添加
+            }
+            btn_addOpItem($thistr);
+        }
+    });
+
+
+    function btn_removeItem() {
+        var rowid = $("#xmDetailListGridList").jqGrid("getGridParam", "selrow");
+        $('#xmDetailListGridList').jqGrid("delRowData", rowid);
+    };
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+
+        //支付方式 json串
+        var xmArr = new Array();
+
+        var oprowIds = $("#xmDetailListGridList").getDataIDs();
+        $.each(oprowIds, function (idx, val) {
+            var thisRowData = $("#xmDetailListGridList").jqGrid('getRowData', val);
+            xmArr.push({
+                sfxmCode: thisRowData['sfxmCode'],
+                sfxmmc: thisRowData['sfxmmc'],
+                py: thisRowData['py'],
+                dw: thisRowData['dw'],
+                bw: thisRowData["bw"],
+                sl: thisRowData['sl'],
+                dl: thisRowData['dl'],
+            });
+        });
+
+
+        if (xmArr.length == 0) {
+            $.modalAlert("至少选择一条收费项目", 'warning');
+            return false;
+        }
+        postData['xmListStr'] = JSON.stringify(xmArr);
+
+        postData['sfmbbh'] = keyValue;  //主键，决定是新增还是修改
+        postData['ks'] = $('#dllDepartment').val();
+
+        $.submitForm({
+            url: "/SystemManage/SysChargeTemplate/ChargeTemplate_SubmitForm",
+            param: postData,
+            success: function() {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+                $.modalClose();
+            }
+        });
+    }
+
+    $('#sfmb').focus(function () {
+        debugger
+        if (!!!keyValue && ($.trim($(this).val()) === '')) {
+            $.ajax({
+                url: "/SystemManage/Common/GetNewFieldUniqueValueDB?fieldName=xt_sfmb&r=" + Math.random(),
+                dataType: "json",
+                success: function (data) {
+                    $('#sfmb').val(data.data);
+                }
+            });
+        }
+    });
+
+    /*************************************手术记账**************************************************/
+    function btn_addOpItem($thistr) {
+        var valsl = $('#sl').val();
+
+        if (((/^(\+|-)?\d+$/).test(valsl)) && (valsl < 0)) {
+            $.modalAlert("数量为大于0的整数", 'warning');
+            return;
+        }
+
+        $('#txtSFXMSel').val('');
+        $('#xmDetailListGridList').newtouchLocalDataGrid(null, [{
+            sfxmCode: $thistr.attr('data-sfxmCode'),
+            sfxmmc: $thistr.attr('data-sfxmmc'),
+            py: $thistr.attr('data-py'),
+            dw: $thistr.attr('data-dw'),
+            sl: valsl,
+            sfdlmc: $thistr.attr('data-sfdlmc')
+
+        }]);
+    }
+
+
+</script>

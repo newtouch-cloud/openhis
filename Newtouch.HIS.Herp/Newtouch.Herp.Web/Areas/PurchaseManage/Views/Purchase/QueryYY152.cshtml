@@ -1,0 +1,207 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "退货明细获取";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+<script src="~/Content/js/index.js"></script>
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">采购明细获取</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">查询时间：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <td class="formValue" style="width:8px;float:left;">-</td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle">采购方式：</th>
+                <td class="formValue">
+                    <select id="cgfs" name="cgfs" class="form-control required" data-EnumType="EnumCGFS"></select>
+                </td>
+                <th class="formTitle"><span class="required">*</span>单据填写方：</th>
+                <td class="formValue">
+                    <select id="djtxf" name="djtxf" class="form-control required" data-EnumType="EnumDJTXF"></select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle ">企业名称：</th>
+                <td class="formValue" colspan="2">
+                    <input type="text" id="qy" name="qy" class="form-control" placeholder="请选择企业" autocomplete="off" style="width:90%" />
+                    <input type="hidden" id="qybm" />
+                </td>
+
+                <th class="formTitle">退货单编号：</th>
+                <td class="formValue">
+                    <input id="thdbh" class="form-control" placeholder="退货单编号" />
+                </td>
+                <th class="formTitle">退货明细单号：</th>
+                <td class="formValue">
+                    <input id="thmxbh" class="form-control" placeholder="退货明细单号" />
+                </td>
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        InitFloat();
+
+        //gridList();
+    });
+
+
+    //初始化浮层
+    function InitFloat() {
+        //物资供应商
+        $("#qy").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            url: '/Storage/GetSupplierList',
+            height: 300,
+            width: 400,
+            caption: "物资供应商",
+            ajaxparameters: function () {
+                return "key=" + $("#qy").val();
+            },
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '编码', name: 'py', widthratio: 45 },
+                { label: '供应商', name: 'name', widthratio: 55 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#qybm").val($thistr.attr('data-py'));
+                $("#qy").val($thistr.attr('data-name'));
+            }
+        });
+    }
+
+    function getPostData() {
+        return {
+            QSRQ: $("#kssj").val().replace(/\-/g, ""),
+            JZRQ: $("#jssj").val().replace(/\-/g, ""),
+            QYBM: $("#qybm").val(),
+            DJTXF: $("#djtxf").val(),
+            THMXBH: $("#thmxbh").val(),
+            THDBH: $("#thdbh").val(),
+            CGFS: $("#cgfs").val(),
+            THMXBHCXTJ :'',
+        };
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetGridJsonYY152",
+            height: $(window).height() - 200,
+            postData: getPostData(),
+            colModel: [
+                {
+                    label: '单据填写方', name: 'DJTXF', width: 80, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumDJTXF", val);
+                    }
+                },
+                { label: '企业编码', name: 'QYBM', width: 140, align: 'left' },
+                { label: '配送点编码', name: 'PSDBM', width: 80, align: 'left' },
+                { label: '退货单编号', name: 'THDBH', width: 140, align: 'left' },
+                { label: '退货明细编号', name: 'THMXBH', width: 140, align: 'left' },
+                { label: '顺序号', name: 'SXH', width: 80, align: 'left' },
+                {
+                    label: '采购类型', name: 'CGLX', width: 80, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumCGLX", val);
+                    }
+                },
+                {
+                    label: '退货类型', name: 'THLX', width: 80, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumTHLX", val);
+                    }
+                 },
+                { label: '耗材统编代码', name: 'HCTBDM', width: 200, align: 'left' },
+                { label: '耗材细分代码', name: 'HCXFDM', width: 200, align: 'left' },
+                { label: '医院本地代码', name: 'YYBDDM', width: 80, align: 'left' },
+                { label: '品名', name: 'PM', width: 120, align: 'left' },
+                { label: '规格', name: 'GG', width: 80, align: 'left' },
+                { label: '型号', name: 'XH', width: 80, align: 'left' },
+                { label: '规格型号说明', name: 'GGXHSM', width: 80, align: 'left' },
+                { label: '单位', name: 'DW', width: 80, align: 'left' },
+                { label: '生产企业名称', name: 'SCQY', width: 80, align: 'left' },
+                { label: '采购规格型号', name: 'CGGGXH', width: 80, align: 'left' },
+                { label: '生产批号', name: 'SCPH', width: 80, align: 'left' },
+                { label: '生产日期', name: 'SCRQ', width: 80, align: 'left' },
+                { label: '有效日期', name: 'YXRQ', width: 80, align: 'left' },
+                {
+                    label: '配送明细条码类型', name: 'PSMXTMLX', width: 80, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumPSMXTMLX", val);
+                    }
+                 },
+                { label: '配送明细条码', name: 'PSMXTM', width: 80, align: 'left' },
+                { label: '退货数量', name: 'THSL', width: 80, align: 'left' },
+                { label: '退货单价', name: 'THDJ', width: 80, align: 'left' },
+                { label: '退货原因', name: 'THYY', width: 80, align: 'left' },
+                {
+                    label: '采购方式', name: 'CGFS', width: 80, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumCGFS", val);
+                    }
+                },
+                { label: '系统编码', name: 'XTBM', width: 80, align: 'left' },
+                {
+                    label: '是否含伴随服务', name: 'SFHBSFW', width: 80, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumSFHBSFW", val);
+                    }
+                },
+
+            ],
+            multiselect: false,
+            //pager: "#gridPager",
+            //sortname: '',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: getPostData(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //获取明细
+    $('#btn_search').click(function () {
+        if ($("#djtxf").val() == "" || $("#djtxf").val() == null) {
+            $.modalAlert("请选择单据填写方", 'warning');
+            return ;
+        }
+        var kssj = new Date($("#kssj").val());
+        var jssj = new Date($("#jssj").val());
+        if (getDaysBetween(kssj,jssj) > 30) {
+
+            $.modalAlert("日期不能超过30天", 'warning');
+            return;
+        }
+        gridList();
+    });
+</script>
+
+

@@ -1,0 +1,574 @@
+﻿
+@{
+    ViewBag.title = "皮试结果录入";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 20%;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+    .dv-right {
+        width: 79%;
+        float: right;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+
+    
+</style>
+
+
+<div class="dv-body">
+
+    <div class="dv-left">
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                筛选条件
+            </div>
+
+            <table class="form" style="width:95%">
+                <tbody>
+                    <tr>
+                        <th class="formTitle">姓名/住院号：</th>
+                        <td class="formValue">
+                            <input id="keyword" type="text" class="form-control">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">类别：</th>
+                        <td class="formValue">
+                            <select id="LUJG" name="LUJG" class="form-control ">
+                                <option value="0"> 未录入 </option>
+                                <option value="1"> 已录入 </option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            @*<label >诊断：</label>
+            <select id="zd" name="zd" class="form-control " style="width:70px;height:15px;">
+                <option value="0"> 已录入 </option>
+                <option value="1"> 未录入 </option>
+            </select>*@
+        </div>
+        <div class="dv-left-title">患者列表</div>
+        <div class="dv-left-tree" id="BqTreeList"></div>
+    </div>
+    <div class="dv-right" >
+        <div class="dv-right-order">
+            <div class="topPanel" >
+                <div class="toolbar" style="float:right;">
+                    <div class="btn-group">
+                        <a class="btn btn-primary" onclick="RefreshOrder()"><span class="fa fa-refresh"></span></a>
+                    </div>
+                    <div class="btn-group">
+                        <a id="btn_input" class="btn btn-primary" onclick="InputResult()" style="width:80px;">
+                            <i class="fa fa-pencil-square-o"></i>皮试录入
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a id="btn_edit" class="btn btn-primary" onclick="editResult()" style="width:50px;">
+                            <i class="fa fa-pencil-square-o"></i>修改
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="gridPanel" id="dv_dlr">
+                <table id="gridList"></table>
+                <div id="gridPager"></div>
+            </div>
+            <div class="gridPanel" id="dv_ylr">
+                <table id="gridListylr"></table>
+                <div id="gridPagerylr"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    //var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 25;
+    //$(".dv-right").width(rightWidth);
+    $(".dv-left-tree").height($(window).height()-70);
+    var keyword = $("#txt_name").val();
+
+
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+        });
+        $('#gridList').jqGrid("clearGridData");
+        $('#gridListylr').jqGrid("clearGridData");
+        getBqTreeList();
+
+        gridList("", "0");
+        gridListYl("", "1");
+
+        //搜索病人信息
+        $('#keyword').keyup(function () {
+            getBqTreeList();
+        });
+        $("#btn_edit").hide();
+        $("#dv_ylr").hide();
+
+    });
+
+    function getBqTreeList()
+    {
+        var selectkey = $("#LUJG option:selected").val();        
+        $("#BqTreeList").treeview({
+            height: $(window).height()-150,
+            slimscroll: false,
+            showcheck: true,
+            url: "/NurseManage/OrderAudit/SkintestTree?keyword=" + $('#keyword').val() + "&selectkey=" + selectkey,
+            //param: { aa: "" },
+            oncheckboxclick: function (item, s) {
+                getOrderAuditList(item,s);
+            }
+        });
+
+    }
+
+    function getOrderAuditList(item,s)
+    {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+
+        var patzyh = "";
+        var patzyhItem = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c")
+        {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 == "c") {
+                patzyh += patlist[i].value + ",";
+            }
+        }
+
+        if (s == 1)
+        {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c") {
+                        patzyh += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh += patlistFath.value ;
+            }
+        }
+        else if (s == 0)
+        {
+            if (single == 0)
+            {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c" && patlistFath[j].checkstate == 1) {
+                        patzyh = patzyh.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh = patzyh.replace(patlistFath.value + ",", "");
+            }
+
+        }
+        var selectkey = $("#LUJG option:selected").val();
+        if (selectkey == "1") {
+            $('#gridListylr').jqGrid("clearGridData");
+            $('#gridListylr').jqGrid('setGridParam', {
+                postData: {
+                    patList: patzyh,
+                    selectkey: selectkey
+                }
+            }).trigger("reloadGrid");
+        }
+        else {
+            $('#gridList').jqGrid('setGridParam', {
+                postData: {
+                    patList: patzyh,
+                    selectkey: selectkey
+                }
+            }).trigger("reloadGrid");
+        }
+    }
+
+    function getOrderListByPatId(patid)
+    {
+        $('#gridList').jqGrid("clearGridData");
+        $('#gridList').newtouchLocalDataGrid(null, orderList);
+    }
+
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    var checkTrigger = false;
+    var list = new Array();
+    var liststu = false;
+    var j = 0;
+    //未录入
+    function gridList(patzyh,selectkey) {
+        var $gridList = $("#gridList");       
+        $gridList.dataGrid({
+            postData: { patList: patzyh, selectkey: selectkey },
+            url: "/NurseManage/OrderAudit/Inputinformation",
+            height: $(window).height() - 130,    
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            colModel: [
+                { label: '医嘱ID', name: 'yzid', align: 'center', width: 50, hidden: true, key: true },
+                { label: 'zyh', name: 'zyh', align: 'center', hidden: true },
+                { label: 'blh', name: 'blh', align: 'center', hidden: true },
+                { label: '患者姓名', name: 'hzxm', align: 'center', width: 80 },
+                { label: '皮试项目', name: 'xmmc', align: 'left', width: 150 },
+                { label: '医嘱组号', name: 'zh', align: 'center', width: 70, formatter: function (val) { if (val != null) return val; else return ""; } },
+                { label: '医嘱性质', name: 'yzxzsm', align: 'center', width: 50 },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                //{ label: '结果值', name: 'lrjg', align: 'center', width: 100, },
+                {
+                    label: '医嘱内容', name: 'yznr', align: 'center', width: 230, formatter: function (val) {
+                        if (val != null) {
+                            if (val.indexOf("[停]") != -1) {
+                                return "<span style='color:red'>[停]</span>" + val.replace("[停]", "")
+                            }
+                            else
+                                return val;
+                        }
+
+                        else return "";
+                    }
+                },
+                { label: '医嘱性质编码', name: 'yzxz', align: 'center', hidden: true },
+                { label: 'zh1', name: 'zh1', align: 'center', width: 70, hidden: true , formatter: function (val) { if (val != null) return val; else return ""; } }
+                , { label: 'xmdm', name: 'xmdm', align: 'center', hidden: true }
+                , { label: 'ypjl', name: 'ypjl', align: 'center', hidden: true }
+                , { label: 'yzzt', name: 'yzzt', align: 'center', hidden: true }
+                , { label: 'yztag', name: 'yztag', align: 'center', hidden: true }
+                , { label: 'sex', name: 'sex', align: 'center', hidden: true }
+               
+            ],
+            pager: "#gridPager",            
+            sortname: 'zyh,kssj Desc',
+            viewrecords: true,
+            multiselect: true,
+            //onSelectRow: function (rowIndex, s) {
+            //    InputResult();
+            //} 
+        });
+    }
+    //已录入
+    function gridListYl(patzyh, selectkey) {
+        var $gridList = $("#gridListylr");
+        $gridList.dataGrid({
+            postData: { patList: patzyh, selectkey: selectkey },
+            url: "/NurseManage/OrderAudit/Inputinformation",
+            height: $(window).height() - 130,
+            colModel: [
+                { label: '医嘱ID', name: 'yzid', align: 'center', width: 50, hidden: true, key: true },
+                { label: 'zyh', name: 'zyh', align: 'center', hidden: true },
+                { label: 'blh', name: 'blh', align: 'center', hidden: true },
+                { label: 'yzxz', name: 'yzxz', align: 'center', hidden: true },
+                { label: '患者姓名', name: 'hzxm', align: 'center', width: 80 },
+                { label: '医嘱性质', name: 'yzxzsm', align: 'center', width: 50 },
+                { label: '皮试项目', name: 'xmmc', align: 'center', width: 150 },
+                { label: '医嘱组号', name: 'zh', align: 'center', width: 70, formatter: function (val) { if (val != null) return val; else return ""; } },
+                { label: '结果值', name: 'lrjg', align: 'center', width: 50, formatter: function (val) { if (val == "阳性") return "<span style='color:red;'>" + val + "</span>"; else return val; } },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 100, formatter: function (val) { return $.getTime({ date: val }); } },
+                {
+                    label: '医嘱内容', name: 'yznr', align: 'center', width: 200, formatter: function (val) {
+                        if (val != null) {
+                            if (val.indexOf("[停]") != -1) {
+                                return "<span style='color:red'>[停]</span>" + val.replace("[停]", "")
+                            }
+                            else
+                                return val;
+                        }
+
+                        else return "";
+                    }
+                },
+                //{ label: '停止/作废时间', name: 'tzsj', align: 'center', width: 100, hidden: true, formatter: function (val) { if (val != null) return $.getTime({ date: val }); else return ""; } },
+                //{ label: '精麻', name: 'yztagName', align: 'center', width: 50, hidden: true },
+                //{
+                //    label: '是否计费', name: 'isjf', align: 'center', width: 50, hidden: true, formatter: function (val) {
+                //        return $.enum.getDescByValue("EnumSF", val);
+                //    }
+                //},
+                { label: '录入者', name: 'Creator', align: 'center', width: 50 },
+                { label: '录入时间', name: 'CreateTime', align: 'center', width: 100, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '更新者', name: 'LastModifierName', align: 'center', width: 50 },
+                { label: '更新时间', name: 'LastModifyTime', align: 'center', width: 100, formatter: function (val) { return $.getTime({ date: val }); } },
+               { label: '医嘱性质编码', name: 'yzxz', align: 'center', hidden: true },
+                { label: 'zh1', name: 'zh1', align: 'center', width: 70, hidden: true, formatter: function (val) { if (val != null) return val; else return ""; } }
+                , { label: 'xmdm', name: 'xmdm', align: 'center', hidden: true }
+                , { label: 'ypjl', name: 'ypjl', align: 'center', hidden: true }
+                , { label: 'yzzt', name: 'yzzt', align: 'center', hidden: true }
+                , { label: 'yztag', name: 'yztag', align: 'center', hidden: true }
+                , { label: 'sex', name: 'sex', align: 'center', hidden: true }
+
+            ],
+            pager: "#gridPagerylr",
+            sortname: 'zyh,kssj Desc',
+            viewrecords: true,
+            //multiselect: true,
+            //rownumbers: true,          
+
+        });
+    }
+    //刷新医嘱
+    function RefreshOrder() {
+        $('#gridList').jqGrid("clearGridData");
+        $('#gridListylr').jqGrid("clearGridData");
+        getOrderAuditList(null, null);
+    }
+
+
+    function AuditCheckedps() {
+        var strYZID = [];
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        if (selRowIds == null || selRowIds.length === 0) {
+            $.modalAlert("请先选中需要保存的皮试结果行", 'warning');
+            return;
+        }
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            //strYZID.push({ yzid: rowData.yzid, yzxz: rowData.yzxz, yzlxmc: rowData.yzlx, zyh: rowData.zyh, zh1: rowData.zh1 });
+            if (rowData.psbz == null || rowData.length == 0 || rowData.psbz == "" || rowData.psbz == undefined) {
+                $.modalAlert("请选择皮试结果", 'warning');
+                return;
+            }
+            strYZID.push({
+                zyh: rowData.zyh, blh: rowData.blh, yzid: rowData.yzid,
+                yzxz: rowData.yzxz, yzxzsm: rowData.yzxzsm, kssj: rowData.kssj,
+                xmmc: rowData.xmmc, xmdm: rowData.xmdm, ypjl: rowData.ypjl,
+                yznr: rowData.yznr, tzsj: rowData.tzsj, Creator: rowData.Creator,
+                zh: rowData.zh, zh1: rowData.zh1, yzzt: rowData.yzzt, yzlx: rowData.yzlx,
+                hzxm: rowData.hzxm, yztag: rowData.yztag, yztagName: rowData.yztagName,
+                isjf: rowData.isjf, ispscs: rowData.ispscs, sex: rowData.sex, psbz: rowData.psbz
+            });
+        }
+        $.najax({
+            type: "POST",
+            url: "/NurseManage/OrderAudit/Inputskintestresults",
+            data: { orderList: strYZID },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state === "error" || ajaxresp.state === "") {
+                    setTimeout(function () {
+                        $.modalMsg(ajaxresp.message, 'error');
+                    }, 1000);
+
+                }
+                else {
+                    setTimeout(function () {
+                        $.modalMsg('皮试录入成功', 'success');
+                        getBqTreeList();
+                    }, 1000);
+
+                }
+                getOrderAuditList(null, null);
+                //getBqTreeList();
+            }
+        });
+    }
+    //皮试结果录入
+    function InputResult() {
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        if (selRowIds.length==0) {
+            $.modalAlert("请选择待录入项目", 'warning');
+            return;
+        }
+        var yzids = "";
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (yzids == "") {
+                yzids = rowData.yzid;
+            }
+            else {
+                yzids +=","+ rowData.yzid;
+            }
+        }
+        $.modalOpen({
+            id: "InpatientVitalSignsForm",
+            title: "皮试录入",
+            url: "/NurseManage/OrderAudit/Inputresults",
+            width: "400px",
+            height: "200px",
+            leftlalbelchecked: true,
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (patData) {
+                    $.ajax({
+                        url: "/NurseManage/OrderAudit/EnteragainMuti",
+                        dataType: "json",
+                        data: { "yzids": yzids, "lrjg": patData},
+                        type: "post",
+                        success: function (data) {
+                            $("#gridList").trigger("reloadGrid");
+                            if (!!data && data.state == "success") {
+                                $.modalMsg('皮试录入成功', 'success');
+                            }
+                            else if (!!data && data.state == "error") {
+                                $.modalMsg(data.message, 'error');
+                            }
+
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+
+    function PSLRShow(rowId) {
+       // rowId = rowId.replace(/^\"|\"$/g, '');
+        rowId = [rowId];
+        
+        for (var i = 0; i < rowId.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', rowId[i]);
+            //strYZID.push({ yzid: rowData.yzid, yzxz: rowData.yzxz, yzlxmc: rowData.yzlx, zyh: rowData.zyh, zh1: rowData.zh1, ispscs: rowData.ispscs, yzh: rowData.yzh });
+        }
+        //var a = JSON.stringify(rowData);
+        //console.info(JSON.stringify(rowData));
+        InpatientVitalSignsForm2(JSON.stringify(rowData));
+
+    }
+
+    function InpatientVitalSignsForm2(rowId) {
+        $.modalOpen({
+            //id: "InpatientVitalSignsForm1111",
+            title: "皮试结果录入",
+            url: "/NurseManage/OrderAudit/Inputresults?rowData="+rowId,
+            width: "400px",
+            height: "200px",
+            //showleftlalbel: !!!smtzId,  //新增时显示 '确认并关闭按钮'
+            //leftlalbelchecked: true,
+            //leftlalbelcheckedasClose: false,
+            //callBack: function (iframeId, isClose) {
+            //    top.frames[iframeId].$.modalClose();
+            
+            //}
+        });
+    }
+
+
+    //下拉框响应事件
+    $('#LUJG').change(function () {
+        getBqTreeList();
+        var options = $("#LUJG option:selected");
+        var a = options.val();
+        if (a == "1" || a == 1) {
+            //$("#btn_input").attr("disabled", "true");
+            //$("#btn_input").attr("disabled", true);
+            //$("#btn_input").attr("disabled", "disabled");
+            $("#btn_input").hide();
+            $("#dv_dlr").hide();
+            $("#dv_ylr").show();
+            $("#btn_edit").show();
+        }
+        else {
+            //$("#btn_input").removeAttr("disabled");
+            //$("#btn_input").attr("disabled", false);
+            $("#btn_input").show();
+            $("#dv_ylr").hide();
+            $("#dv_dlr").show();
+            $("#btn_edit").hide();
+        }
+        
+    })
+
+    function editResult() {
+        var keyValue = $("#gridListylr").jqGridRowValue().yzid;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var rowdata = jQuery("#gridListylr").jqGrid("getRowData", keyValue);
+        $.modalOpen({
+            id: "PsResultForm",
+            title: "皮试结果录入",
+            url: "/NurseManage/OrderAudit/Inputresults",
+            width: "400px",
+            height: "200px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (patData) {
+                    $.ajax({
+                        url: "/NurseManage/OrderAudit/Enteragain",
+                        dataType: "json",
+                        data: { "zyh": rowdata.zyh, "yzid": rowdata.yzid, "lrjg": patData, "yzxz": rowdata.yzxz },
+                        type: "post",
+                        success: function (data) {
+                            var s = JSON.stringify(data.message);
+                            if (s == "1") {
+                                $.modalMsg('皮试录入成功', 'success');
+                                $('#gridList').jqGrid("clearGridData");
+                                $('#gridListylr').jqGrid("clearGridData");
+                                getOrderAuditList(null, null);
+                            }
+                            else {
+                                $.modalMsg(s, 'error');
+                                $('#gridList').jqGrid("clearGridData");
+                                $('#gridListylr').jqGrid("clearGridData");
+                                getOrderAuditList(null, null);
+                            }
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+
+</script>

@@ -1,0 +1,214 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "耗材使用情况";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //报表链接
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    .formTitle1 {
+        width: 50px;
+        text-align: right;
+        font-weight: normal;
+        padding-right: 2px;
+    }
+</style>
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <td class="formTitle1">
+                    <span class="rema">*</span>部门：
+                </td>
+                <td class="formValue">
+                    <input type="text" id="ksmc" name="ksmc" autocomplete="off" class="form-control form-an" />
+                </td>
+                <td class="formTitle1"><span class="rema">*</span>人员：</td>
+                <td class="formValue"><input type="text" id="doctormc" autocomplete="off" name="doctormc" class="form-control form-an" /></td>
+                <td class="formTitle1"><span class="rema">*</span>来源：</td>
+                <td class="formTitle1">
+                    <select id="slly">
+                        <option value="1">门诊</option>
+                        <option value="2">住院</option>
+                    </select>
+                </td>
+                <th class="formTitle">费用时间：</th>
+                <td class="formValue" colspan="2">
+                    <input id="txtCreateTimestart" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 45%; float:left"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss'})" value="@(DateTime.Now.ToString("yyyy-MM-01 00:00:00"))" />
+                    <span style="margin-left:2%;float:left;">-</span>
+                    <input id="txtCreateTimeEnd" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 45%; float:left"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss'})" value="@(DateTime.Now.ToString("yyyy-MM-01 00:00:00"))" />
+                </td>
+                <th class="formTitle1">
+                </th>
+                <td class="formValue"></td>
+            </tr>
+            <tr>
+                <td class="formTitle">
+                    商品名称：
+                </td>
+                <td class="formValue">
+                    <input type="text" id="xmmc" name="xmmc" autocomplete="off" class="form-control form-an" />
+                </td>
+                <th class="formTitle">
+
+                </th>
+                <td class="formValue">
+                    <input type="button" id="btn_search" onclick="btn_search()" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                    @*<input type="button" id="btn_search" onclick="btn_execl();" class="btn btn-primary btn-md" value="导出" style="width:55px" />*@
+                </td>
+                <th class="formTitle1"></th>
+                <td class="formValue"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+@*<div class="gridPanel">
+    <table id="gridJSList"></table>
+    <div id="gridPager"></div>
+</div>*@
+
+
+<script type="text/javascript">
+	var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var organId = '@(ViewBag.OrganizeId)';
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+        //gridJSListData();
+        btn_search();
+    });
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+    function btn_search() {
+        var ks = $("#ksmc").attr("data-label");
+        var ry = $("#doctormc").attr("data-label");
+        var slly = $("#slly").val();
+        var kssj = $("#txtCreateTimestart").val();
+        var jssj = $("#txtCreateTimeEnd").val();
+        var keyword = $("#xmmc").val();
+
+        var uri = '@reportUrl' + "?tempCode=1019" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + organId +
+            "&beginDate=" + kssj + "&endDate=" + jssj + "&ly=" + slly;
+            //"&ks=" + ks + "&ys=" + ry + "&xmmc=" + keyword;
+        if (ks)
+            uri += "&ks=" + ks
+        if (ry)
+            uri += "&ys=" + ys
+        if (keyword)
+            uri += "&xmmc=" + keyword
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', uri);
+    }
+    function gridJSListData() {
+
+        var $gridList = $("#gridJSList");
+        $gridList.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 188,
+            url: "/ReportManage/Outpatient/GetMaterialList",
+            colModel: [
+                //{ label: 'Id', name: 'jsnm', hidden: true, align: 'left' },
+                {
+                    label: '商品分类', name: 'dlmc', width: 120, align: 'center'
+                },
+                {
+                    label: '商品名称', name: 'sfxmmc', width: 120, align: 'center'
+                },
+                { label: '剂型', name: 'jx', width: 100, align: 'center' },
+                { label: '规格', name: 'gg', width: 80, align: 'center' },
+
+                { label: '生产厂商', name: 'gys', width: 70, align: 'center' },
+                { label: '单位', name: 'dw', width: 120, align: 'center' },
+                { label: '总用量', name: 'sl', width: 80, align: 'center' },
+                { label: '总金额', name: 'zje', width: 80, align: 'center' },
+                { label: '开单科室', name: 'kdksmc', width: 80, align: 'center' },
+                { label: '执行科室', name: 'zxksmc', width: 100, align: 'center' },
+            ],
+            pager: "#gridPager",
+            sortname: "tdrq",
+            viewrecords: true,
+            footerrow: true,
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+            }).trigger('reloadGrid');
+        });
+    }
+    function getSearchPostData() {
+        var ks = $("#ksmc").attr("data-label");
+        var ry = $("#doctormc").attr("data-label");
+        var slly = $("#slly").val();
+        var kssj = $("#txtCreateTimestart").val();
+        var jssj = $("#txtCreateTimeEnd").val();
+        var keyword = $("#xmmc").val();
+        return {
+            ks: ks, ry: ry, slly: slly, kssj: kssj, jssj: jssj, keyword: keyword
+        };
+    };
+
+    $("#doctormc").newtouchBatchFloatingSelector({
+        clickautotrigger: true,
+        height: 200,
+        width: 300,
+        url: '/ReportManage/YpckQuery/GetSysStaffList',
+        ajaxmethod: 'Post',
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.keyword = $("#doctormc").val();
+            return reqData;
+        },
+        caption: "人员",
+        colModel: [
+            { label: '工号', name: 'gh', widthratio: 30 },
+            { label: '名称', name: 'Name', widthratio: 50 },
+            { label: '拼音', name: 'py', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#doctormc").attr("data-label", $thistr.find("td:eq(0)").html());
+            $("#doctormc").val($thistr.find('td:eq(1)').html());
+            return;
+        }
+    });
+
+    $("#ksmc").newtouchBatchFloatingSelector({
+        clickautotrigger: true,
+        height: 200,
+        width: 300,
+        url:'/ReportManage/YpckQuery/GetSysDepartmentList',
+        ajaxmethod: 'Post',
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.keyword = $("#ksmc").val();
+            return reqData;
+        },
+        caption: "科室",
+        colModel: [
+            { label: '编号', name: 'Code', widthratio: 30 },
+            { label: '名称', name: 'Name', widthratio: 50 },
+            { label: '拼音', name: 'py', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#ksmc").attr("data-label", $thistr.find("td:eq(0)").html());
+            $("#ksmc").val($thistr.find('td:eq(1)').html());
+            return;
+        }
+    });
+</script>

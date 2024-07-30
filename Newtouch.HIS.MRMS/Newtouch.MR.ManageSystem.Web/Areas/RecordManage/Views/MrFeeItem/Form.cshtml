@@ -1,0 +1,256 @@
+﻿
+@{
+	ViewBag.Title = "收费大类详细信息";
+	Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">收费大类：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <input id="name" type="text" class="form-control" readonly="readonly" style="width: 180px;float:left;">
+
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">HIS收费大类：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <input id="hissfdl" name="hissfdl" attr-dlcode="" type="text" class="form-control" style="width: 180px;float:left;" autocomplete="off">
+                    <div class="ckbox" style="margin:2px 10px;">
+                        <input id="itemall" name="itemall" type="checkbox"><label for="itemall">全选</label>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">HIS收费项目：</th>
+                <td class="formValue">
+                    <input id="txt_keyword" type="text" class="form-control" placeholder="收费项目/收费大类" style="width: 180px;float:left;">
+                    <button id="btn_search" type="button" class="btn btn-primary" style="margin-left:10px;"><i class="fa fa-search"></i>查询</button>
+                    @*<button id="btn_saveall" type="button" class="btn btn-primary" style="float:right;">全部保存</button>*@
+                    <div id="btn_save" class="btn-group" style="float:right;">
+                        <a class="btn btn-default" data-value="1" title="保存当前his大类全部收费项目"><span class="glyphicon glyphicon-save"></span>当前大类</a>
+                        <a class="btn btn-default" data-value="2" title="保存当前页收费项目"><span class="glyphicon glyphicon-save"></span>当前页</a>
+                        <a class="btn btn-default" data-value="3" title="保存下方选中收费项目"><span class="glyphicon glyphicon-save"></span>选中项</a>
+                    </div>
+                </td>
+            </tr>            
+        </table>
+
+    </div>
+    <div style="padding-left:5px;">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script>
+	var keyValue = $.request("keyValue");
+	var code = $.request("code");
+    var name = $.request("name");
+    var idList = [];
+    $(function () {
+        $("#name").val(name);
+        GridInit();
+        $("#itemall").change(function () {
+            var dl = $("#hissfdl").attr("attr-dlcode");
+            if ($('#itemall').is(':checked') && dl!=null && dl!="") {
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { keyword: $("#txt_keyword").val(), code: code, hissfdl: dl }, page: 1
+                }).trigger('reloadGrid');
+            }
+        });
+
+        $("#btn_save a.btn-default").click(function () {
+            $("#btn_save a.btn-default").removeClass("active");
+            $(this).addClass("active");
+            var type = $("#btn_save a.active").attr('data-value');
+            var tip = "";
+            var url = "";
+            var hisdlmc = $("#hissfdl").val();
+            var hisdl = $("#hissfdl").attr("attr-dlcode");
+            var postdata = { keyword: $("#txt_keyword").val(), code: "", hissfdl: hisdl};
+            var badl = $("#name").val();
+            var dataList = "";
+            if (type == 1) {
+                if (!!!$("#hissfdl").attr("attr-dlcode")) {
+                    $.modalAlert("请选择HIS收费大类！", 'warning');
+                    return false;
+                }                
+                tip = "请确认保存当前his大类" + hisdlmc + "全部收费项目到【" + badl + "】?";
+                url = "/RecordManage/MrFeeItem/SavebyHISsfdl";
+                postdata = { code: code, hissfdl: hisdl };                
+            }
+            else if (type == 2) {
+                debugger
+                tip = "请确认保存当前页收费项目到【" + badl + "】?";
+                url = "/RecordManage/MrFeeItem/SavebySfxm";
+                var allIdList = window.$("#gridList").getDataIDs();               
+                for (var i = 0; i < allIdList.length; i++) {
+                    var dataObj = window.$("#gridList").getRowData(allIdList[i]);
+                    dataList = dataList + dataObj.sfxmCode + ",";
+                }
+                postdata = { code: code, ids: dataList};
+
+            } else if (type == 3) {
+                tip = "请确认保存已选收费项目到【" + badl + "】?";
+                url = "/RecordManage/MrFeeItem/SavebySfxm";
+                for (var i = 0; i < idList.length; i++) {
+                    var dataObj = window.$("#gridList").getRowData(idList[i]);
+                    dataList = dataList + dataObj.sfxmCode + ",";
+                }
+                postdata = { code: code, ids: dataList };
+            } 
+            if (url != "" && postdata != null && postdata != undefined) {
+                $.modalConfirm(tip, function (flag) {
+                    if (flag) {
+                        $.najax({
+                            url: url,
+                            data: postdata,
+                            dataType: "json",
+                            success: function (data) {
+                                if (data != null && data != "" && data != undefined) {
+                                    if (data.state == "success") {
+                                        $.modalAlert(data.message, 'success');
+                                    }
+                                    else {
+                                        $.modalAlert(data, 'error');
+                                    }
+                                }
+                                else {
+                                    $.modalAlert("结果未知，请返回重新查询", 'warning');
+                                }
+                                $("#gridList").jqGrid('setGridParam', {
+                                    postData: { keyword: $("#txt_keyword").val(), code: code, hissfdl: hisdl }, page: 1
+                                }).trigger('reloadGrid')
+                            }
+                        });
+                    }
+                });
+            }
+            else {
+                $.modalAlert("无可添加的收费项目", 'warning');
+            }
+        });
+    });
+
+
+
+	function GridInit() {
+		var $gridList = $("#gridList");
+		$gridList.dataGrid({
+            url: "/RecordManage/MrFeeItem/GetPagintionItem",
+            postData: { keyword: $("#txt_keyword").val(), code: code },
+			autowidth: true,
+			height: $(window).height() - 210,
+			colModel: [
+				//{ label: "Id", name: "Id", hidden: true },
+				{ label: "收费项目", name: "sfxmCode", width: 160, align: 'left' },
+				{ label: "收费项目名称", name: "sfxmmc", width: 160, align: 'left' },
+				//{ label: "收费大类", name: "feetypecode", width: 80, align: 'left' },
+				//{ label: "收费大类名称", name: "name", width: 100, align: 'left' }
+
+			],
+			sortname: "sfxmCode desc",
+			rowNum: 50,
+			pager: "#gridPager",
+			viewrecords: true,
+			multiselect: true,
+			ondblClickRow: function () {
+				btn_edit();
+			},
+			onSelectRow: function (row) {
+				//获取多选勾选的Id
+				var rowIds = $('#gridList').jqGrid('getGridParam', 'selarrrow');
+				idList = rowIds;
+			},
+			onSelectAll: function (rowids, statue) {
+				if (statue == true) {
+					//全选
+					idList = rowids;
+				} else {
+					//清空
+					idList = [];
+				}
+			},
+			gridComplete: function () {
+				//默认全选
+				//var count = $("#gridList").getGridParam("reccount");
+				//for (var i = 1; i <= count; i++) {
+				//    $("#gridList").jqGrid('setSelection', i);
+				//}
+			},
+		});
+        $("#btn_search").click(function () {
+            var dl = $("#hissfdl").attr("attr-dlcode");
+			$("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), code: code, hissfdl: dl }, page: 1
+			}).trigger('reloadGrid');
+		});
+	}
+
+	//保存已选 获取已选数据
+    function saveSelected() {
+		var dataList = [];
+		for (var i = 0; i < idList.length; i++) {
+			var dataObj = window.$("#gridList").getRowData(idList[i]);
+			//dataObj.feetypecode = code;
+			dataList.push(dataObj);
+		}
+		save(dataList);
+	}
+
+	//保存全部(已删)
+	function saveAll() {
+		var allIdList = window.$("#gridList").getDataIDs();
+		var dataList = [];
+		for (var i = 0; i < allIdList.length; i++) {
+			var dataObj = window.$("#gridList").getRowData(allIdList[i]);
+			//dataObj.feetypecode = code;
+			dataList.push(dataObj);
+		}
+		save(dataList);
+	}
+
+	//保存数据至数据库 (已删)
+	function save(postData) {
+		if (postData.length == 0) {
+			window.$.modalAlert("请选中一条信息", 'warning');
+			return false;
+        }
+		$.submitForm({
+			url: "/RecordManage/MrFeeItem/Save",
+            param: { list: postData, code: code},
+			success: function () {
+				$.modalClose();
+			}
+		});
+	}
+
+	//确定按钮点击事件
+	function AcceptClick(callBack) {
+		var postData = saveSelected();
+		if (postData.length == 0) {
+			window.$.modalAlert("请选中一条信息", 'warning');
+			return false;
+		}
+		$.submitForm({
+			url: "/RecordManage/MrFeeItem/Save",
+			param: { list: postData, code: code },
+			success: function () {
+				callBack();
+				$.modalClose();
+			}
+		});
+    }
+
+    //诊断
+    $("#hissfdl").hissfdlFloatingSelector({
+        itemdbclickhandler: function ($this) {            
+            $("#hissfdl").val($this.attr('data-dlmc')).attr("attr-dlcode", $this.attr('data-dlcode'));
+        }
+    });
+</script>
+

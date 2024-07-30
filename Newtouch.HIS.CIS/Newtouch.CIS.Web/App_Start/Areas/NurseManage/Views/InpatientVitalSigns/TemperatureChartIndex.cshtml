@@ -1,0 +1,113 @@
+﻿@{
+    ViewBag.Title = "TemperatureChartIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style type="text/css">
+    .tabTwdSearch .form .formValue {
+        padding: 1px 5px;
+    }
+</style>
+<form name="form1" class="tabTwdSearch">
+    <div class="panel panel-default" style="margin-bottom:2px;">
+        <div style="width:1000px;padding: 2px 0;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue" colspan="2">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:1%;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input id="zyh" type="text" class="form-control" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_zyh" class="btn btn-default" value="住院号" />
+                    </td>
+                    <td class="formValue" colspan="3">
+                        &nbsp;&nbsp;
+                        <input type="button" id="btn_search" class="btn btn-primary" value=" 查 询 " />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <input type="button" id="btn_print" class="btn btn-primary" value="打印预览" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+<div  class="panel panel-default">
+    @Html.Partial("_TemperatureChart")
+</div>
+<script>
+    $(function () {
+        initControl();
+
+        draw([]);
+    });
+
+    function initControl() {
+        $('#btn_zyh').click(function () {
+            $.modalOpen({
+                id: "patSearch",
+                title: "住院患者查询",
+                url: "/PatientList/InPatSearchView?allowunselected=true&zybz=1,2,3,7&t=" + Math.random() + "&zyh=" + '',
+                width: "700px",
+                height: "600px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].AcceptClick(function (patData) {
+                        if (patData && patData.zyh) {
+                            $('#zyh').val(patData.zyh);
+                        }
+                        else {
+                            $('#zyh').val('');
+                        }
+                    });
+                }
+            });
+        });
+
+        $('#btn_search').click(function () {
+            var kssj = $('#kssj').val();
+            var jssj = $('#jssj').val();
+            var zyh = $('#zyh').val();
+            search(kssj, jssj, zyh);
+        });
+
+        $('#zyh').keyupEnterEvent(function () {
+            $('#btn_search').trigger('click');
+        });
+
+        $('#btn_print').click(function () {
+            var kssj = $('#kssj').val();
+            var jssj = $('#jssj').val();
+            var zyh = $('#zyh').val();
+            if (!(kssj && jssj && zyh)) {
+                $.modalAlert('请完善筛选条件', 'error');
+                return;
+            }
+            if (!(tempData && tempData.length)) {
+                $.modalAlert('请先筛选出结果', 'warning');
+                return;
+            }
+            var printHasNext = true;
+            while (printHasNext) {
+                var thiskssj = kssj;
+                var thisjssj = $.getDate({ date: $.dateAdd($.strToDate(thiskssj), 'd', 9) });
+                if (thisjssj >= jssj) {
+                    thisjssj = jssj;
+                    printHasNext = false;
+                }
+                //open
+                window.open('/NurseManage/InpatientVitalSigns/FullScreenTemperatureChartIndex?kssj=' + thiskssj + "&jssj=" + thisjssj + "&zyh=" + zyh);
+                //重置下个开始时间
+                if (printHasNext) {
+                    kssj = $.getDate({ date: $.dateAdd($.strToDate(thisjssj), 'd', 1) });
+                }
+            }
+
+        });
+    }
+
+</script>

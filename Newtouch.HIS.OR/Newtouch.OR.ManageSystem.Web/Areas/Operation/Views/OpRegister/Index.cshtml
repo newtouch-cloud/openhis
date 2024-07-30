@@ -1,0 +1,356 @@
+﻿
+@{
+    ViewBag.Title = "术后登记首页";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+<style>
+    .brand-table .section {
+        display: flex;
+        position: fixed;
+        top: 0.01rem;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        overflow: hidden;
+    }
+
+        .brand-table .section .left {
+            width: 10.79rem;
+            height: auto;
+            overflow: auto;
+            margin-bottom: 1.22rem;
+        }
+
+        .brand-table .section .right {
+            flex: 1;
+            margin-bottom: 1.22rem;
+            overflow: auto;
+            background: #fff;
+            padding-left: .3rem;
+            padding-right: .24rem;
+        }
+
+            .brand-table .section .right .title {
+                height: 0.9rem;
+                line-height: 0.9rem;
+                font-size: 0.28rem;
+                color: #181818;
+            }
+
+                .brand-table .section .right .title .all {
+                    float: right;
+                    padding-right: .4rem;
+                }
+
+                .brand-table .section .right .title .tobottom {
+                    background: url(../images/selectToBottom.png) no-repeat;
+                    background-size: .21rem .12rem;
+                    background-position: right center;
+                }
+
+                .brand-table .section .right .title .totop {
+                    background: url(../images/selectToTop.png) no-repeat;
+                    background-size: .21rem .12rem;
+                    background-position: right center;
+                }
+
+            .brand-table .section .right .detail {
+                height: auto;
+                line-height: 0.45rem;
+                font-size: 0.22rem;
+                color: #6c6c6c;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                text-overflow: ellipsis;
+                -webkit-box-orient: vertical;
+            }
+
+            .brand-table .section .right .child-box .child-type {
+                height: 0.9rem;
+                line-height: 0.9rem;
+                border-bottom: solid 1px #eeeeee;
+                background: url("../images/right.png") no-repeat;
+                background-position: right center;
+                background-size: .12rem .21rem;
+            }
+
+                .brand-table .section .right .child-box .child-type a {
+                    font-size: 0.24rem;
+                    color: #6c6c6c;
+                    display: block;
+                }
+
+                .brand-table .section .right .child-box .child-type:first-child {
+                    margin-top: .55rem;
+                    border-top: solid 1px #eeeeee;
+                }
+
+            .brand-table .section .right .recommend {
+                height: 0.88rem;
+                line-height: 0.88rem;
+                font-size: 0.3rem;
+                color: #181818;
+            }
+
+            .brand-table .section .right .recommend-name {
+                color: #fa5654;
+            }
+
+            .brand-table .section .right .brandlist {
+                *zoom: 1;
+            }
+
+                .brand-table .section .right .brandlist:after {
+                    content: "";
+                    display: block;
+                    height: 0;
+                    clear: both;
+                    visibility: hidden;
+                    overflow: hidden;
+                }
+
+                .brand-table .section .right .brandlist li {
+                    width: 48.5%;
+                    float: left;
+                    margin-bottom: 3%;
+                    box-sizing: border-box;
+                    position: relative;
+                }
+
+                    .brand-table .section .right .brandlist li img {
+                        width: 100%;
+                        height: 100%;
+                        display: block;
+                    }
+
+                    .brand-table .section .right .brandlist li:nth-child(even) {
+                        float: right;
+                    }
+</style>
+<div class="panel">
+    <div class="brand-table">
+        <div class="section">
+            <div id="dv_left" class="left panel panel-default" style="width:40%;float:left;padding-right:5px;">
+                <div class="panel-heading">
+                    <span style="font-weight:bold;width:50px;">手术排班列表</span>
+                </div>
+                <div class="topPanel">
+                    <div class="search">
+                        <table class="form">
+                            <tr>
+                                <td class="formValue formDdlSelectorTd" style="width:120px;">
+                                    <select id="bqlist" name="bqlist" class="form-control " style="width:95%;float:left;">
+                                        <option value="">   选择病区   </option>
+                                        <option value="01">一病区</option>
+                                    </select>
+                                </td>
+                                <td class="formValue formDdlSelectorTd" style="width:80px;">
+                                    <select class="form-control" id="djzt" data-enumtype="EnumSSdjzt" style="width:95%;float:left;">
+                                    </select>
+                                </td>
+                                <td rowspan="2">
+                                    <div class="input-group">
+                                        <input id="txt_keyword" type="text" class="form-control" placeholder="患者姓名/住院号/登记号" style="width: 150px;">
+                                        <span class="input-group-btn" style="width:150px;">
+                                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr></tr>
+                        </table>
+                    </div>
+                </div>
+                <div>
+                    <table id="gridList"></table>
+                    <div id="gridPager"></div>
+                </div>
+            </div>
+            <div id="dv_right" class="right panel panel-default" style="width:58%;float:right;padding-right:10px;background-color:white;">
+                @Html.Partial("PostoperativeReg")
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        GridInit();
+        $("#bqlist").bindSelect({
+            url: "/Operation/Common/Getbqlist",
+            id: "bqcode",
+            text: "bqmc"
+        });
+   
+
+    });
+
+    function GridInit() {
+        $("#djzt").val(1).trigger("change");//默认待登记
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val(), bq: $("#bqlist").val(), djzt: $("#djzt").val() },
+            url: "/Operation/OpRegister/GetPagintionListForRegistration",
+            autowidth: true,
+            height: $(window).height() - 175,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "ApplyId", name: "ApplyId", key: true, hidden: true },
+                { label: "姓名", name: "xm", width: 50, align: 'left' },
+                { label: "住院号", name: "zyh", width: 50, align: 'left' },
+                //{ label: "病区", name: "bq", width: 80, align: 'left' },
+                //{ label: "床号", name: "ch", width: 60, align: 'left' },
+                { label: "手术日期", name: "sssj", width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                //{ label: "登记号", name: "ssxh", width: 110, align: 'left' },
+                { label: "手术名称", name: "ssmc", width: 100, align: 'left' },
+                {
+                    label: "登记状态", name: "djzt", width: 60, align: 'left', formatter: function (val) {
+                        if (val == 1) {
+                            return "待登记";
+                        }
+                        else if (val == 2) {
+                            return "已登记";
+                        }
+                        else if (val == 3) {
+                            return "登记作废";
+                        } else {
+                            return "待登记";
+                        }
+                    },
+                }
+                //{ label: "状态", name: "sqzt", width: 50, align: 'left' },
+                //{
+                //    label: "手术", name: "", width: 80, align: 'center', formatter(val, option, row) {
+                //        return "<a class='btn btn-default' style='width:50px;' onclick='showDetail(" + option.rowId + ")'>申请</a>";
+                //    }
+                //}
+            ],
+            loadComplete: function () {
+                if (!!keyValue) {
+                    $("#gridList").jqGrid("setSelection", keyValue);
+                }
+            },
+
+
+            sortname: "ID desc",
+            rowNum: 10,
+            pager: "#gridPager",
+            viewrecords: false,
+            onSelectRow: function () {
+                registrationDetail();
+            }
+        });
+        $('#btn_search').click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), bq: $("#bqlist").val(), djzt: $("#djzt").val() },
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+
+
+    $("#cancel").hide();
+    $("#submit").hide();
+    function showBtn(sqzt) {
+        if (sqzt == "4" || sqzt == "已登记") {
+            $("#cancel").show();
+            $("#submit").show();
+        } else {
+            $("#cancel").hide();
+            $("#submit").show();
+        }
+    }
+    var RegisterVO = {};
+    function registrationDetail() {
+        var ArrangeId = $("#gridList").jqGridRowValue().Id;
+        var sqzt = $("#gridList").jqGridRowValue().djzt;
+        if (!!!ArrangeId) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        $.ajax({
+            data: { ArrangeId: ArrangeId, sqzt: sqzt },
+            url: "/Operation/OpRegister/getRegistrationInfo",
+            //data: { ArrangeId: "" },
+            dataType: "json",
+            success: function (data) {
+                showBtn(sqzt);
+                $("#formregister").formSerialize(data);
+                RegisterVO = data;
+                $("#xm").html(data.xm);
+                var xb = data.xb == 1 ? "男" : "女";
+                $("#xb").val(xb);
+                $("#nl").html(data.nl);
+                $("#zyh").html(data.zyh);
+                $("#bq").html(data.bq);
+                $("#ch").html(data.ch);
+                $("#ryzdmc").html(data.zd);
+                $("#sszd").html(data.sszd);
+                $("#shbq").html(data.shbq);
+                //$("#ssdm").html(data.ssdm);
+                //$("#ssmc").html(data.ssmc);
+                $("#applyno").html(data.applyno);
+                $("#ysgh").val(data.ysxm);
+                $("#zdyscode").val(data.ysgh);
+                $("#code1").val(data.ysgh);
+                $("#zlys1name").val(data.zlys1name);
+                $("#zlys1").val(data.zlys1);
+                $("#zlys2name").val(data.zlys2name);
+                $("#zlys2").val(data.zlys2);
+                $("#xhhs").val(data.xhhs);
+                $("#xhhsname").val(data.xhhsname);
+                $("#xshs").val(data.xshs);
+                $("#xshsname").val(data.xshsname);
+                if (data.ssapsj != null) {
+                    $("#ssapsj").val(data.ssapsj.replace("T", " "));
+                }
+                if (data.sssqsj != null) {
+                    $("#sssqsj").val(data.sssqsj.replace("T", " "));
+                }
+                if (data.sskssj != null) {
+                    $("#sskssj").val(data.sskssj.replace("T", " "));
+                }
+                if (data.ssjssj != null) {
+                    $("#ssjssj").val(data.ssjssj.replace("T", " "));
+                }
+                if (data.ssxh != null) {
+                    $("#ssxh").html("手术患者信息（登记号：" + data.ssxh + "）");
+                } else {
+                    $("#ssxh").html("手术患者信息");
+                }
+                //$("#dv_apply_btn").show();
+                //$("#dv_cancel_btn").hide();
+
+                //手术名称
+                //清空手术名称
+                $('#tablessmc .minusToggleCircle').click();
+                var number = data.ss.length;
+                if (number > 0) {//主手术
+                    $("#ssmc").val(data.ss[0].ssmc);
+                    $("#ssdm").val(data.ss[0].ssdm);
+                } else {
+                    $("#ssmc").val("");
+                    $("#ssdm").val("");
+                }
+                for (var i = 1; i < number; i++) {
+                    var n = i + 1;
+                    //if ($("#ssdm" + n).val() == "") {
+                    if ($("#ssdm" + n).length <= 0) {
+                        //添加icon 并赋值
+                        $('#tablessmc .plusToggleCircle').click();
+                        $("#ssmc" + n).val(data.ss[i].ssmc);
+                        $("#ssdm" + n).val(data.ss[i].ssdm);
+                    }
+                }
+
+            }
+        });
+        $('#myTab [href="#linkop"').trigger('click');
+    }
+
+
+</script>

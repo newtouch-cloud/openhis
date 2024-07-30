@@ -1,0 +1,184 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var zylsyzContinuePrint = SysConfigReader.OrgReportLink("zylsyzContinuePrint");  //临时医嘱续打
+    var notitlezylsyzContinuePrint = SysConfigReader.OrgReportLink("notitlezylsyzContinuePrint");  //只打一页(临时医嘱续打)
+    var zycqyzContinuePrint = SysConfigReader.OrgReportLink("zycqyzContinuePrint");  //长期医嘱续打
+}
+
+@*<div class="kb_main_top">
+    <h2 style="font-size: large;font-weight: bold;padding-left:10px">
+        续打
+    </h2>
+</div>*@
+<div id="panelposition" style="margin-left:5px">
+    <span>最后打印医嘱记录</span>
+    @*<label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" checked value="长期医嘱" />长期医嘱</label>
+        <label><input type="radio" id="radioTreating" name="optionsRadios" class="optionsRadios formClearIgnore" value="有效医嘱" />有效医嘱</label>*@
+    <table class="form" style="width:100%;height:65px;">
+        @*<tr>
+            <td style="width:100px;padding-left:2px">
+                <label>最后打印的医嘱</label>
+            </td>
+        </tr>*@
+        <tr>
+            <td style="text-align:left ;width:30px">
+                页码
+            </td>
+            <td style="text-align:left ;width:30px">
+                序号
+            </td>
+            <td class="formValue" style="text-align:left;">
+                <label>下达时间</label>
+            </td>
+            <td class="formTitle" style="text-align:left">
+                <label>医生</label>
+            </td>
+            <td class="formTitle" style="text-align:left">
+                <label>医嘱内容</label>
+            </td>
+            <td class="formValue" style="text-align:left">
+                最后执行时间
+            </td>
+            <td class="formTitle" style="text-align:left">
+                护士
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align:left;width:30px">
+                <label id="lb_page"></label>
+            </td>
+            <td style="text-align:left;width:30px">
+                <label id="lb_xh"></label>
+            </td>
+            <td class="formValue" style="text-align:left">
+                <label id="lb_sj"></label>
+            </td>
+            <td class="formTitle" style="text-align:left">
+                <label id="lb_ys"></label>
+            </td>
+            <td class="formValue" style="text-align:left">
+                <label id="lb_nr"></label>
+            </td>
+            <td class="formTitle" style="text-align:left">
+                <label id="lb_zxsj"></label>
+            </td>
+            <td class="formTitle" style="text-align:left">
+                <label id="lb_hs"></label>
+            </td>
+        </tr>
+    </table>
+</div>
+<div class="rows" style="width:95%;margin-left:1%; margin-top:10px">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            打印方式
+        </div>
+        <div>
+            <table class="form" style="width:265px;height:65px;">
+                <tr >
+                    <td style="width:61px;padding-left:10px">
+                        <label><input type="radio" name="optionsRadios1" class="optionsRadios formClearIgnore" checked value="0" />直接续打</label>
+                    </td>
+                </tr>
+                <tr >
+                    <td style="padding-left:10px">
+                        <label><input type="radio" name="optionsRadios1" class="optionsRadios formClearIgnore" value="1" />续打</label>
+                    </td>
+                    @*<td class="formTitle">
+                        开始页号
+                    </td>
+                    <td class="formValue">
+                        <input class="form-control" id="txt_kspage" style="width:28px;" value="">
+                    </td>*@
+                    <td class="formTitle">
+                        开始行号
+                    </td>
+                    <td class="formValue">
+                        <input class="form-control" id="txt_ksxh" style="width:28px;" value="">
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+    var zyh = $.request("zyh");
+    var yzlx = $.request("yzlx");
+    var isShowSign = $.request("isShowSign");
+
+    $(function () {
+        GetPatPrintRecord();
+    });
+
+    function GetPatPrintRecord()
+    {
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/EntryRegistration/GetZyPatContinuePrint",
+            data: { zyh: zyh,yzlx:yzlx },
+            dataType: "json",
+            async: false,
+            success: function (printdata) {
+                if(printdata)
+                {
+                    $("#lb_xh").html(printdata.xh);
+                    $("#lb_page").html(printdata.pageCnt);
+                    $("#lb_sj").html(printdata.xdsj.replace('T', ' '));
+                    $("#lb_ys").html(printdata.ys);
+                    $("#lb_nr").html(printdata.yznr);
+                    $("#lb_zxsj").html(printdata.zxsj.replace('T', ' '));
+                    $("#lb_hs").html(printdata.hs);
+                }
+            }
+        })
+
+    }
+    function ContinuePrint()
+    {
+        var rpturl = '@Html.Raw(zylsyzContinuePrint)';
+        @*var lbxh = $("#lb_xh").html();
+        var lbpage = $("#txt_kspage").val();
+        if ((lbxh && lbxh > 20) || lbpage > 1)
+        {
+            rpturl = '@Html.Raw(notitlezylsyzContinuePrint)';
+        }*@
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/EntryRegistration/GetZyPatContinuePrintPage",
+            data: { zyh: zyh, yzlx: yzlx, xh: $("#txt_ksxh").val(), page: "" },
+            dataType: "json",
+            async: false,
+            success: function (refdata) {
+                if (refdata) {
+                    if (refdata.minpage==refdata.maxpage)
+                    {
+                        rpturl = '@Html.Raw(notitlezylsyzContinuePrint)';
+                    }
+                }
+            }
+        })
+        if(yzlx=="2")
+        {
+            rpturl = '@Html.Raw(zycqyzContinuePrint)';
+        }
+        var dyfs = $('input[name=optionsRadios1]:checked').val();
+        var xh = "";
+        var page = "";
+        if (dyfs == "1") {
+            var ksxh = $("#txt_ksxh").val();
+            var kspage = ""; //$("#txt_kspage").val();
+            if (!ksxh)
+            {
+                $.modalAlert('请输入需要开始续打的序号', 'warning');
+                return;
+            }
+            xh = ksxh;
+            page = kspage;
+        }
+        window.open(rpturl + "&zyh=" + zyh + "&isSign=" + isShowSign+"&xh="+xh+"&page="+page,  "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+
+
+    }
+
+</script>

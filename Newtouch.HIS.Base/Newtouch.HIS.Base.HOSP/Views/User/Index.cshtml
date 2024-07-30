@@ -1,0 +1,295 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="btnAdd" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="operate">
+            <ul class="nav nav-pills">
+                <li class="first">已选中<span>1</span>项</li>
+                <li><a onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改用户</a></li>
+                <li class="split"></li>
+                <li><a onclick="btn_correlation()"><i class="fa fa-pencil-square-o"></i>关联人员</a></li>
+                <li class="split"></li>
+                <li><a onclick="btn_correlationPharmacy()"><i class="fa fa-pencil-square-o"></i>关联药房</a></li>
+                <li class="split"></li>
+                <li><a onclick="btn_roles()"><i class="fa fa-pencil-square-o"></i>关联角色</a></li>
+                <li class="split"></li>
+                <li><a onclick="btn_revisepassword()"><i class="fa fa-key"></i>密码重置</a></li>
+                <li class="split"></li>
+                <li><a onclick="btn_disabled()"><i class="fa fa-stop-circle"></i>停用</a></li>
+                <li><a onclick="btn_enabled()"><i class="fa fa-play-circle"></i>启用</a></li>
+            </ul>
+            <a href="javascript:;" class="close"></a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="姓名/账户/工号/手机" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+@if (!opr.IsRoot && !opr.IsAdministrator)
+{
+    <script type="text/javascript">
+        $('#btnAdd').remove();
+    </script>
+}
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/User/GetGridJson",
+            height: $(window).height() - 128,
+            postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() },
+            colModel: [
+                { label: '主键', name: 'Id', hidden: true },
+                { label: '账户', name: 'Account', width: 150, align: 'left' },
+                { label: '工号', name: 'gh', width: 80, align: 'left' },
+                { label: '姓名', name: 'Name', width: 100, align: 'left' },
+                { label: 'OrganizeId', name: 'OrganizeId', hidden: true },
+                {
+                    label: '机构名称', name: 'OrganizeName', width: 150, align: 'left',
+                },
+                {
+                    label: '科室名称', name: 'DepartmentName', width: 80, align: 'left',
+                },
+                {
+                    label: "允许登录", name: "Locked", width: 100, align: "center",
+                    formatter: function (cellvalue, options, rowObject) {
+                        if (cellvalue === true || rowObject.zt !== "1") {
+                            return '<span class=\"label label-default\">停用</span>';
+                        }
+                        else {
+                            return '<span class=\"label label-success\">正常</span>';
+                        }
+                    }
+                },
+                { label: '人员备注', name: 'Description', width: 200, align: 'left' },
+                 { label: "有效", name: "zt", width: 60, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '排序', name: 'px', width: 40, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function initControl() {
+
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增用户",
+            url: "/User/Form",
+            width: "400px",
+            height: "400px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "修改用户",
+            url: "/User/Form?keyValue=" + keyValue,
+            width: "400px",
+            height: "400px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+
+                $('.operate a.close').trigger('click');
+            }
+        });
+    }
+
+    //function btn_details() {
+    //    var keyValue = $("#gridList").jqGridRowValue().Id;
+    //    $.modalOpen({
+    //        id: "Details",
+    //        title: "查看用户",
+    //        url: "/User/Details?keyValue=" + keyValue,
+    //        width: "720px",
+    //        height: "570px",
+    //        btn: null,
+    //    });
+    //}
+
+    function btn_revisepassword() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        var Account = $("#gridList").jqGridRowValue().Account;
+        var Name = $("#gridList").jqGridRowValue().Name;
+        $.modalOpen({
+            id: "RevisePassword",
+            title: '重置密码',
+            url: '/User/RevisePassword?keyValue=' + keyValue + "&account=" + escape(Account) + '&name=' + escape(Name),
+            width: "450px",
+            height: "260px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_disabled() {
+        var ZTSuccess = $("#gridList").jqGridRowValue().Locked;
+        if (ZTSuccess.indexOf("label-success") <= 0) {
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalConfirm("注：您确定要【停用】该项账户吗？", function (r) {
+            if (r) {
+                $.submitForm({
+                    url: "/User/DisabledAccount",
+                    param: { keyValue: keyValue },
+                    success: function () {
+                        $.currentWindow().$("#gridList").trigger("reloadGrid");
+                    }
+                })
+            }
+        });
+    }
+
+    function btn_enabled() {
+        var ZTSuccess = $("#gridList").jqGridRowValue().Locked;
+        if (ZTSuccess.indexOf("label-success") > 0) {
+            return;
+        }
+        ZTSuccess = $("#gridList").jqGridRowValue().zt;
+        if (ZTSuccess.indexOf("fa-toggle-off") > 0) {
+            $.modalAlert("账户无效状态，不能启用", "error");
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalConfirm("注：您确定要【启用】该项账户吗？", function (r) {
+            if (r) {
+                $.submitForm({
+                    url: "/User/EnabledAccount",
+                    param: { keyValue: keyValue },
+                    success: function () {
+                        $.currentWindow().$("#gridList").trigger("reloadGrid");
+                    }
+                })
+            }
+        });
+    }
+
+    function btn_correlation()
+    {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+            $.modalOpen({
+                id: "StaffCorrelation",
+                title: "关联人员",
+                url: "/Staff/Selector?from=userrelatioinstaff&keyValue=" + keyValue,
+                width: "650px",
+                height: "570px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].submitForm();
+                }
+            });
+    }
+
+    function btn_correlationPharmacy()
+    {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "CorrelationPharmacy",
+            title: "关联药房",
+            url: "/User/CorrelationPharmacy?keyValue=" + keyValue,
+            width: "550px",
+            height: "570px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    //人员树回调方法
+    function staffTreeCallback(data) {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (keyValue) {
+            var postData = {};
+            postData["staffIds"] = data;
+            $.submitForm({
+                url: "/User/submitUserStaff?userId=" + keyValue,
+                param: postData,
+                success: function () {
+                    $("#gridList").trigger("reloadGrid");
+                    top.top.window.frames['StaffCorrelation'].$.modalClose();
+                }
+            });
+        }
+    }
+
+    //用户角色
+    function btn_roles() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var thisOrgId = $("#gridList").jqGridRowValue().OrganizeId;
+        if (!!!thisOrgId) {
+            $.modalAlert("请先为用户关联人员", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "用户角色",
+            url: "/User/Roles?keyValue=" + keyValue + '&orgId=' + thisOrgId,
+            width: "750px",
+            height: "700px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+
+                });
+            }
+        });
+    }
+
+</script>

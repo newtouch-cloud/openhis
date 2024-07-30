@@ -1,0 +1,409 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.title = "医嘱执行";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 200px;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    /*.dv-left-title {
+        width: 100%;
+        height: 30px;
+        line-height: 30px;
+        background-color: #00a0e9;
+        text-align: center;
+        color: white;
+    }*/
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+
+    .dv-grid {
+        width: 100%;
+    }
+</style>
+<div class="dv-body">
+    <div class="dv-left">
+        <div class="dv-left-title">患者列表</div>
+        <div class="dv-left-tree" id="BqTreeList"></div>
+    </div>
+    <div class="dv-right">
+        <div class="dv-right-order">
+            <div class="topPanel">
+                <div class="toolbar" style="float:left; padding-left:45px;">
+                    <table>
+                        <tr>
+                            <td class="formTitle"> 执行日期：</td>
+                            <td class="formValue">
+                                <input id="txt_zxrq" type="text" class="form-control input-wdatepicker" style="width:70%; height:35%; float:left;"
+                                       onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                                       onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd ")" />
+                            </td>
+                            @*<td>
+                                    <input type="button" id="btn_search" class="btn btn-primary" value="查询预执行医嘱" />
+                                </td>*@
+                        </tr>
+                    </table>
+                </div>
+                <div class="toolbar" style="float:right; padding-right:15px">
+                    <div class="btn-group">
+                        <a class="btn btn-primary" onclick="RefreshOrder()"><span class="fa fa-refresh"></span></a>
+                    </div>
+                    <div class="btn-group">
+                        <a id="ExecutionChecked" class="btn btn-primary" onclick="ExecutionChecked()">
+                            <i class="fa fa-pencil-square-o"></i>执行当前
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a id="ExecutionTemporary" class="btn btn-primary" onclick="ExecutionOrders(@Html.Raw(((int)EnumYzxz.Ls).ToString()))">
+                            <i class="fa fa-pencil-square-o"></i>执行临时
+                        </a>
+                        @*<a id="ExecutionTemporary" class="btn btn-primary" onclick="ExecutionOrders(1)">
+                                <i class="fa fa-pencil-square-o"></i>执行临时
+                            </a>*@
+                    </div>
+                    <div class="btn-group">
+                        <a id="ExecutionLong" class="btn btn-primary" onclick="ExecutionOrders(@Html.Raw(((int)EnumYzxz.Cq).ToString()))">
+                            <i class="fa fa-pencil-square-o"></i>执行长期
+                        </a>
+                        @*<a id="ExecutionLong" class="btn btn-primary" onclick="ExecutionOrders(2)">
+                                <i class="fa fa-pencil-square-o"></i>执行长期
+                            </a>*@
+                    </div>
+                    <div class="btn-group">
+                        <a id="ExecutionAll" class="btn btn-primary" onclick="ExecutionOrders(0)">
+                            <i class="fa fa-pencil-square-o"></i>执行全部
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="gridPanel">
+                <table id="gridList"></table>
+                <div id="gridPager"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 25;
+    $(".dv-right").width(rightWidth);
+    $(".dv-left-tree").height($(window).height() - 70);
+
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body").width($(window).width());
+        });
+        $('#gridList').jqGrid("clearGridData");
+        //$('#gridList').newtouchLocalDataGrid(null, orderList);
+        getBqTreeList();
+        gridList("");
+    });
+
+    function getBqTreeList() {
+        $("#BqTreeList").treeview({
+            height: $(".dv-body").height() - 40,
+            slimscroll: false,
+            showcheck: true,
+            url: "/NurseManage/OrderExecution/GetPatWardTree",
+            param: { aa: "", zxsj: $('#txt_zxrq').val() },
+            oncheckboxclick: function (item, s) {
+                getOrderExecutionList(item, s);
+            }
+        });
+
+    }
+
+    function getOrderExecutionList(item, s) {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+
+        var patzyh = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 == "c") {
+                patzyh += patlist[i].value + ",";
+            }
+        }
+
+        if (s == 1) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c") {
+                        patzyh += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh += patlistFath.value;
+            }
+        }
+        else if (s == 0) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c" && patlistFath[j].checkstate == 1) {
+                        patzyh = patzyh.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh = patzyh.replace(patlistFath.value + ",", "");
+            }
+
+        }
+
+        //$('#gridList').jqGrid("clearGridData");
+        $('#gridList').jqGrid('setGridParam', {
+            postData: {
+                patList: patzyh, zxsj: $('#txt_zxrq').val()
+            }
+        }).trigger("reloadGrid");
+    }
+
+
+    function getOrderListByPatId(patid) {
+        $('#gridList').jqGrid("clearGridData");
+        $('#gridList').newtouchLocalDataGrid(null, orderList);
+    }
+
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+    var checkTrigger = false;
+    var list = new Array();
+    var liststu = false;
+    var j = 0;
+    function gridList(patzyh) {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            multiselect: true,
+            postData: { patList: patzyh, zxsj: $('#txt_zxrq').val() },
+            url: "/NurseManage/OrderExecution/GetGridJson",
+            height: $(window).height() - 125,
+            colModel: [
+                { label: '医嘱ID', name: 'yzid', align: 'center', width: 50, key: true, hidden: true },
+                { label: '住院号', name: 'zyh', align: 'center', width: 50, hidden: true },
+                { label: '患者姓名', name: 'hzxm', align: 'center', width: 100 },
+                { label: '医嘱组号', name: 'zh', align: 'center', width: 70, formatter: function (val) { if (val != null) return val; else return ""; } },
+                { label: '医嘱项目', name: 'xmmc', align: 'center', width: 150 },
+                { label: '医嘱类型', name: 'yzlx', align: 'center', width: 150, hidden: true },
+                { label: '医嘱性质', name: 'yzxzsm', align: 'center', width: 60 },
+                { label: '收费项目单价', name: 'dj', align: 'center', width: 100, hidden: true },
+                { label: '医嘱', name: 'yznr', align: 'center', width: 300 },
+                { label: '最后执行时间', name: 'zxsj', align: 'center', width: 130, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '停止/作废时间', name: 'tzsj', align: 'center', width: 120, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '审核者', name: 'shr', align: 'center', width: 70 },
+                { label: '执行者', name: 'zxr', align: 'center', width: 70, hidden: true },
+                { label: '医嘱性质编码', name: 'yzxz', align: 'center', width: 70, hidden: true },
+
+            ],
+            pager: "#gridPager",
+            sortname: 'zyh asc,kssj asc',
+            viewrecords: true,
+            multiselect: true,
+            onSelectRow: function (rowIndex, s) {
+                if (!checkTrigger) {
+                    var len = 0;
+                    var rowData = $("#gridList").jqGrid('getRowData', rowIndex);
+                    var ids = $("#gridList").jqGrid('getRowData_AllLine');
+
+                    liststu = s; //同步状态
+                    for (var i = 0; i < ids.length; i++) {
+                        if (ids[i].zh == rowData.zh && ids[i].zh != "") {
+                            if (s == true) {
+                                if (rowIndex != ids[i].yzid) {
+                                    list[len] = ids[i].yzid;
+                                    len += 1;
+                                }
+                            }
+                            else {
+                                if (rowIndex != ids[i].yzid) {
+                                    list[len] = ids[i].yzid;
+                                    len += 1;
+                                }
+                            }
+                        }
+                    }
+                    checkTrigger = true;
+                }
+
+                if (list.length > 0) {
+
+                    for (j = j; j < list.length; j++) {
+                        if (liststu) //同组选中
+                        {
+                            j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j - 1], true);
+
+                        }
+                        else { //同组取消选中
+                            //j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j], false);      //取消不触发onselectrow
+                        }
+
+                    }
+                }
+
+                j = 0;
+                checkTrigger = false;
+                list = new Array();
+                liststu = false;
+            },
+        });
+    }
+    //刷新医嘱
+    function RefreshOrder() {
+        getBqTreeList();
+        $('#gridList').jqGrid("clearGridData");
+        getOrderExecutionList(null, null);
+    }
+
+    //执行当前
+    function ExecutionChecked() {
+        var strYZID = [];
+        //选中的id
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        //alert(selRowIds);
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请先选中需执行的医嘱", 'warning');
+            return;
+        }
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            strYZID.push({ yzid: rowData.yzid, yzxz: rowData.yzxz, yzlx: rowData.yzlx, dj: rowData.dj, zxsj: rowData.zxsj, ypmc: rowData.xmmc, zh: rowData.zh });
+        }
+        //alert(strYZID);
+        $.najax({
+            type: "POST",
+            url: "/NurseManage/OrderExecution/submitOrderExecutionList",
+            data: { orderList: strYZID, Vzxsj: $('#txt_zxrq').val() },
+            dataType: "json",
+            //async: false,
+            loadingtext: "医嘱执行中，请稍后...",
+            success: function (ajaxresp) {
+                var rtnobj = JSON.parse(ajaxresp.data);
+                if (ajaxresp.state == "success" && rtnobj.cnt>0) {
+                    $.modalConfirm("执行成功，是否打印？",
+                        function (flag) {
+                            if (flag) {
+                               
+                                window.open("/ReportManage/Report/PrintYzYpReport?lyxh=" + rtnobj.lyxh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                            }
+                        });
+                    RefreshOrder();
+                }
+                else {
+                    $.modalAlert(ajaxresp.message, 'warning');
+                    RefreshOrder();
+                }
+                //getOrderExecutionList(null, null);
+
+            }
+        });
+    }
+    //执行临时  长期  全部
+    function ExecutionOrders(yzxz) {
+        //alert(yzxz);
+        var selPatTrees = $("#BqTreeList").getCheckedNodeObjArray();
+        if (selPatTrees == null || selPatTrees.length < 1) {
+            $.modalAlert("请先选中需执行的患者", 'warning');
+            return;
+        }
+        var patzyh = "";
+        for (var i = 0; i < selPatTrees.length; i++) {
+            if (selPatTrees[i].Ex1 == "c") {
+                patzyh += selPatTrees[i].value + ",";
+            }
+        }
+        if (patzyh == "") {
+            $.modalAlert("请先选中需执行的患者", 'warning');
+            return;
+        }
+        //alert(patzyh);
+        $.najax({
+            type: "POST",
+            url: "/NurseManage/OrderExecution/submitOrderExecutionListbyPat",
+            data: { patlist: patzyh, yzxz: yzxz, Vzxsj: $('#txt_zxrq').val() },
+            dataType: "json",
+            loadingtext: "医嘱执行中，请稍后...",
+            success: function (ajaxresp) {
+                if (ajaxresp.state == "success") {
+                    $.modalConfirm("执行成功，是否打印？",
+                        function (flag) {
+                            if (flag) {
+                                var lyxh = ajaxresp.data;
+                                window.open("/ReportManage/Report/PrintYzYpReport?lyxh=" + lyxh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                            }
+                        });
+                    RefreshOrder();
+                }
+                else {
+                    $.modalAlert(ajaxresp.message, 'warning');
+                    RefreshOrder();
+                }
+                //getOrderExecutionList(null, null);
+            }
+        });
+    }
+
+</script>

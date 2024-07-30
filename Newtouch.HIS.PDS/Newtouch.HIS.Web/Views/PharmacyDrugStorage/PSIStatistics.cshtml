@@ -1,0 +1,261 @@
+﻿@{
+    ViewBag.Title = "PSIStatistics";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="margin:5px 0 0 0;">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">开始账期：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlKSZQ" class="form-control">
+                            <option>==请选择==</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">结束账期：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlJSZQ" class="form-control">
+                            <option>==请选择==</option>
+                            @*<option>@DateTime.Now.ToString("yyyyMM")</option>*@
+                        </select>
+                    </td>
+                    <th class="formTitle">药品状态：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlYPZT" name="ddlYPZT" class="form-control">
+                            <option value="">全部</option>
+                            <option value="1">启用</option>
+                            <option value="0">停用</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">零差率：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlLCL" class="form-control">
+                            <option value="">全部</option>
+                            <option value="0">零差率</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">药品代码：</th>
+                    <td class="formValue">
+                        <input id="txtINPUTCODE" type="text" class="form-control" />
+                    </td>
+                    <th class="formTitle">剂型：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlJX" class="form-control">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">药品类别：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlYPLB" class="form-control">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <td class="formValue" style="width:200px;">
+                        <div class="ckbox ckmargin" style="margin-left:27px; width:145px;">
+                            <input id="chk_Show" type="checkbox" /><label for="chk_Show">显示未发生进销存药品</label>
+                        </div>
+                    </td>
+                    <td class="formValue" style="float:right">
+                        <input type="button" id="btn_TJ" class="btn btn-md btn-primary" style="width:50px;" value="统计" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel" style="margin: 5px 0 0 0;">
+        <table id="gridDrugsInfo"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+
+    <div class="panel panel-default" style="margin: 5px 0 0 0;">
+        <div class="panel-heading">
+            统计
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">入库进价金额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtRKJJZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">出库进价金额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtCKJJZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">期初零售金额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtQCLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">期末零售金额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtQMLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">调价损益总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtTJSYZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">损溢零售总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtSYLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        initialddlJXList();//初始化药品剂型
+        initialddlYPLBList();//初始化药品类别
+        initialddlZQList();//加载账期
+        gridDrugsInfoData();//加载药品明细
+    });
+
+    function initialddlZQList() {
+        $("#ddlKSZQ").bindSelect({
+            url: "/PharmacyDrugStorage/GetAccountPeriodDropDownList",
+            id: "jssj",
+            text: "zq"
+        });
+        $("#ddlJSZQ").bindSelect({
+            url: "/PharmacyDrugStorage/GetAccountPeriodDropDownList",
+            id: "jssj",
+            text: "zq"
+        });
+    }
+
+    //药品剂型
+    function initialddlJXList() {
+        $("#ddlJX").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineFormulationList",
+            id: "jxCode",
+            text: "jxmc"
+        });
+    }
+
+    //药品类别
+    function initialddlYPLBList() {
+        $("#ddlYPLB").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineCategoryList2",
+            id: "dlCode",
+            text: "dlmc"
+        });
+    }
+
+    //单据主记录
+    function gridDrugsInfoData() {
+        var $gridDrugsInfoData = $("#gridDrugsInfo");
+        $gridDrugsInfoData.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 300,
+            url: "",
+            colModel: [
+                { label: '药品代码', name: 'ypdm', width: 70, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+                { label: '规格', name: 'gg', width: 70, align: 'left' },
+                { label: '单位', name: 'dw', width: 50, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 70, align: 'left' },
+                { label: '期初数量', name: 'qcsl', width: 80, align: 'left', formatter: function (val) { return val.toFixed(4); } },
+                { label: '入库数量', name: 'rksl', width: 70, align: 'left', formatter: function (val) { return val.toFixed(4); } },
+                { label: '出库数量', name: 'cksl', width: 70, align: 'left', formatter: function (val) { return val.toFixed(4); } },
+                { label: '损益数量', name: 'sysl', width: 70, align: 'left', formatter: function (val) { return val.toFixed(4); } },
+                { label: '期末数量', name: 'qmsl', width: 70, align: 'left', formatter: function (val) { return val.toFixed(4); } },
+                { label: '期初零售总额', name: 'qclsze', width: 80, align: 'left' },
+                { label: '入库零售总额', name: 'rklsze', width: 80, align: 'left' },
+                { label: '出库零售总额', name: 'cklsze', width: 80, align: 'left' },
+                { label: '损溢零售总额', name: 'sylsze', width: 80, align: 'left' },
+                { label: '期末零售总额', name: 'qmlsze', width: 80, align: 'left' },
+                { label: '期初进价总额', name: 'qcjjze', width: 80, align: 'left' },
+                { label: '入库进价总额', name: 'rkjjze', width: 80, align: 'left' },
+                { label: '出库进价总额', name: 'ckjjze', width: 80, align: 'left' },
+                { label: '期末进价总额', name: 'qmjjze', width: 80, align: 'left' },
+                { label: '损溢进价总额', name: 'syjjze', width: 80, align: 'left' },
+                { label: '调价损溢总额', name: 'tjze', width: 80, align: 'left' }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'ypdm desc',
+            viewrecords: true,
+            loadComplete: function (data) {
+                StatisticsZE();//统计总额
+            }
+        });
+
+        //统计
+        $("#btn_TJ").click(function () {
+            if ($("#ddlKSZQ").val() >= $("#ddlJSZQ").val()) {
+                $.modalAlert("结束账期需大于开始账期", 'warning');
+                return;
+            }
+            //清空Grid
+            $('#gridDrugsInfo').jqGrid("clearGridData");
+            $gridDrugsInfoData.jqGrid('setGridParam', {
+                postData: getSearchPostData(), url: '/PharmacyDrugStorage/PSIStatisticsInfoList'
+            }).trigger('reloadGrid');
+        });
+    }
+    //查询条件
+    function getSearchPostData() {
+        var kszq = $("#ddlKSZQ").find("option:selected").text();
+        var jszq = $("#ddlJSZQ").find("option:selected").text();
+        var ksjzsj = $("#ddlKSZQ").val();
+        var jsjzsj = $("#ddlJSZQ").val();
+        var drugState = $("#ddlYPZT").val();
+        var inputCode = $("#txtINPUTCODE").val();
+        var drugType = $("#ddlYPLB").val();
+        var dosage = $("#ddlJX").val();
+        var rate = $("#ddlLCL").val();
+        return { kszq: kszq, jszq: jszq, ksjzsj: ksjzsj, jsjzsj: jsjzsj, inputCode: inputCode, drugType: drugType, dosage: dosage, drugState: drugState, rate: rate }
+    };
+
+    //统计总额
+    function StatisticsZE() {
+        var statisticsRkjjze = 0;  //入库进价总额
+        var statisticsCkjjze = 0;  //出库进价总额
+        var statisticsQclsze = 0;  //期初零售总额
+        var statisticsQmlsze = 0;  //期末零售总额
+        var statisticsTjsyze = 0;  //调价损益总额
+        var statisticsSylsze = 0;  //损益零售总额
+        var count = $("#gridDrugsInfo").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridDrugsInfo").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowRkjjze = $("#gridDrugsInfo").getRowData(rowIds[i]).rkjjze;
+                var getRowCkjjze = $("#gridDrugsInfo").getRowData(rowIds[i]).ckjjze;
+                var getRowQclsze = $("#gridDrugsInfo").getRowData(rowIds[i]).qclsze;
+                var getRowQmlsze = $("#gridDrugsInfo").getRowData(rowIds[i]).qmlsze;
+                var getRowTjsyze = $("#gridDrugsInfo").getRowData(rowIds[i]).tjze;
+                var getRowSylsze = $("#gridDrugsInfo").getRowData(rowIds[i]).sylsze;
+                statisticsRkjjze = window.roundingBy4she6ru5chengshuang((parseFloat(statisticsRkjjze) + parseFloat(getRowRkjjze)), 4);//入库进价总额
+                statisticsCkjjze = window.roundingBy4she6ru5chengshuang((parseFloat(statisticsCkjjze) + parseFloat(getRowCkjjze)), 4);//出库进价总额
+                statisticsQclsze = window.roundingBy4she6ru5chengshuang((parseFloat(statisticsQclsze) + parseFloat(getRowQclsze)), 4);//期初零售总额
+                statisticsQmlsze = window.roundingBy4she6ru5chengshuang((parseFloat(statisticsQmlsze) + parseFloat(getRowQmlsze)), 4);//期末零售总额
+                statisticsTjsyze = window.roundingBy4she6ru5chengshuang((parseFloat(statisticsTjsyze) + parseFloat(getRowTjsyze)), 4);//调价损益总额
+                statisticsSylsze = window.roundingBy4she6ru5chengshuang((parseFloat(statisticsSylsze) + parseFloat(getRowSylsze)), 4);//损益零售总额
+            }
+
+            $("#txtRKJJZE").val(statisticsRkjjze);
+            $("#txtCKJJZE").val(statisticsCkjjze);
+            $("#txtQCLSZE").val(statisticsQclsze);
+            $("#txtQMLSZE").val(statisticsQmlsze);
+            $("#txtTJSYZE").val(statisticsTjsyze);
+            $("#txtSYLSZE").val(statisticsSylsze);
+            $.loading(false);
+        }
+    }
+
+</script>

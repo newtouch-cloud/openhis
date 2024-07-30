@@ -1,0 +1,166 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        @*<div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>*@
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="附件名称" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    var blh = $.request("blh");
+
+    $(function () {
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "attachType",
+            url: "/PatientManage/SysPatientMedicalRecord/GetTreeGridJson?blh=" + blh,
+            height: $(window).height() - 96,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: "有效", name: "zt", width: 80, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: "blh", name: "blh", hidden: true },
+                { label: "ParentId", name: "ParentId", hidden: true },
+                { label: '病历日期', name: 'rq', width: 120, align: 'left' },
+                { label: 'attachType', name: 'attachType', width: 40, align: 'left', hidden: true },
+                {
+                    label: '附件名称', name: 'attachName', width: 120, align: 'left',
+                    formatter: function (cellvalue, a, rowdata) {
+                        if (!!cellvalue) {
+                            return '<a href="' + rowdata.attachUrl + '&fileDownloadName=' + encodeURIComponent(cellvalue) + '">' + cellvalue + '</a>';
+                        }
+                        else {
+                            return "";
+                        }
+                    }
+                },
+                { label: 'attachPath', name: 'attachPath', width: 130, align: 'left', hidden: true },
+                { label: 'attachUrl', name: 'attachUrl', width: 130, align: 'left', hidden: true },
+                { label: '上传用户', name: 'DetailCreatorUserName', width: 80, align: 'left' },
+                { label: '上传时间', name: 'DetailCreateTime', width: 120, align: 'left' },
+                { label: '备注', name: 'bz', width: 260, align: 'left' },
+            ]
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车触发查询事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    //新增
+    function btn_add() {
+        $.modalOpen({
+            id: "FormEdit",
+            title: "新增病历",
+            url: "/PatientManage/SysPatientMedicalRecord/Form?blh=" + blh,
+            width: "700px",
+            height: "440px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    //修改
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        if (!!$("#gridList").jqGridRowValue().ParentId) {
+            keyValue = $("#gridList").jqGridRowValue().ParentId;
+        }
+        $.modalOpen({
+            id: "FormEdit",
+            title: "修改病历",
+            url: "/PatientManage/SysPatientMedicalRecord/Form?blh=blh&keyValue=" + keyValue,
+            width: "700px",
+            height: "440px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function cabck(msg) {
+        $.modalClose("FormEdit");
+        $.modalAlert((!!msg ? msg : "操作成功"), 'success');
+        $('#btn_search').trigger('click');
+    }
+
+    //删除
+    function btn_delete() {
+        return;
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        if (!!!$("#gridList").jqGridRowValue().ParentId) {
+            //这是父级
+            $.deleteForm({
+                url: "/PatientManage/SysPatientMedicalRecord/DeleteForm",
+                param: { keyValue: keyValue },
+                success: function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                }
+            });
+        }
+        else {
+            //这是子级
+
+        }
+    }
+
+</script>

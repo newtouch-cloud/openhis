@@ -1,0 +1,459 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    #form1 > .form .formValue input.form-control {
+        border-top: 0px;
+        border-left: 0px;
+        border-right: 0px;
+        border-radius: 0px !important;
+    }
+
+    #tablezd .formTitle {
+        width: 27px;
+        padding-right: 15px;
+    }
+
+    #tablezd .formValue {
+        position: relative;
+    }
+
+    .fa.fa-times {
+        position: absolute;
+        right: 5px;
+        top: 13px;
+    }
+</style>
+<div style="float:left; width:17.4%; height:500px; border:solid 1px #ddd;">
+    <div class="ui-layout-west">
+        <ul id="beveltabs">
+            <li><a href="#" name="#personal" data-type=@Html.Raw(((int)EnumCfMbLx.personal).ToString())>个人</a></li>
+            <li><a href="#" name="#department" data-type=@Html.Raw(((int)EnumCfMbLx.department).ToString())>科室</a></li>
+            <li><a href="#" name="#hospital" data-type=@Html.Raw(((int)EnumCfMbLx.hospital).ToString())>全院</a></li>
+        </ul>
+        <div id="treeContent">
+            <div id="personal">
+                <div id="personalTree"></div>
+            </div>
+            <div id="department">
+                <div id="departmentTree"></div>
+            </div>
+            <div id="hospital">
+                <div id="hospitalTree"></div>
+            </div>
+        </div>
+    </div>
+    <input type="text" id="mbId" hidden />
+</div>
+<div style="width:80.5%; float:right; margin-right: 10px; border:solid 1px #ddd; height:500px;">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            病历详情
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <form id="form1">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">主诉：</th>
+                        <td class="formValue" colspan="4">
+                            <input type="text" id="zs" name="zs" class="form-control activeValue focusInput required" />
+                            <i class="fa fa-times" aria-hidden="true" hidden></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">现病史：</th>
+                        <td class="formValue" colspan="4">
+                            <textarea id="xbs" name="xbs" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+                            <i class="fa fa-times" aria-hidden="true" hidden></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">既往史：</th>
+                        <td class="formValue" colspan="4">
+                            <textarea id="jws" name="jws" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+                            <i class="fa fa-times" aria-hidden="true" hidden></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">查体：</th>
+                        <td class="formValue" colspan="4">
+                            <textarea id="ct" name="ct" class="form-control activeValue focusInput" style="height:35px;"></textarea>
+                            <i class="fa fa-times" aria-hidden="true" hidden></i>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th class="formTitle">西医诊断：</th>
+                        <td class="formValue" colspan="4">
+                            <table id="tablexyzd">
+                                <tr>
+                                    <th class="formTitle">主</th>
+                                    <td class="formValue">
+                                        <input type="checkbox" id="chk1" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label>
+                                        <input type="text" id="zd1" name="zd1" class="form-control activeValue focusInput zdText" style="width:70%;" placeholder="" />
+                                        <i class="fa fa-times" aria-hidden="true" hidden></i>
+                                    </td>
+                                    <td>
+                                        <i id="zdCircle" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">中医诊断：</th>
+                        <td class="formValue" colspan="4">
+                            <table id="tablezyzd">
+                                <tr>
+                                    <th class="formTitle">主</th>
+                                    <td class="formValue">
+                                        <input type="checkbox" id="chk1" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label>
+                                        <input type="text" id="zd1" name="zd1" class="form-control activeValue focusInput zdText" style="width:70%;" />
+                                        <i class="fa fa-times" aria-hidden="true" hidden></i>
+                                    </td>
+                                    <th class="formTitle">症候</th>
+                                    <td class="formValue">
+                                        <input type="text" id="zh1" name="zh1" class="form-control activeValue focusInput zhText" />
+                                        <i class="fa fa-times" aria-hidden="true" hidden></i>
+                                    </td>
+                                    <td>
+                                        <i id="zdCircle" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+    <form id="form2">
+        <table class="form" style="margin-top:30px;">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>模板名称: </th>
+                <td class="formValue">
+                    <input id="mbmc" name="mbmc" type="text" class="form-control required" />
+                </td>
+                <td colspan="3"></td>
+            </tr>
+        </table>
+    </form>
+
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 3, 4, 6, 8 },
+    F3Text = "新增模板",
+    F6Text = "删除"
+})
+</div>
+
+<link href="" rel="stylesheet" />
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/beveltabs.css", false)" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/Content/js/beveltabs.js", false)"></script>
+
+<script type="text/javascript">
+    $(function ($) {
+        $("#beveltabs a:first").trigger('click');
+    });
+
+    $("#beveltabs a").on("click", function (e) {
+        $($(this).attr('name') + "Tree").treeview({
+            height: $(window).height() - 100,
+            slimscroll: false,
+            url: "/MRecordTemplate/GetTreeList?mblx=" + $('#current').attr('data-type'),
+            onnodeclick: function (item) {
+                if (!item.id) {
+                    return;
+                }
+                $('#mbId').val(item.id);
+                $.najax({
+                    url: "/TemplateManage/MRecordTemplate/SelectTemplateDetailByMbId",
+                    dataType: "json",
+                    data: { mbId: item.id },
+                    type: "POST",
+                    success: function (ajaxresp) {
+                        $('#mbmc').val(ajaxresp.mbmc);
+                        $('#form1').formSerialize(ajaxresp);
+
+                        $('#tablexyzd .minusToggleCircle').trigger('click');  //先还原
+
+                        $('#tablezyzd .minusToggleCircle').trigger('click');  //先还原
+
+                        //3.填充诊断
+                        if (ajaxresp.xyzdList && ajaxresp.xyzdList.length && ajaxresp.xyzdList.length > 0) {
+                            for (var i = 0; i < ajaxresp.xyzdList.length; i++) {
+                                if(ajaxresp.xyzdList.length>1 &&  i< ajaxresp.xyzdList.length-1)
+                                {
+                                    //先append
+                                    var number = $('#tablexyzd .zdText').length + 1;
+                                    var $newTr = $('<tr><th class="formTitle">副</th><td class="formValue"><input type="checkbox" id="chk'+ number +'" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label><input type="text" id="zd'+ number +'" class="form-control activeValue focusInput zdText" style="width:70%;" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><td><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td></tr>');
+                                    $newTr.appendTo($('#tablexyzd'));
+                                }
+
+                                //再赋值
+                                for (var j = 0; j < $('#tablexyzd .zdText').length; j++) {
+                                    if(i==j){
+                                        $($('#tablexyzd .zdText')[j]).val(ajaxresp.xyzdList[i].zdmc);
+                                        $($('#tablexyzd .zdText')[j]).attr("data-zdCode",ajaxresp.xyzdList[i].zdCode);
+                                        $($('#tablexyzd .chkValue')[j]).prop('checked' ,ajaxresp.xyzdList[i].ysbz);
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            //清空主诊断
+                            $('#tablexyzd .zdText').val('');
+                            $('#tablexyzd .zdText').attr("data-zdCode",'');
+                            $('#tablexyzd .chkValue').prop('checked' ,false);
+                        }
+
+                        if (ajaxresp.zyzdList && ajaxresp.zyzdList.length && ajaxresp.zyzdList.length > 0) {
+                            for (var i = 0; i < ajaxresp.zyzdList.length; i++) {
+                                if(ajaxresp.zyzdList.length>1 &&  i< ajaxresp.zyzdList.length-1)
+                                {
+                                    //先append
+                                    var number = $('#tablezyzd .zdText').length + 1;
+                                    var $newTr = $('<tr><th class="formTitle">副</th><td class="formValue"><input type="checkbox" id="chk'+ number +'" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label><input type="text" id="zd'+ number +'" class="form-control activeValue focusInput zdText" style="width:70%;" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><th class="formTitle">症候</th><td class="formValue"><input type="text" id="zh'+ number +'" class="form-control activeValue focusInput zhText" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><td><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td></tr>');
+                                    $newTr.appendTo($('#tablezyzd'));
+                                }
+                                //再赋值
+                                for (var j = 0; j < $('#tablezyzd .zdText').length; j++) {
+                                    if(i==j){
+                                        $($('#tablezyzd .zdText')[j]).val(ajaxresp.zyzdList[i].zdmc);
+                                        $($('#tablezyzd .zdText')[j]).attr("data-zdCode",ajaxresp.zyzdList[i].zdCode);
+                                        $($('#tablezyzd .chkValue')[j]).prop('checked' ,ajaxresp.zyzdList[i].ysbz);
+                                        $($('#tablezyzd .zhText')[j]).val(ajaxresp.zyzdList[i].zhmc);
+                                        $($('#tablezyzd .zhText')[j]).attr("data-zhCode",ajaxresp.zyzdList[i].zhCode);
+                                    }
+                                }
+                            }
+                        }
+                        else{
+                            //清空主诊断
+                            $('#tablezyzd .zdText').val('');
+                            $('#tablezyzd .zdText').attr("data-zdCode", '');
+                            $('#tablezyzd .chkValue').prop('checked' ,false);
+                            $('#tablezyzd .zhText').val('');
+                            $('#tablezyzd .zhText').attr("data-zhCode",'');
+                        }
+
+                    }
+                });
+            }
+        });
+    });
+
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    }
+
+    //西医诊断浮层
+    function bindXyzdFloatingSelector($ele){
+        $ele.zdFloatingSelector({
+            zdlx:"WM",
+            itemdbclickhandler: function ($thistr, $thisinput) {
+                $thisinput.val($thistr.attr('data-zdmc'))
+                    .attr('data-zdCode', $thistr.attr('data-zdCode'));
+                //显示 隐藏 删除icon
+                if (!!$.trim($thisinput.val())) {
+                    $thisinput.siblings('.fa.fa-times').show();
+                }
+                else {
+                    $thisinput.siblings('.fa.fa-times').hide();
+                }
+            }
+        });
+    }
+    bindXyzdFloatingSelector($("#tablexyzd .zdText"));
+
+    //中医诊断浮层
+    function bindZyzdFloatingSelector($ele){
+        $ele.zdFloatingSelector({
+            zdlx:"TCM",
+            itemdbclickhandler: function ($thistr, $thisinput) {
+                $thisinput.val($thistr.attr('data-zdmc'))
+                    .attr('data-zdCode', $thistr.attr('data-zdCode'));
+                //显示 隐藏 删除icon
+                if (!!$.trim($thisinput.val())) {
+                    $thisinput.siblings('.fa.fa-times').show();
+                }
+                else {
+                    $thisinput.siblings('.fa.fa-times').hide();
+                }
+            }
+        });
+    }
+    bindZyzdFloatingSelector($("#tablezyzd .zdText"));
+
+    //症侯浮层
+    function bindZyzhFloatingSelector($ele){
+        $ele.zyzhFloatingSelector({
+            itemdbclickhandler: function ($thistr, $thisinput) {
+                $thisinput.val($thistr.attr('data-zhmc'))
+                    .attr('data-zhCode', $thistr.attr('data-zhCode'));
+                //显示 隐藏 删除icon
+                if (!!$.trim($thisinput.val())) {
+                    $thisinput.siblings('.fa.fa-times').show();
+                }
+                else {
+                    $thisinput.siblings('.fa.fa-times').hide();
+                }
+            }
+        });
+    }
+    //症侯浮层
+    bindZyzhFloatingSelector($("#tablezyzd .zhText"));
+
+    //西医诊断 新增
+    $('#tablexyzd .plusToggleCircle').click(function () {
+        var number = $('#tablexyzd .zdText').length + 1;
+        var $newTr = $('<tr><th class="formTitle">副</th><td class="formValue"><input type="checkbox" id="chk'+ number +'" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label><input type="text" id="zd'+ number +'" class="form-control activeValue focusInput zdText" style="width:70%;" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><td><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td></tr>');
+        $newTr.appendTo($(this).closest('table'));
+        //西医诊断浮层
+        bindXyzdFloatingSelector($newTr.find(".zdText"));
+    });
+
+    //中医诊断 新增
+    $('#tablezyzd .plusToggleCircle').click(function () {
+        var number = $('#tablezyzd .zdText').length + 1;
+        var $newTr = $('<tr><th class="formTitle">副</th><td class="formValue"><input type="checkbox" id="chk'+ number +'" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label><input type="text" id="zd'+ number +'" class="form-control activeValue focusInput zdText" style="width:70%;" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><th class="formTitle">症候</th><td class="formValue"><input type="text" id="zh'+ number +'" class="form-control activeValue focusInput zhText" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><td><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td></tr>');
+        $newTr.appendTo($(this).closest('table'));
+        //中医诊断浮层
+        bindZyzdFloatingSelector($newTr.find(".zdText"));
+        //症侯浮层
+        bindZyzhFloatingSelector($newTr.find(".zhText"));
+    });
+
+    //隐藏 显示 删除icon
+    $('#form1').on('keyup click change blur', '.activeValue', function(){
+        if (!!$.trim($(this).val())) {
+            $(this).siblings('.fa.fa-times').show();
+        }
+        else {
+            $(this).siblings('.fa.fa-times').hide();
+        }
+    });
+
+    //清空icon事件
+    $('#form1').on('click', '.fa.fa-times', function(){
+        $(this).siblings('input.form-control').val('');
+        $(this).siblings('textarea.form-control').val('');
+        $(this).hide();
+    });
+
+    //删除icon
+    $('#form1').on('click', '.minusToggleCircle', function(){
+        $(this).closest('tr').remove();
+    })
+
+    //保存
+    function newtouch_event_f8(){
+        //必填信息验证
+        if (!$('#form2').formValid(valOptions)) {
+            $.modalAlert("必填信息尚未完善", 'warning');
+            return;
+        }
+        //病历信息
+        var blmbObject = {
+            mbId: $('#mbId').val(),
+            mbmc: $('#mbmc').val(),
+            mblx: $('#current').attr('data-type'),
+            zs: $('#zs').val(),
+            xbs: $('#xbs').val(),
+            jws: $('#jws').val(),
+            ct: $('#ct').val()
+        }
+
+        //西医诊断
+        var xyzdArray = new Array();
+        for (var i = 0; i < $('#tablexyzd .zdText').length; i++) {
+            var zdObj = new Object();
+            zdObj.zdmc = $($('#tablexyzd .zdText')[i]).val();
+            zdObj.zdCode = $($('#tablexyzd .zdText')[i]).attr('data-zdCode');
+            zdObj.ysbz = $($('#tablexyzd .zdText')[i]).siblings('.chkValue').is(':checked')
+            if (zdObj.zdmc && zdObj.zdmc) {    //为的是排除空诊断
+                if (i == 0) {
+                    zdObj.zdlx =  @Html.Raw(((int)EnumZdlx.Main).ToString());   //默认第一个诊断为主诊断  1：主诊断 2副诊断
+                }
+                else {
+                    zdObj.zdlx =  @Html.Raw(((int)EnumZdlx.Deputy).ToString());
+                }
+
+                xyzdArray.push(zdObj)
+            }
+        }
+
+        //中医诊断
+        var zyzdArray = new Array();
+        for (var i = 0; i < $('#tablezyzd .zdText').length; i++) {
+            var zdObj = new Object();
+            zdObj.zdmc = $($('#tablezyzd .zdText')[i]).val();
+            zdObj.zdCode = $($('#tablezyzd .zdText')[i]).attr('data-zdCode');
+            zdObj.ysbz = $($('#tablexyzd .zdText')[i]).siblings('.chkValue').is(':checked')
+            zdObj.zhmc = $($('#tablezyzd .zhText')[i]).val();
+            zdObj.zhCode = $($('#tablezyzd .zhText')[i]).attr('data-zhCode');
+            if (zdObj.zdmc && zdObj.zdmc) {    //为的是排除空诊断
+                if (i == 0) {
+                    zdObj.zdlx =  @Html.Raw(((int)EnumZdlx.Main).ToString());   //默认第一个诊断为主诊断  1：主诊断 2副诊断
+                }
+                else {
+                    zdObj.zdlx =  @Html.Raw(((int)EnumZdlx.Deputy).ToString());
+                }
+
+                zyzdArray.push(zdObj)
+            }
+        }
+        $.najax({
+            url: "/MRecordTemplate/SaveData",
+            dataType: "json",
+            data: { blmbObject: blmbObject, xyzdList: xyzdArray, zyzdList:zyzdArray},
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'success');
+                //刷新左边树
+                $.currentWindow().$('#current').trigger('click');
+                //清空
+                newtouch_globalevent_f4();
+            }
+        });
+    }
+
+    //新增模板
+    function newtouch_event_f3(){
+        newtouch_globalevent_f4();
+    }
+
+    function newtouch_event_f4(){
+        $('#form1 .minusToggleCircle').trigger('click');
+    }
+
+    //删除模板
+    function newtouch_event_f6(){
+        if(!!!$('#mbId').val()){
+            $.modalAlert("请选择模板", 'warning');
+            return;
+        }
+        $.modalConfirm("确定删除模板？", function (flag) {
+            if (flag) {
+                $.najax({
+                    url: "/TemplateManage/MRecordTemplate/DeleteTemplate",
+                    dataType: "json",
+                    data: { mbId: $('#mbId').val() },
+                    type: "POST",
+                    success: function (ajaxresp) {
+                        $.modalAlert("操作成功", 'success');
+                    }
+                });
+            }
+        });
+    }
+
+</script>

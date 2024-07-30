@@ -1,0 +1,252 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .form .formValue {
+        width: 153px;
+    }
+
+    .req {
+        color: red
+    }
+
+    .form .formTitle {
+        width: 80px !important;
+    }
+</style>
+<table class="form" style="margin-top: 10px; padding-right: 10px;">
+    <tr>
+        <td class="formTitle"><span class="req">*</span>膳食名称</td>
+        <td class="formValue">
+            <input class="form-control" id="ssmc" required />
+            <input type="hidden" id="py" />
+        </td>
+        <td class="formTitle">膳食类别</td>
+        <td class="formValue" style="width:250px;">
+            <div class="btn-group" data-toggle="buttons" id="sslb">
+                <label class="btn btn-default active" style="z-index:100">
+                    <input id=@("sslb"+Html.Raw(((int)EnumSSLB.lx).ToString())) type="radio" value=@Html.Raw(((int)EnumSSLB.lx).ToString()) name="lb" class="optionsRadios sslbOpt" checked="checked" />类型
+                </label>
+                <label class="btn btn-default" style="z-index:100">
+                    <input id=@("sslb"+Html.Raw(((int)EnumSSLB.tsyq).ToString())) type="radio" value=@Html.Raw(((int)EnumSSLB.tsyq).ToString()) name="lb" class="optionsRadios sslbOpt" />特殊要求
+                </label>
+                <label class="btn btn-default" style="z-index:100">
+                    <input id=@("sslb"+Html.Raw(((int)EnumSSLB.ssxh).ToString())) type="radio" value=@Html.Raw(((int)EnumSSLB.ssxh).ToString()) name="lb" class="optionsRadios sslbOpt" />膳食型号
+                </label>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td class="formTitle">膳食大分类</td>
+        <td class="formValue formDdlSelectorTd">
+            <select class="form-control" id="ssdfl" style="width:161px !important"></select>
+        </td>
+        <td class="formTitle">膳食组号</td>
+        <td class="formValue">
+            <input class="form-control" id="sszh" style="width:153px" />
+        </td>
+    </tr>
+    <tr>
+        <td class="formTitle">绑定收费项目</td>
+        <td class="formValue">
+            <div class="btn-group" data-toggle="buttons" id="bdsfxm">
+                <label class="btn btn-default" style="z-index:100">
+                    <input id="bdsfxmtrue" type="radio" value=true name="boolsfxm" class="optionsRadios bdsfxmOpt" />是
+                </label>
+                <label class="btn btn-default active" style="z-index:100">
+                    <input id="bdsfxmfalse" checked type="radio" value=false name="boolsfxm" class="optionsRadios bdsfxmOpt"/>否
+                </label>
+            </div>
+        </td>
+        <td class="formTitle">所属膳食型号</td>
+        <td class="formValue">
+            <div class="form-group">
+            </div>
+        </td>
+    </tr>
+</table>
+
+<script>
+    var keyValue = $.request("keyValue");
+    var ssxhids = [];
+    $(function () {
+        //根据姓名获得拼音
+        $('#ssmc').keyup(function () {
+            $('#py').val($(this).toShouPin());
+        });
+
+        $("#ssdfl").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.itemDetails) {
+                    $.each(top.clients.itemDetails, function (idx, val) {
+                        if (val.Type === "SSDFL") {
+                            $.each(val.Items, function (key, value) {
+                                $('#ssdfl').append('<option value="' + value.Code + '">' + value.Name + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+
+
+        $('#sslb').change("on", function () {
+            var sslb;
+            $('input[name="lb"]').each(function () {
+                var $this = $(this);
+                if ($this[0].checked) {
+                    sslb = $this.val();
+                }
+            });
+            if (sslb ==@Html.Raw(((int)EnumSSLB.tsyq).ToString())) {
+                if (!$('#bdsfxmtrue').is(':checked')) {
+                    $('#bdsfxmfalse').prop("checked", true);
+                    $('#bdsfxmfalse').parent().addClass("active");
+                }
+                $('#bdsfxm').children().removeAttr("disabled", false);
+                $('.lxinput').attr('checked', false).attr("disabled", "disabled");
+            } else if (sslb ==@Html.Raw(((int)EnumSSLB.ssxh).ToString())) {
+                $('.lxinput').attr('checked', false).attr("disabled", "disabled");
+                $('#bdsfxm').children().removeClass("active");
+                $('.bdsfxmOpt').attr('checked', false);
+                $('#bdsfxm').children().attr('checked', false).attr("disabled", "disabled");
+            } else {
+
+                $('.lxinput').removeAttr("disabled", false);
+                if (!$('#bdsfxmtrue').is(':checked')) {
+                    $('#bdsfxmfalse').prop("checked", true);
+                    $('#bdsfxmfalse').parent().addClass("active");
+                }
+                $('#bdsfxm').children().removeAttr("disabled", false);
+            }
+        });
+        $.najax({
+            url: "@Url.Action("GetSSXH")",
+            dataType: "json",
+            type: "POST",
+            success: function (data) {
+                var html = "";
+                if (data != undefined && data.length>0) {
+                    $.each(data, function (idx, val) {
+                        ssxhids.push(val.Id);
+                        html += '<div class="ckbox">'
+                        html += '<input id = "' + val.Id + '" class="lxinput" name = "' + val.Id + '" type ="checkbox"> <label for="' + val.Id + '">' + val.Name + '</label>'
+                        html += ' </div>';
+                    });
+                }
+                $('.form-group').append(html);
+
+
+                if (!!keyValue) {
+                    $.najax({
+                        url: "@Url.Action("GetFormJson")",
+                        data: { keyValue: keyValue },
+                        dataType: "json",
+                        async: false,
+                        success: function (data) {
+                            $('#ssmc').val(data.Name);
+                            $('#py').val(data.py);
+                            $('.sslbOpt').attr('checked', false);
+                            $('.sslbOpt').parent().removeClass('active');
+                            $('#sslb' + data.DietType).prop('checked', true);
+                            $('#sslb' + data.DietType).parent().addClass('active');
+                            $('#sslb').val(data.DietType).trigger("change");
+                            $('#ssdfl').val(data.DietBigType).trigger("change");
+                            $('#sszh').val(data.DietGroup == null ? "" : data.DietGroup);
+                            if (data.bdsfxm != null) {
+                                $('.bdsfxmOpt').parent().removeClass('active');
+                                $('#bdsfxm' + data.bdsfxm).attr('checked', true);
+                                $('#bdsfxm' + data.bdsfxm).parent().addClass('active');
+                            }
+                           
+                            if (data.ParentId != null) {
+                                $('.lxinput').attr('checked', false);
+                                var parentIdArr = data.ParentId.split(',');
+                                for (var i = 0; i < parentIdArr.length; i++) {
+                                    $('#' + parentIdArr[i]).prop('checked', true);
+                                }
+                                //$('#sslb').val(data.DietType).trigger("change");
+                            }
+                           
+                        }
+                    });
+                }
+            }
+        });
+    })
+    function AcceptClick(callBack) {
+        if (validate()) {
+            $.najax({
+                url: "@Url.Action("submitForm")",
+                dataType: "json",
+                data: getPostData(),
+                type: "POST",
+                success: function (data) {
+                    callBack();
+                    $.modalMsg("保存成功", 'success');
+                    $.modalClose();
+                }
+            });
+        }
+    }
+
+    function validate() {
+        var ssmc = $('#ssmc').val();
+        var sslb = $('#sslb input:radio:checked').val();
+        var ssdfl = $('#ssdfl').val();
+        if (ssmc == "") {
+            $.modalAlert("缺少膳食名称", "warning");
+            return false
+        }
+        if ( sslb == "") {
+            $.modalAlert("未选中膳食类别", "warning");
+            return false
+        }
+        if (ssdfl == "") {
+            $.modalAlert("未选中膳食大分类 ", "warning");
+            return false
+        }
+        return true;
+    }
+
+    function getPostData() {
+        var ssmc = $('#ssmc').val();
+        var ssdfl = $('#ssdfl').val();
+        var sszh = $('#sszh').val();
+        var sslb = $('#sslb input:radio:checked').val();
+        var bdsfxm = $('#bdsfxm input:radio:checked').val();
+        var py = $('#py').val();
+        var ParentIds = "";
+        if (ssxhids != undefined && ssxhids.length > 0) {
+            $.each(ssxhids, function (idx,val) {
+                if ($('#' + val).is(':checked')) {
+                    ParentIds += val + ",";
+                }
+            });
+        }
+        return { Name: ssmc, DietType: sslb, DietBigType: ssdfl, ParentId: ParentIds, DietGroup: sszh, bdsfxm: bdsfxm, py: py, keyvalue: keyValue };
+    }
+
+    function sslbchange() {
+        $('input[name="lb"]').each(function () {
+            var $this = $(this);
+            if ($this[0].checked) {
+                sslb = $this.val();
+            }
+        });
+    }
+
+    function bdsfxmchange() {
+        $('input[name="boolsfxm"]').each(function () {
+            var $this = $(this);
+            if ($this[0].checked) {
+                bdsfxm = $this.val();
+            }
+        });
+    }
+</script>
+

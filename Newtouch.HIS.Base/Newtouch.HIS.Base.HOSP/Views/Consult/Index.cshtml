@@ -1,0 +1,225 @@
+﻿@using Newtouch.Infrastructure
+@using Newtouch.Tools
+
+@{
+    ViewBag.Title = "系统诊室";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+
+<div style="width: 45%; float: left;">
+    <div class="topPanel">
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="科室名称/科室编码" style="width: 180px;">
+                            <span class="input-group-btn">
+                                <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</div>
+<div class="gridPanel" style=" margin-left: 0.5%; float: left; width: 50%;">
+    <table id="gridmxList"></table>
+</div>
+
+<script>
+    var $gridList = $("#gridList");
+    var $gridmxList = $("#gridmxList");
+    $(function () {
+        gridList();
+        gridmxList();
+        $("#gridPager_left").hide();
+        $("#gridPager_right").hide();
+        $("#gridPager_center").css("padding-right", 0);
+    });
+
+    function gridList() {
+        $gridList.dataGrid({
+            url: "/Consult/GetDeptList",
+            height: $(window).height() - 120,
+            postData: { keyValue: $("#txt_keyword").val() },
+            colModel: [
+                { label: '科室编码', name: 'Code', width: 70, align: 'left' },
+                { label: "科室名称", name: "Name", width: 70, align: "left" },
+                {
+                    label: '操作', name: 'operate', width: 70, align: 'center', formatter: function (cellvalue, options, cell) {
+                        return '<span style="color:#ff0000" onclick=\'expertConsult("' + cell.Code + '")\'>专家诊室</span>' + '&nbsp;&nbsp;' + '<span style="color:#ff0000" onclick=\'normalConsult("' + cell.Code + '")\'>普通诊室</span>';
+                    }
+                },
+            ],
+            rownumbers:false,
+            pager: "#gridPager",
+            sortname: 'Name',
+            viewrecords: true,
+            rowNum: '10',
+            onSelectRow_page: function (rowid) {
+                var data = $gridList.jqGrid('getRowData', rowid);
+                $gridmxList.jqGrid('setGridParam', {
+                    postData: { ksCode: data.Code},
+                    url: "/Consult/GetConsultListByDept"
+                }).trigger('reloadGrid');
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyValue: $("#txt_keyword").val() }
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function gridmxList() {
+        $gridmxList.dataGrid({
+            //url: "/Consult/GetConsultListByDept",
+            //postData: { ksCode: data.Code },
+            caption: "诊室",
+            height: $(window).height() - 120,
+            colModel: [
+                { label: "主键", name: "zsId", hidden: true, key: true },
+                { label: "诊室编码", name: "zsCode", hidden: true, key: true },
+                { label: '诊室名称', name: 'zsmc', width: 120, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' }},
+                { label: '创建人', name: 'CreatorCode', width: 80, align: 'left' },
+                { label: "有效", name: "zt", width: 70, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                
+            ],
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //newtouch_event_f8();
+            }
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function() {
+        $('#btn_search').trigger('click');
+    });
+
+    //专家诊室
+    function expertConsult(Code) {
+        var ksCode = Code;
+        $.modalOpen({
+            id: "Form",
+            title: "生成专家诊室",
+            url: "/Consult/ExpertForm?keyValue=" + ksCode,
+            width: "550px",
+            height: "350px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].CreateExpertConsult()();
+            }
+        });
+    }
+
+    //普通诊室
+    function normalConsult(Code) {
+        var ksCode = Code;
+        $.modalOpen({
+            id: "Form",
+            title: "生成普通诊室",
+            url: "/Consult/NormalForm?ksCode=" + ksCode,
+            width: "550px",
+            height: "350px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].CreateNormalConsult();
+            }
+        });
+    }
+
+
+    ////新增
+    //function newtouch_event_f7() {
+    //    var mainRowId = $gridList.jqGrid("getGridParam", "selrow");
+    //    var mRowData = $gridList.jqGrid("getRowData", mainRowId);
+    //    if (!mRowData) {
+    //        $.modalAlert("请选择医生", 'warning');
+    //        return false;
+    //    }
+    //    var ysgh = mRowData.StaffGh;
+    //    $.modalOpen({
+    //        id: "Form",
+    //        title: "新增出诊科室",
+    //        url: "/SystemManage/VisitDeptSet/Form?keyValue=&ysgh=" + ysgh,
+    //        width: "550px",
+    //        height: "350px",
+    //        callBack: function (iframeId) {
+    //            top.frames[iframeId].AcceptClick();
+    //        }
+    //    });
+
+    //}
+
+    ////修改
+    //function newtouch_event_f8() {
+    //    var detailRowid = $gridmxList.jqGrid("getGridParam", "selrow");
+    //    if (!(detailRowid)) {
+    //        $.modalAlert("请选中一条信息", 'warning');
+    //        return false;
+    //    }
+    //    var dRowData = $gridmxList.jqGrid("getRowData", detailRowid);
+    //    var keyValue = dRowData.Id;
+    //    var mainRowId = $gridList.jqGrid("getGridParam", "selrow");
+    //    var mRowData = $gridList.jqGrid("getRowData", mainRowId);
+    //    if (!mRowData) {
+    //        $.modalAlert("请选择医生", 'warning');
+    //        return false;
+    //    }
+    //    var ysgh = mRowData.StaffGh;
+    //    $.modalOpen({
+    //        id: "Form",
+    //        title: "修改出诊科室",
+    //        url: "/SystemManage/VisitDeptSet/Form?keyValue=" + keyValue + "&ysgh=" + ysgh,
+    //        width: "550px",
+    //        height: "350px",
+    //        callBack: function(iframeId) {
+    //            top.frames[iframeId].AcceptClick();
+    //        }
+    //    });
+    //}
+
+
+    ////删除
+    //function deleteItem(itemId) {
+    //    newtouch_event_f9(itemId);
+    //}
+
+    ////删除
+    //function newtouch_event_f9(rowid) {
+    //    if (!rowid) {
+    //        rowid = $gridmxList.jqGrid("getGridParam", "selrow");
+    //    }
+    //    if (!rowid) {
+    //        $.modalAlert("请选择要删除的出诊科室记录", 'warning');
+    //        return false;
+    //    }
+    //    var rowData = $gridmxList.jqGrid("getRowData", rowid);
+    //    if (!rowData) {
+    //        $.modalAlert("选中的记录无效，请重新选择", 'warning');
+    //        return false;
+    //    }
+    //    $.modalConfirm("确定要删除该条出诊科室记录", function (flag) {
+    //        if (flag) {
+    //            $.najax({
+    //                url: "/SystemManage/VisitDeptSet/DeleteItem",
+    //                data: { keyword: rowData.Id },
+    //                dataType: "json",
+    //                success: function (data) {
+    //                    $gridmxList.trigger("reloadGrid");
+    //                }
+    //            });
+    //        }
+    //        return;
+    //    });
+    //}
+
+
+</script>
+

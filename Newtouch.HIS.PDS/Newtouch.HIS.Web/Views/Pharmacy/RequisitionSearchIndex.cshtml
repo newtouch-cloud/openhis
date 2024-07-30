@@ -1,0 +1,171 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "RequisitionSearchIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .gridPanel {
+        margin-bottom: 5px;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:5px;">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue">
+                        <input id="txtStartDate" type="text" class="form-control input-wdatepicker " style="width:149px;" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                    </td>
+                    <th class="formTitle">到：</th>
+                    <td class="formValue">
+                        <input id="txtEndDate" type="text" class="form-control input-wdatepicker " style="width:149px;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                    </td>
+                    <th class="formTitle">申领单号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtSLDH" />
+                    </td>
+                    <th class="formTitle">发放状态：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlFfzt", EnumSLDDeliveryStatus.None.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" style="width:50px; margin-left:40px; " value="查询" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDJMainRecords"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div>
+        <table id="gridDJMXInfo"></table>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+
+        gridDJMainRecords();
+    });
+
+    //申领单主记录
+    function gridDJMainRecords() {
+        var $gridDjMainRecords = $("#gridDJMainRecords");
+        $gridDjMainRecords.dataGrid({
+            postData: getSearchPostData(),
+            height: 165,
+            url: "/Pharmacy/RequisitionGridJson",
+            colModel: [
+                { label: 'sldId', name: 'sldId', hidden: true, align: 'left' },
+                { label: '申领单号', name: 'Sldh', width: 150, align: 'left' },
+                //{ label: '申领部门', name: 'slbmmc', width: 80, align: 'left' },
+                { label: '发药部门', name: 'ckbmmc', width: 80, align: 'left' },
+                { label: '申领时间', name: 'CreateTime', width: 150, align: 'left', formatter: 'date', formatoptions: { srcformat: 'y-m-d H:i', newformat: 'y-m-d H:i' }},
+                {
+                    label: '发药状态', name: 'ffzt', width: 50, align: 'left',
+                    formatter: function (cellvalue) {
+                        switch (cellvalue) {
+                            case 0: return "未发放";
+                            case 1: return "已发放部分";
+                            case 2: return "已发放全部";
+                            case 3: return "已终止";
+                        }
+                    }
+                },
+            ],
+            unwritten: false,
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowId) {
+                btn_selectrow(rowId);
+            },
+            gridComplete: function () {
+                var ids = $gridDjMainRecords.getDataIDs();
+                for (var i = 0; i < ids.length; i++) {
+                    var rowData = $gridDjMainRecords.getRowData(ids[i]);
+                    if (rowData.ffzt === "0") {
+                        //
+                    }
+                    else if (rowData.ffzt === 1) {
+                        $('#' + ids[i]).find("td").addClass("bg-info");
+                    }
+                    else if (rowData.ffzt === 2) {
+                        $('#' + ids[i]).find("td").addClass("bg-success");
+                    }
+                    else if (rowData.ffzt === 3) {
+                        $('#' + ids[i]).find("td").addClass("bg-danger");
+                    }
+                }
+            }
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridDJMXInfo').jqGrid("clearGridData");
+            $gridDjMainRecords.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger('click');
+    }
+    function getSearchPostData() {
+        var startDate = $("#txtStartDate").val();
+        var endDate = $("#txtEndDate").val();
+        var sldh = $("#txtSLDH").val();
+        var ffzt = $("#ddlFfzt").val();
+        var from = "query";
+        return { startDate: startDate, endDate: endDate, sldh: sldh, ffzt: ffzt, from: "query" };
+    };
+
+    //单击事件
+    function btn_selectrow(rowId) {
+        //每次单击，先清空明细 再重新加载所有选中行明细
+        $('#gridDJMXInfo').jqGrid("clearGridData");
+        $.najax({
+            type: "POST",
+            url: "/Pharmacy/RequisitionDetailList",
+            data: { sldId: $("#gridDJMainRecords").jqGrid('getRowData', rowId).sldId },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state === 'success') {
+                    $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp.data);
+                }
+                else {
+                    $.newtouchAlert(ajaxresp);
+                    return;
+                }
+            }
+        });
+    }
+
+    //申领单明细
+    $('#gridDJMXInfo').newtouchLocalDataGrid({
+        height: $(window).height() - 380,
+        caption: "申领单明细",
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '药品名称', name: 'ypmc', width: 150, align: 'left' },
+            { label: '批号', name: 'ph', width: 100, align: 'left' },
+            { label: '批次', name: 'pc', hidden: true, width: 50, align: 'left' },
+            { label: '有效日期', name: 'Yxrq', width: 120, align: 'left', formatter: 'date', formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            { label: '申领数量', name: 'slsl', width: 120, align: 'left' },
+            { label: '申领数量单位', name: 'slsldw', width: 120, align: 'left' },
+            { label: '已发数量', name: 'yfsl', width: 120, align: 'left' },
+            { label: '已发数量单位', name: 'yfsldw', width: 120, align: 'left' }
+        ]
+    });
+
+</script>

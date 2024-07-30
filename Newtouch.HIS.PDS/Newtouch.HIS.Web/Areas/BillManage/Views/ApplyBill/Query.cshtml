@@ -1,0 +1,252 @@
+﻿@using Newtouch.Tools;
+@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "出入库单查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    #btn_print {
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+</style>
+<input hidden id="OrganizeId" value="@OperatorProvider.GetCurrent().OrganizeId">
+<form id="form1">
+    <div class="panel panel-default" id="dv_search">
+        <div class="panel-heading">查询条件</div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">发放状态：</th>
+                    <td class="formValue" style="width: 100px;">
+                        @Html.DropDownList("ffzt", EnumSLDDeliveryStatus.None.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle">单据号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="djh" />
+                    </td>
+                    <th class="formTitle">申请日期：</th>
+                    <td class="formValue">
+                        <input id="startTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle" style="width:45px;">至：</th>
+                    <td class="formValue">
+                        <input id="endTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <td class="formTitle" style="width:150px;">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                        <input type="button" id="btn_print" class="btn btn-md btn-primary" value="打印" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDJMainRecords"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+</form>
+<div id="TabGrid">
+    <ul class="nav nav-tabs navb-bg" role="tablist" id="myTab">
+        <li role="presentation" class="active">
+            <a href="#dv_djmx" id="linkSearch" role="tab" data-toggle="tab">单据明细</a>
+        </li>
+        <li style="float:right">
+            <span class="hiding glyphicon glyphicon-chevron-right btn-lg"></span>
+        </li>
+    </ul>
+    <div id="dv_djmx" style="">
+        <table id="gridDJMXInfo"></table>
+        <div id="gridMxPager" rel="form1"></div>
+    </div>
+</div>
+<div class="showbotton">
+    <span class="glyphicon glyphicon-chevron-left btn-lg"></span>
+</div>
+
+<script>
+    var $gridDjMainRecords = $("#gridDJMainRecords");
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        $('#ddlSHZT').val('0');
+        //搜索框隐藏显示控制
+        $(".hiding,.rows,#dv_search,.toolbar").click(function () {
+            TabGridHide();
+        });
+        $(".showbotton").click(function () {
+            $(".showbotton").animate({ width: 'hide' }, "fast", function () {
+                $("#TabGrid").animate({ left: '0px' }, "slow");
+            });
+        });
+        TabGridHide();
+        gridDJMainRecords();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        var tabGridwith = $("#TabGrid").width() + 200;
+        if ($(".showbotton").is(":hidden")) {
+            $("#TabGrid").animate({ left: tabGridwith }, "slow", function () {
+                $(".showbotton").animate({ width: 'show' }, "fast");
+            });
+        }
+    }
+
+    //单据主记录
+    function gridDJMainRecords() {
+        $gridDjMainRecords.dataGrid({
+            height: $(window).height() - 155,
+            postData: getSearchPostData(),
+            url: "/BillManage/ApplyBill/ApplyMainInfoSearch",
+            colModel: [
+                { label: 'sldId', name: 'sldId', hidden: true, align: 'left' },
+                { label: '申领单号', name: 'Sldh', width: 150, align: 'center' },
+                {
+                    label: '发药状态', name: 'ffzt', width: 80, align: 'center', formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumSLDDeliveryStatus.None):
+                            return "@EnumSLDDeliveryStatus.None.GetDescription()";
+                        case @((int)EnumSLDDeliveryStatus.Abandon):
+                            return "@EnumSLDDeliveryStatus.Abandon.GetDescription()";
+                        case @((int)EnumSLDDeliveryStatus.All):
+                            return "@EnumSLDDeliveryStatus.All.GetDescription()";
+                        case @((int)EnumSLDDeliveryStatus.Part):
+                            return "@EnumSLDDeliveryStatus.Part.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                { label: '申领部门', name: 'slbmmc', width: 100, align: 'left' },
+                { label: '发药部门', name: 'ckbmmc', width: 100, align: 'left' },
+                { label: '申领时间', name: 'CreateTime', width: 150, align: 'center', formatter: 'date', formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最近发药时间', name: 'LastModifyTime', width: 150, align: 'center', formatter: 'date', formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+
+            ],
+            unwritten: false,
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridDjMainRecords.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                url: "/BillManage/ApplyBill/ApplyMainInfoSearch"
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //组装查询条件
+    function getSearchPostData() {
+        var ffzt = $("#ffzt").val() === "" ? -1 : $("#ffzt").val();
+        var djh = $("#djh").val();
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+        return { ffzt: ffzt, djh: djh, startTime: startTime, endTime: endTime };
+    };
+
+    //单击事件
+    function btn_selectrow(rowId) {
+        $('#gridDJMXInfo').jqGrid("clearGridData");//每次单击，先清空明细 再重新加载所有选中行明细
+        $('#gridDJMXInfo').jqGrid('setGridParam', {
+            postData: { sldId: $("#gridDJMainRecords").jqGrid('getRowData', rowId).sldId },
+            url: "/BillManage/ApplyBill/ApplyDetailSearch"
+        }).trigger('reloadGrid');
+        $(".showbotton").click().trigger("click");
+    }
+
+    //单据明细
+    $('#gridDJMXInfo').dataGrid({
+        height: $(window).height() - 200,
+        colModel: [
+            { label: '类别', name: 'dlmc', width: 80, align: 'center' },
+            { label: '名称', name: 'ypmc', width: 110, align: 'center' },
+            { label: '申领数', name: 'slslStr', width: 70, align: 'center' },
+            { label: '已发数', name: 'yfslStr', width: 70, align: 'center' },
+            { label: '批号', name: 'ph', width: 100, align: 'center' },
+            { label: '批次', name: 'pc', width: 100, align: 'center' },
+            { label: '有效期', name: 'yxq', width: 150, align: 'center', formatter: 'date', formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            { label: '最近发药时间', name: 'LastModifyTime', width: 150, align: 'center', formatter: 'date', formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            { label: '最近发药人', name: 'LastModifierCode', width: 80, align: 'center' },
+            { label: 'sldmxId', name: 'sldmxId', hidden: true },
+            { label: 'slsl', name: 'slsl', hidden: true },
+            { label: 'yfsl', name: 'yfsl', hidden: true },
+        ],
+        unwritten: false,
+        multiselect: false,
+        pager: "#gridMxPager",
+        sortname: 'LastModifyTime desc',
+        viewrecords: true
+    });
+
+    $("#btn_print").click(function () {
+        var ffzt = $("#ffzt").val() === "" ? -1 : $("#ffzt").val();
+        var djh = $("#djh").val();
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+
+        var uri = '@reportUrl' + "?tempCode=59" + "&systemCode=" + '@reportSystemCode'+ "&hospitalCode=" + $("#OrganizeId").val() + "&kssj=" + startTime + "&jssj=" + endTime + "&Sldh=" + djh + "&ffzt=" +ffzt;
+        window.open(uri);
+
+    });
+</script>

@@ -1,0 +1,165 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+@Html.Partial("_YibaoCommonView")
+<form name="form1">
+    <div class="panel panel-default" style="margin-bottom: 0%;">
+        <div class="panel-heading navb-bg">
+            贵安医保基础信息下载
+        </div>
+        <div style="padding-top:1%;padding-bottom:1%; padding-right:7%;" id="divInpatientBasicInfo">
+            <table class="form">
+                <tr>
+                    <td class="formValue">
+                        <input type="button" id="btn_icd10" class="btn btn-primary" style="width:40%;margin-left:10%;" value="ICD10下载" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_fwxm" class="btn btn-primary" style="width:40%;margin-left:10%;" value="项目目录下载" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_codeContrast" class="btn btn-primary" style="width:40%;margin-left:10%;" value="编码对照下载" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel" style="margin-top:1%">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    var userId = '@Newtouch.Common.Operator.OperatorProvider.GetCurrent().UserCode;';
+    //ICD10下载
+    $('#btn_icd10').click(function () {
+        downIcd10();
+    })
+    //服务项目目录下载
+    $('#btn_fwxm').click(function () {
+        downFwxmml();
+    })
+    //编码对照信息下载
+    $('#btn_codeContrast').click(function () {
+        downCodeConstrant();
+    })
+
+    //下载ICD10
+    function downIcd10() {
+        var folder = getFolder();
+        if (folder) {
+            var fso = new ActiveXObject("Scripting.FileSystemObject");
+            var filePath = folder + "\\贵州医保_中心ICD10数据.txt";
+            if (fso.FileExists(filePath)) {
+                var f = fso.GetFile(filePath);
+                f.Delete();
+            }
+            var GzYB_Icd10_61 = new Object();
+            GzYB_Icd10_61.prm_outputfile = filePath;
+            var ybjySettReturn_61 = $.guianyibao.UploadICD10(GzYB_Icd10_61);
+            if (ybjySettReturn_61 && ybjySettReturn_61.Code == 0) {
+                $.modalAlert("医保ICD10数据文件下载成功", 'warning');
+            } else {
+                $.modalAlert("医保ICD10数据文件下载失败" + ybjySettReturn_61.ErrorMsg, 'warning');
+            }
+        } else $.modalAlert("请选择所在目录", 'warning');
+    }
+
+    //下载服务项目目录
+    function downFwxmml() {
+        var folder = getFolder();
+        var lsh = "";
+        if (folder) {
+            $.najax({//获取系统中医保项目最大流水号
+                url: "/Settlement/GzybBaseInfo/GetGzybItemCode_MaxLsh",
+                dataType: 'text',
+                async: false,
+                success: function (maxLsh) {
+                    lsh = maxLsh;
+                }
+            });
+            if (!lsh) {
+                $.modalAlert("获取服务项目最大流水号失败", 'warning');
+                return;
+            }
+            var liNum = 1;//循环停止标志
+            var fso = new ActiveXObject("Scripting.FileSystemObject");
+            var filePath = "";
+            var fileObj;
+            var fileContent = "";
+            while (liNum != -1) {
+                filePath = folder + "\\贵州医保_服务项目目录" + lsh + ".txt";
+                if (fso.FileExists(filePath)) {
+                    var f = fso.GetFile(filePath);
+                    f.Delete();
+                }
+                var GzybGetItemCode_91 = new Object();
+                GzybGetItemCode_91.prm_aaalsh = lsh;
+                GzybGetItemCode_91.prm_outputfile = filePath;
+                var itemCodeReturn = new Object();//$.guianyibao.(GzybGetItemCode_91);
+                if (itemCodeReturn.Code != 0) {
+                    $.modalAlert("调用医保服务项目接口失败" + itemCodeReturn.ErrorMsg, 'warning');
+                    return;
+                }
+                fileObj = fso.OpenTextFile(itemCodeReturn.prm_outputfile, 1);//只读方式打开
+                fileContent = fileObj.ReadAll();
+                if ($.trim(fileContent).length > 0) {
+                    lsh = fileContent.split(/\t/g)[fileContent.split(/\t/g).length - 1];//最后的一个字段为最大流水号
+                }
+                else//为空则跳出循环
+                    liNum = -1
+            }
+
+            var result = $.guianyibaoBase.DealFwxm(folder, "贵州医保_服务项目目录", userId);
+            if (result.Code != 0) {
+                alert(result.ErrorMsg);
+                return;
+            }
+            $.modalAlert("医保服务项目下载完成", 'warning');
+        }
+    }
+
+    //下载代码对照信息
+    function downCodeConstrant() {
+        var CodeInfoReturn_57 = $.guianyibao.BmdzxxQuery();
+        if (CodeInfoReturn_57 && CodeInfoReturn_57.Code == 0) {
+            $.najax({
+                type: "POST",
+                url: "/Settlement/GzybBaseInfo/SaveCodeConstrast",
+                dataType: "text",
+                data: {
+                    data: CodeInfoReturn_57.Data
+                },
+                loading: false,
+                success: function (result) {
+                    if (result == "0") {
+                        $.modalAlert("保存失败!", 'warning');
+                    } else {
+                        $.modalAlert("医保编码对照信息下载成功", 'success');
+                    }
+                }
+            });
+        } else {
+            $.modalAlert("医保编码对照信息下载失败" + CodeInfoReturn_57.ErrorMsg, 'warning');
+        }
+    }
+
+    //提供选择本地目录
+    function getFolder() {
+        try {
+            var Message = "\u8bf7\u9009\u62e9\u6587\u4ef6\u5939"; //选择框提示信息
+            var Shell = new ActiveXObject("Shell.Application");
+            var Folder = Shell.BrowseForFolder(0, Message, 64, 17); //起始目录为：我的电脑
+            //var Folder = Shell.BrowseForFolder(0, Message, 0); //起始目录为：桌面
+            if (Folder != null && Folder.self.Path.indexOf("::") == -1) {
+                return Folder.self.Path;
+            } else return "";
+        }
+        catch (e) {
+            alert(e.message);
+            return "";
+        }
+    }
+
+</script>

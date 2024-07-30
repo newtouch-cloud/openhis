@@ -1,0 +1,342 @@
+﻿@{
+    ViewBag.title = "ArrangeForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var OperationAssistant = ViewBag.OperationAssistant as int?;
+}
+<style>
+    .form .formTitle {
+        width: 80px;
+        padding-right: 5px;
+    }
+
+    .radio input[type=radio], .radio-inline input[type=radio] {
+        margin-left: -16px;
+    }
+
+    .radio-inline {
+        line-height: 22px;
+        margin-left: 30px;
+        width: 35px;
+    }
+
+    .zs {
+        float: left;
+        width: 97px;
+        margin-right: 10px;
+        margin-top: 10px;
+    }
+</style>
+
+<form id="form1">
+    <div style="padding-top: 10px; margin-right: 20px;margin-left: 10px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle"></td>
+                <td class="formValue"></td>
+                <td class="formTitle"></td>
+                <td class="formValue"></td>
+                <td class="formTitle"></td>
+                <td class="formValue"></td>
+                <td class="formTitle"></td>
+                <td class="formValue"></td>
+            </tr>
+            <tr>
+                <td class="formTitle">住院号：</td>
+                <td class="formValue">
+                    <label id="zyh" name="zyh">1</label>
+                    <input type="hidden" id="operationId" />
+                </td>
+                <td class="formTitle">姓名：</td>
+                <td class="formValue">
+                    <label id="xm" name="xm">张三</label>
+                </td>
+                <td class="formTitle">手术：</td>
+                <td class="formValue" colspan="2">
+                    <label id="ssmc" name="ssmc">阑尾炎切除</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>手术日期：</td>
+                <td class="formValue" colspan="2">
+                    <input id="rq" name="rq" type="text" width="120" class="required form-control input-wdatepicker formClearIgnore" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" />
+                </td>
+                <td></td>
+                <td class="formTitle"><span class="required">*</span>手术地点：</td>
+                <td class="formValue" colspan="2">
+                    <select id="ssdd" name="ssdd" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">加急：</td>
+                <td class="formValue" colspan="2">
+                    <label class="radio-inline">
+                        <input type="radio" name="urgent" value="1">是
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="urgent" value="0" checked="checked">否
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>手术医生：</td>
+                <td class="formValue">
+                    <input type="text" id="ssys" name="ssys" class="form-control form-an" onblur="getValue('ssys');" />
+                    <input type="hidden" id="hssys" name="hssys" /><input type="hidden" id="hssysName" name="hssysName" />
+                </td>
+            </tr>
+            <tr id="tr_sszs"></tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>麻醉方式：</td>
+                <td class="formValue">
+                    <select id="mzfs" name="mzfs" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle" style="vertical-align:top;">注意事项：</td>
+                <td class="formValue" colspan="3">
+                    <textarea id="remark" name="remark" rows="5" class="form-an form-control"></textarea>
+
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div style="padding-left: 10px;margin-top: 10px;">
+
+</div>
+<script type="text/javascript">
+    var keyValue = $.request("lsyzId");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "@Url.Action("ArrangementForID")",
+                data: { lsyzid: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $('#zyh').html(data.zyh);
+                    $('#xm').html(data.hzxm);
+                    $('#ssmc').html(data.yznr);
+                    $("#operationId").val(data.id);
+                    if (data.aprq) {
+                        $('#rq').val(data.aprq);
+                    }
+                    $('#ssdd').val(data.ssAddr).trigger("change");
+                    $("input:radio[name='urgent'][value='" + data.urgent + "']").attr("checked", "true");
+                    $("#ssys").attr("data-label", data.surgeonId);
+                    $("#ssys").val(data.surgeonName);
+                    $("#hssys").val(data.surgeonId);//临时存放手术医生信息
+                    $("#hssysName").val(data.surgeonName);
+                    setSszs(data.assistant,data.assistantName);
+                    $("#mzfs").val(data.anesthesiaType).trigger("change");
+                    $("#remark").val(data.remark);
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        bindItemFloator("ssys", "Doctor");
+        $("#ssdd").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                $.each($.itemDetails.getItems('ssdd'), function () {
+                    $('#ssdd').append('<option value="' + this.Code + '">' + this.Name + '</option>');
+                });
+                return resultObjArr;
+            }
+        });
+        $("#mzfs").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                $.each($.itemDetails.getItems('mzfs'), function () {
+                    $('#mzfs').append('<option value="' + this.Code + '">' + this.Name + '</option>');
+                });
+                return resultObjArr;
+            }
+        });
+
+
+
+        //$("#ssdd").bindSelect({//绑定手术地点
+        //    url: "/DoctorManage/Operation/getOperationDD"
+        //});
+        //$("#mzfs").bindSelect({//绑定手术地点
+        //    url: "/DoctorManage/Operation/getAnesthesiaType"
+        //});
+        setSSzsHtml();//根据配置添加手术助手录入
+    }
+
+    function bindItemFloator(inputId, itemType) {
+        //绑定字典
+        $("#" + inputId).newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            clickautotrigger: true,
+            filter: function (keyword) {
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+
+                $.each(top.window.clients.sysStaffDutyList, function (idx, val) {
+                    if (((val.StaffPY && val.StaffPY.toLowerCase().indexOf(keyword.toLowerCase()) >= 0)
+                        || (val.StaffName && val.StaffName.indexOf(keyword.toLowerCase()) >= 0)
+                        || keyword.trim() == "")
+                         && val.DutyCode == itemType) {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "医生",
+            colModel: [
+        {
+            label: '工号', name: 'StaffGh', widthratio: 25
+        },
+        {
+            label: '名称', name: 'StaffName', widthratio: 25
+        },
+        { label: '拼音', name: 'StaffPY', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#" + inputId).attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#" + inputId).val($thistr.find('td:eq(1)').html());
+                $("#h" + inputId).val($thistr.find("td:eq(0)").html());//写入临时存放信息
+                $("#h" + inputId + "Name").val($thistr.find('td:eq(1)').html());
+                return;
+            }
+        });
+    }
+
+    function getValue(inputId) {
+        if($.trim( $("#" + inputId).val()).length>0)
+        {
+            $("#" + inputId).attr("data-label", $("#h" + inputId).val());
+            $("#" + inputId).val($("#h" + inputId + "Name").val());
+        }
+        else
+        {
+            $("#" + inputId).attr("data-label", "");
+            $("#" + inputId).val("");
+            $("#h" + inputId).val("");
+            $("#h" + inputId + "Name").val("");
+        }
+    }
+
+    function setSSzsHtml(){
+        var OperationAssistant = @OperationAssistant;
+        var content='<td class="formTitle">手术助手：</td><td class="formValue" colspan="5">';
+        for (var i = 1; i <= OperationAssistant; i++) {
+            content +='<input type="text" id="sszs' + i + '" class="form-control form-an zs" onblur="getValue(\'sszs'+i+
+                '\');" />'+
+                '<input type="hidden" id="hsszs'+i+'" name="hsszs'+i+'" /><input type="hidden" id="hsszs'+i+'Name" name="hsszs'+i+'Name" />';
+        }
+        content+="</td>";
+        $("#tr_sszs").html(content);
+        for(var i = 1; i <= OperationAssistant; i++)
+        {
+            bindItemFloator("sszs" + i, "Doctor");
+        }
+    }
+
+    function AcceptClick(callback) {
+        if ($.trim(keyValue) == '') {
+            $.modalAlert("请选择手术医嘱", "warning");
+            return;
+        }
+        if (!$("#form1").formValid()) {
+            return;
+        }
+        var data = new Object();// $("#form1").formSerialize();
+        data.lsyzid = keyValue;
+        data.zyh = $('#zyh').html();
+        var ssrq = $("#rq").val();
+        if ($.trim(ssrq) == "") {
+            $.modalAlert("请选择手术日期", "warning");
+            return;
+        }
+        data.aprq = $("#rq").val();
+        var ssdd = $("#ssdd").val();
+        if ($.trim(ssdd) == "") {
+            $.modalAlert("请填写手术地点", "warning");
+            return;
+        }
+        data.ssAddr = ssdd;
+        data.urgent = $('input:radio[name=urgent]:checked').val();
+        if (!data.urgent || $.trim(data.urgent) == "") {
+            $.modalAlert("请选择是否加急", "warning");
+            return;
+        }
+        //字典
+        data.surgeonId = $('#ssys').attr('data-label');
+        if (!data.surgeonId || $.trim(data.surgeonId) == "") {
+            $.modalAlert("请选择手术医生", "warning");
+            return;
+        }
+        data.surgeonName = $('#ssys').val();
+        if (!data.surgeonName || $.trim(data.surgeonName) == "") {
+            $.modalAlert("请重新选择手术医生", "warning");
+            return;
+        }
+
+        var OperationAssistant = @OperationAssistant;
+        var sszsIds = "";
+        var sszsNames = "";
+        for(var i = 1; i <= OperationAssistant; i++)
+        {
+            sszsIds += $.trim($("#sszs" + i).attr('data-label')).length>0 ? $("#sszs" + i).attr('data-label')+",":"";
+            sszsNames += $.trim($("#sszs" + i).val()).length>0 ? $.trim($("#sszs" + i).val())+",":"";
+        }
+        var lastIndex = sszsIds.lastIndexOf(",");
+        if(lastIndex > -1)
+        {
+            sszsIds= sszsIds.substr(0,lastIndex);
+        }
+        lastIndex = sszsNames.lastIndexOf(",");
+        if(lastIndex > -1)
+        {
+            sszsNames= sszsNames.substr(0,lastIndex);
+        }
+
+        data.assistant = sszsIds;
+        data.assistantName = sszsNames;
+        data.anesthesiaType = $("#mzfs").val();
+        if (!data.anesthesiaType || $.trim(data.anesthesiaType) == "") {
+            $.modalAlert("请选择麻醉方式", "warning");
+            return;
+        }
+        data.remark = $('#remark').val();
+
+        var Id = $("#operationId").val();
+        $.submitForm({
+            url: "/DoctorManage/Operation/submitForm_Arrangement?keyValue=" + Id,
+            param: data,
+            close: false,
+            success: function () {
+                newtouch_globalevent_f4();
+                callback();
+            }
+        });
+    }
+
+    function setSszs(ids, names) {
+        if (ids.length === 0 || names.length === 0) return;
+        var sszsIds = ids.split(",");
+        var sszsNames = names.split(",");
+        for(var i=0;i<sszsIds.length;i++)
+        {
+            $("#sszs"+(i+1)).attr("data-label", sszsIds[i]);
+            $("#sszs"+(i+1)).val(sszsNames[i]);
+
+            $("#hsszs"+(i+1)).val(sszsIds[i]);//临时存放信息
+            $("#hsszs"+(i+1)+"Name").val(sszsNames[i]);
+        }
+    }
+
+</script>

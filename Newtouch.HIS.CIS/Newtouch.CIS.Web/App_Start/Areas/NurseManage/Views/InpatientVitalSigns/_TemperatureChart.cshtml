@@ -1,0 +1,1002 @@
+﻿<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/TemperatureChart.css", false)" rel="stylesheet" />
+<style type="text/css">
+    #tablBaseInfo {
+        margin: 5px 0 0 3px;
+    }
+
+        #tablBaseInfo td {
+            padding: 3px 5px;
+        }
+</style>
+<table id="tablBaseInfo" class="form" style="width:900px;">
+    <tr>
+        <td class="formValue" colspan="4">日期：<label id="lblRq"></label></td>
+    </tr>
+    <tr>
+        <td class="formValue">姓名：<label id="lblXm"></label></td>
+        <td class="formValue">病历号：<label id="lblBlh"></label></td>
+        <td class="formValue">住院号：<label id="lblZyh"></label></td>
+        <td class="formValue">病区：<label id="lblBq"></label></td>
+        <td class="formValue">床位：<label id="lblCw"></label></td>
+    </tr>
+    <tr>
+        <td class="formValue">入区日期：<label id="lblRqrq"></label></td>
+        <td class="formValue">出区日期：<label id="lblCqrq"></label></td>
+    </tr>
+</table>
+<div class="drawingboard">
+    <table class="bottomtbl">
+        <tr>
+            <td>体重(kg)</td>
+        </tr>
+        <tr>
+            <td>血氧饱和度%</td>
+        </tr>
+        <tr>
+            <td>氧流量(升/分)</td>
+        </tr>
+        <tr>
+            <td>大便次数</td>
+        </tr>
+        <tr>
+            <td>摄入量(ml)</td>
+        </tr>
+        <tr>
+            <td>小便(ml)</td>
+        </tr>
+        <tr>
+            <td>呕吐量(ml)</td>
+        </tr>
+        <tr>
+            <td>引流量(ml)</td>
+        </tr>
+    </table>
+</div>
+<script>
+    var $board = $('.drawingboard');
+
+    //base
+    var spc = 16;
+    var sspace = 11;
+    var sspacewidth = 14;
+    var outerspace = 3; //体温单外部留白
+    var xouterspace = 3;
+    var bodyHeight = 628;   //整体的高度
+    var origin;
+    //calc
+    var sjStartTop;
+    var contentStartTop;
+    var contentStartLeft;
+
+    //血压、脉搏、呼吸、体温
+    var twArr = [42, 41, 40, 39, 38, 37, 36, 35, 34];
+    var hxArr = [80, 70, 60, 50, 40, 30, 20, 10, 0];
+    var mbArr = [180, 160, 140, 120, 100, 80, 60, 40, 20];
+    var xyArr = [180, 160, 140, 120, 100, 80, 60, 40, 20];
+
+    var twColor = 'cred';
+    var hxColor = 'cblue';
+    var mbColor = 'climegreen';
+    var xyszColor = 'corange';
+    var xyxzColor = 'corange';
+
+    //体温单content下边框的top坐标
+    var twLastTop;
+    //体温单content右边框的left坐标
+    var twLastLeft;
+
+    var bottomtrCount = $('.bottomtbl tr').length;
+    var bodyLastTop;
+
+    var rqCellValueArr = new Array();
+
+    //定位
+    if (window.top == window.self) {
+        $('#tablBaseInfo').css('marginLeft', 30);
+    }
+
+    function reLocation() {
+        origin = { x: xouterspace, y: 0 + outerspace };
+        //calc
+        sjStartTop = origin.y + spc;
+        contentStartTop = origin.y + spc * 2;
+        contentStartLeft = origin.x + sspacewidth * (6 + 3);   //6格  //但得多给点宽度
+
+        //体温单content下边框的top坐标
+        twLastTop = contentStartTop + sspace * 5 * (twArr.length - 1);
+
+        bodyLastTop = twLastTop + spc * bottomtrCount;
+    };
+
+    function search(kssj, jssj, zyh) {
+        tempData = null; //
+        tempKssj = null;
+        rqCellValueArr = new Array();
+        $('#tablBaseInfo td label').html('');
+        if (!kssj || !jssj || !zyh) {
+            $.modalAlert('请完善筛选条件', 'error');
+            return;
+        }
+        $.najax({
+            url: "/NurseManage/InpatientVitalSigns/GetTemperatureChartJson",
+            data: { kssj: kssj, jssj: jssj, zyh: zyh },
+            loadingtext: "体温单数据请求中，请稍后...",
+            success: function (data) {
+                //
+                if (!(data && data.list && data.list.length)) {
+                    //draw([]);
+                    if (!(data && data.patInfo)) {
+                        $.modalAlert('请选择住院号', 'warning');
+                        return;
+                    }
+                    //return;
+                }
+                //
+                tempKssj = kssj = $.getDate({ date: kssj });   //容错一下
+                jssj = $.getDate({ date: jssj });   //容错一下
+                for (var sj = kssj ; sj <= jssj;) {
+                    rqCellValueArr.push(sj);
+                    var dateSj = $.strToDate(sj);
+                    dateSj.add('d', 1);
+                    sj = $.getDate({ date: dateSj });
+                }
+                //填充基本信息表格
+                if (data && data.patInfo) {
+                    fillPatBaseInfo(data.patInfo);
+                }
+                $('#lblRq').html($.getDate({ date: kssj }) + " 至 " + $.getDate({ date: jssj }));
+                //
+                if (!(data && data.list && data.list.length)) {
+                    data.list = [];
+                }
+                draw(data.list);
+            }
+        });
+    }
+
+    var tempData;    //使用setTimeout需要
+    var tempKssj;
+    function draw(data) {
+        //先重置
+        $board.find('>*:not(table)').remove();
+        $.each($('.bottomtbl tr'), function () {
+            $(this).find('td:gt(0)').remove();
+        });
+        if (!rqCellValueArr || !rqCellValueArr.length) {
+            //return;
+        }
+        //样式
+        var docwd = $(document).width();
+        var twdContentWidth = sspacewidth * 6 * (rqCellValueArr.length);
+        twdContentWidth += sspacewidth * 9; //做日期列
+        if ((docwd - twdContentWidth).toFixed(2) > 50) {
+            if (window.top != window.self) {
+                if (!rqCellValueArr || !rqCellValueArr.length) {
+
+                }
+                else {
+                    xouterspace = parseInt((docwd - twdContentWidth).toFixed(2) / 2);  //可以多留点白
+                }
+            }
+            else {
+                xouterspace = 30;
+            }
+        }
+        else {
+            xouterspace = 3;    //default
+        }
+        //
+        reLocation();
+        twLastLeft = contentStartLeft + sspacewidth * 6 * (rqCellValueArr.length);
+        //
+        if (!(window.isIE() && window.isIElte8())) {
+            //添加画布canvas
+            $('.drawingboard').append('<canvas id="drawCanvas" width="' + twLastLeft + '" height="' + (twLastTop + 10) + '"></canvas>');
+            checkCanvasAble();
+        }
+        //画
+        tempData = data;
+        if (canvasAble) {
+            startDraw();
+        }
+        else {
+            setTimeout("$.loading(true, '体温单绘制中，请稍后...');", 25);
+            setTimeout("startDraw();", 50);
+        }
+    }
+
+    function startDraw() {
+        var data = tempData;
+        //
+        drawTemplet(data);
+        //
+        if (canvasAble) {
+            startDraw2();
+        }
+        else {
+            setTimeout("startDraw2();", 50);
+        }
+    }
+
+    function startDraw2() {
+        var data = tempData;
+        //
+        drawDataPoint(data);
+        //
+        if (canvasAble) {
+            startDraw3();
+        }
+        else {
+            $.loading(true, '连线绘制中，可能耗时较长，请稍后...');
+            setTimeout("startDraw3();", 50);
+        }
+    }
+
+    function startDraw3() {
+        var data = tempData;
+        //
+        drawDataLigature(data);
+        //
+        if (canvasAble) {
+        }
+        else {
+            $.loading(false);
+        }
+    }
+
+    //根据data重置画板 长高
+    function drawTemplet(data) {
+        //画板的长宽
+        var totalwidth = $(window).width();
+        var totalheight = bodyHeight;
+        $board.css('width', totalwidth);
+        $board.css('height', totalheight);
+        //时间点上边框
+        drawLine(origin.x, origin.y, twLastLeft - origin.x);
+        //右侧加一点空白
+        drawLine(twLastLeft, origin.y, xouterspace).css('visibility', 'hidden');
+        //body上边框
+        drawLine(origin.x, sjStartTop, twLastLeft - origin.x);
+        //body左边框
+        drawLine(origin.x, origin.y, bodyLastTop - origin.y, '', 'vline');
+        //content左边框
+        drawLine(contentStartLeft, origin.y, bodyLastTop - origin.y, '', 'vline');
+        //content上边框
+        drawLine(origin.x, contentStartTop, twLastLeft - origin.x);
+
+        //竖向画线
+        for (var i = 0; i < rqCellValueArr.length; i++) {
+            //右线
+            var left = contentStartLeft + sspacewidth * 6 * (i + 1);
+            drawLine(left, origin.y, twLastTop - origin.y, 'cred', 'vline');
+            //底部table画竖线
+            drawLine(left, twLastTop, bodyLastTop - twLastTop, '', 'vline');
+            //中间5条时间点的线
+            for (var j = 0; j < 5; j++) {
+                left = contentStartLeft + sspacewidth * 6 * i + sspacewidth * (j + 1);
+                drawLine(left, sjStartTop, twLastTop - sjStartTop, '', 'vline');
+            }
+        }
+        //横向画线
+        for (var i = 0; i < (twArr.length - 1) ; i++) {
+            var top = contentStartTop + sspace * 5 * (i + 1);
+            //最后一条左起origin
+            var left = i == (twArr.length - 1 - 1) ? origin.x : contentStartLeft;
+            //最后一条颜色默认
+            var colr = i == (twArr.length - 1 - 1) ? '' : 'c666';
+            //最后一条不加粗
+            var bold = i == (twArr.length - 1 - 1) ? '' : 'bold';
+            drawLine(left, top, twLastLeft - left, colr, '', bold);
+            //左侧血压、脉搏、呼吸、体温
+            if (i < twArr.length - 1 - 1) {
+                var ileft = left - ((contentStartLeft - origin.x) / 4) * 0 - 28;
+                $div = $('<div style="position:absolute;text-align:center;left:' + ileft + 'px;top:' + (top - (sspace / 2) - 1) + 'px;width:' + sspacewidth + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+ + twArr[i + 1] + '℃</div>');
+                $div.appendTo($board);
+                //
+                ileft = left - ((contentStartLeft - origin.x) / 4) * 1 - 28;
+                $div = $('<div style="position:absolute;text-align:center;left:' + ileft + 'px;top:' + (top - (sspace / 2) - 1) + 'px;width:' + sspacewidth + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+ + hxArr[i + 1] + '</div>');
+                $div.appendTo($board);
+                //
+                ileft = left - ((contentStartLeft - origin.x) / 4) * 2 - 28;
+                $div = $('<div style="position:absolute;text-align:center;left:' + ileft + 'px;top:' + (top - (sspace / 2) - 1) + 'px;width:' + sspacewidth + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+ + mbArr[i + 1] + '</div>');
+                $div.appendTo($board);
+                //
+                ileft = left - ((contentStartLeft - origin.x) / 4) * 3 - 28;
+                $div = $('<div style="position:absolute;text-align:center;left:' + ileft + 'px;top:' + (top - (sspace / 2) - 1) + 'px;width:' + sspacewidth + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+ + xyArr[i + 1] + '</div>');
+                $div.appendTo($board);
+            }
+            //中间的4条温度的线（在这条线之上）
+            for (var j = 0; j < 4; j++) {
+                top = contentStartTop + sspace * 5 * i + sspace * (j + 1);
+                drawLine(contentStartLeft, top, twLastLeft - contentStartLeft);
+            }
+        }
+        //底部table画横线
+        for (var i = 0; i < bottomtrCount; i++) {
+            top = twLastTop + spc * (i + 1);
+            var widthlength = twLastLeft - origin.x;
+            if (i == bottomtrCount - 1) {
+                widthlength++;  //使其看似闭合
+            }
+            drawLine(origin.x, top, widthlength);
+        }
+        //底部table  table的线和div难对其，所以用div画线
+        $('.bottomtbl').css('width', twLastLeft - origin.x)
+            .css('left', origin.x).css('top', twLastTop).show();
+        $('.bottomtbl td').css('width', contentStartLeft - origin.x)
+            .css('height', spc).css('line-height', spc + 'px');
+        for (var i = 0; i < rqCellValueArr.length; i++) {
+            var rqData = $.jsonWhere(data, function (v) { return v.rq && $.getDate({ date: v.rq }) == rqCellValueArr[i] });
+            var thistz = 0;
+            var thisxybhd = 0;
+            var thisxybhd = 0;
+            var thisxyll = 0;
+            var thisdbcs = 0;
+            var thissrl = 0;    //摄入量(ml)
+            var thisxbl = 0;
+            var thisotl = 0;
+            var thisyll = 0;    //引流量
+            for (var j = 0; j < rqData.length; j++) {
+                if (rqData[j].tz) {
+                    thistz = rqData[j].tz;
+                }
+                if (rqData[j].xybhd) {
+                    thisxybhd = rqData[j].xybhd;
+                }
+                if (rqData[j].xyll) {
+                    thisxyll = rqData[j].xyll;
+                }
+                if (rqData[j].dbcs) {
+                    thisdbcs += rqData[j].dbcs;
+                }
+                if (rqData[j].xbl) {
+                    thisxbl += rqData[j].xbl;
+                }
+                if (rqData[j].otl) {
+                    thisotl += rqData[j].otl;
+                }
+                //
+                if (rqData[j].syl) {
+                    thissrl += rqData[j].syl;
+                }
+                if (rqData[j].ysl) {
+                    thissrl += rqData[j].ysl;
+                }
+                if (rqData[j].sxl) {
+                    thissrl += rqData[j].sxl;
+                }
+                //
+                if (rqData[j].cys) {
+                    thisyll += rqData[j].cys;
+                }
+                if (rqData[j].skyll) {
+                    thisyll += rqData[j].skyll;
+                }
+                if (rqData[j].xyl) {
+                    thisyll += rqData[j].xyl;
+                }
+                if (rqData[j].wyl) {
+                    thisyll += rqData[j].wyl;
+                }
+                if (rqData[j].fxxq) {
+                    thisyll += rqData[j].fxxq;
+                }
+                if (rqData[j].qtsc) {
+                    thisyll += rqData[j].qtsc;
+                }
+            }
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thistz ? thistz : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[0]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thisxybhd ? thisxybhd : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[1]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thisxyll ? thisxyll : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[2]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thisdbcs ? thisdbcs : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[3]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thissrl ? thissrl : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[4]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thisxbl ? thisxbl : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[5]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thisotl ? thisotl : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[6]));
+            var $td = $('<td style="width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">' + (!!thisyll ? thisyll : '') + '</td>');
+            $td.appendTo($($('.bottomtbl tr')[7]));
+        }
+
+        //写日期时间th
+        {
+            var left = origin.x;
+            var top = origin.y;
+            var $div = $('<div style="position:absolute;text-align:center;left:' + left + 'px;top:' + top
+                + 'px;width:' + (contentStartLeft - left) + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+             + '日期' + '</div>');
+            $div.appendTo($board);
+            var left = origin.x;
+            var top = origin.y + spc;
+            var $div = $('<div style="position:absolute;text-align:center;left:' + left + 'px;top:' + top
+                + 'px;width:' + (contentStartLeft - left) + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+             + '时间' + '</div>');
+            $div.appendTo($board);
+        }
+
+        //写日期和时间点
+        for (var i = 0; i < rqCellValueArr.length; i++) {
+            var left = contentStartLeft + i * sspacewidth * 6;
+            var top = origin.y;
+            var thisrq = $.dateAdd($.strToDate(tempKssj), 'd', i);
+            var $div = $('<div style="position:absolute;text-align:center;left:' + left + 'px;top:' + top + 'px;width:' + sspacewidth * 6 + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+                + $.getDate({ date: thisrq }) + '</div>');
+            $div.appendTo($board);
+            for (var j = 0; j < 6; j++) {
+                left = contentStartLeft + i * sspacewidth * 6 + j * sspacewidth;
+                top = origin.y + spc;
+                $div = $('<div style="position:absolute;text-align:center;left:' + left + 'px;top:' + top + 'px;width:' + sspacewidth + 'px;height:' + spc + 'px;line-height:' + spc + 'px;">'
+    + 4 * (j + 1) + '</div>');
+                $div.appendTo($board);
+            }
+        }
+
+        //左侧血压、脉搏、呼吸、体温 竖线+文字
+        for (var i = 0; i < 3; i++) {
+            var left = origin.x + ((contentStartLeft - origin.x) / 4) * (i + 1);
+            var top = contentStartTop;
+            drawLine(left, top, twLastTop - contentStartTop, '', 'vline');
+            //文字
+            var $div;
+            if (i == 0) {
+                $div = $('<div style="position:absolute;text-align:center;left:' + origin.x + 'px;top:' + top + 'px;width:' + ((contentStartLeft - origin.x) / 4) + 'px;height:' + spc * 3 + 'px;line-height:' + spc + 'px;">'
++ '血压<br/>mmHg' + '</div>');
+                $div.appendTo($board);
+                drawUparrow(left - sspacewidth * 1.2, top + sspace * 3, xyszColor);
+                drawDownarrow(left - sspacewidth * 1.2, top + sspace * (4.5), xyxzColor);
+            }
+            $div = $('<div style="position:absolute;text-align:center;left:' + left + 'px;top:' + top + 'px;width:' + ((contentStartLeft - origin.x) / 4) + 'px;height:' + spc * 3 + 'px;line-height:' + spc + 'px;">'
++ (i == 0 ? '脉搏(次/分)' : (i == 1 ? '呼吸(次/分)' : (i == 2 ? '体温<br/>℃' : ''))) + '</div>');
+            i == 0 ? drawX(left + sspacewidth * 1.8, top + sspace * 4, mbColor)
+                : (i == 1 ? drawSquare(left + sspacewidth * 1.8, top + sspace * 4, hxColor)
+                : (i == 2 ? drawDot(left + sspacewidth * 1.8, top + sspace * 4, twColor)
+                : ''));
+            $div.appendTo($board);
+        }
+
+    }
+
+    //画点
+    function drawDataPoint(data) {
+        //画点
+        for (var i = 0; i < data.length; i++) {
+            if (data[i].rq && data[i].sj && data[i].sj % 4 == 0) {
+                drawTwPoint(data[i]);
+                drawMbPoint(data[i]);
+                drawHxPoint(data[i]);
+                drawXyPoint(data[i]);
+            }
+        }
+    }
+
+    //画连线
+    function drawDataLigature(data) {
+        //画连线
+        var tempArr;
+        for (var i = 0; i < (tempArr = $.jsonWhere(data, function (v) { return v.twLocation })).length - 1; i++) {
+            if (tempArr[i].twLocation && tempArr[i + 1].twLocation) {
+                if (tempArr[i].rq && ($.getDate({ date: tempArr[i].rq }) == $.getDate({ date: tempArr[i + 1].rq, ute: true })
+                        || $.getDate({ date: $.dateAdd($.strToDate($.getDate({ date: tempArr[i].rq })), 'd', 1) }) == $.getDate({ date: tempArr[i + 1].rq, ute: true }))) {
+                    //间隔超过1天不画连线
+                    drawLigature(tempArr[i].twLocation, tempArr[i + 1].twLocation, twColor);
+                }
+            }
+        }
+        for (var i = 0; i < (tempArr = $.jsonWhere(data, function (v) { return v.hxLocation })).length - 1; i++) {
+            if (tempArr[i].hxLocation && tempArr[i + 1].hxLocation) {
+                if (tempArr[i].rq && ($.getDate({ date: tempArr[i].rq }) == $.getDate({ date: tempArr[i + 1].rq, ute: true })
+                        || $.getDate({ date: $.dateAdd($.strToDate($.getDate({ date: tempArr[i].rq })), 'd', 1) }) == $.getDate({ date: tempArr[i + 1].rq, ute: true }))) {
+                    //间隔超过1天不画连线
+                    drawLigature(tempArr[i].hxLocation, tempArr[i + 1].hxLocation, hxColor);
+                }
+            }
+        }
+        for (var i = 0; i < (tempArr = $.jsonWhere(data, function (v) { return v.mbLocation })).length - 1; i++) {
+            if (tempArr[i].mbLocation && tempArr[i + 1].mbLocation) {
+                if (tempArr[i].rq && ($.getDate({ date: tempArr[i].rq }) == $.getDate({ date: tempArr[i + 1].rq, ute: true })
+                        || $.getDate({ date: $.dateAdd($.strToDate($.getDate({ date: tempArr[i].rq })), 'd', 1) }) == $.getDate({ date: tempArr[i + 1].rq, ute: true }))) {
+                    //间隔超过1天不画连线
+                    drawLigature(tempArr[i].mbLocation, tempArr[i + 1].mbLocation, mbColor);
+                }
+            }
+        }
+        for (var i = 0; i < (tempArr = $.jsonWhere(data, function (v) { return v.xyszLocation })).length - 1; i++) {
+            if (tempArr[i].xyszLocation && tempArr[i + 1].xyszLocation) {
+                if (tempArr[i].rq && ($.getDate({ date: tempArr[i].rq }) == $.getDate({ date: tempArr[i + 1].rq, ute: true })
+                        || $.getDate({ date: $.dateAdd($.strToDate($.getDate({ date: tempArr[i].rq })), 'd', 1) }) == $.getDate({ date: tempArr[i + 1].rq, ute: true }))) {
+                    //间隔超过1天不画连线
+                    drawLigature(tempArr[i].xyszLocation, tempArr[i + 1].xyszLocation, xyszColor);
+                }
+            }
+        }
+        for (var i = 0; i < (tempArr = $.jsonWhere(data, function (v) { return v.xyxzLocation })).length - 1; i++) {
+            if (tempArr[i].xyxzLocation && tempArr[i + 1].xyxzLocation) {
+                if (tempArr[i].rq && ($.getDate({ date: tempArr[i].rq }) == $.getDate({ date: tempArr[i + 1].rq, ute: true })
+                        || $.getDate({ date: $.dateAdd($.strToDate($.getDate({ date: tempArr[i].rq })), 'd', 1) }) == $.getDate({ date: tempArr[i + 1].rq, ute: true }))) {
+                    //间隔超过1天不画连线
+                    drawLigature(tempArr[i].xyxzLocation, tempArr[i + 1].xyxzLocation, xyxzColor);
+                }
+            }
+        }
+    }
+
+    //画体温点
+    function drawTwPoint(item) {
+        if (item.tw) {
+            var idx = getIndexOfRq(item.rq);
+            if (idx < 0) {
+                return;
+            }
+            var left = contentStartLeft + (sspacewidth * 6) * idx + sspacewidth * (item.sj / 4 - 1);
+            var top = contentStartTop;
+            if (item.tw > twArr[0]) {
+                top = contentStartTop;
+            }
+            else if (item.tw < twArr[twArr.length - 1]) {
+                top = twLastTop;
+            }
+            else {
+                //*5是因为每1度占5格 .toFixed(2)是js减法bug
+                top += (twArr[0] - item.tw).toFixed(2) * 5 * sspace;
+            }
+            //让其居这个时间点 居中
+            left += sspacewidth / 2;
+            if ($.jsonWhere(twArr, function (v) { return v == item.tw }).length == 1
+                && item.tw != twArr[0] && item.tw != twArr[twArr.length - 1]) {
+                top = top + 0.5;    //正点呈现特殊，因为线高度2px
+            }
+            item.twLocation = { x: left, y: top };
+            drawDot(left, top, twColor, item.tw);
+            //伪造title
+            drawFalsifyTitle(left, top, item.tw);
+        }
+    }
+
+    //画脉搏点
+    function drawMbPoint(item) {
+        if (item.mb) {
+            var idx = getIndexOfRq(item.rq);
+            if (idx < 0) {
+                return;
+            }
+            var left = contentStartLeft + (sspacewidth * 6) * idx + sspacewidth * (item.sj / 4 - 1);
+            var top = contentStartTop;
+            if (item.mb > mbArr[0]) {
+                top = contentStartTop;
+            }
+            else if (item.mb < mbArr[mbArr.length - 1]) {
+                top = twLastTop;
+            }
+            else {
+                //*5是因为每20占5格 即每4占一格 .toFixed(2)是js减法bug
+                top += ((mbArr[0] - item.mb).toFixed(2) / 4).toFixed(2) * sspace;
+            }
+            //让其居这个时间点 居中
+            left += sspacewidth / 2;
+            if ($.jsonWhere(mbArr, function (v) { return v == item.mb }).length == 1
+                && item.mb != mbArr[0] && item.mb != mbArr[mbArr.length - 1]) {
+                top = top + 0.5;    //正点呈现特殊，因为线高度2px
+            }
+            item.mbLocation = { x: left, y: top };
+            drawX(left, top, mbColor, item.mb);
+            //伪造title
+            drawFalsifyTitle(left, top, item.mb);
+        }
+    }
+
+    //画呼吸点
+    function drawHxPoint(item) {
+        if (item.hx) {
+            var idx = getIndexOfRq(item.rq);
+            if (idx < 0) {
+                return;
+            }
+            var left = contentStartLeft + (sspacewidth * 6) * idx + sspacewidth * (item.sj / 4 - 1);
+            var top = contentStartTop;
+            if (item.hx > hxArr[0]) {
+                top = contentStartTop;
+            }
+            else if (item.hx < hxArr[hxArr.length - 1]) {
+                top = twLastTop;
+            }
+            else {
+                //*5是因为每10占5格 即每2占一格 .toFixed(2)是js减法bug
+                top += ((hxArr[0] - item.hx).toFixed(2) / 2).toFixed(2) * sspace;
+            }
+            //让其居这个时间点 居中
+            left += sspacewidth / 2;
+            if ($.jsonWhere(hxArr, function (v) { return v == item.hx }).length == 1
+                && item.hx != hxArr[0] && item.hx != hxArr[hxArr.length - 1]) {
+                top = top + 0.5;    //正点呈现特殊，因为线高度2px
+            }
+            item.hxLocation = { x: left, y: top };
+            drawSquare(left, top, hxColor, item.hx);
+            //伪造title
+            drawFalsifyTitle(left, top, item.hx);
+        }
+    }
+
+    //画血压点
+    function drawXyPoint(item) {
+        var idx = getIndexOfRq(item.rq);
+        if (idx < 0) {
+            return;
+        }
+        if (item.xysz) {
+            var left = contentStartLeft + (sspacewidth * 6) * idx + sspacewidth * (item.sj / 4 - 1);
+            var top = contentStartTop;
+            if (item.xysz > xyArr[0]) {
+                top = contentStartTop;
+            }
+            else if (item.xysz < xyArr[xyArr.length - 1]) {
+                top = twLastTop;
+            }
+            else {
+                //*5是因为每20占5格 即每4占一格 .toFixed(2)是js减法bug
+                top += ((xyArr[0] - item.xysz).toFixed(2) / 4).toFixed(2) * sspace;
+            }
+            //让其居这个时间点 居中
+            left += sspacewidth / 2;
+            if ($.jsonWhere(xyArr, function (v) { return v == item.xysz }).length == 1
+                && item.xysz != xyArr[0] && item.xysz != xyArr[xyArr.length - 1]) {
+                top = top + 0.5;    //正点呈现特殊，因为线高度2px
+            }
+            item.xyszLocation = { x: left, y: top };
+            drawUparrow(left, top, xyszColor, item.xysz);
+            //伪造title
+            drawFalsifyTitle(left, top, item.xysz);
+        }
+        if (item.xyxz) {
+            var left = contentStartLeft + (sspacewidth * 6) * idx + sspacewidth * (item.sj / 4 - 1);
+            var top = contentStartTop;
+            if (item.xyxz > xyArr[0]) {
+                top = contentStartTop;
+            }
+            else if (item.xyxz < xyArr[xyArr.length - 1]) {
+                top = twLastTop;
+            }
+            else {
+                //*5是因为每20占5格 即每4占一格 .toFixed(2)是js减法bug
+                top += ((xyArr[0] - item.xyxz).toFixed(2) / 4).toFixed(2) * sspace;
+            }
+            //让其居这个时间点 居中
+            left += sspacewidth / 2;
+            if ($.jsonWhere(xyArr, function (v) { return v == item.xyxz }).length == 1
+                && item.xyxz != xyArr[0] && item.xyxz != xyArr[xyArr.length - 1]) {
+                top = top + 0.5;    //正点呈现特殊，因为线高度2px
+            }
+            item.xyxzLocation = { x: left, y: top };
+            drawDownarrow(left, top, xyxzColor, item.xyxz);
+            //伪造title
+            drawFalsifyTitle(left, top, item.xyxz);
+        }
+    }
+
+    //type默认横线，传递false画竖线
+    function drawLine(left, top, length, colorClass, type, bold, zIndex) {
+        var html = '<div style="position:absolute;left:' + left + 'px;top:' + top + 'px;';
+        html += (type === 'vline' ? 'height' : 'width') + ":" + length + "px;";
+        if (zIndex) {
+            html += 'z-index:' + zIndex + ';';
+        }
+        html += '"';
+        html += ' class="';
+        //默认横线
+        var lineClass = (type === 'vline' ? 'vline' : 'line');
+        lineClass = bold === 'bold' ? lineClass + "bold" : lineClass;
+        html += ' ' + lineClass;
+        //颜色默认#999
+        html += ' ' + (!!colorClass ? colorClass : 'c999');
+        html += '"';
+        html += '>';
+        html += '</div>';
+        var $html = $(html);
+        $html.appendTo($board);
+        return $html;
+    }
+
+    //以(left, top)为中心画一个点
+    function drawDot(left, top, colorClass) {
+        //考虑border呈现问题
+        left = left - 3;    //3为border的宽度
+        top = top - 3;
+        var html = '<div style="position:absolute;left:' + left + 'px;top:' + top + 'px;';
+        html += '"';
+        html += ' class="dot';
+        //颜色默认#999
+        html += ' ' + (!!colorClass ? colorClass : 'c999');
+        html += '"';
+        html += '>';
+        html += '</div>';
+        var $html = $(html);
+        $html.appendTo($board);
+        return $html;
+    }
+
+    //以(left, top)为中心画一个X
+    function drawX(left, top, colorClass) {
+        if (canvasdrawX(left, top, colorClass)) {
+            return;
+        }
+        //left - 1是因为length 2
+        drawLine(left - 0.5 - 1, top - 0.5, 2, colorClass);
+        drawLine(left - 1.5 - 1, top - 1.5, 2, colorClass);
+        drawLine(left - 2.5 - 1, top - 2.5, 2, colorClass);
+        drawLine(left + 0.5 - 1, top + 0.5, 2, colorClass);
+        drawLine(left + 1.5 - 1, top + 1.5, 2, colorClass);
+        drawLine(left + 2.5 - 1, top + 2.5, 2, colorClass);
+        //
+        drawLine(left + 0.5 - 1, top - 0.5, 2, colorClass);
+        drawLine(left + 1.5 - 1, top - 1.5, 2, colorClass);
+        drawLine(left + 2.5 - 1, top - 2.5, 2, colorClass);
+        drawLine(left - 0.5 - 1, top + 0.5, 2, colorClass);
+        drawLine(left - 1.5 - 1, top + 1.5, 2, colorClass);
+        drawLine(left - 2.5 - 1, top + 2.5, 2, colorClass);
+    }
+
+    //以(left, top)为中心画一个Square
+    function drawSquare(left, top, colorClass) {
+        if (canvasdrawSquare(left, top, colorClass)) {
+            return;
+        }
+        drawLine(left - 2.5, top - 2.5, 6, colorClass);
+        drawLine(left - 2.5, top + 2.5, 6, colorClass);
+        drawLine(left - 2.5, top - 2.5, 6, colorClass, 'vline');
+        drawLine(left + 2.5, top - 2.5, 6, colorClass, 'vline');
+    }
+
+    //以(left, top)为中心画一个上箭头
+    function drawUparrow(left, top, colorClass) {
+        if (canvasdrawUparrow(left, top, colorClass)) {
+            return;
+        }
+        top += 2;   //使箭头在线上
+        //left - 1是因为length 2
+        drawLine(left - 1, top - 2, 2, colorClass);
+        //
+        drawLine(left + 1 - 1, top - 1, 2, colorClass);
+        drawLine(left + 2 - 1, top, 2, colorClass);
+        drawLine(left + 3 - 1, top + 1, 2, colorClass);
+        drawLine(left + 4 - 1, top + 2, 2, colorClass);
+        //
+        drawLine(left - 1 - 1, top - 1, 2, colorClass);
+        drawLine(left - 2 - 1, top, 2, colorClass);
+        drawLine(left - 3 - 1, top + 1, 2, colorClass);
+        drawLine(left - 4 - 1, top + 2, 2, colorClass);
+    }
+
+    //以(left, top)为中心画一个下箭头
+    function drawDownarrow(left, top, colorClass) {
+        if (canvasdrawDownarrow(left, top, colorClass)) {
+            return;
+        }
+        top -= 2;   //使箭头在线上
+        //left - 1是因为length 2
+        drawLine(left - 1, top + 2, 2, colorClass);
+        //
+        drawLine(left + 1 - 1, top + 1, 2, colorClass);
+        drawLine(left + 2 - 1, top, 2, colorClass);
+        drawLine(left + 3 - 1, top - 1, 2, colorClass);
+        drawLine(left + 4 - 1, top - 2, 2, colorClass);
+        //
+        drawLine(left - 1 - 1, top + 1, 2, colorClass);
+        drawLine(left - 2 - 1, top, 2, colorClass);
+        drawLine(left - 3 - 1, top - 1, 2, colorClass);
+        drawLine(left - 4 - 1, top - 2, 2, colorClass);
+    }
+
+    //两点画连线 p2.x 比 p1.x大
+    function drawLigature(p1, p2, colorClass) {
+        if (canvasdrawLigature(p1, p2, colorClass)) {
+            return;
+        }
+        //x x之间多少个像素
+        var xDifference = parseInt(p2.x - p1.x);
+        //要画xDifference个像素点
+        for (var i = 0; i < xDifference; i++) {
+            var left = p1.x + i;
+            var dwspace = ((p2.y - p1.y) / xDifference);
+            var pointCount = dwspace % 1 == 0 ? Math.abs(parseInt(dwspace)) : (Math.abs(parseInt(dwspace)) + 1);
+            if (pointCount == 0) {
+                //这是横线
+                var top = p1.y;
+                drawLine(left, top, 1, colorClass, '', '', 2);
+            }
+            else if (pointCount == 1) {
+                var top = p1.y + dwspace * i;
+                drawLine(left, top, 1, colorClass, '', '', 2);
+            }
+            else {
+                //pointCount点的数量
+                for (var j = 0; j < pointCount; j++) {
+                    left = left + (1.0 / pointCount);//已经累加了
+                    var top = p1.y + dwspace * i + ((dwspace / pointCount) * j);
+                    drawLine(left, top, 1, colorClass, '', '', 2);
+                }
+            }
+        }
+    }
+
+    //伪造title
+    function drawFalsifyTitle(left, top, title) {
+        if (!!title) {
+            var html = '<div style="position:absolute;width:14px;height:14px;z-index:1;left:' + (left - 7) + 'px;top:' + (top - 7) + 'px;';
+            html += '"';
+            html += ' title="' + title + '"';
+            html += '>';
+            html += '</div>';
+            $(html).appendTo($board);
+        }
+    }
+
+    function fillPatBaseInfo(patInfo) {
+        $('#lblXm').html(patInfo.xm);
+        $('#lblBlh').html(patInfo.blh);
+        $('#lblZyh').html(patInfo.zyh);
+        $('#lblBq').html(patInfo.bqmc);
+        $('#lblCw').html(patInfo.cwmc);
+        //$('#lblRyrq').html(patInfo.ryrq.substring(0,10));
+        if (patInfo.rqrq != null) {
+            $('#lblRqrq').html(patInfo.rqrq.substring(0, 10));
+        }
+
+        if (patInfo.cqrq != null) {
+            $('#lblCqrq').html(patInfo.cqrq.substring(0, 10));
+        }
+    }
+
+</script>
+<script>
+    //全局变量
+    var canvasAble = false;
+    //只调用一次即可
+    function checkCanvasAble() {
+        try {
+            var myCanvas = document.getElementById("drawCanvas");
+            if (myCanvas == null) {
+                return;
+            }
+            var context = myCanvas.getContext("2d");
+            canvasAble = true;
+        }
+        catch (eeerree) {
+        }
+    }
+
+    //canvas两点画连线 p2.x 比 p1.x大
+    function canvasdrawLigature(p1, p2, colorClass) {
+        if (!canvasAble) {
+            return false;
+        }
+        var myCanvas = document.getElementById("drawCanvas");
+        var context = myCanvas.getContext("2d");
+        var clr = colorClass.substring(1);
+        if (clr % 1 == 0) {
+            clr = '#' + clr;    //#333 666之类的
+        }
+        context.strokeStyle = clr;//线条颜色
+        context.lineWidth = 1;//设置线宽
+        context.beginPath();
+        context.moveTo(p1.x, p1.y);
+        context.lineTo(p2.x, p2.y);
+        context.stroke();//画线框
+
+        return true;
+    }
+
+    //canvas以(left, top)为中心画一个下箭头
+    function canvasdrawDownarrow(left, top, colorClass) {
+        top -= 2;   //使箭头在线上
+        //left - 1是因为length 2
+        if (!canvasAble) {
+            return false;
+        }
+        var myCanvas = document.getElementById("drawCanvas");
+        var context = myCanvas.getContext("2d");
+        var clr = colorClass.substring(1);
+        if (clr % 1 == 0) {
+            clr = '#' + clr;    //#333 666之类的
+        }
+        context.strokeStyle = clr;//线条颜色
+        context.lineWidth = 2;//设置线宽
+        context.beginPath();
+        context.moveTo(left + 4 + 1, top - 2 - 1);
+        context.lineTo(left, top + 2);
+        context.lineTo(left - 4 - 1, top - 2 - 1);
+        context.stroke();//画线框
+
+        return true;
+    }
+
+    //canvas以(left, top)为中心画一个上箭头
+    function canvasdrawUparrow(left, top, colorClass) {
+        top += 2;   //使箭头在线上
+        if (!canvasAble) {
+            return false;
+        }
+        var myCanvas = document.getElementById("drawCanvas");
+        var context = myCanvas.getContext("2d");
+        var clr = colorClass.substring(1);
+        if (clr % 1 == 0) {
+            clr = '#' + clr;    //#333 666之类的
+        }
+        context.strokeStyle = clr;//线条颜色
+        context.lineWidth = 2;//设置线宽
+        context.beginPath();
+        context.moveTo(left + 4 + 1, top + 2 + 1);
+        context.lineTo(left, top - 2);
+        context.lineTo(left - 4 - 1, top + 2 + 1);
+        context.stroke();//画线框
+
+        return true;
+    }
+
+    //canvas以(left, top)为中心画一个X
+    function canvasdrawX(left, top, colorClass) {
+        if (!canvasAble) {
+            return false;
+        }
+        var myCanvas = document.getElementById("drawCanvas");
+        var context = myCanvas.getContext("2d");
+        var clr = colorClass.substring(1);
+        if (clr % 1 == 0) {
+            clr = '#' + clr;    //#333 666之类的
+        }
+        context.strokeStyle = clr;//线条颜色
+        context.lineWidth = 2;//设置线宽
+        context.beginPath();
+        context.moveTo(left - 3, top + 3);
+        context.lineTo(left + 3, top - 3);
+        context.moveTo(left + 3, top + 3);
+        context.lineTo(left - 3, top - 3);
+        context.stroke();//画线框
+
+        return true;
+    }
+
+    //canvas以(left, top)为中心画一个Square
+    function canvasdrawSquare(left, top, colorClass) {
+        if (!canvasAble) {
+            return false;
+        }
+        var myCanvas = document.getElementById("drawCanvas");
+        var context = myCanvas.getContext("2d");
+        var clr = colorClass.substring(1);
+        if (clr % 1 == 0) {
+            clr = '#' + clr;    //#333 666之类的
+        }
+        context.strokeStyle = clr;//线条颜色
+        context.lineWidth = 2;//设置线宽
+        context.beginPath();
+        context.moveTo(left - 3, top - 3);
+        context.lineTo(left + 3, top - 3);
+        context.lineTo(left + 3, top + 3);
+        context.lineTo(left - 3, top + 3);
+        //context.lineTo(left - 3, top - 3);
+        context.closePath();
+        context.stroke();//画线框
+
+        return true;
+    }
+
+    //获取rq在rqCellValueArr中index
+    function getIndexOfRq(rq) {
+        rq = $.getDate({ date: rq, ute: true });
+        for (var iiIndex = 0; iiIndex < rqCellValueArr.length; iiIndex++) {
+            if (rq == rqCellValueArr[iiIndex]) {
+                return iiIndex;
+            }
+        }
+        return -1;
+    }
+
+</script>

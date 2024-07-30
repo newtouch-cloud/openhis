@@ -1,0 +1,681 @@
+﻿@{
+    ViewBag.Title = "中医馆";
+    Layout = null;
+}
+
+<style>
+    #zy_title {
+        display: none;
+        position: fixed;
+        bottom: 48px;
+        right: 0;
+        z-index: 9999;
+        background-color: #253443;
+        width: 45px;
+        height: 20px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 20px 0 0 20px;
+        box-shadow: 0px 2px 10px #909090;
+        line-height: 20px;
+        text-align: right;
+        padding-right: 6px;
+        color: #fff;
+    }
+
+    #zy_body {
+        position: fixed;
+        bottom: 50px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+        color: #ffffff;
+    }
+
+    #TabGrid > * {
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+    }
+
+    #zy_body ul {
+        padding: 5px;
+    }
+
+        #zy_body ul li {
+            border-bottom: 1px solid white;
+            list-style: none;
+            width: 35px;
+            text-align: center;
+            padding: 5px 0;
+            cursor: pointer;
+        }
+</style>
+<div id="zy_title">中医馆</div>
+<div id="zy_body">
+    <ul>
+        <li id="li_pushPatient" style="display: none;">
+            <a href="javascript:void(0);" style="color: #00fa9a;" id="a_ppt_write" attr-operate="write" value="PPT">推送患者</a>
+        </li>
+        <li>
+            <div>电子病历</div>
+            <div>
+                <a href="javascript:void(0);" style="color:#00fa9a;" id="a_EMR_write" attr-operate="write" value="EMR">书写</a>
+                <a href="javascript:void(0);" style="color: #ffff00;" id="a_EMR_extract" attr-operate="extract" value="EMR">提取</a>
+            </div>
+        </li>
+        <li>
+            <div>辨证论治</div>
+            <div>
+                <a href="javascript:void(0);" style="color:#00fa9a;" id="a_AE_write" attr-operate="write" value="AE">书写</a>
+                <a href="javascript:void(0);" style="color: #ffff00;" id="a_AE_extract" attr-operate="extract" value="AE">提取</a>
+            </div>
+        </li>
+        <li value="K">
+            <a href="javascript:void(0);" style="color: #00fa9a;" id="a_K_write" attr-operate="write" value="K">知识库</a>
+        </li>
+        <li value="RC">
+            <a href="javascript:void(0);" style="color: #00fa9a;" id="a_RC_write" attr-operate="write" value="RC">远程会诊</a>
+        </li>
+        <li value="HEAL">
+            <a href="javascript:void(0);" style="color: #00fa9a;" id="a_HEAL_write" attr-operate="write" value="HEAL">治未病</a>
+        </li>
+        <li style="border-bottom: none;">
+            <a href="javascript:void(0);" style="color: #00fa9a;" id="a_PM_write" attr-operate="write" value="PM" title="默认一次推送30个药品，如需推送更多请点击多次">推送草药</a>
+        </li>
+    </ul>
+</div>
+<script>
+    $(function () {
+        //搜索框隐藏显示控制
+        $(".hiding,.rows,#myTab,#divPatientBasicInfo,.tab-content,.toolbar").click(function () {
+            TabGridHide();
+        });
+        TabGridHide();
+        $("#zy_title").click(function () {
+            $("#zy_title").animate({ width: 'hide' }, "fast",
+                function () {
+                    $("#zy_body").animate({ width: 'show' }, "slow");
+                });
+        });
+
+        $("#zy_body li a").click(function () {
+            var jzObject = window.currPatientInfo;
+            switch ($(this).attr("value")) {
+                case "PPT"://推送患者
+                    pushPatient(jzObject);
+                    return;
+                case "EMR"://集成电子病历系统
+                    if (!!!jzObject || JSON.stringify(jzObject) === '{}') {
+                        $.modalAlert("请先选择就诊病人", 'warning');
+                        return;
+                    }
+                    if ($(this).attr("attr-operate") === "extract") {
+                        extractIntegrateEMR(jzObject.mzh);
+                        extractIntegrateDiagnosis(jzObject.mzh);
+                    } else {
+                        getIntegrateEMRUrl(jzObject.mzh, jzObject.jzys);
+                    }
+                    return;
+                case "AE"://集成辩证论治系统
+                    if (!!!jzObject || JSON.stringify(jzObject) === '{}') {
+                        $.modalAlert("请先选择就诊病人", 'warning');
+                        return;
+                    }
+                    if ($(this).attr("attr-operate") === "extract") {
+                        extractIntegrateRp(jzObject.mzh);
+                    } else {
+                        getIntegrateAEUrl(jzObject.mzh, jzObject.jzys);
+                    }
+                    return;
+                case "K"://集成知识库系统
+                    getIntegrateKUrl();
+                    return;
+                case "RC"://集成远程医疗系统
+                    if (!!!jzObject || JSON.stringify(jzObject) === '{}') {
+                        $.modalAlert("请先选择就诊病人", 'warning');
+                        return;
+                    }
+                    IntegrateRC(jzObject.blh, jzObject.mzh, jzObject.jzys);
+                    return;
+                case "HEAL"://集成治未病系统
+                    if (!!!jzObject || JSON.stringify(jzObject) === '{}') {
+                        $.modalAlert("请先选择就诊病人", 'warning');
+                        return;
+                    }
+                    getIntegrateHEALUrl(jzObject.blh, jzObject.mzh, jzObject.zjlx, jzObject.zjh);
+                    return;
+                case "PM"://推送草药
+                    pushMedicineInfo();
+                    return;
+            }
+        });
+    });
+
+    //推送患者
+    function pushPatient(selRowData) {
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/TcmHis01",
+            data: selRowData,
+            dataType: "json",
+            success: function (ajaxresp) { }
+        });
+    }
+
+    //集成远程医疗
+    function IntegrateRC(blh, mzh, jzys) {
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/GetIntegrateRcRequsetParam",
+            data: { blh: blh, mzh: mzh, jzys: jzys },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp != null) startClient(ajaxresp);
+            }
+        });
+    }
+
+    //启动远程诊疗客户端
+    function startClient(obd) {
+        if (obd.patientId === "" || obd.patientId === "undefined") {
+            alert("请先选择一个患者");
+            return;
+        } else {
+            //当点击进来先开启客户端
+            //window.location.href="Ngarihealth://openid="+$("#doctorId").val();
+
+            //http get  请求地址以及携带参数
+            var url = encodeURI("http://localhost:7009/open?openid=" + obd.doctorId + "&userName=" + obd.doctorName
+                + "&patientId=" + obd.patientId + "&patientName=" + obd.patientName
+                + "&mobile=" + obd.mobile + "&certid=" + obd.certid
+                + "&gender=" + obd.gender + "&birthday=" + obd.birthday + "&patientType=" + obd.patientType
+                + "&series=" + obd.series + "&organCode=" + obd.organCode
+                + "&m=test" + "&clz=/eh.bus.web.cloud.wizard.Wizard");
+
+            var jsonpInvokeSeq = 0, htmlHead = document.getElementsByTagName("head")[0] || document.documentElement;
+
+            var jsonp = function (conf) {
+                var count = ++jsonpInvokeSeq;
+                var jsonpCallbackName = "jsonpCallback" + count;
+                var url = conf.url;
+
+                if (url.indexOf("?") === -1) {
+                    url += "?callback=";
+                }
+                else {
+                    url += "&callback=";
+                }
+                url += jsonpCallbackName;
+
+                var script = document.createElement('script');
+                script.setAttribute("type", "text/javascript");
+                script.setAttribute("language", "javascript");
+                script.setAttribute("src", url);
+                script.async = true;
+
+                script.onerror = function (e) {
+                    htmlHead.removeChild(script);
+                    window[jsonpCallbackName] = null;
+                    var callback = conf.fail;
+                    typeof (callback) == "function" && callback.call(this || conf.scope, e);
+                };
+
+                window[jsonpCallbackName] = function (json) {
+                    htmlHead.removeChild(script);
+                    window[jsonpCallbackName] = null;
+                    var callback = conf.success;
+                    typeof (callback) == "function" && callback.call(this || conf.scope, json);
+                };
+                htmlHead.appendChild(script);
+            };
+            function callOtherArea(a) {
+                jsonp({
+                    url: a,
+                    success: function (data) {
+
+                    },
+                    fail: function (e) {
+                        loopCall(a);
+                    }
+                });
+            }
+            function loopCall(a) {
+                //启动客户端
+                window.location.href = "Ngarihealth://openid=" + obd.doctorId;
+                //延迟1秒 等客户端启动后再次调用 打开窗口
+                setTimeout(callOtherArea(a), 1000);
+            }
+            callOtherArea(url);
+        }
+    }
+
+    //集成治未病
+    function getIntegrateHEALUrl(blh, mzh, zjlx, zjh) {
+        if (!blh) {
+            $.modalAlert("请选择就诊患者", 'error');
+            return;
+        }
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/GetIntegrateHEALUrl",
+            data: { blh: blh, mzh: mzh, zjlx: zjlx, zjh: zjh },
+            dataType: "text",
+            success: function (ajaxresp) {
+                var obj = $.parseJSON(ajaxresp);
+                if (obj.state === "error") {
+                    $.modalAlert(obj.message, 'error');
+                    return;
+                }
+                localStorage.setItem("hid_CmmIntegrateUrl", obj.data);
+                $.modalOpen({
+                    id: "Form",
+                    title: "中医馆",
+                    url: "/MainBusiness/CmmAlertForm",
+                    width: "1050px",
+                    height: "700px",
+                    btn: null,
+                    callBack: function (iframeId, isClose) {
+                    }
+                });
+            }
+        });
+    }
+
+    //集成知识库
+    function getIntegrateKUrl() {
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/GetIntegrateKUrl",
+            dataType: "text",
+            success: function (ajaxresp) {
+                var obj = $.parseJSON(ajaxresp);
+                if (!obj || obj.state === "error") {
+                    $.modalAlert(obj.message, 'error');
+                    return;
+                }
+                localStorage.setItem("hid_CmmIntegrateUrl", obj.data);
+                $.modalOpen({
+                    id: "Form",
+                    title: "中医馆",
+                    url: "/MainBusiness/CmmAlertForm",
+                    width: "1050px",
+                    height: "700px",
+                    btn: null,
+                    callBack: function (iframeId, isClose) {
+                    }
+                });
+            }
+        });
+    }
+
+    //拉取处方
+    function extractIntegrateRp(mzh) {
+        if (!mzh) {
+            $.modalAlert("请选择就诊患者", 'error');
+            return;
+        }
+        if ($("#linkzycf") == null || $("#linkzycf").is(":hidden")) {
+            $.modalAlert("请打开中药处方选项卡", 'error');
+            return;
+        }
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/ExtractIntegrateRp",
+            data: { mzh: mzh, mzzybz: "1" },
+            dataType: "json",
+            alerterror: false,
+            success: function (ajaxresp) {
+                if (!!ajaxresp && ajaxresp.state === "success") {
+                    if (!ajaxresp.data || ajaxresp.data.length === 0) {
+                        $.modalAlert("提取处方信息失败，请确保已保存处方", 'error');
+                        return;
+                    }
+                    localStorage.setItem("hid_RpInfo", ajaxresp.data);
+                    fillRpInfo();
+                } else {
+                    $.modalAlert(ajaxresp.message, 'error');
+                }
+            }
+        });
+    }
+
+    //推送草药
+    function pushMedicineInfo() {
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/PushMedicineInfo",
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state === "success") {
+                    $.modalAlert("草药推送至中医馆成功", 'success');
+                }
+            }
+        });
+    }
+
+    //集成辩证论治
+    function getIntegrateAEUrl(mzh, jzys) {
+        var p = {
+            mzh: mzh,
+            jzys: jzys
+        };
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/GetIntegrateAeUrl",
+            data: p,
+            dataType: "text",
+            success: function (ajaxresp) {
+                var obj = $.parseJSON(ajaxresp);
+                if (obj.state === "error") {
+                    $.modalAlert(obj.message, 'error');
+                    return;
+                }
+                localStorage.setItem("hid_CmmIntegrateUrl", obj.data);
+                $.modalOpen({
+                    id: "Form",
+                    title: "中医馆",
+                    url: "/MainBusiness/CmmAlertForm",
+                    width: "1050px",
+                    height: "700px",
+                    btn: null,
+                    callBack: function (iframeId, isClose) {
+                    }
+                });
+            }
+        });
+    }
+
+    //集成电子病历系统
+    function getIntegrateEMRUrl(mzh, jzys) {
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/GetIntegrateEmrUrl",
+            data: { mzh: mzh, jzys: jzys },
+            dataType: "text",
+            success: function (ajaxresp) {
+                var obj = $.parseJSON(ajaxresp);
+                if (obj.state === "error") {
+                    $.modalAlert(obj.message, 'error');
+                    return;
+                }
+                localStorage.setItem("hid_CmmIntegrateUrl", obj.data);
+                $.modalOpen({
+                    id: "Form",
+                    title: "中医馆",
+                    url: "/MainBusiness/CmmAlertForm",
+                    width: "1050px",
+                    height: "565px",
+                    btn: null,
+                    callBack: function (iframeId, isClose) {
+                    }
+                });
+            }
+        });
+    }
+
+    //提取电子病历
+    function extractIntegrateEMR(mzh) {
+        if (!mzh) {
+            $.modalAlert("请选择就诊患者", 'error');
+            return;
+        }
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/ExtractIntegrateEmr",
+            data: { mzh: mzh },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (!ajaxresp) {
+                    $.modalAlert("提取病历信息失败，请确保已保存病历", 'error');
+                    return;
+                }
+                localStorage.setItem("hid_EMRRecordInfo", JSON.stringify(ajaxresp));
+                fillRecordInfo();
+            }
+        });
+    }
+
+    //提取诊断
+    function extractIntegrateDiagnosis(mzh) {
+        if (!mzh) {
+            $.modalAlert("请选择就诊患者", 'error');
+            return;
+        }
+        $.najax({
+            type: "Get",
+            url: "/MainBusiness/ExtractIntegrateDiagnosis",
+            data: { mzh: mzh },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (!ajaxresp) {
+                    $.modalAlert("提取诊断信息失败，请确保已保诊断", 'error');
+                    return;
+                }
+                localStorage.setItem("hid_DiagnosisInfo", JSON.stringify(ajaxresp));
+                fillDiagnosisInfo();
+            }
+        });
+    }
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        if ($("#zy_title").is(":hidden")) {
+            $("#zy_body").animate({ width: 'hide' }, "slow", function () {
+                $("#zy_title").animate({ width: 'show' }, "fast");
+            });
+        }
+    }
+
+    //填充病历
+    window.fillRecordInfo = function () {
+        var record = localStorage.getItem("hid_EMRRecordInfo");
+        var robj = JSON.parse(record);
+        if (!robj) {
+            $.modalAlert("获取缓存病历信息失败", 'error');
+            return;
+        }
+        var psy = robj.psyCheck; //体温(T)37℃;呼吸(R)120次/分;脉搏(P)120次/分;心率110次/分;收缩压/舒张压88/70mnHg
+        $("#ct").val(robj.psyCheck);
+        if (psy !== "") {
+            var ar = psy.split(";");
+            if (ar != null && ar.length > 0) {
+                $.each(ar, function (index, item) {
+                    if (item.indexOf("(T)") > -1 && item.indexOf("℃") > -1) {
+                        //体温
+                        var tw = item.substring(item.indexOf("(T)") + 3);
+                        tw = tw.substring(0, tw.indexOf("℃"));
+                        $("#tiwen").val(tw);
+                    } else if (item.indexOf("(P)") > -1) {
+                        //脉搏
+                        var mb = item.substring(item.indexOf("(P)") + 3);
+                        mb = mb.replace("次/分", "");
+                        $("#maibo").val(mb);
+                    } else if (item.indexOf("(R)") > -1) {
+                        //呼吸
+                        var hx = item.substring(item.indexOf("(R)") + 3);
+                        hx = hx.replace("次/分", "");
+                        $("#huxi").val(hx);
+                    } else if (item.indexOf("收缩压") > -1) {
+                        //收缩压 舒张压
+                        var ss = item.replace("收缩压/舒张压", "");
+                        ss = ss.replace("mnHg", "");
+                        if (ss.indexOf("/") > -1) {
+                            var ssr = ss.split("/");
+                            if (ssr != null && ssr.length > 1) {
+                                $("#shousuoya").val(ssr[0]);
+                                $("#shuzhangya").val(ssr[1]);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        $("#zs").val(robj.priDepict);
+        $("#xbs").val(robj.localDisHis);
+        $("#jws").val(robj.anamnesis);
+        $("#jws").val(robj.anamnesis);
+    }
+
+    //填充诊断
+    window.fillDiagnosisInfo = function () {
+        var record = localStorage.getItem("hid_DiagnosisInfo");
+        var robj = JSON.parse(record);
+        if (!robj) {
+            $.modalAlert("获取缓存诊断信息失败", 'error');
+            return;
+        }
+        if (robj.diagnosislist == null || robj.diagnosislist.length <= 0) return;
+        var zyzdArr = new Array();
+        var emptyInput;
+        $("#tablexyzd tr:gt(0)").remove();
+        $('#tablexyzd .zdText').attr("data-zdCode", "").attr("data-icd10", "").val("");
+        $("#tablezyzd tr:gt(0)").remove();
+        $('#tablezyzd .zdText').attr("data-zdCode", "").attr("data-icd10", "").val("");
+        $('#tablezyzd .zdText').parent().parent().find(".zhText").attr("data-zdCode", "").attr("data-icd10", "").val("");
+        $.each(robj.diagnosislist, function (index, item) {
+            var allzdTest;
+            var tp;
+            if (item.cate === "0") {
+                //西医诊断
+                emptyInput = new Array();
+                allzdTest = $('#tablexyzd .zdText');
+                if (!!allzdTest && allzdTest.length > 0) {
+                    for (var i = 0; i < allzdTest.length; i++) {
+                        tp = allzdTest[i];
+                        if ($(tp).attr("data-zdCode") == null || $(tp).attr("data-zdCode") === "") {
+                            emptyInput.push(tp);
+                        }
+                    }
+                }
+                if (emptyInput.length > 0) {
+                    $(emptyInput[0]).attr("data-zdCode", item.localCode).attr("data-icd10", item.code).val(item.name);
+                    if (emptyInput.length === 1) {
+                        $('#tablexyzd .plusToggleCircle').trigger("click");
+                    }
+                } else {
+                    $('#tablexyzd .plusToggleCircle').trigger("click");
+                    $(tp).attr("data-zdCode", item.localCode).attr("data-icd10", item.code).val(item.name);
+                }
+            } else if (item.cate === "1") {
+                //中医诊断
+                var needNew = true;
+                if (zyzdArr.length > 0) {
+                    for (var i = 0; i < zyzdArr.length; i++) {
+                        if (zyzdArr[i].group === item.group) {
+                            if (item.type === "0") {
+                                //疾病
+                                zyzdArr[i].jz = item;
+                            } else if (item.type === "1") {
+                                //症候
+                                zyzdArr[i].hz = item;
+                            }
+                            needNew = false;
+                            break;
+                        }
+                    }
+                }
+                if (needNew) {
+                    var zd = {
+                        jz: null,
+                        hz: null,
+                        group: item.group
+                    };
+                    if (item.type === "0") {
+                        //疾病
+                        zd.jz = item;
+                    } else if (item.type === "1") {
+                        //症候
+                        zd.hz = item;
+                    }
+                    zyzdArr.push(zd);
+                }
+            }
+        });
+        if (zyzdArr.length > 0) {
+            $.each(zyzdArr, function (index, item) {
+                emptyInput = new Array();
+                var allzyzdTest = $('#tablezyzd .zdText');
+                if (!!allzyzdTest && allzyzdTest.length > 0) {
+                    for (var i = 0; i < allzyzdTest.length; i++) {
+                        var tp = allzyzdTest[i];
+                        if ($(tp).attr("data-zdCode") == null || $(tp).attr("data-zdCode") === "") {
+                            emptyInput.push(tp);
+                        }
+                    }
+                }
+                if (emptyInput.length > 0) {
+                    $(emptyInput[0]).attr("data-zdCode", item.jz.localCode).attr("data-icd10", item.jz.code).val(item.jz.name);
+                    var zh = $(emptyInput[0]).parent().parent().find(".zhText");
+                    if (zh != null) $(zh).attr("data-zdCode", item.hz.localCode).attr("data-icd10", item.hz.code).val(item.hz.name);
+                    if (emptyInput.length === 1) {
+                        $('#tablezyzd .plusToggleCircle').trigger("click");
+                    }
+                }
+            });
+        }
+    }
+
+    //填充处方
+    window.fillRpInfo = function () {
+        var record = localStorage.getItem("hid_RpInfo");
+        var robj = JSON.parse(record);
+        if (!robj) {
+            $.modalAlert("获取缓存处方信息失败", 'error');
+            return false;
+        }
+        if (robj.length === 0) return false;
+        var tr = $("#gridzycf tr");
+        if (tr != null && tr.length > 0) {
+            $.each(tr, function (index, item) {
+                if ($(item).hasClass("ui-row-ltr")) $(item).remove();
+            });
+        }
+        $(".glyphicon-new-window").trigger("click");
+
+        for (var i = 0; i < robj.length; i++) {
+            var item = robj[i];
+            var rowid = $("#gridzycf tr:last")[0].id;
+            //检查重复
+            var isRepeatedAdd = false;
+            var addypCode = item.sfxmCode;
+            $.each($("#gridzycf").getDataIDs(), function () {
+                var cfh = $("#gridzycf").getRowData(String(this)).cfh;
+                var ypCode = $('#' + $($("#gridzycf").getRowData(String(this)).ypCode).attr('id')).val();
+                if (addypCode === ypCode && String(this) !== rowid && cfh === currlineCfh) {
+                    isRepeatedAdd = true;
+                    return;
+                }
+            });
+            if (isRepeatedAdd) {
+                $.modalAlert("单张处方下明细不能重复", 'warning');
+                return false;
+            }
+            $("#" + rowid + "_zxks").val(item.yfbmCode);
+            $("#" + rowid + "_ypCode").val(item.sfxmCode);
+            $("#" + rowid + "_ypmc").val(item.sfxmmc);
+            $("#" + rowid + "_ypgg").val(item.gg);
+            $("#" + rowid + "_dj").val(item.dj);
+            $("#" + rowid + "_mcjl").val(item.drugQuantity);
+            $("#" + rowid + "_mcjldw").val(item.jldw);
+            $("#" + rowid + "_dw").val(item.dw);
+            $("#" + rowid + "_Remark").val(item.note);
+            CalculateTCMEachLineSlANDJe(rowid);   //计算明细里的金额和处方金额
+
+            if (isMedicineSearchRelatedKC === 'True') {
+                //库存数量
+                var kcsl = parseInt(item.kcsl);
+                var cls = parseInt(item.cls);
+                var mzkcsl = !!kcsl && !!cls ? (parseInt(kcsl / cls)) : 0;
+                ypkcrem(item.yfbmCode, item.sfxmCode, mzkcsl);
+            }
+            if (i < (robj.length - 1)) addTCMRowData(rowid);
+        }
+    };
+</script>

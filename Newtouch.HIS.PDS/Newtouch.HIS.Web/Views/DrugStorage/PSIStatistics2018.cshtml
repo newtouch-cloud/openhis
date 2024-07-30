@@ -1,0 +1,397 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "进销存统计";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:5px;">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">开始时间：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlKSSJ" class="form-control"></select>
+                    </td>
+                    <th class="formTitle">结束时间：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlJSSJ" class="form-control"></select>
+                    </td>
+                    <th class="formTitle">药品状态：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        @Html.DropDownList("ddlYPZT", EnumYPZT.Enabled.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle">零差率：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlLCL" class="form-control">
+                            <option value="">全部</option>
+                            <option value="0">零差率</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">药品代码：</th>
+                    <td class="formValue">
+                        <input id="txtINPUTCODE" type="text" class="form-control" />
+                    </td>
+                    <th class="formTitle">剂型：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlJX" class="form-control">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">药品类别：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="ddlYPLB" class="form-control">
+                            <option value="">全部</option>
+                        </select>
+                    </td>
+                    <td class="formValue" colspan="2" style="padding-left:20px;">
+                        <input id="chk_Show" type="checkbox" />
+                        <label for="chk_Show">显示未发生进销存药品</label>
+                        <input type="button" id="btn_dc" class="btn btn-md btn-primary" onclick="Excelbuttion()" style="width:50px; float: right;" value="导出" />
+                        <input type="button" id="btn_print" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="打印" />
+                        <input type="button" id="btn_TJ" class="btn btn-md btn-primary" style="width:50px; float: right;" value="统计" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDrugsInfo"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div class="panel panel-default" style="margin-top:5px;">
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">入库批发：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtRKPFZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">出库批发：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtCKPFZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">调价损益：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtTJSYZE" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">损溢零售：</th>
+                    <td class="formValue">
+                        <input type="text" id="txtSYLSZE" class="form-control newtouch_Readonly" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        initialddljzsjList();//加载结转时间
+        initialddlJXList();//初始化药品剂型
+        initialddlYPLBList();//初始化药品类别
+        gridDrugsInfoData();//加载药品明细
+    });
+
+    function initialddljzsjList() {
+        $("#ddlKSSJ").bindSelect({
+            url: "/DrugStorage/GetlsjzDateTime",
+            id: "key",
+            text: "value"
+        });
+        $("#ddlJSSJ").bindSelect({
+            url: "/DrugStorage/GetJzJssjDateTime",
+            id: "key",
+            text: "value"
+        });
+    }
+
+    //药品剂型
+    function initialddlJXList() {
+        $("#ddlJX").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineFormulationList",
+            id: "jxCode",
+            text: "jxmc"
+        });
+    }
+
+    //药品类别
+    function initialddlYPLBList() {
+        $("#ddlYPLB").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineCategoryList2",
+            id: "dlCode",
+            text: "dlmc"
+        });
+    }
+
+    
+    var gridop = null;
+    //单据主记录
+    function gridDrugsInfoData() {
+        var $gridDrugsInfoData = $("#gridDrugsInfo");
+        var gridOptins = {
+            height: $(window).height() - 235,
+            postData: getSearchPostData(),
+            url: '/DrugStorage/PSIStatisticsInfoList',
+            colModel: [
+                { label: '药品代码', name: 'Ypdm', width: 70, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 70, align: 'left' },
+                { label: '单位', name: 'dw', width: 50, align: 'center' },
+                { label: '进价', name: 'jj', width: 50, align: 'center' },
+                { label: '零售价', name: 'lsj', width: 50, align: 'center' },
+                { label: '期初数量', name: 'qcsl', width: 80, align: 'right' },
+                {
+                    label: '期初批发总额', name: 'qcpfze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '入库数量', name: 'rksl', width: 70, align: 'right' },
+                {
+                    label: '入库批发总额', name: 'rkpfze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '出库数量', name: 'cksl', width: 70, align: 'right' },
+                {
+                    label: '出库批发总额', name: 'ckpfze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '损益数量', name: 'sysl', width: 70, align: 'right' },
+                {
+                    label: '损溢批发总额', name: 'sypfze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '盘盈数量', name: 'pysl', width: 70, align: 'right' },
+                {
+                    label: '盘盈批发总额', name: 'pyze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '盘亏数量', name: 'pksl', width: 70, align: 'right' },
+                {
+                    label: '盘亏批发总额', name: 'pkze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '期末数量', name: 'qmsl', width: 70, align: 'right' },
+                {
+                    label: '期末批发总额', name: 'qmpfze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                {
+                    label: '调价损溢总额', name: 'tjsyze', width: 80, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'Ypdm desc',
+            viewrecords: true,
+            loadComplete: function (data) {
+                StatisticsZE();//统计总额
+            }
+        };
+        $gridDrugsInfoData.dataGrid(gridOptins);
+        
+        //统计
+        $("#btn_TJ").click(function () {
+            if ($("#ddlKSSJ").val() >= $("#ddlJSSJ").val() && $("#ddlJSSJ").val() !== "") {
+                $.modalAlert("结束结转时间需大于开始账期", 'warning');
+                return;
+            }
+            //清空Grid
+            $('#gridDrugsInfo').jqGrid("clearGridData");
+            $gridDrugsInfoData.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                url: '/DrugStorage/PSIStatisticsInfoList'
+            }).trigger('reloadGrid');
+        });
+        gridop = gridOptins;
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        return {
+            ksjzsj: $("#ddlKSSJ").val(),
+            jsjzsj: $("#ddlJSSJ").val(),
+            ypzt: $("#ddlYPZT").val(),
+            srm: $("#txtINPUTCODE").val(),
+            dl: $("#ddlYPLB").val(),
+            jx: $("#ddlJX").val(),
+            rate: $("#ddlLCL").val(),
+            noPSI: $("#chk_Show")[0].checked ? "1" : "0"
+        };
+    };
+
+    //统计总额
+    function StatisticsZE() {
+        var statisticsRkpfze = 0;  //入库进价总额
+        var statisticsCkpfze = 0;  //出库进价总额
+        var statisticsTjsyze = 0;  //调价损益总额
+        var statisticsSylsze = 0;  //损益零售总额
+        var count = $("#gridDrugsInfo").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridDrugsInfo").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowRkpfze = $("#gridDrugsInfo").getRowData(rowIds[i]).rkpfze;
+                var getRowCkpfze = $("#gridDrugsInfo").getRowData(rowIds[i]).ckpfze;
+                var getRowTjsyze = $("#gridDrugsInfo").getRowData(rowIds[i]).tjsyze;
+                var getRowSypfze = $("#gridDrugsInfo").getRowData(rowIds[i]).sypfze;
+                statisticsRkpfze = statisticsRkpfze + parseFloat(getRowRkpfze);//入库进价总额
+                statisticsCkpfze = statisticsCkpfze + parseFloat(getRowCkpfze);//出库进价总额
+                statisticsTjsyze = statisticsTjsyze + parseFloat(getRowTjsyze);//调价损益总额
+                statisticsSylsze = statisticsSylsze + parseFloat(getRowSypfze);//损益零售总额
+            }
+            statisticsRkpfze = roundingBy4she6ru5chengshuang(statisticsRkpfze, 2);//入库进价总额
+            statisticsCkpfze = roundingBy4she6ru5chengshuang(statisticsCkpfze, 2);//出库进价总额
+            statisticsTjsyze = roundingBy4she6ru5chengshuang(statisticsTjsyze, 2);//调价损益总额
+            statisticsSylsze = roundingBy4she6ru5chengshuang(statisticsSylsze, 2);//损益零售总额
+        }
+        $("#txtRKPFZE").val(statisticsRkpfze);
+        $("#txtCKPFZE").val(statisticsCkpfze);
+        $("#txtTJSYZE").val(statisticsTjsyze);
+        $("#txtSYLSZE").val(statisticsSylsze);
+        $.loading(false);
+    }
+
+    var exportCols = null;
+    function Excelbuttion() {
+        exportCols = new Array();
+        var colsChooseSourceArr = new Array();
+        $.each(gridop.colModel, function () {
+            exportCols.push({ Heading: this.label, Name: this.name, Width: this.width });
+            colsChooseSourceArr.push({ Heading: this.label, Name: this.name });
+        });
+        var url = "/DrugStorage/ExcelExportChooseColumns";
+        var cols = JSON.stringify(colsChooseSourceArr);
+        cols = encodeURIComponent(cols);
+        url += "?cols=" + cols;
+        $.modalOpen({
+            id: "ExcelExportChooseColumns",
+            title: "导出Excel",
+            url: url,
+            width: "600px",
+            height: "350px",
+            callBack: function (iframeId) {
+                //结果
+                var restArr = top.frames[iframeId].GetChoosedCols();
+                if (!!!restArr || !!!restArr.length || restArr.length == 0) {
+                    $.modalAlert("请选择导出列", 'error');
+                    return false;
+                }
+                var isContainFilter = top.frames[iframeId].GetIsContainFilter();
+                //关闭选择窗口
+                $.modalClose("ExcelExportChooseColumns");
+                //
+                exportCols = $.jsonWhere(exportCols, function (v) {
+                    var matched = false;
+                    for (var iIndex = 0; iIndex < restArr.length; iIndex++) {
+                        if (restArr[iIndex] == v.Name) {
+                            matched = true;
+                        }
+                    }
+                    return matched;
+                });
+                //导出
+                Export(isContainFilter);
+            }
+        });
+    }
+    function Export(isContainFilter) {
+        var cols = JSON.stringify(exportCols);
+        top.$.cookie('ExportExcelCols', cols, { path: "/" });
+        //$.najax({
+        //    type: "POST",
+        //    url: "/DrugStorage/ExcelGet",
+        //    data: { searchParam: getSearchPostData(), isContainFilter: isContainFilter, jxtext: $("#ddlJX option:selected").text(), lbtext: $("#ddlYPLB option:selected").text(), colStanWidth: "70", cols: cols },
+        //    alerterror: false,
+        //    success: function (res) {
+
+        //    }
+        //});
+        var ypzt = $("#ddlYPZT").val();
+        var srm = $("#txtINPUTCODE").val();
+        var dl = $("#ddlYPLB").val();
+        var jx = $("#ddlJX").val();
+        var rate = $("#ddlLCL").val();
+        var nopsi = $("#chk_Show")[0].checked ? "1" : "0";
+        var url = "/DrugStorage/ExcelGet?";
+        url += "ksjzsj=" + $("#ddlKSSJ").val();
+        url += "&jsjzsj=" + $("#ddlJSSJ").val();
+        url += "&ypzt=" + $("#ddlYPZT").val();
+        url += "&srm=" + $("#txtINPUTCODE").val();
+        url += "&dl=" + $("#ddlYPLB").val();
+        url += "&jx=" + $("#ddlJX").val();
+        url += "&rate=" + rate;
+        url += "&noPSI=" + nopsi;
+        url += "&isContainFilter=" + isContainFilter;
+        url += "&jxtext=" + $("#ddlJX option:selected").text();
+        url += "&lbtext=" + $("#ddlYPLB option:selected").text();
+        url += "&colStanWidth=" + "70";  //列宽度标准列
+        var cols = JSON.stringify(exportCols);
+        top.$.cookie('ExportExcelCols', cols, { path: "/" });
+        //url += "&cols=" + cols;
+
+        window.open(url);
+    }
+    
+    $("#btn_print").click(function () {
+
+        var ksjzsj = $("#ddlKSSJ").val();
+        //var jsjzsj = $("#ddlJSSJ").val() ? $("#ddlJSSJ").val() : new Date().toString("yyyy-mm-dd HH:mm:ss");
+        var time = new Date();
+        var jsjzsj = $("#ddlJSSJ").val() ? $("#ddlJSSJ").val() : time.toLocaleString().replace(/\//g, "-");
+        //var jsjzsj = "2023-09-12 23:59:59";
+        var hospitalCode ='@ViewBag.OrganizeId';
+        var YfbmCode = '@ViewBag.YfbmCode';
+        var ypzt = $("#ddlYPZT").val() ? $("#ddlYPZT").val() : "";
+        var srm = $("#txtINPUTCODE").val() ? $("#txtINPUTCODE").val() : "";
+        var dl = $("#ddlYPLB").val() ? $("#ddlYPLB").val() : "";
+        var jx = $("#ddlJX").val() ? $("#ddlJX").val() : "";
+        var rate = $("#ddlLCL").val() ? $("#ddlLCL").val() : "-1";
+        var shzt = "1";
+        
+        var uri = '@Html.Raw(reportUrl)' + "?tempCode=1251" + "&systemCode=" + '@reportSystemCode';
+
+        uri += "&ksjzsj=" + ksjzsj;
+        uri += "&jsjzsj=" + jsjzsj;
+        uri += "&hospitalCode=" + hospitalCode;
+        uri += "&YfbmCode=" + YfbmCode;
+        uri += "&ypzt=" + ypzt;
+        uri += "&srm=" + srm;
+        uri += "&dl=" + dl;
+        uri += "&jx=" + jx;
+        uri += "&shzt=" + shzt;
+        uri += "&rate=" + rate;
+
+        //var uri = '@Html.Raw(reportUrl)' + "?tempCode=1251";
+        if (uri) {
+            window.open(uri);
+        }
+    })
+
+</script>

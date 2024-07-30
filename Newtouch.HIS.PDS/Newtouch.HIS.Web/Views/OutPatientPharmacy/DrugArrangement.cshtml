@@ -1,0 +1,265 @@
+﻿
+@{
+    ViewBag.Title = "DrugArrangement";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            门诊排药
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">排药员工:</th>
+                    <td class="formValue">
+                        <input id="txtid" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <input id="txtname" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle ">处方张数:</th>
+                    <td class="formValue">
+                        <input id="txtcf" type="text" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle"></th>
+                    <td class="formValue">
+                        <input type="button" class="btn btn-primary btn-md" id="BtnQuery" value="查询" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div style="margin-bottom:10px">
+        <table id="gridCF"></table>
+    </div>
+    <div style="margin-bottom:10px">
+        <table id="gridCFInfo"></table>
+    </div>
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">
+            设置
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form" style="padding-left:20px">
+                <tr>
+                    <th class="formTitle ">查询间隔时间:(秒)</th>
+                    <td class="formValue">
+                        <input id="pycxjgsj" type="number" name="pycxjgsj" class="form-control" />
+                    </td>
+                    <th class="formTitle">
+                    </th>
+                    <td class="formValue">
+                        <input type="checkbox" id="IsAutoPy" /><span>自动排药</span>
+                    </td>
+                    <th class="formTitle ">配药时间:<label name="dw">(秒)</label></th>
+                    <td class="formValue">
+                        <input id="pysj" type="number" class="form-control" value="5" />
+                    </td>
+                    <th></th>
+                    <td></td>
+                    <th></th>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 7, 8 },
+    F7Text = "排药",
+    F8Text = "保存设置"
+})
+</form>
+
+<script>
+    var timer1;//自动排药
+    $(function () {
+        gridCF();
+        init();
+        btn_loaddata();
+
+        if ($("#IsAutoPy").is(':checked')) {
+            pyInterval("1");
+        };
+
+        $("#IsAutoPy").click(function () {
+            var $this = $(this);
+            var type = $this.is(':checked') ? "1" : "2";
+            pyInterval(type);
+        });
+    });
+
+    function init() {
+        $("#txtcf").val("0");
+        loadpyy();
+        loadpyhj();
+        Loadconfig();
+    }
+
+
+    //加载排药员
+    function loadpyy() {
+        $.najax({
+            url: "/OutPatientPharmacy/initPYY?r=" + Math.random(),
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (res) {
+                $.loading(false);
+                $("#txtid").val(res.UserCode);
+                $("#txtname").val(res.UserName);
+            }
+
+        });
+    }
+
+    //加载处方信息
+    function loadpyhj() {
+        $.najax({
+            url: "/OutPatientPharmacy/loadpyhj?r=" + Math.random(),
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (res) {
+                if (res.length !== 0) {
+                    $("#txtcf").val(res.length);
+                }
+            }
+        });
+    }
+
+    //加载配置
+    function Loadconfig() {
+        $.najax({
+            url: "/OutPatientPharmacy/Loadconfig?r=" + Math.random(),
+            dataType: "json",
+            async: false,
+            success: function (res) {
+                $.loading(false);
+                if (res.state === "error") {
+                    $.modalAlert(res.message, "error");
+                    return;
+                }
+                $("#IsAutoPy").attr("checked", res.IsAutoPy === "N" ? false : true);
+                $("#IsAutoFy").attr("checked", res.IsAutoFy === "N" ? false : true);
+                $("#pycxjgsj").val(res.pycxjgsj);
+            }
+
+        });
+    }
+
+    function gridCF() {
+        var $gridCf = $("#gridCF");
+        $gridCf.dataGrid({
+            height: 150,
+            url: "/OutPatientPharmacy/PyInfoSearch?r=" + Math.random(),
+            caption: "处方列表",
+            colModel: [
+                { label: '卡号', name: 'kh', width: 80, align: 'center' },
+                { label: '姓名', name: 'xm', width: 80, align: 'left' },
+                { label: '发票号', name: 'Fph', width: 100, align: 'center' },
+                { label: '处方号', name: 'cfh', width: 120, align: 'center' },
+                { label: '年龄', name: 'nl', width: 50, align: 'center' },
+                { label: '病人类型', name: 'brlxmc', width: 80, align: 'center' },
+                { label: '收费窗口', name: 'sfck', width: 80, align: 'center' },
+                { label: '医生', name: 'ys', width: 80, align: 'left' },
+                { label: '科室', name: 'ksmc', width: 80, align: 'center' },
+                { label: '收费时间', name: 'sfsj', width: 110, align: 'center' },
+                { label: '处方内码', name: 'pcfnm', hidden: true }
+
+            ]
+        });
+        $("#BtnQuery").click(function () {
+            $gridCf.trigger('reloadGrid');
+        });
+    }
+
+    function btn_loaddata(rowid) {
+        var $gridCfInfo = $("#gridCFInfo");
+        $gridCfInfo.jqGrid("clearGridData");
+        var cfh = $("#gridCF").jqGridRowValue().cfh;
+        $gridCfInfo.dataGrid({
+            height: 150,
+            url: "/OutPatientPharmacy/pyDeailInfoSearch?pCfh=" + cfh,
+            caption: "处方明细",
+            colModel: [
+                { label: '药品名称', name: 'ypmc', width: 100, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 150, align: 'left' },
+                { label: '数量', name: 'sl', width: 100, align: 'left' },
+                { label: '单位', name: 'dw', width: 100, align: 'left' },
+                { label: '单价', name: 'dj', width: 100, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 150, align: 'left' },
+                { label: '金额', name: 'je', width: 100, align: 'left' },
+                { label: '剂量', name: 'jl', width: 100, align: 'left' },
+                { label: '剂量单位', name: 'jldw', width: 100, align: 'left' },
+                { label: '用法', name: 'yfmc', width: 100, align: 'left' },
+                //{ label: '频次', name: 'pcmc', width: 100, align: 'left' },
+                { label: '用量', name: 'yl', width: 100, align: 'left' },
+                { label: '用量单位', name: 'yldw', width: 100, align: 'left' },
+                { label: '医生嘱托', name: 'yszt', width: 100, align: 'left' },
+                { label: '药品分组', name: 'czh', width: 100, align: 'left' }
+            ]
+        });
+        var grid = $gridCfInfo.jqGrid()[0].grid;
+        $gridCfInfo.jqGrid().setGridParam({ url: "/OutPatientPharmacy/pyDeailInfoSearch?pCfh=" + cfh });
+        grid.populate();
+    }
+
+    //排药
+    function newtouch_globalevent_f7() {
+        var id = $("#gridCF").jqGrid("getGridParam", "selrow");
+        if (id) {
+            var cfnm = $("#gridCF").jqGridRowValue().pcfnm;
+            var sfck = $("#gridCF").jqGridRowValue().sfck;
+            if (cfnm) {
+                $.najax({
+                    url: "/OutPatientPharmacy/SetPyInfo?cfnm=" + cfnm + "&&sfck=" + sfck,
+                    dataType: "json",
+                    cache: false,
+                    success: function (res) {
+                        if (res.state === "success") {
+                            $.modalMsg('配药成功！', 'success', 1000);
+                            $("#gridCF").jqGrid("clearGridData");
+                            $("#gridCF").jqGrid('resetSelection');
+                            $("#gridCF").trigger("reloadGrid");
+                            $("#gridCFInfo").jqGrid("clearGridData");
+                            $("#gridCFInfo").jqGrid('resetSelection');
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            }
+        } else {
+            $.modalAlert("请先选中处方信息", 'warning');
+        }
+    }
+    //保存设置
+    function newtouch_globalevent_f8() {
+        //var data = $("#form1").formSerialize();
+        //$.ajax({
+        //    type: "POST",
+        //    url: "/OutPatientPharmacy/SubmitConfig",
+        //    data: data,
+        //    dataType: "json",
+        //    cache: false,
+        //    success: function (res) {
+        //        if (res.state === "success") {
+        //            $.modalMsg('修改成功！', 'success', 1000);
+        //        }
+        //    }
+        //});
+    }
+
+    //自动排药定时器 1表示开始 2表示结束
+    function pyInterval(type) {
+        if (type === 1) {
+            timer1 = self.setInterval("gridCF()", 50);
+        } else {
+            window.clearInterval(timer1);
+        }
+    }
+</script>

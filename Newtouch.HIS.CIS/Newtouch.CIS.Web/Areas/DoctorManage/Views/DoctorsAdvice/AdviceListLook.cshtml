@@ -1,0 +1,608 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "AdviceListLook";
+    Layout = null;
+    //长期医嘱打印单是否显示签名
+    var isShowSign = SysConfigReader.String("IS_ShowSigner");
+    //时间
+    var kssj = ViewData["kssj"];
+}
+<style>
+    /*已执行*/
+    .orginal {
+        color: brown;
+    }
+    /*已审核*/
+    .ysh {
+        background-color: white;
+        color: black;
+    }
+    /*已停止*/
+    .grey {
+        color: grey;
+    }
+    /*已作废*/
+    .red {
+        color: red;
+    }
+    /*DC*/
+    .pink {
+        color: pink;
+    }
+
+    .toolbar {
+        width: 45% !important;
+        margin: 10px 30px 12px;
+    }
+</style>
+<div id="linkyzcx" role="tabpanel" class="tab-pane">
+    <div class="topPanel" style="width: 99%; margin-top: -15px; border-radius: 5px;height:unset !important">
+        <table class="form" style="margin-left:5px;">
+            <tr>
+                <td colspan="3" id="btnKeywordTypeGourp">
+                    <input type="button" id="btn_cqyz" class="panelposition btn btn-default btn-md" value="长期医嘱">
+                    <input type="button" id="btn_lsyz" class="panelposition btn btn-default btn-md" value="临时医嘱">
+                </td>
+                <td class="formTitle">
+                    医嘱类型：
+                </td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="yzlx" class="form-control required"></select>
+                </td>
+                <td class="formValue" style="width:15%;margin-left:10px">
+                    <div id="panelposition" style="margin-left:30px">
+                        <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" checked value="qb" />全部医嘱</label>
+                        <label><input type="radio" id="radioTreating" name="optionsRadios" class="optionsRadios formClearIgnore" value="yx" />有效医嘱</label>
+                    </div>
+                </td>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { btn_search() } })" value="@kssj" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { btn_search() }  })" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" onclick="btn_search()" style="margin-right:10px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="contentPanel" style="width: 99%; margin-top: 2px;">
+        <div style="background-color: #fff;width:100%;">
+            <table id="gridPatientList"></table>
+            <div id="gridPatPager"></div>
+        </div>
+    </div>
+    <table style="width:420px;height:20px; margin-top:10px;margin-left:10px; float:left; color:#274b6d">
+        <tr>
+            <td>
+                <label style="height:7px;width:25px;background-color:brown; border:1px solid #ddd"></label>
+            </td>
+            <td>执行长期/临时</td>
+            <td>
+                <label style="height:7px;width:25px;background-color:red; border:1px solid #ddd"></label>
+            </td>
+            <td>作废临时</td>
+            <td>
+                <label style="height:7px;width:25px;background-color:grey; border:1px solid #ddd"></label>
+            </td>
+            <td>停止长期</td>
+            <td>
+                <label style="height:7px;width:25px;background-color:black;  border:1px solid #ddd"></label>
+            </td>
+            <td>未执行长期/临时</td>
+        </tr>
+    </table>
+    @*<div id="printgoon" class="ckbox" style="float:right;padding-right:5px;margin-top:10px;margin-left:10px;">
+        <div>
+            <input id="ck_printgoon" name="ck_printgoon" type="checkbox"><label for="ck_printgoon">续打</label>
+        </div>
+    </div>*@
+    @Html.Partial("_BottomButtonsYzPrintView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 2, 3 },
+    F2Text = "打印长期",
+    F3Text = "打印临时",
+    F5Text = "刷新"
+});
+</div>
+
+<script>
+    var newlist = new Array();
+    var last = "";//上一个组号
+    var isshowSign = '@isShowSign';
+    $(function () {
+        gridPatientList();
+        $('#gridPatientList').clearGridData();
+        $('#btnKeywordTypeGourp').on('click', '.btn', function () {
+            if ($(this).attr('id') == "btn_dryz" || $(this).attr('id') == "btn_wsh") {
+                if (!$(this).hasClass('active')) {
+                    $(this).siblings('.btn').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                }
+            } else {
+                if ($('#btn_dryz').hasClass("active")) {
+                    $('#btn_dryz').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                }
+                if ($('#btn_wsh').hasClass("active")) {
+                    $('#btn_wsh').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                }
+            }
+            if ($(this).hasClass("active")) {
+                $(this).removeClass('btn-restore').removeClass('active').addClass('btn-default');
+            } else {
+                $(this).removeClass('btn-default').addClass('btn-restore active');
+            }
+            btn_search();
+        });
+
+        $("#yzlx").bindSelect({
+            url: "@Url.Action("GetyzlxContain")",
+        });
+    });
+
+
+    function gridPatientList() {
+        $('#gridPatientList').dataGrid({
+            url:"@Url.Action("AdviceGridView")",
+            height: $(window).height() - 220,
+            postData: getSearchPostData(),
+            unwritten: false,
+            pager: '#gridPatPager',
+            sortname: 'zh,yzlb,yzlx,kssj desc',
+            rowNum: 100,
+            rownumbers: true,
+            colModel: [
+                { label: '医嘱ID', name: 'Id', align: 'center',  hidden: true },
+                {label: '医嘱类别', name: 'yzlb', align: 'center', width: 50},
+                {
+                    label: '医嘱类型', name: 'yzlx', align: 'center', width: 50, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumYzlx", val);
+                    }
+                },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 109, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '医生', name: 'ysmc', align: 'center', width: 40 },
+                { label: '医嘱', name: 'yznr', align: 'center', width: 240},
+                {label: '同组', name: 'zh', align: 'center', width: 30},
+                {
+                    label: '停止时间', name: 'tzsj', align: 'center', width: 110, formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: '停止医生', name: 'tzr', align: 'center', width: 50 },
+				{ label: '执行者', name: 'zxr', align: 'center', width: 50 },
+				{ label: '执行科室', name: 'deptName', align: 'center', width: 60 },
+                { label: 'yztag', name: 'yztag', align: 'center', hidden: true },
+                { label: '精麻', name: 'yztagName', align: 'center', width: 30 },
+                {
+                    label: '药品总量', name: 'zycldw', align: 'center', width: 30
+                },
+                { label: '计费', name: 'isjf', align: 'center', width: 30,formatter:function(val){
+                    return $.enum.getDescByValue("EnumSF", val);
+                } },
+                {
+                    label: '皮试', name: 'ispscs', align: 'center', width: 30, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumSF", val);
+                    }
+                },
+                { label: '转自费', name: 'zzfbz', align: 'center', width: 30,formatter:function(val){
+                    return $.enum.getDescByValue("EnumSF", val);
+					}
+				},
+                { label: '最后<br/>执行时间', name: 'zxsj', align: 'center', width: 70, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+    ],
+
+            gridComplete: function () {
+                var ids = $("#gridPatientList").jqGrid('getDataIDs');
+                for (i = 0; i < ids.length; i++) {
+                    var rowData = $("#gridPatientList").jqGrid('getRowData', ids[i]);
+                    if (rowData.yzzt == "执行") {
+                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('orginal');
+                    } else
+                        if (rowData.yzzt == "待审" || rowData.yzzt == "审核") {
+                            $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('ysh');
+                        } else
+                            if (rowData.yzzt == "停止") {
+                                $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('grey');
+                            } else if (rowData.yzzt == "作废") {
+                                $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('red');
+                            }
+                    //组号生成特殊符号
+                    var returnval = "";
+                    if (rowData.zh != typeof (undefined) && rowData.zh !== "" && rowData.zh !== null) {
+                        if (last == rowData.zh) {
+                            returnval = "中间";
+                            if (i == (ids.length - 1)) {//最后一个
+                                returnval = "结束";
+                                last = "";
+                            }
+                        } else if (last !== rowData.zh) {
+                            if (last !== "") {
+                                setlastrowzuhao(ids[i]);
+                            }
+                            returnval = "开始";
+                        }
+                        $("#gridPatientList").setCell(ids[i], "zh", '<img src="../../../../Content/img/' + returnval + '.png" />');//setCell 设置单元格样式 值 或属性
+                    } else if (last !== rowData.zh && last !== "") {
+                        setlastrowzuhao(ids[i]);
+                    }
+                    last = rowData.zh;
+                }
+            },
+            //onSortCol: function (index, iCol, sortorder) {
+            //    if (index=="cz") {
+            //        $("#gridPatientList").setColProp(iCol, { sortable: false });
+            //    }
+            //}
+    });
+    }
+    //设置上一行组号
+    function setlastrowzuhao(rowid) {
+        var lastrow = parseInt(rowid) - 1;
+        $("#gridPatientList").setCell(lastrow, "zh", '<img src="../../../../Content/img/结束.png" />');//setCell 设置单元格样式 值 或属性
+    }
+
+    function getSearchPostData() {
+        if (currentobj == null || currentobj==undefined) return null;
+        var wsh = false;
+        var dryz = false;
+        var yzlb = "长临";
+        if ($('#btn_wsh').hasClass("active")) {//未审核
+            wsh = true;
+        } else
+            if ($('#btn_dryz').hasClass("active")) {
+                dryz = true;
+            } else if (($('#btn_cqyz').hasClass("active") && $('#btn_lsyz').hasClass("active"))) {
+                var yzlb = "长临";
+            } else if ($('#btn_cqyz').hasClass("active") && !$('#btn_lsyz').hasClass("active")) {
+                var yzlb = "长";
+            } else if (!$('#btn_cqyz').hasClass("active") && $('#btn_lsyz').hasClass("active")) {
+                var yzlb = "临";
+            }
+        var yx = $('input[name="optionsRadios"]:checked').val();//$('#optionsRadios').val();
+        var kssj = $('#kssj').val();
+        var jssj = $('#jssj').val();
+        var yzlx = $('#yzlx').val();
+        return {dryz: dryz, yzlb: yzlb, wsh: wsh, yx: yx, kssj: kssj, jssj: jssj, yzlx: yzlx, zyh: currentobj.zyh };
+    }
+
+    function btn_search() {
+        last = "";
+        $("#gridPatientList").clearGridData();
+        $("#gridPatientList").jqGrid('setGridParam', {
+            url: "@Url.Action("AdviceGridView")",
+            postData: getSearchPostData()
+        }).trigger("reloadGrid");
+    }
+    $('#yzlx').change(function () {
+        btn_search();
+    });
+    $('#panelposition').click(function () {
+        btn_search();
+    });
+
+
+    //医嘱停止
+    function advicestop(selRowId) {
+        var yzId = $("#gridPatientList").jqGrid('getRowData', selRowId).Id;
+        var yznr = $("#gridPatientList").jqGrid('getRowData', selRowId).yznr;
+        var kssj = $("#gridPatientList").jqGrid('getRowData', selRowId).kssj;
+        var tzsj = $.trim($("#gridPatientList").jqGrid('getRowData', selRowId).tzsj);
+        var tznr = "无停止时间";
+        if (tzsj !== typeof (undefined) && tzsj !== "") {
+            var date1 = new Date(kssj)
+            var date2 = new Date(tzsj)
+
+            var s1 = date1.getTime(), s2 = date2.getTime();
+
+            var total = (s2 - s1) / 1000;
+            tznr = parseInt(total / (24 * 60 * 60)) + "天";//计算整数天数
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "医嘱停止",
+            url: "/DoctorManage/DoctorsAdvice/AdviceStop?yzId=" + yzId + "&yznr=" + yznr + "&kssj=" + kssj + "&tznr=" + tznr,
+            width: "550px",
+            height: "370px",
+            callBack: function (iframeId) {
+                var obj = top.frames[iframeId].submitForm(function () {
+                    $.loading(false);
+                    $.modalMsg("操作成功", 'success');
+                    $.modalClose("Form");
+                    btn_search();
+                });
+
+            }
+        });
+    }
+
+    //删除
+    function advicedel(yzid) {
+        $.modalConfirm("确定要删除吗？",
+            function (flag) {
+                if (flag) {
+                    $.najax({
+                        url: "@Url.Action("DelForm")",
+                        dataType: "json",
+                        data: { yzId: yzid},
+                        type: "POST",
+                        success: function () {
+                            $.loading(false);
+                            $.modalMsg("删除成功", 'success');
+                            btn_search();
+                        }
+                    });
+                }
+            });
+    }
+
+    //作废
+    function adviceinvalid(yzId, yzzt,yzlx) {
+        window.zfgoon = function () {
+            $.modalConfirm("【注意】医嘱作废后，请及时联系护士处理已发送药品！该条医嘱已发药或者已发送，是否确认作废",
+                       function (flag2) {
+                           if (flag2) {
+                               var data = { yzId: yzId };
+                               $.najax({
+                                   url: "@Url.Action("StopSubmitForm")",
+                                   dataType: "json",
+                                   data: data,
+                                   type: "POST",
+                                   success: function () {
+                                       $.loading(false);
+                                       $.modalMsg("操作成功", 'success');
+                                       btn_search();
+                                   }
+                               });
+                           } else {
+                               return;
+                           }
+                       });
+        };
+        $.modalConfirm("是否需要作废？",
+            function (flag) {
+                if (flag) {
+                    if (yzzt == @Html.Raw((int)EnumYzzt.Zx).ToString()&& ((yzlx==@Html.Raw((int)EnumYzlx.Cydy))||(yzlx==@Html.Raw((int)EnumYzlx.Yp)))) {
+                        setTimeout('zfgoon()', 100);
+                    } else {
+                        var data = { yzId: yzId };
+                        $.najax({
+                            url: "@Url.Action("StopSubmitForm")",
+                            dataType: "json",
+                            data: data,
+                            type: "POST",
+                            success: function () {
+                                $.loading(false);
+                                $.modalMsg("操作成功", 'success');
+                                btn_search();
+                            }
+                        });
+                    }
+                } else {
+                    return;
+                }
+            });
+    }
+    //修改
+    function advicemodify(yzId, yzlx, yzlb) {
+        if (currentobj == typeof (undefined) || currentobj.zyh == typeof (undefined)) {
+            $.modalAlert("缺少病人");
+            return;
+        }
+        //1.先判断当前医嘱类型
+        if (yzlx == typeof (undefined) || yzlx == "") {
+            $.modalAlert("缺少医嘱类型");
+            return;
+        }
+        //2.进入到相对应页面修改医嘱
+        switch (parseInt(yzlx)) {
+            case @Html.Raw(((int)EnumYzlx.Yp).ToString())://药品
+                $('#myTab [href="#linkyplr"').trigger('click'); //初始化显示哪个tab
+                EditMInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.Wz).ToString())://文字
+                $('#myTab [href="#linkwzlr"').trigger('click'); //初始化显示哪个tab
+                EditWInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.sfxm).ToString())://项目
+                $('#myTab [href="#linkxmlr"').trigger('click'); //初始化显示哪个tab
+                EditIInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.rehab).ToString())://项目
+            	$('#myTab [href="#linkkfyz"').trigger('click'); //初始化显示哪个tab
+	            EditRInit(currentobj.zyh, yzId, yzlb);
+	            break;
+            case @Html.Raw(((int)EnumYzlx.Cydy).ToString())://出院带药
+                $('#myTab [href="#linkcydy"').trigger('click'); //初始化显示哪个tab
+                EditTInit(currentobj.zyh, yzId, yzlb);
+                break;
+                @*case @Html.Raw(((int)EnumYzlx.Ty).ToString())://通用
+                //$('#myTab [href="#linkyplr"').trigger('click'); //初始化显示哪个tab
+                //EditInit(zyh, yzId, yzlb);
+                break;*@
+            case @Html.Raw(((int)EnumYzlx.jy).ToString())://检验
+                $('#myTab [href="#linkjy"').trigger('click'); //初始化显示哪个tab
+                EditJYInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.jc).ToString())://检查
+                $('#myTab [href="#linkjc"').trigger('click'); //初始化显示哪个tab
+                EditJCInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.ssyz).ToString())://膳食医嘱
+                $('#myTab [href="#linkssyz"').trigger('click'); //初始化显示哪个tab
+                EditSSInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.oper).ToString())://手术医嘱
+                $('#myTab [href="#linkxmlr"').trigger('click'); //初始化显示哪个tab
+                EditIInit(currentobj.zyh, yzId, yzlb);
+                break;
+            case @Html.Raw(((int)EnumYzlx.zcy).ToString())://中草药
+                $('#myTab [href="#linkzylr"').trigger('click'); //初始化显示哪个tab
+                EditTCMInit(currentobj.zyh, yzId, yzlb);
+                break;
+        }
+    }
+    //撤DC
+    function advicedc(yzId) {
+        $.najax({
+            url: "@Url.Action("advicedc")",
+            dataType: "json",
+            data: { yzId: yzId},
+            type: "POST",
+            success: function () {
+                $.loading(false);
+                $.modalMsg("操作成功", 'success');
+                btn_search();
+            }
+        });
+    }
+    //续打
+    //function newtouch_event_f8() {
+    //    $.modalOpen({
+    //        id: "ContinuePrint",
+    //        title: "续打",
+    //        url: "/DoctorManage/DoctorsAdvice/ContinuePrint",
+    //        width: "550px",
+    //        height: "300px",
+    //        callBack: function (iframeId) {
+
+    //            $.modalClose("AdviceLeaveHospitalStop");
+    //        }
+    //    });
+    //}
+
+    //刷新
+    function newtouch_event_f4() {
+        btn_search();
+    }
+    //出院全停
+    function newtouch_event_f6() {
+        boolwsh(currentobj.zyh, function (rbnbool) {
+            if (rbnbool) {
+                $.modalAlert("该患者存在未审核的医嘱，请联系护士审核后再做操作", "warning");
+                return;
+            }
+            AdviceLeaveHospitalStop();
+        });
+    }
+
+    ///出院全停操作
+    function AdviceLeaveHospitalStop() {
+        $.modalOpen({
+            id: "AdviceLeaveHospitalStop",
+            title: "出院全停",
+            url: "/DoctorManage/DoctorsAdvice/AdviceLeaveHospitalStop?zyh=" + currentobj.zyh,
+            width: "550px",
+            height: "300px",
+            callBack: function (iframeId) {
+                $.modalConfirm("是否确认出院全停该患者的长期医嘱？",
+                    function (flag) {
+                        if (flag) {
+                            top.frames[iframeId].submitForm(function () {
+                                $.loading(false);
+                                $.modalClose("AdviceLeaveHospitalStop");
+                                $.modalMsg("出院全停成功", 'success');
+                                btn_search();
+                            });
+                        }
+                    });
+            }
+        });
+    }
+
+    //转区全停
+    function newtouch_event_f7() {
+        $.modalOpen({
+            id: "TransferWardStop",
+            title: "转区全停",
+            url: "/DoctorManage/DoctorsAdvice/TransferWardStop?zyh=" + currentobj.zyh,
+            width: "550px",
+            height: "300px",
+            callBack: function (iframeId) {
+                $.modalConfirm("是否确认全停该患者的长期医嘱？",
+                    function (flag) {
+                        if (flag) {
+                            top.frames[iframeId].submitForm(function () {
+                                $.loading(false);
+                                $.modalClose("TransferWardStop");
+                                $.modalMsg("转区全停成功", 'success');
+                                btn_search();
+                            });
+                        }
+                    });
+            }
+        });
+    }
+
+    ///判断当前病人是否存在未审核的长期医嘱
+    function boolwsh(zyh, callback) {
+        $.najax({
+            url: "@Url.Action("boolwsh")",
+            dataType: "json",
+            data: { zyh: zyh },
+            async: true,
+            type: "POST",
+            success: function () {
+                callback(false);
+            }, error: function () {
+                callback(true);
+            }
+        });
+    }
+
+    //打印长期医嘱
+    function newtouch_event_f2() {
+        var zyh = currentobj.zyh;
+        
+        var isSign = "0";
+        if (isshowSign && isshowSign === '1') {
+            isSign = "1";
+        }
+        if($('#ck_printgoon').is(':checked'))
+        {
+            $.modalAlert("长期医嘱不支持续打,请勿勾选续打", "warning");
+           // yzContinuePrint(zyh,"2",isSign)
+        }
+        else{
+            window.open("/ReportManage/Report/PrintCqyzReport?zyh=" + zyh + "&isShowSign=" + isSign, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        }
+    }
+    //打印临时医嘱
+    function newtouch_event_f3() {
+        var zyh = currentobj.zyh;
+       
+        var isSign = "0";
+        if (isshowSign && isshowSign === '1') {
+            isSign = "1";
+        }
+        if($('#ck_printgoon').is(':checked'))
+        {
+            yzContinuePrint(zyh,"1",isSign)
+        }
+        else{
+            window.open("/ReportManage/Report/PrintLsyzReport?zyh=" + zyh + "&isShowSign=" + isSign, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        }
+      
+    }
+    function yzContinuePrint(zyh,yzlx,isSign)
+    {
+        var title="临时医嘱续打";
+        if(yzlx=="2")
+        {
+            title="长期医嘱续打";
+        }
+        $.modalOpen({
+            id: "ContinuePrint",
+            title: title,
+            url: "/DoctorManage/DoctorsAdvice/ContinuePrint?zyh=" + zyh + "&isShowSign=" + isSign+ "&yzlx=" + yzlx,
+            width: "650px",
+            height: "300px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].ContinuePrint();
+                $.loading(false);
+                $.modalClose("ContinuePrint");
+            }
+        });
+    }
+</script>
+

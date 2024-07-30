@@ -1,0 +1,109 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" style="margin-left: 4%;">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 99px; margin-left:69px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>组织机构：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="Name" name="Name" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>编码：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="Code" name="Code" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>首拼：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="py" name="py" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control" id="px" name="px" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">有效：</th>
+                        <td class="formValue">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var sfflId = $.request("sfflId");
+    var OrganizeId = $.request("OrganizeId");
+    $(function () {
+        initControl();
+
+        if (!!sfflId) {
+            $.najax({
+                url: "/RehabChargeClassification/GetFormJson?r=" + Math.random(),
+                data: { sfflId: sfflId, OrganizeId: OrganizeId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    })
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+    }
+
+    //首拼
+    $('#Name').keyup(function () {
+        $('#py').val($(this).toShouPin());
+    })
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/RehabChargeClassification/SubmitForm?sfflId=" + sfflId,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+
+</script>
+
+

@@ -1,0 +1,115 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div style="margin-top: 20px; margin-left: 30px;">
+    <span style="color:red;">*.开立处方（医嘱）项目可选范围配置</span>，比如开立西药处方可选范围仅西药费类药品
+</div>
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle"><span class="required">*</span>组织机构：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>类型：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="Type" name="Type" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>收费大类：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="dlCode" name="dlCode" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">排序：</th>
+                <td class="formValue">
+                    <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">状态：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/SysChargeCategoryTypeRelation/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+
+                    $("#OrganizeId").trigger('change');
+
+                    $("#dlCode").val(data.dlCode).select2();
+                    $("#Type").val(data.Type).select2();
+                }
+            });
+        }
+        else {
+            var newOrgId = $.request('orgId');
+            if (newOrgId) {
+                $("#OrganizeId").val(newOrgId).trigger('change');
+            }
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+        //组织对应的科室下拉框加载
+        $("#OrganizeId").bind("change", function () {
+            var organizeId = $(this).val();
+            //获取收费大类
+            $("#dlCode").bindSelect({
+                url: "/ChargeCategory/GetTreeSelectJson?organizeId=" + organizeId,
+            });
+            //类型下拉    //这里不区分组织机构
+            $("#Type").bindSelect({
+                url: "/ItemsData/GetSelectJson",
+                param: { code: "ChargeCateType" }
+            });
+        });
+    }
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/SysChargeCategoryTypeRelation/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

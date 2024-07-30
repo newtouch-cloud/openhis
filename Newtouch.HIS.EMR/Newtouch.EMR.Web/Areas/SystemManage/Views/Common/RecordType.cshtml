@@ -1,0 +1,183 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="mb-add" authorize="yes" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建大类</a>
+        </div>
+        <div class="btn-group">
+            <a id="mb-addchild" authorize="yes" class="btn btn-primary" onclick="btn_addchild()"><i class="fa fa-plus"></i>新建子目录</a>
+        </div>
+        <div class="btn-group">
+            <a id="mb-edit" authorize="yes" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="病历大类" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList" style="width:100%;"></table>
+    @*<div id="gridPager"></div>*@
+</div>
+<script>
+    $(function () {
+        gridList();
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+            url: "/SystemManage/Common/GetBllxListTreeGrid",
+            height: $(window).height() - 128,
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "bllxcode",
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: "ParentId", name: "ParentId", hidden: true },
+                { label: "IsRoot", name: "IsRoot", hidden: true },
+                {
+                    label: "业务类型", name: "mzbz", width: 60, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == "1") {
+                            return "门诊"
+                        }
+                        else if (cellvalue == "0") {
+                            return "住院"
+                        }
+                        else {
+                            return "不限"
+                        }
+                    }
+                },
+                { label: "病历大类", name: "bllxmc", width: 100, align: 'left'},
+                { label: "简码", name: "bllxcode", width: 80, align: 'center', },
+                { label: '病历大类标识', name: 'bllx', width: 80, align: 'left' },
+                { label: "关联岗位", name: "RelDutysDesc", width: 200, align: 'left', },
+                { label: "排序", name: "px", width: 80, align: 'center', },
+                { label: "有效", name: "zt", width: 50, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'center' },
+                { label: '创建时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'center' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+            ],
+            //pager: "#gridPager",
+            sortname: 'bllx asc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    });
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增病历大类",
+            url: "/SystemManage/Common/RecordTypeForm",
+            width: "600px",
+            height: "550px",
+            //btn: null,
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        debugger;
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选择病历大类", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        var rowData = $("#gridList").jqGrid('getRowData', keyValue);
+        if (rowData.IsRoot=="0") {
+            $.modalOpen({
+                id: "Form",
+                title: "修改子目录",
+                url: "/SystemManage/Common/RecordTypeChildForm?keyValue=" + keyValue,
+                width: "400px",
+                height: "300px",
+                btn: null,
+                callBack: function (iframeId) {
+                    top.frames[iframeId].submitForm();
+                }
+            });
+        }
+        else {
+            $.modalOpen({
+                id: "Form",
+                title: "修改病历大类",
+                url: "/SystemManage/Common/RecordTypeForm?keyValue=" + keyValue,
+                width: "600px",
+                height: "550px",
+                //btn: null,
+                callBack: function (iframeId) {
+                    top.frames[iframeId].submitForm();
+                }
+            });
+        }
+    }
+
+    function btn_addchild() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增病历子目录",
+            url: "/SystemManage/Common/RecordTypeChildForm",
+            width: "400px",
+            height: "300px",
+            btn: null,
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_delete()
+    {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.deleteForm({
+            url: "/SystemManage/Common/DeleteForm",
+            param: { keyValue: keyValue },
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalAlert('删除成功', 'success');
+                }
+                else {
+                    $.modalAlert(data.message, 'error');
+                }
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

@@ -1,0 +1,212 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" authorize="yes" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_xy()"><i class="fa fa-pencil-square-o"></i>限用</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码/首拼" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="toolbar">
+        <select id="sfdl" name="sfdl" class="form-control required" style="width:120px">
+            <option value="">==请选择==</option>
+        </select>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        debugger
+        initControl();
+        gridList()
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val(), sfdl: $("#sfdl").val() },
+            url: "/SysChargeItem/GetGridJson",
+            height: $(window).height() - 128,
+            colModel: [
+                 { label: "主键", name: "sfxmId", hidden: true, key: true },
+                 //{
+                 //    label: '同步', name: 'isSynch', width: 40, align: 'left',
+                 //    formatter: function (cellvalue, options, rowObject) {
+                 //        if (cellvalue === '0') {
+                 //            var $row = JSON.stringify(rowObject).replace(/\"/g, "'");
+                 //            return '<a class="btn btn-default btn-xs" onclick="YibaoUpload(' + $row + ')"><span class="glyphicon glyphicon-refresh"></span></a>';
+                 //        }
+                 //        else if (cellvalue === '1') {
+                 //            return '<a class="btn btn-default btn-xs disabled"><span class="glyphicon glyphicon-refresh"></span></a>';
+                 //        }
+                 //        else {
+                 //            return '';
+                 //        }
+                 //    }
+                 //},
+                 { label: '名称', name: 'sfxmmc', width: 150, align: 'left' },
+                 { label: '规格', name: 'gg', width: 30, align: 'left' },
+                 { label: "编码", name: "sfxmCode", width: 75, align: 'left' },
+                { label: "医保代码", name: "ybdm", width: 75, align: 'left' },
+                { label: "国家医保代码", name: "gjybdm", width: 90, align: 'left' },
+                { label: "新农合医保代码", name: "xnhybdm", width: 90, align: 'left', hidden: true },
+                 { label: "首拼", name: "py", hidden: true },
+                { label: '国家医保名称', name: 'gjybmc', width: 150, align: 'left' },
+                { label: '生产厂家', name: 'sccj', width: 150, align: 'left' },
+                {
+                    label: "自负性质", name: "zfxz", width: 60, align: 'left', formatter: function (cellVallue) {
+                        return cellVallue == 0 ? "可报" : (cellVallue == 1 ? "自费" : (cellVallue == 2 ? "分类自负" : (cellVallue == 3 ? "绝对自理" : (cellVallue == 4 ? "甲类" : (cellVallue == 5 ? "乙类" : (cellVallue == 6 ? "丙类" : ""))))));
+                    }
+                },
+                {
+                    label: "单价", name: "dj", width: 60, align: 'left', formatter: "number"
+                , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+                },
+                { label: "收费大类", name: "sfdlmc", width: 100, align: 'left' },
+                {
+                    label: '超限价金额', name: 'cxjje', width: 80, align: 'left',
+                    formatter: function (cxjje) {
+                        if (cxjje == 0 || cxjje == null) {
+                            return "0.00";
+                        } else {
+                            return cxjje;
+                        }
+                    }
+                },
+                 { label: "有效", name: "zt", width: 80, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                 { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                 { label: '创建时间', name: 'CreateTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                 { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                 { label: '最后修改时间', name: 'LastModifyTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+				{ label: '排序', name: 'px', width: 40, align: 'left' },
+				{ label: "是否是物资同步数据", name: "iswzsame", hidden: true },
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val(), sfdl: $("#sfdl").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function initControl() {
+        //获取收费大类
+        $("#sfdl").bindSelect({
+            url: "/ChargeCategory/GetTreeSelectJson?organizeId=" + $("#OrganizeId").val(),
+        });
+    }
+
+    $("#sfdl").change(function () {
+        $('#btn_search').trigger('click');
+    });
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增项目",
+            url: "/SysChargeItem/Form?orgId=" + $('#OrganizeId').val(),
+            width: "1100px",
+            height: "570px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+		}
+		if ($("#gridList").jqGridRowValue().iswzsame=="1") {
+			$.modalAlert("该数据为物资系统同步过来的数据，如果要修改请到物资系统进行修改", 'warning');
+			return;
+		}
+        var keyValue = $("#gridList").jqGridRowValue().sfxmId;
+        $.modalOpen({
+            id: "Form",
+            title: "修改项目",
+            url: "/SysChargeItem/Form?keyValue=" + keyValue,
+			width: "1100px",
+			height: "550px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_xy()
+    {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var xmdm = $("#gridList").jqGridRowValue().sfxmCode;
+        var xmmc = encodeURIComponent($("#gridList").jqGridRowValue().sfxmmc);
+        xmmc = xmmc.replace(/%/g, '%25');
+        var title = "【"+$("#gridList").jqGridRowValue().sfxmmc +"】"+ "的限用";
+        $.modalOpen({
+            id: "Form",
+            title: title,
+            url: "/SysChargeItem/YbbxblForm?xmdm=" + xmdm + "&xmmc=" + encodeURIComponent(xmmc),
+            width: "600px",
+            height: "550px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+               
+            }
+        });
+    }
+    
+    //收费项目同步医保
+    function YibaoUpload(row) {
+        $.najax({
+            url: "/SysChargeItem/YibaoUploadApi",
+            type: "POST",
+            data: { sfxmId: row.sfxmId, flag: row.zt },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                $.modalAlert(data.message, data.state);
+                $('#btn_search').trigger('click');
+            }
+        });
+    }
+</script>
+

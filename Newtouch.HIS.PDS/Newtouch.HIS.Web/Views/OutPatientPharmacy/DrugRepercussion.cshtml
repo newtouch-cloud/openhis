@@ -1,0 +1,264 @@
+﻿@{
+    ViewBag.Title = "DrugRepercussion";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var partReturnSwitch = (bool)ViewBag.partReturnSwitch ? "true" : "false";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    .form-control {
+        padding: 0 3px;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">筛选条件</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle" style="width:50px;">卡号：</th>
+                <td class="formValue">
+                    <input type="text" id="kh" class="form-control" placeholder="卡号" />
+                </td>
+                <th class="formTitle" style="width:50px;">姓名：</th>
+                <td class="formValue">
+                    <input type="text" id="xm" class="form-control" placeholder="姓名" />
+                </td>
+                <th class="formTitle" style="width:60px;">处方号：</th>
+                <td class="formValue">
+                    <input type="text" id="cfh" class="form-control" />
+                </td>
+                <th class="formTitle" style="width:60px;">发票号：</th>
+                <td class="formValue">
+                    <input type="text" id="fph" class="form-control" />
+                </td>
+                <th class="formTitle" style="width:70px;"><span style="color:red;">*</span>发药时间：</th>
+                <td class="formValue" style="width: 220px;">
+                    <input id="begindate" type="text" class="form-control input-wdatepicker" style="width:85px;float:left;" value="@DateTime.Now.AddDays(-3).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="float:left;margin:0 5px;">-</span>
+                    <input id="enddate" type="text" class="form-control input-wdatepicker" style="width:85px;float:left;" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <td class="formTitle" style="padding: 15px; width: 50px;">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div id="dv_left" style=" float: left; width: 35%;">
+    <table id="gridTYCF"></table>
+</div>
+<div id="dv_right" style="float: left; width:64.5%; margin-left:0.5%;">
+    <table id="gridTYCFInfo"></table>
+    <div class="ckbox" style="float:left;margin:10px 10px 12px;">
+        <input id="autoprint" name="autoprint" type="checkbox" @ViewBag.autoPrintSwitch><label for="autoprint">自动打印</label>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 7 },
+    F7Text = "退药",
+    WapperInlineStyle = "float:right;width:100px;margin:10px 30px 12px;text-align:right;"
+})
+</div>
+<script>
+    var $gridCfList = $("#gridTYCF");
+    var $gridCfDetail = $("#gridTYCFInfo");
+    $(function () {
+        gridTYCF();
+        gridTYCFDetail();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //获取数据
+    function gridTYCF() {
+        $gridCfList.dataGrid({
+            height: $(window).height() - 180,
+            caption: "处方列表",
+            url: "/OutPatientPharmacy/SearchFyCfList",
+            postData: $("#form1").formSerialize(),
+            colModel: [
+                { label: '处方号', name: 'cfh', width: 115, align: 'center' },
+                { label: '发票号', name: 'Fph', width: 70, align: 'center' },
+                { label: '姓名', name: 'xm', width: 60, align: 'center' },
+                { label: '卡号', name: 'CardNo', width: 60, align: 'center' },
+                {
+                    label: '发药时间',
+                    name: 'fysj',
+                    width: 100,
+                    align: 'center',
+                    formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' }
+                },
+                {
+                    label: '收费时间',
+                    name: 'sfsj',
+                    width: 100,
+                    align: 'center',
+                    formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' }
+                }
+            ],
+            sortname: 'sfsj desc',
+            viewrecords: false,
+            onSelectRow_page: function (rowid, status) {
+                $gridCfDetail.jqGrid("clearGridData");
+                $gridCfDetail.jqGrid('setGridParam',
+                    {
+                        url: "/OutPatientPharmacy/SearchRefundeRpDetail",
+                        postData: { cfh: $gridCfList.jqGrid('getRowData', rowid).cfh }
+                    }).trigger('reloadGrid');
+            },
+            beforeRequest: function () {
+                $("#gridListPager_left").hide();
+                $("#gridListPager_right").hide();
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridCfList.jqGrid('setGridParam',
+                {
+                    postData: $("#form1").formSerialize()
+                }).trigger('reloadGrid');
+        });
+    }
+
+    function gridTYCFDetail() {
+        $gridCfDetail.dataGrid({
+            height: $(window).height() - 230,
+            caption: "处方明细",
+            editurl: "clientArray", //行编辑不向服务器提交数据
+            colModel: [
+                { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+                { label: '可退', name: 'slstr', width: 40, align: 'left' },
+                @*{ label: '数量', name: 'sl', width: 50, align: 'center', editable:@partReturnSwitch,editwidth:'85%' },*@
+                   { label: '数量', name: 'sl', width: 50, align: 'center' },
+                { label: '单位', name: 'dw', width: 50, align: "left" },
+                { label: '规格', name: 'gg', width: 50, align: 'center' },
+                { label: '批号', name: 'ph', width: 90, align: 'center' },
+                { label: '批次', name: 'pc', width: 100, align: 'left' },
+                {
+                    label: '单价',
+                    name: 'dj',
+                    width: 60,
+                    align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.0000";
+                    }
+                },
+                {
+                    label: '金额',
+                    name: 'je',
+                    width: 60,
+                    align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                { label: '生产厂家', name: 'ycmc', width: 120, align: 'left' },
+                { label: '药品分组', name: 'czh', width: 60, align: 'center' },
+                { label: '药品代码', name: 'ypCode', hidden: true },
+                { label: 'ktsl', name: 'ktsl', hidden: true },
+                { label: 'zhyz', name: 'zhyz', hidden: true },
+                { label: 'cfh', name: 'cfh', hidden: true }
+            ],
+            multiselect: false,
+            viewrecords: true,
+            gridComplete: function () {
+                EnableInlineEditBox();
+            }
+        });
+    }
+
+    //启用行内编辑框
+    function EnableInlineEditBox() {
+        var rowIds = $gridCfDetail.jqGrid('getDataIDs'); //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        for (var i = 0; i < rowIds.length; i++) {
+            $gridCfDetail.jqGrid('editRow',
+                rowIds[i],
+                true,
+                null,
+                null,
+                null,
+                null,
+                function (callbackRowId) { //true: when set to true we can use [Enter] key to save the row and [Esc] to cancel editing.
+                });
+        }
+    }
+
+    //退药
+    function newtouch_event_f7() {
+        var id = $gridCfList.jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalAlert("请选中需要退药的处方！", 'warning');
+            return false;
+        }
+        var rowIds = $gridCfDetail.jqGrid('getDataIDs'); //获取所有行Id，遍历使编辑框处于保存状态
+        var tymx = [];
+        //判断退数量
+        for (var i = 0; i < rowIds.length; i++) {
+            $gridCfDetail.saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+            var rowData = $gridCfDetail.jqGrid('getRowData', rowIds[i]);
+            if (!rowData) {
+                return false;
+            }
+            if (rowData.sl.replace(/(^\s*)|(\s*$)/g, "") === "" ||
+                rowData.sl === "" ||
+                isNaN(rowData.sl) ||
+                rowData.sl < 0) {
+                $.modalAlert("项目【" + rowData.ypmc + "】退药数量应为自然数，请确认。", "warning");
+                EnableInlineEditBox(); //启用行内编辑框
+                return false;
+            }
+            if (parseInt(rowData.sl) > parseInt(rowData.ktsl)) {
+                $.modalAlert("项目【" + rowData.ypmc + "】退药数量不得超过" + rowData.slstr + "。", "warning");
+                EnableInlineEditBox(); //启用行内编辑框
+                return false;
+            }
+            if (parseInt(rowData.sl) > 0) {
+                tymx.push({
+                    "ypCode": rowData.ypCode,
+                    "sl": rowData.sl,
+                    "zhyz": rowData.zhyz,
+                    "cfh": rowData.cfh,
+                    "ph": rowData.ph,
+                    "czh": rowData.czh,
+                    "pc": rowData.pc
+                });
+            }
+        }
+        if (tymx.length === 0) {
+            $.modalAlert("未找到有效的退药信息。", "warning");
+            return false;
+        }
+        $.modalConfirm("确定退药吗？",
+            function (flag) {
+                if (flag) {
+                    $.najax({
+                        type: "POST",
+                        url: "/OutPatientPharmacy/ExecReturnStorage",
+                        data: { tyParam: tymx },
+                        dataType: "json",
+                        success: function (res) {
+                            if (res.state === "success") {
+                                if ($("#autoprint").get(0).checked) {
+                                    var cfh = $gridCfList.jqGrid('getRowData', id).cfh;
+                                    var tydh = JSON.parse(res.data)[0];
+                                    var uri = '@reportUrl' + "?tempCode=62" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + cfh + "&tydh=" + tydh;
+                                    window.open(uri);
+                                    //window.open("/Report/PrintReport?type=MZTY_Bill&param=OrganizeId=@ViewBag.OrganizeId" + "|yfbmCode=@ViewBag.yfbmCode" + "|cfh=" + cfh + "|tydh=" + tydh);
+                                }
+                                $.modalMsg('退药成功', 'success', 2000);
+                                $gridCfList.jqGrid("clearGridData");
+                                $gridCfList.trigger("reloadGrid");
+                                $gridCfDetail.jqGrid("clearGridData");
+                            }
+                        }
+                    });
+                }
+            });
+    }
+</script>

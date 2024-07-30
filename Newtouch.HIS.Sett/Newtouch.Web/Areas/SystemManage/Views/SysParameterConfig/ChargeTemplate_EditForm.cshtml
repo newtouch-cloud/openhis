@@ -1,0 +1,425 @@
+﻿@{
+    ViewBag.Title = "ChargeTemplate_EditForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+        <div style="padding-top: 20px; margin-right: 30px;">
+            <table id="tb_xm" class="form">
+                <tr>
+                    <th class="formTitle">权限科室：</th>
+                    <td class="formValue">
+                        <select id="dllDepartment" name="dllDepartment" class="form-control">
+                            <option>==请选择==</option>
+                        </select>
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>模板编码：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <input id="sfmb" name="sfmb" type="text" class="form-control required" value="" placeholder="请输入模板编码" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>模板名称：</th>
+                    <td class="formValue">
+                        <input id="sfmbmc" name="sfmbmc" type="text" class="form-control required" value="" placeholder="请输入模板名称" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>名称首拼：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <input id="py" name="py" type="text" class="form-control required" value=""  />
+                    </td>
+                </tr>
+            </table>
+            <table id="tb_com" class="form">
+                <tr>
+                    <td class="formTitle"><span class="required">*</span>门诊住院标志：</td>
+                    <td class="formValue">
+                        <select id="mzzybz" name="mzzybz" class="form-control required">
+                            <option value="">==请选择==</option>
+                            <option value="0">通用</option>
+                            <option value="1">门诊</option>
+                            <option value="2">住院</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">频次：</th>
+                    <td class="formValue">
+                        <input type="text" id="yzpc" class="form-control" value="">
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">单次治疗量：</th>
+                    <td class="formValue">
+                        <input type="text" id="zll" class="form-control" value="">
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>数量：</th>
+                    <td class="formValue">
+                        <input type="text" id="sl" class="form-control" value="">
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">执行次数：</th>
+                    <td class="formValue">
+                        <input type="text" id="zxcs" class="form-control" value="">
+                    </td>
+                    <th class="formTitle">部位：</th>
+                    <td class="formValue">
+                        <input type="text" id="bw" class="form-control" value="">
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">执行科室：</th>
+                    <td class="formValue">
+                        <select id="zxks" name="zxks" class="form-control">
+                            <option>==请选择==</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">用法：</th>
+                    <td class="formValue">
+                        <select id="yf" name="yf" class="form-control">
+                            <option>==请选择==</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">康复类别：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="kflb" name="kflb" class="form-control" data-ItemType="RehabTreatmentMethod">
+                            <option value="">==请选择==</option>
+                        </select>
+                    </td>
+                    <th class="formTitle">单位时长(分)：</th>
+                    <td class="formValue">
+                        <input id="duration" type="text" class="form-control" value="" />
+                    </td>
+                </tr>
+            </table>
+            <table id="tb_op" class="form" hidden="hidden">
+                <tr>
+                    <th class="formTitle">收费大类：</th>
+                    <td class="formValue formDdlSelectorTd">
+                        <select id="sfdl" name="sfdl" class="form-control" >
+                            <option value="">==请选择==</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <table id="tb_addxm" class="form">
+                <tr>
+                    <th class="formTitle"><b><span class="required">*</span>添加项目：</b></th>
+                    <td class="formValue">
+                        <input id="txtSFXMSel" type="text" class="form-control" placeholder="请输入项目名称或拼音" />
+                    </td>
+                    <th class="formTitle">选项：</th>
+                    <td class="formValue" style="padding-top: 1px;">
+                        <div class="ckbox">
+                            <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                        </div>
+                    </td>
+                    <td>
+                        &nbsp;&nbsp;&nbsp;
+                        <i class="fa fa-minus-circle fa-lg" id="btn_Remove" style="cursor:pointer;" onclick="btn_removeItem()"></i>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+<div class="rows" style="margin: 1% 5%;" id="divPatOutHospitalChargeListInfo">
+    <table id="xmDetailListGridList"></table>
+</div>
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/Content/js/floatingselector.js", false)"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/floatingselector.css", false)" rel="stylesheet" />
+<script>
+    var keyValue = $.request("keyValue");
+    var opDept = '@ViewBag.OpDept';
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.ajax({
+                url: "/SystemManage/SysParameterConfig/ChargeTemplate_EditForm_Data",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data.TemplateEntity);
+                    debugger
+                    $("#dllDepartment").val(data.TemplateEntity.ks).trigger('change');
+                    $("#yf").val(data.TemplateEntity.yfdm).trigger('change');
+                    if (data.SysList && data.SysList.length) {
+                        if (data.SysList[0].kflb) {
+                            $("#kflb").val(data.SysList[0].kflb).trigger('change');
+                        }
+                        if (data.SysList[0].zxks) {
+                            $("#zxks").val(data.SysList[0].zxks).trigger('change');
+                        }
+                        //if (data.SysList[0].yf) {
+                            
+                        //}
+                    }
+
+                    initChargeItemGrid(data.SysList);
+                }
+            });
+        }
+        else {
+            initChargeItemGrid([]);
+        };
+    });
+
+    function initControl() {
+        $("#dllDepartment").html('<option>==请选择==</option>').bindSelect({
+            url: "/SystemManage/SysDepartment/GetTreeSelectJson",
+        });
+        //配置手术 则默认手术项目
+        if (opDept != null && opDept != "") {
+            $("#dllDepartment").val(opDept).trigger('change');
+
+            if ($("#tb_op").attr("hidden")) {
+                $("#tb_op").attr("hidden", false);
+                $("#tb_com").attr("hidden", true);
+            }
+
+        }
+
+        $("#zxks").html('<option>==请选择==</option>').bindSelect({
+            url: "/SystemManage/SysDepartment/GetTreeSelectJson",
+        });
+        $('#mzzybz').select2();
+        $('#yzpc').pcFloatingSelector({
+            showtext: "yzpcmc",
+            attrcols: ['yzpcmc', 'yzpcCode'],
+            itemdbclickhandler: function ($this) {
+                $('#yzpc').val($this.attr('data-yzpcmc'));
+                $('#yzpc').attr('data-yzpcCode', $this.attr('data-yzpcCode'));
+                $('#yzpc').attr('data-yzpcmc', $this.attr('data-yzpcmc'));
+            }
+        });
+
+        //$("#dllDepartment").change(function () {
+        //    var dept = $("#dllDepartment option:selected").val();
+        //    if (dept == opDept) {
+        //        if ($("#tb_op").attr("hidden")) {
+        //            $("#tb_op").attr("hidden", false);
+        //            $("#tb_com").attr("hidden", true);
+        //        }
+        //    }
+        //    else {
+        //        if ($("#tb_com").attr("hidden")) {
+        //            $("#tb_com").attr("hidden", false);
+        //            $("#tb_op").attr("hidden", true);
+        //        }
+        //    }
+        //});
+
+        //加载收费大类树
+        $("#sfdl").bindSelect({
+            url: "/NonTreatmentItem/GetTreeSelectChargeCategoryJson"
+        });
+
+
+        //加载药品用法
+        $("#yf").bindSelect({
+            url: "/SystemManage/SysParameterConfig/GetUsages",
+            id: "yfCode",
+            text: "yfmc"
+        });
+
+    }
+
+    //jGrid声明
+    function initChargeItemGrid(data) {
+        $('#xmDetailListGridList').newtouchLocalDataGrid({
+            height: 100,
+            unwritten: false,
+            caption: "收费项目",
+            colModel: [
+                { label: '收费项目', name: 'sfxmCode', hidden: true, key: true },
+                { label: '收费项目名称', name: 'sfxmmc', width: 140, align: 'left' },
+                { label: '拼音', name: 'py', hidden: true, align: 'left' },
+                { label: '单位', name: 'dw', width: 40, align: 'left' },
+                { label: '单次治疗量', name: 'zll', width: 70, align: 'left' },
+                { label: '数量', name: 'sl', width: 40, align: 'left' },
+                //{ label: '执行次数', name: 'zxcs', width: 60, align: 'left' },
+                { label: '康复类别', name: 'kflbmc', width: 80, align: 'left' },
+                { label: 'kflb', name: 'kflb', hidden: true, align: 'left' },
+                { label: '单位时长', name: 'duration', width: 70, align: 'left' },
+                { label: 'zxks', name: 'zxks', hidden: true },
+                { label: '部位', name: 'bw', width: 70, align: 'left' },
+                { label: 'yzpc', name: 'yzpc', hidden: true },
+                { label: '单价', name: 'dj', width: 80, align: 'left' },
+            ]
+        }, data);
+    }
+
+    //收费项目选择浮层
+    $('#txtSFXMSel').sfxmFloatingSelector({
+        djDecimalPlaces: 4,
+        searchType: 'sfxm',
+        ajaxparameters: function ($thisinput) {
+            return "mzzybz=&dllb=" + '2' + "&keyword=" + $.trim($('#txtSFXMSel').val());
+        },
+        itemdbclickhandler: function ($thistr) {
+            var returnFlag = false;
+            var allData = $("#xmDetailListGridList").getRowData_AllLine(undefined, true);
+            $.each(allData, function () {
+                var itemsfxm = this["sfxmCode"];
+                if (itemsfxm && itemsfxm == $thistr.attr('data-sfxmCode')) {
+                    returnFlag = true;
+                    return;
+                }
+            });
+            if (returnFlag) {
+                return; //不能重复添加
+            }
+            btn_addItem($thistr);
+        },
+    });
+
+    //添加项目
+    function btn_addItem($thistr) {
+        var valsl = $('#sl').val();
+        var valduration = $('#duration').val();
+        var valzll = $('#zll').val();
+        var valzxcs = $('#zxcs').val();
+        var valbw = $('#bw').val();
+        var valkflb = $('#kflb').val();
+        var textkflb = "";
+        if (!!valkflb) { 
+            textkflb = $('#kflb').find("option:selected").text();
+        }
+        if (((/^(\+|-)?\d+$/).test(valsl)) && (valsl < 0)) {
+            $.modalAlert("数量为大于0的整数", 'warning');
+            return;
+        }
+        if (((/^(\+|-)?\d+$/).test(valduration)) && (valduration < 0)) {
+            $.modalAlert("单位时长为大于0的整数", 'warning');
+            return;
+        }
+        if (((/^(\+|-)?\d+$/).test(valzll)) && (valzll < 0)) {
+            $.modalAlert("治疗量为大于0的整数", 'warning');
+            return;
+        }
+        if (((/^(\+|-)?\d+$/).test(valzxcs)) && (valzxcs < 0)) {
+            $.modalAlert("执行次数为大于0的整数", 'warning');
+            return;
+        }
+
+        if (!valsl && !valzll) {
+            $.modalAlert("请填写数量或单次治疗量", 'warning');
+            return;
+        }
+        
+        var valYzpc = $('#yzpc').attr('data-yzpcCode');
+        if (!$('#yzpc').val() || $('#yzpc').val() != $('#yzpc').attr('data-yzpcmc')) {
+            valYzpc = null;
+        }
+
+        $('#txtSFXMSel').val('');
+        $('#zll').val("");
+        $('#duration').val('');
+        $('#xmDetailListGridList').newtouchLocalDataGrid(null, [{
+            sfxmCode: $thistr.attr('data-sfxmCode'),
+            sfxmmc: $thistr.attr('data-sfxmmc'),
+            py: $thistr.attr('data-py'),
+            dw: $thistr.attr('data-dw'),
+            sl: valsl,
+            zll: valzll,
+            zxcs: valzxcs,
+            bw: valbw,
+            duration: valduration,
+            kflb: valkflb,
+            kflbmc: textkflb,
+            zxks: $('#zxks').val(),
+            //zxks: $thistr.attr('data-zxks'),
+            yzpc: valYzpc,
+            dj: $thistr.attr('data-dj'),
+        }]);
+    }
+    //
+    function btn_removeItem() {
+        var rowid = $("#xmDetailListGridList").jqGrid("getGridParam", "selrow");
+        var data = $('#xmDetailListGridList').jqGrid('getRowData', rowid);
+        $('#xmDetailListGridList').jqGrid("delRowData", rowid);
+    };
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+
+        //支付方式 json串
+        var xmArr = new Array();
+        var rowIds = $("#xmDetailListGridList").getDataIDs();
+        $.each(rowIds, function (idx, val) {
+            var thisRowData = $("#xmDetailListGridList").jqGrid('getRowData', val);
+            xmArr.push({
+                sfxmCode: thisRowData['sfxmCode'],
+                sfxmmc: thisRowData['sfxmmc'],
+                py: thisRowData['py'],
+                dw: thisRowData['dw'],
+                zxcs: thisRowData['zxcs'],
+                bw: thisRowData["bw"],
+                zll: thisRowData['zll'],
+                sl: thisRowData['sl'],
+                duration: thisRowData['duration'],
+                kflb: thisRowData['kflb'],
+                dl: thisRowData['dl'],
+                zxks: thisRowData['zxks'],
+                yzpc: thisRowData['yzpc'],
+                dj: thisRowData['dj'],
+            });
+        });
+        if (xmArr.length == 0) {
+            $.modalAlert("至少选择一条收费项目", 'warning');
+            return false;
+        }
+        postData['xmListStr'] = JSON.stringify(xmArr);
+        debugger
+        postData['sfmbbh'] = keyValue;  //主键，决定是新增还是修改
+        postData['ks'] = $('#dllDepartment').val();
+        postData['mzzybz'] = $('#mzzybz').val();
+        postData['py'] = $('#py').val();
+        
+        var yfop = $("#yf option:selected");//获取选中的项
+        postData['yfdm'] = yfop.val();
+        postData['yfmc'] = yfop.text();
+        if ($('#yf').val() =="==请选择==") {
+            postData['yfdm'] = null;
+            postData['yfmc'] = null;
+        }
+
+        $.submitForm({
+            url: "/SystemManage/SysParameterConfig/ChargeTemplate_SubmitForm",
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+                $.modalClose();
+            }
+        })
+    }
+
+    $('#sfmb').focus(function () {
+        var appid = '@(Newtouch.Infrastructure.Constants.AppId)';
+        var organizeId = top.$.cookie(appid + "_CookieKey_OrganizeId");
+        if (!!!keyValue && ($.trim($(this).val()) === '')) {
+            $.ajax({
+                url: "/HOME/GetNewFieldUniqueValue?fieldName=xt_sfmb&orgId=" + organizeId + "&r=" + Math.random(),
+                dataType: "json",
+                success: function (data) {
+                    $('#sfmb').val(data.data);
+                }
+
+            });
+        }
+    });
+
+    //根据名称获取名称首拼
+    $('#sfmbmc').keyup(function () {
+        $('#py').val($(this).toShouPin());
+    })
+    
+</script>

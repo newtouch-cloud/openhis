@@ -1,0 +1,143 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>注册名称：</th>
+                <td class="formValue">
+                    <input id="RegName" name="RegName" type="text" class="form-control required" placeholder="请输入名称" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>编码：</th>
+                <td class="formValue">
+                    <input id="RegCode" name="RegCode" type="text" class="form-control required" placeholder="请输入编码" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>权限等级：</th>
+                <td class="formValue">
+                    @Html.DropDownList("AuthorizedLev", Newtouch.Infrastructure.EnumAuthorizedLev.saltaccess.ToDescSelectList(), "==请选择==", new { @class = "form-control required" })
+
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>授权时限：</th>
+                <td class="formValue">
+                    @Html.DropDownList("AuthorizedPeriod", Newtouch.Infrastructure.EnumAuthorizedPeriod.longtime.ToDescSelectList(), "==请选择==", new { @class = "form-control required" })
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"></th>
+                <td class="formValue">
+                    <input id="btn_generate" name="btn_generate" type="button" class="btn btn-default" value="生成身份密钥" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">请保存：</th>
+                <td class="formValue">
+                    <textarea id="AuthToken" name="AuthToken" class="form-control" placeholder="" ></textarea>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>首拼：</th>
+                <td class="formValue">
+                    <input id="py" name="py" type="text" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">备注：</th>
+                <td class="formValue">
+                    <input id="Memo" name="Memo" type="text" class="form-control" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">排序：</th>
+                <td class="formValue">
+                    <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">状态：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <input type="hidden" id="OrganizeId" />
+    <input type="hidden" id="accesskey" />
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    var org = $.request("org");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/AccessManage/Registor/GetRegistorForm",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    
+                }
+            });
+        }
+        else {
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?orgIdIsStar=true&topOrgIdIsStar=true&initFieldLength=8&fieldName=accessreg.regcode&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#RegCode').val(data.data);
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        //首拼
+        $('#RegName').keyup(function () {
+            $('#py').val($(this).toShouPin());
+        })
+        $("#OrganizeId").val(org);
+        $("#btn_generate").click(function () {
+            $.najax({
+                url: "/AccessManage/Registor/GetAccessKey",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#AuthToken').val(data.data);
+                    var json = JSON.parse(data.data);
+                    $('#accesskey').val(json.regtime);
+                }
+            });
+        });
+    }
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        $.submitForm({
+            url: "/AccessManage/Registor/submitForm?keyValue=" + keyValue,
+            param: $("#form1").formSerialize(),
+            success: function (data) {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+     
+</script>

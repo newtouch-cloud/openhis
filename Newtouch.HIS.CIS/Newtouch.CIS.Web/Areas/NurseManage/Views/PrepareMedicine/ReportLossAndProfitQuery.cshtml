@@ -1,0 +1,195 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "ReportLossAndProfitQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<input hidden id="yfbmcode" value="@Constants.CurrentYfbm.yfbmCode">
+<input hidden id="OrganizeId" value="@OperatorProvider.GetCurrent().OrganizeId">
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:0;">
+        <div class="panel-heading">
+            筛选信息
+        </div>
+        <table class="form" style="width:98%;border:0">
+            <tr>
+                <th class="formTitle">损溢情况：</th>
+                <td style="padding-left:12px;">
+                    <div class="btn-group" id="btnLossAndProfitTypeGourp" style="margin-top:0;">
+                        <button type="button" id="btnAll" data-keywordtype="All" class="btn active btn-restore">全部</button>
+                        <button type="button" id="btnLoss" data-keywordtype="Loss" class="btn btn-default">报损</button>
+                        <button type="button" id="btnProfit" data-keywordtype="Profit" class="btn btn-default">报溢</button>
+                    </div>
+                </td>
+                <th class="formTitle">关键字：</th>
+                <td class="formValue">
+                    <input type="text" id="txtINPUTCODE" class="form-control" placeholder="药品拼音 代码 名称" />
+                </td>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input type="text" id="txtStartDate" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-01 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd  HH:mm:ss' })" />
+                </td>
+                <th class="formTitle">结束日期： </th>
+                <td class="formValue">
+                    <input type="text" id="txtEndDate" class="form-control input-wdatepicker" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd  HH:mm:ss' })" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">损溢原因：</th>
+                <td class="formValue">
+                    <select class="form-control" id="ddlSYYY">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" style="width:50px; margin-left:40px;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div class="gridPanel" style="margin-top:10px">
+    <table id="gridSYXXMXList"></table>
+    <div id="gridPager" rel="form1"></div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 3 },
+    F3Text = "报损报溢打印"
+})
+
+<script>
+    
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+
+    $(function () {
+        $('#btnLossAndProfitTypeGourp').on('click', '.btn',
+            function () {
+                if (!$(this).hasClass('active')) {
+                    $(this).siblings('.btn').removeClass('btn-restore').removeClass('active').addClass('btn-default');
+                    $(this).removeClass('btn-default').addClass('btn-restore active');
+                }
+            });
+        GridSyxxmx();
+    });
+
+    //损益信息明细
+    function GridSyxxmx() {
+        var $gridSyxxmxList = $("#gridSYXXMXList");
+        $gridSyxxmxList.dataGrid({
+            postData: getSearchPostData(),
+            url: "/PrepareMedicine/SelectLossAndProditInfoList?r=" + Math.random(),
+            height: $(window).height() - 265,
+            caption: "药品总量&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id='yeCon'>批价总额：" + "0.00" + "元&nbsp;&nbsp;&nbsp;&nbsp;零价总额：" + "0.00" + "元</span>",
+            colModel: [
+                { label: '损溢情况', name: 'syqk', width: 80, align: 'left' },
+                { label: '损益原因', name: 'syyy', width: 110, align: 'left' },
+                { label: '单据号', name: 'djh', width: 130, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
+                { label: '损溢数量', name: 'sysl', width: 80, align: 'left' },
+                //{ label: '单位', name: 'dw', width: 50, align: 'left' },
+                { label: '进价', name: 'jj', width: 80, align: 'left' },
+                { label: '批发价', name: 'pfj', width: 80, align: 'left' },
+                { label: '批发总额', name: 'pjze', width: 80, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 80, align: 'left' },
+                { label: '零售总额', name: 'ljze', width: 80, align: 'left' },
+                { label: '报告时间', name: 'bgsj', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '药品类别', name: 'yplb', width: 80, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 120, align: 'left' },
+                { label: '产地', name: 'ycmc', width: 120, align: 'left' },
+                { label: '批号', name: 'ph', width: 80, align: 'left' },
+                { label: '有效期', name: 'yxq', width: 100, align: 'left' },
+                { label: '责任人', name: 'zrr', width: 80, align: 'left' },
+                { label: '药品代码', name: 'ypCode', hidden: true },
+                { label: '拼音', name: 'py', hidden: true },
+                { label: 'pjze', name: 'pjze', hidden: true },
+                { label: 'ljze', name: 'ljze', hidden: true }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            loadComplete: function (data) {
+                ComputePjzeAndLjze();//计算标题栏中的批价总额和零价总额
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridSyxxmxList.jqGrid('setGridParam',
+            {
+                url: "/PrepareMedicine/SelectLossAndProditInfoList?r=" + Math.random(),
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //加载损益原因
+    $("#ddlSYYY").bindSelect({
+        url: "/PrepareMedicine/GetLossProfitReasonListByType?r=" + Math.random(),
+        id: "syyyId",
+        text: "syyy"
+    });
+
+    //查询条件
+    function getSearchPostData() {
+        var startTime = $("#txtStartDate").val();
+        var endTime = $("#txtEndDate").val();
+        var syyy = $("#ddlSYYY").val();
+        var inputCode = $("#txtINPUTCODE").val();
+        var syqk = -1; //全部
+        if ($('#btnLossAndProfitTypeGourp .btn.active').attr('data-keywordtype') === 'Profit') {
+            syqk = 1;  //报溢
+        } else if ($('#btnLossAndProfitTypeGourp .btn.active').attr('data-keywordtype') === 'Loss') {
+            syqk = 2;  //报损
+        }
+        return { startTime: startTime, endTime: endTime, syyy: syyy, inputCode: inputCode, syqk: syqk };
+    };
+
+    //计算标题栏中的批价总额和零价总额
+    function ComputePjzeAndLjze() {
+        var titlePjze = 0;
+        var titleLjze = 0;
+        var count = $("#gridSYXXMXList").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridSYXXMXList").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowPjze = $("#gridSYXXMXList").getRowData(rowIds[i]).pjze;
+                var getRowLjze = $("#gridSYXXMXList").getRowData(rowIds[i]).ljze;
+                titlePjze = parseFloat(titlePjze) + parseFloat(getRowPjze);
+                titleLjze = parseFloat(titleLjze) + parseFloat(getRowLjze);
+            }
+            $("#yeCon").text("批价总额：" + titlePjze.toFixed(4) + "元; 零价总额：" + titleLjze.toFixed(4) + "元");
+        }
+    }
+
+    //计算批发价和零售价总额
+    function ComputePjzeAndLjze() {
+        $.najax({
+            url: "/PrepareMedicine/ComputePjzeAndLjze",
+            dataType: "json",
+            data: getSearchPostData(),
+            success: function (res) {
+                if (res != null) {
+                    $("#yeCon").text("批价总额：" + res.Pjze.toFixed(2) + "元; 零价总额：" + res.Ljze.toFixed(2) + "元");
+                }
+            }
+        });
+    }
+
+    //汇总打印
+    function newtouch_event_f3() {
+		var key = $("#txtINPUTCODE").val();
+		var syqk = -1; //全部
+		if ($('#btnLossAndProfitTypeGourp .btn.active').attr('data-keywordtype') === 'Profit') {
+			syqk = 1;  //报溢
+		} else if ($('#btnLossAndProfitTypeGourp .btn.active').attr('data-keywordtype') === 'Loss') {
+			syqk = 2;  //报损
+        }
+        window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2fBSBY_Query&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&startTime=" + $("#txtStartDate").val() + "&endTime=" + $("#txtEndDate").val() + "&key=" + key + "&yfbm=" + $("#yfbmcode").val() + "&OrganizeId=" + $("#OrganizeId").val() + "&syqk=" + syqk, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+
+		//window.open("/Report/PrintReport?type=BSBY_Query&param=startTime=" + $("#txtStartDate").val() + "|endTime=" + $("#txtEndDate").val() + "|key=" + key + "|yfbm=" + $("#yfbmcode").val() + "|OrganizeId=" + $("#OrganizeId").val() + "|syqk=" + syqk, "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
+    }
+</script>
+
+

@@ -1,0 +1,126 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    $(function () {
+        gridList();
+    })
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Code",
+            url: "/SystemManage/DoctorRemark/GetTreeGridJson",
+            height: $(window).height() - 96,
+            postData: { keyword: $("#txt_keyword").val() },
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '科室', name: 'ksmc', width: 120, align: 'left' },
+                { label: '名称', name: 'ztmc', width: 120, align: 'left' },
+                { label: '编码', name: 'ztCode', width: 120, align: 'left' },
+                { label: "有效", name: "zt", width: 100, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 120, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 120, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '排序', name: 'px', width: 40, align: 'left' }
+            ]
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val()},
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增嘱托",
+            url: "/SystemManage/DoctorRemark/Form",
+            width: "550px",
+            height: "470px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "修改嘱托",
+            url: "/SystemManage/DoctorRemark/Form?keyValue=" + keyValue,
+            width: "550px",
+            height: "470px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/SystemManage/DoctorRemark/DeleteForm",
+            param: { keyValue: keyValue },
+            success: function () {
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+</script>
+

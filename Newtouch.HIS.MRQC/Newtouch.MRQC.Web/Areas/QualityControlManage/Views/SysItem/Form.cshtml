@@ -1,0 +1,99 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="widget-body">
+        <div class="step-content" id="wizard-steps" style="border-left: none; border-bottom: none; border-right: none;">
+            <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+                <div class="panel panel-default">
+                    <div class="panel-body" style="width: 98%; margin-left: -34px;">
+                        <table class="form">
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>质控项目：</th>
+                                <td class="formValue">
+                                    <input id="Bllmbmc" name="Bllmbmc" type="text" class="form-control required" readonly="readonly" />
+                                </td>
+                                <th class="formTitle"><span class="required">*</span>质控名称：</th>
+                                <td class="formValue">
+                                    <input id="Name" name="Name" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>质控评分：</th>
+                                <td class="formValue">
+                                    <input id="Score" name="Score" type="text" class="form-control required"  oninput="inputnum(this)" />
+                                </td>
+                                <th class="formTitle"><span class="required">*</span>评分说明：</th>
+                                <td class="formValue">
+                                    <input id="Remark" name="Remark" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">排序：</th>
+                                <td class="formValue">
+                                    <input id="Px" name="Px" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var bllx = $.request("bllx");
+    var bllxmc = $.request("bllxmc");
+    var Type = $.request("Type");//1:病历类型 2：病历模板
+    var czlx = $.request("czlx");
+    var Id = $.request("Id");
+    $(function () {
+        if (czlx == "update") {
+            $.najax({
+                url: "/QualityControlManage/SysItem/GetItemMXData",
+                data: { Id: Id },
+                dataType: "json",
+                asyns: false,
+                success: function (data) {
+                    debugger;
+                  
+                    $("#form1").formSerialize(data[0]);
+                }
+            });
+        }
+        else {
+            $("#Bllmbmc").val(bllxmc);
+        }
+    })
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        postData["BlmbId"] = bllx;
+        postData["zklx"] = Type;
+        postData["czlx"] = czlx;
+        postData["Id"] = Id;
+        $.submitForm({
+            url: "/QualityControlManage/SysItem/SubmitForm",
+            param: postData,
+            success: function (res) {
+
+                $.modalAlert("保存成功", 'warning');
+                $.currentWindow().$("#gridRightList").resetSelection();
+                $.currentWindow().$("#gridRightList").trigger("reloadGrid");
+            }
+        });
+    }
+    //输入框控制
+    function inputnum(obj, val) {
+
+        obj.value = obj.value.replace(/[^\d.]/g, ""); //清除"数字"和"."以外的字符
+        obj.value = obj.value.replace(/^\./g, ""); //验证第一个字符是数字
+        obj.value = obj.value.replace(/\.{2,}/g, ""); //只保留第一个, 清除多余的
+        obj.value = obj.value.replace(".", "$#$").replace(/\./g, "").replace("$#$", ".");
+        obj.value = obj.value.replace(/^(\-)*(\d+)\.(\d).*$/, '$1$2.$3'); //只能输入两个小数
+    }
+</script>

@@ -1,0 +1,193 @@
+﻿@using Newtouch.Infrastructure;
+
+<div id="floatInspectTemplateTree" style="display:none;">
+    <table class="form">
+        <tr>
+
+            <td class="formValue">
+                <select id="Template" class="form-control">
+                    <option>
+                        全部
+                    </option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="formValue">
+                <input id="ztKeyword" type="text" class="form-control" placeholder="组套名称/简拼" />
+            </td>
+        </tr>
+    </table>
+    <div id="divInspectTempTree" style="overflow-y:auto;height:100%;padding:15px 15px;"></div>
+</div>
+
+<script>
+    var jyjcparam;
+    var lsid;
+    function SetCurrentPageJyjclx(jyjcmbLx) {
+        if (!jyjcmbLx || jyjcmbLx == 0){
+            return;
+        }
+        jyjcparam = jyjcmbLx;
+		var TemplateId = $('#Template')[0].value;
+		var ztKeyword = $('#ztKeyword').val();
+        $("#divInspectTempTree").html(''); //先清空掉
+        $("#divInspectTempTree").treeview({
+            height: $(window).height() - 100,
+            slimscroll: false,
+            url: "/TemplateManage/InspectionTemplate/GetTreeList?jyjcmbLx=" + jyjcmbLx + "&TemplateId=" + TemplateId + "&ztKeyword=" + ztKeyword,
+            onnodeclick: function (item) {
+                if (item.hasChildren === true || item.value == "" || item.id == "") {
+                    return;
+                }
+                var $grid;
+                var $griddetail;
+                var $gridgroup;
+                if (jyjcmbLx.toString() == '@Html.Raw(((int)EnumjyjcmbLx.jy).ToString())') {
+                    $grid = $("#gridjy");
+                    $griddetail = $('#alreadyJYAppliedList');
+                    $gridgroup = $('#alreadyJYAppliedGroupList');
+                }
+                if (jyjcmbLx.toString() == '@Html.Raw(((int)EnumjyjcmbLx.jc).ToString())') {
+                    $grid = $("#gridjc");
+                    $griddetail = $('#alreadyJCAppliedList');
+                    $gridgroup = $('#alreadyJCAppliedGroupList');
+                }
+                if ($grid) {
+                    $grid.jqGrid('setGridParam', {
+                        url: "/TemplateManage/InspectionTemplate/GetGPackageDetailByZtId",
+                        postData: { ztId: item.id }
+                    }).trigger("reloadGrid");
+                    $grid.jqGrid("setCaption", item.text);   //重置caption属性值
+                }
+                if ($griddetail) {
+                    $griddetail.clearGridData();
+                }
+                if ($gridgroup) {
+                    getGroupInfo($gridgroup, item.id, item.parent.id);
+                }
+            }
+        });
+			}
+
+
+    function SetTemplate(mblx) {
+        $('#ztKeyword').val('');
+        $("#Template").bindSelect({
+            url: "/TemplateManage/InspectionTemplate/GetMbList?jyjcmbLx=" + mblx,
+            id: "mbId",
+            text: "mbmc"
+        });
+    }
+			
+
+    $('#ztKeyword').keyupEnterEvent(function () {
+        SetCurrentPageJyjclx(jyjcparam);
+        //$('#btn_search').trigger('click');
+    });
+
+    $('#Template').change(function () {
+        SetCurrentPageJyjclx(jyjcparam);
+    });
+
+    /**
+     * ***********************套餐显示**********************************
+     */
+    function getActionDel(id) {
+        return "<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;' onclick='deleteGroupData(\"" + id + "\")'></i>";
+    }
+    function getGroupInfo($grid, ztId, parentid) {
+        var ztcd = $grid.getDataIDs();//删除完项目之后再进行清空
+        if (ztcd.length==0) {
+            lsid = "";
+        }
+        if (lsid == null || lsid == "") {
+            lsid = parentid;
+        }//如果开始没有项目直接赋值
+        else {
+                if (parentid != lsid) {
+                    $.modalAlert("同一申请单不可开立多个项目大类", "warning");
+                    return;
+                }
+        }
+        var pdnr = "";
+        $.najax({
+            url: "/TemplateManage/InspectionTemplate/GetGPackageInfoByZtId",
+            data: { ztId: ztId },
+            dataType: "json",
+            type: "POST",
+            async: false,
+            success: function (data) {
+                $.each(data, function () {
+                    var ids = $grid.getDataIDs();
+                    var findid = ids.filter((item)=> {
+                        return item == this.ztId
+                    });
+                    if (findid.length == 0) {
+                        var xmmxnr;
+                        if (ztcd.length == 0) {
+                            xmmxnr = ztId;
+                        }
+                        else { xmmxnr = ztcd }
+                        if (ztcd.length != 0) {
+                            $.najax({
+                                url: "/TemplateManage/InspectionTemplate/GetGPackageDetailByZtIdArray",
+                                data: { ztId: xmmxnr },
+                                dataType: "json",
+                                type: "POST",
+                                async: false,
+                                success: function (data) {
+                                    $.each(data, function (index, item) {
+                                        $.najax({
+                                            url: "/TemplateManage/InspectionTemplate/GetGPackageDetailByZtId",
+                                            data: { ztId: ztId },
+                                            dataType: "json",
+                                            type: "POST",
+                                            async: false,
+                                            success: function (data) {
+                                                $.each(data, function (index, item1) {
+                                                    if (item.xmdm == item1.xmdm) {
+                                                        pdnr = "xtnr";
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                        }
+                        if (pdnr == "xtnr") {
+                            $.modalAlert("项目明细有相同内容", "warning");
+                            return;
+                        }
+                        var zje = 0;
+                        for (var i = 0; i < data.length; i++) {
+                            zje += data[i].zhje;
+                        }
+                        this.zhje = zje;
+                        this.action = getActionDel(this.ztId);
+                        $grid.jqGrid("addRowData", undefined, this, "first");
+                        CalculateInsPresJYAmount($grid);
+                    }
+                });
+            }
+        });
+    }
+    //删除已选组套明细
+    function deleteGroupData(selRowId) {
+        if (!!selRowId) {
+            var $grid;
+            if (jyjcparam == 1) {
+                $grid = $('#alreadyJYAppliedGroupList');
+                $grid.jqGrid("delRowData", selRowId);
+                CalculateInsPresJYAmount($grid);
+            }
+            else if (jyjcparam == 2) {
+                $grid = $('#alreadyJCAppliedGroupList');
+                $grid.jqGrid("delRowData", selRowId);
+                CalculateInsPresJCAmount($grid);
+            }
+        }
+    }
+</script>
+

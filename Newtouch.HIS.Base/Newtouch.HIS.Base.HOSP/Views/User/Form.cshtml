@@ -1,0 +1,96 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" style="margin-left: 4%;">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 71px; margin-left:28px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>账户：</th>
+                        <td class="formValue">
+                            <input id="Account" name="Account" type="text" class="form-control required" placeholder="请输入账户" />
+                        </td>
+                    </tr>
+                    @*<tr>
+                        <td class="formTitle">选项：</td>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <span class="ckbox">
+                                <input id="LanguageType" name="LanguageType" type="checkbox"><label for="LanguageType">英文</label>
+                            </span>
+                        </td>
+                    </tr>*@
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>密码：</th>
+                        <td class="formValue">
+                            <input id="UserPassword" name="UserPassword" type="password" class="form-control required" placeholder="请输入密码" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">选项：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <span class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+
+        if (!!keyValue) {
+            $.najax({
+                url: "/User/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $("#UserPassword").val("******").attr('disabled', 'disabled');
+                    if (data.LanguageType === "en") {
+                        //$('#LanguageType').attr("checked", "checked");
+                        $('[for=LanguageType]').trigger('click');
+                    }
+                    else {
+                        $('#LanguageType').removeAttr("checked");
+                    }
+                }
+            });
+        }
+    });
+    function initControl() {
+
+    }
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/User/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

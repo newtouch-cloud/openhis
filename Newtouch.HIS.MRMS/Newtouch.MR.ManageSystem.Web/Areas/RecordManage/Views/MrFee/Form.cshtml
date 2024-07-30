@@ -1,0 +1,133 @@
+﻿
+@{
+    ViewBag.Title = "病案收费大类详情";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">一级收费大类：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="code1" name="code1" class="form-control" onchange="FeeOneChanged()">
+                        <option value=""> ==请选择== </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">二级收费大类：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="code2" name="code2" class="form-control ">
+                        <option value=""> ==请选择== </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">名称：</th>
+                <td class="formValue">
+                    <input id="name" name="name" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">ShortCode：</th>
+                <td class="formValue">
+                    <input id="ShortCode" name="ShortCode" type="text" class="form-control" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+
+    var keyValue = $.request("keyValue");
+    var index = $.request("index");
+    var bafeeObj = {};
+    $(function () {
+        initForm();
+        getSelectBind();
+    });
+
+    function initForm() {
+        if (!!keyValue) {
+            $.ajax({
+                url: "/RecordManage/MrFee/GetFormJson",
+                data: { keyValue: keyValue ,index:index},
+                dataType: "json",
+                success: function (data) {
+                    //$("#form1").formSerialize(data);
+                    bafeeObj = data;
+                    if (data.code3 != null) {
+                        $("#code1").val(data.code1).trigger("change");
+                        $("#code2").val(data.code2).trigger("change");
+                        $("#name").val(data.name3);
+                    } else if (data.code2 != null) {
+                        //$("#code1").find("option[value='1']").attr("selected", true);
+                        $("#code1").val(data.code1).trigger("change");
+                        $("#name").val(data.name2);
+                    } else if (data.code1 != null) {
+                        $("#name").val(data.name1);
+                    }
+                    $("#ShortCode").val(data.ShortCode);
+
+                    //if (data.Lev == 1) {
+                    //    $("#name").html(data.name1);
+                    //} else if (data.Lev == 2) {
+                    //    $("code1").val(data.code1).trigger("change");
+                    //    $("#name").html(data.name2);
+                    //} else if (data.Lev == 3) {
+                    //    $("code1").val(data.code1).trigger("change");
+                    //    $("code2").val(data.code2).trigger("change");
+                    //    $("#name").html(data.name3);
+                    //}
+                }
+            });
+        }
+    }
+
+    function getSelectBind() {
+        $("#code1").bindSelect({
+            url: "/RecordManage/MrFee/GetFeeOne",
+            id: "code",
+            text: "name",
+            minimumResultsForSearch: 0
+        });
+    }
+
+    //一级大类修改事件,获取二级大类下拉框内容
+    function FeeOneChanged() {
+        var parentCode = $("#code1 option:selected").val();
+         $("#code2").bindSelect({
+            url: "/RecordManage/MrFee/GetFeeTwo?parentCode="+parentCode,
+            id: "code",
+            text: "name",
+            minimumResultsForSearch: 0
+        });
+    }
+
+    function AcceptClick(callBack) {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        postData.py = $("#name").toShouPin();
+        postData.name1 = $("#code1 option:selected").text();
+        postData.name2 = $("#code2 option:selected").text();
+        postData.Lev = bafeeObj.Lev;
+        postData.ParentCode = bafeeObj.ParentCode;
+        postData.px = bafeeObj.px;
+        postData.code = bafeeObj.code;
+
+        $.submitForm({
+            url: "/RecordManage/MrFee/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                callBack();
+                $.modalClose();
+            }
+        });
+    }
+
+</script>

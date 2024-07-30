@@ -1,0 +1,295 @@
+﻿
+@{
+	Layout = null;
+}
+<div id="dv_edit_diag">
+	<div style="width:65%;float:left;padding-left:10px;">
+		<table id="gridzdList"></table>
+		@*<div id="gridzdPager"></div>*@
+	</div>
+	<div class="dv_tip" style="width:30%;float:right;padding-right:10px;border:2px solid #a6e6a5;height:400px;">
+		<div><input type="hidden" id="zd_rowid" name="zd_rowid" /></div>
+		<div style="padding:50px 20px 50px 20px;">
+			<table class="form">
+				<tr>
+					<th class="formTitle "><span style="color:red;">*</span> 出院诊断：</th>
+					<td class="formValue">
+						<input id="zd_cyzd" name="zd_cyzd" class="form-control" attr-zddm="" attr-ICD10="" autocomplete="off" />
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle ">出院情况：</th>
+					<td class="formValue">
+						<select id="zd_cyqk" name="zd_cyqk" class="form-control" data-enumtype="EnumCyqk"></select>
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle ">入院病情：</th>
+					<td class="formValue">
+						<select id="zd_rybq" name="zd_rybq" class="form-control" data-enumtype="EnumRybq"></select>
+					</td>
+				</tr>
+				@*<tr>
+						<th class="formTitle ">诊断类型：</th>
+						<td class="formValue">
+							<select name="zdlx" class="form-control" data-enumtype="EnumZdlxbs">
+								<option>请选择</option>
+							</select>
+						</td>
+					</tr>
+							<tr>
+								<th class="formTitle ">次序</th>
+								<td class="formValue">
+									<input id="zd_px" name="zd_px" class="form-control" />
+								</td>
+							</tr>*@
+				<tr>
+					<th class="formTitle "></th>
+					<td class="formValue">
+						<input id="btn_submit_zd" type="button" class="btn btn-default" value="保存" style="width:80px;background-color:#9cf7cc;float:right;position:center;" />
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle "></th>
+					<td class="formValue">
+						<input id="btn_del_zd" type="button" class="btn btn-default" value="删除诊断" style="width:80px;background-color:#9cf7cc;float:right;position:center;" />
+					</td>
+				</tr>
+				<tr>
+					<th class="formTitle "></th>
+					<td class="formValue">
+						<input id="btn_reset_zd" type="button" class="btn btn-default" value="刷新列表" style="width:80px;background-color:#9cf7cc;float:right;position:center;" />
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+</div>
+<script>
+	//var addlist = [];
+	var zddata = {};
+	function getzddata() {
+		zddata = {
+			BAH: $("#BAH").val(),
+			ZYH: $("#ZYH").val(),
+			JBMC: $("#zd_cyzd").val(),
+			JBDM: $("#zd_cyzd").attr("attr-ICD10"),
+			RYBQ: $("#zd_rybq").val(),
+			RYBQMS: $("#zd_rybq option:selected").text(),
+			CYQK: $("#zd_cyqk").val(),
+			CYQKMS: $("#zd_cyqk option:selected").text(),
+			ZDOrder: $("#zd_px").val(),
+			ztsm: ""
+
+		};
+	}
+
+	function DelteJQ() {
+		$("#zd_cyzd").val('')
+	}
+
+	$(function () {
+        $("#btn_submit_zd").click(function () {
+            debugger;
+			var zd = $("#zd_cyzd").val();
+			if (zd != null && zd != undefined && zd != "") {
+				getzddata();
+
+				var $grid = $("#gridzdList");
+				var gridids = $grid.jqGrid('getDataIDs');
+				var maxRowId = 0;
+				//在行号序列中获取最大的编号
+                if (gridids.length > 0) {
+                    maxRowId = Math.max.apply(Math, $grid.jqGrid('getDataIDs'));
+                } else {
+                    zddata.ZDOrder = 1;
+                }
+
+				var rowid = $("#zd_rowid").val(); //是否属于修改诊断
+				if (rowid != null && rowid != undefined && rowid != "" && parseInt(rowid) > 0) {
+					var rowdata = $grid.jqGrid("getRowData", rowid);
+					if (zddata.JBDM == rowdata.JBDM) {
+						$grid.jqGrid("setRowData", rowid, zddata);
+						$.modalAlert("录入成功", 'success');
+						DelteJQ()
+						return true;
+					}
+				}
+
+				//debugger
+				//新增
+				var result = checkZddm(zddata);
+				if (result) {
+					$grid.jqGrid("addRowData", maxRowId + 1, zddata, 'last');
+					DelteJQ()
+					//addlist.push(zddata.JBDM);
+				}
+				else {
+					$.modalAlert("诊断已录入", 'error');
+				}
+
+			}
+			else {
+				$.modalAlert("请选择诊断", 'warning');
+			}
+
+		});
+
+		$("#btn_del_zd").click(function () {
+			var rowid = $("#zd_rowid").val();
+			if (rowid != null && rowid != undefined && rowid != "" && parseInt($("#zd_rowid").val()) > 0) {
+				getzddata();
+				zddata.zt = 0;
+				zddata.ztsm = '作废';
+				jQuery("#gridzdList").jqGrid("setRowData", rowid, zddata);
+				$.modalAlert("作废成功", 'success');
+				//jQuery("#gridzdList").jqGrid("setCell", rowid, "zt", "0");
+				//debugger
+				//jQuery("#gridzdList").jqGrid("setCell", rowid, "ztsm", "作废");
+			}
+			else {
+				$.modalAlert("请选择诊断", 'warning');
+			}
+		});
+		$("#btn_reset_zd").click(function () {
+
+			jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+		});
+	});
+
+	function checkZddm(newrow) {
+		var isadd = true;
+		var ids = $("#gridzdList").getDataIDs();
+		if (ids.length > 0) {
+			$(ids).each(function (i) {
+				var rows = $("#gridzdList").getRowData(i + 1);
+				if (rows.JBDM == newrow.JBDM) {
+					isadd = false;
+				}
+			})
+
+			//if (addlist.length > 0) {
+			//    addlist.forEach((item, index, array) => {
+			//        if (item == newrow.JBDM) {
+			//            isadd = false;
+			//        }
+			//    });
+			//}
+
+		}
+		return isadd;
+
+	}
+
+	function ZdListGrid() {
+		var $gridList = $("#gridzdList");
+		//var queryJson = {
+		//    bah: $("#BAH").val(),
+		//    zyh: $("#ZYH").val(),
+		//}
+		$gridList.dataGrid({
+			postData: {
+				//queryJson: JSON.stringify(queryJson)
+				bah: $("#BAH").val(),
+				zyh: $("#ZYH").val(),
+			},
+			url: "/MRHomePage/MRHomePage/GetZdGridList",
+			autowidth: true,
+			height: $(window).height() - 120,
+			colModel: [
+				{ label: "Id", name: "Id", hidden: true },
+				//{
+				//    label: "操作", name: "编辑", width: 60, align: 'center', formatter: function (row, option, data) {
+				//        debugger
+				//        return '<input type="button" onclick="btn_edit(' + option.rowid + ')" />';
+				//    }
+				//},
+				{ label: "病案号", name: "BAH", width: 60, align: 'left', editor: "text" },
+				{ label: "住院号", name: "ZYH", width: 60, align: 'left', editor: "text" },
+				{ label: "出院诊断", name: "JBMC", width: 180, align: 'left', editor: "text" },
+				{ label: "疾病编码", name: "JBDM", width: 80, align: 'left', editor: "text" },
+				{ label: "RYBQ", name: "RYBQ", hidden: true },
+				{ label: "入院病情", name: "RYBQMS", width: 60, align: 'left', editor: "text" },
+				{ label: "CYQK", name: "CYQK", hidden: true },
+				{ label: "出院情况", name: "CYQKMS", width: 60, align: 'left', editor: "text" },
+				{ label: "ZDOrder", name: "ZDOrder", hidden: true },
+				{
+					label: "诊断类型", name: "Zdlx", width: 80, align: 'left', editor: "text", formatter: function (row, option, data) {
+						if (data.ZDOrder == 1) {
+							return "主要诊断";
+						}
+						else
+							return "其他诊断";
+					}
+				},
+				{ label: "zt", name: "zt", hidden: true },
+				{
+					label: "状态", name: "ztsm", width: 50, align: 'center', editor: "text", formatter: function (row, option, data) {
+						if (data.zt == "0") {
+							return "作废";
+						}
+						else {
+							return "正常";
+						}
+					}
+				}
+			],
+			onSelectRow: function (row, option, data) {
+				debugger
+				var rowData = $('#gridzdList').jqGrid('getRowData', row);
+				$("#zd_cyzd").val(rowData.JBMC);
+				$("#zd_cyzd").attr("attr-ICD10", rowData.JBDM);
+				$("#zd_cyqk").val(rowData.CYQK).trigger("change");
+				$("#zd_rybq").val(rowData.RYBQ).trigger("change");
+				$("#zd_px").val(rowData.ZDOrder);
+				$("#zd_rowid").val(row);
+			},
+			loadComplete: function () {
+
+			},
+			/*caption: "诊断列表",*/
+			sortname: "ZDOrder asc",
+			//rowNum: 15,
+			//pager: "#gridzdPager",
+			viewrecords: false
+
+		});
+		//jQuery("#gridzdList").jqGrid('navGrid', '#gridzdPager', { edit: false, add: false, del: false });
+		jQuery("#gridzdList").jqGrid('sortableRows');
+		//SettlementQuery();
+	}
+
+
+	$("#zd_cyzd").zdFloatingSelector({
+		zdlx: "",
+		//ybnhlx: ybnhlx,
+		width: 600,
+		itemdbclickhandler: function ($this) {
+			$("#zd_cyzd").val($this.attr('data-zdmc')).attr("attr-zddm", $this.attr('data-zdCode')).attr("attr-ICD10", $this.attr('data-icd10'));
+		}
+	});
+
+	//function btn_edit(val) {
+	//    alert(val);
+	//}
+	//提示结算病人不能添加诊断
+	function SettlementQuery() {
+		$.ajax({
+			//url: "/MRHomePage/MRHomePage/SettlementQuery",
+			url: "/MRHomePage/MRHomePage/DiagnosticSave",
+			dataType: "json",
+			//data: { "zyh": $("#ZYH").val() },
+			data: { "Code": "DiagnosticSave" },
+			type: "POST",
+			async: false,
+			success: function (result) {
+				if (result[0].Value == 'off' || result[0].Value == 'OFF') {
+					//$("#btn_submit_zd").attr("disabled", "true");
+					//$("#btn_del_zd").attr("disabled", "true");
+					$.modalAlert("已结算病人不能添加诊断", 'warning');
+				}
+			}
+		})
+
+	}
+</script>

@@ -1,0 +1,100 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-add" authorize="yes" class="btn btn-primary" onclick="btn_add()">
+                <i class="fa fa-plus"></i>新建
+            </a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" authorize="yes" class="btn btn-primary" onclick="btn_edit()">
+                <i class="fa fa-pencil-square-o"></i>修改
+            </a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-authorg" authorize="yes" class="btn btn-primary" onclick="btn_authorg()">
+                <i class="fa fa-pencil-square-o"></i>机构授权
+            </a>
+        </div>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    $(function () {
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Application/GetGridJson",
+            height: $(window).height() - 96,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '名称', name: 'Name', width: 150, align: 'left' },
+             { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            ]
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增应用",
+            url: "/Application/Form",
+            width: "400px",
+            height: "320px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改应用",
+            url: "/Application/Form?keyValue=" + keyValue,
+            width: "400px",
+            height: "320px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_authorg() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "机构授权",
+            url: "/Application/Organizes?keyValue=" + keyValue,
+            width: "400px",
+            height: "520px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+</script>

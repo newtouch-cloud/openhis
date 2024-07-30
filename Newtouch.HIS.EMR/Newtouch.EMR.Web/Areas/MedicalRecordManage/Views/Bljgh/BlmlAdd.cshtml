@@ -1,0 +1,85 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<from id="form1">
+    <input id="Id" name="Id" class="form-control" type="hidden" />
+    <input id="Bllx" name="ElementId" class="form-control" type="hidden" />
+    <table class="form" style="width:95%;">
+        <tr>
+            <th class="formTitle"><span class="tipSpan">*</span>表名(English)：</th>
+            <td class="formValue">
+                <input id="Table_EngLish_Name" name="Table_EngLish_Name" type="text" class="form-control required" />
+            </td>
+
+        </tr>
+        <tr>
+            <th class="formTitle"><span class="tipSpan">*</span>表名称：</th>
+            <td class="formValue">
+                <input id="Table_Name" name="Table_EngLish_Name" type="text" class="form-control required" />
+            </td>
+        </tr>
+        <tr>
+            <th class="formTitle"><span class="tipSpan">*</span>正则匹配：</th>
+            <td class="formValue">
+                <input id="Regex" name="Regex" type="text" class="form-control required" />
+            </td>
+
+        </tr>
+        <tr>
+            <th class="formTitle">排序：</th>
+            <td class="formValue">
+                <input id="Px" name="Px" type="text" class="form-control" />
+            </td>
+        </tr>
+    </table>
+</from>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        $("#Table_Name").BindBlTableFloatingSelector({
+            itemdbclickhandler: function ($this) {
+                $("#Table_Name").val($this.attr('data-bllxmc'));
+                $("#Bllx").val($this.attr('data-bllx'));
+                $("#Table_EngLish_Name").val($this.attr('data-relTB'));
+            }
+        });
+        if (!!keyValue) {
+            $("#Table_Name").attr("readonly", true);
+            $("#Table_EngLish_Name").attr("readonly", true);
+            $.najax({
+                url: "/MedicalRecordManage/Bljgh/GetBljgMain",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+
+    function submitForm(callbak) {
+        debugger;
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/MedicalRecordManage/Bljgh/BljgMainSubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalMsg('保存成功', 'success');
+                    debugger;
+                    // $.currentWindow().$("#YsTree").trigger("reload()");
+                    callbak();
+                }
+                else {
+                    $.modalMsg(data.message, 'error');
+                }
+
+                $.modalClose();
+            }
+        });
+    }
+</script>

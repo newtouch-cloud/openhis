@@ -1,0 +1,132 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel" style="border: 0px;">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        @if (OperatorProvider.GetCurrent().IsRoot)
+        {
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_authorg()"><i class="fa fa-plus"></i>机构授权</a>
+            </div>
+        }
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    var moduleId = $.request("moduleId");
+    $(function () {
+        gridList();
+    })
+    function gridList() {
+        $("#gridList").dataGrid({
+            url: "/SystemManage/ModuleButton/GetGridJson?moduleId=" + moduleId,
+            height: $(window).height() - 90,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '名称', name: 'Name', width: 100, align: 'left' },
+                    { label: '连接', name: 'UrlAddress', width: 200, align: 'left' },
+                { label: '编码', name: 'Code', width: 50, align: 'left' },
+                {
+                    label: "是否开放", name: "IsOpenToOrg", width: 60, align: "center",
+                    formatter: function (cellvalue) {
+                        return cellvalue == 1 ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>";
+                    }
+                },
+                { label: '介绍', name: 'Description', width: 180, align: 'left' },
+                   { label: '排序', name: 'px', width: 40, align: 'left' },
+                { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+
+            ]
+        });
+    }
+</script>
+
+<script type="text/javascript">
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增按钮",
+            url: "/SystemManage/ModuleButton/Form?moduleId=" + moduleId,
+            width: "700px",
+            height: "340px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改按钮",
+            url: "/SystemManage/ModuleButton/Form?moduleId=" + moduleId + "&keyValue=" + keyValue,
+            width: "700px",
+            height: "440px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/SystemManage/ModuleButton/DeleteForm",
+            param: { keyValue: $("#gridList").jqGridRowValue().Id },
+            success: function () {
+                $("#gridList").resetSelection();
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+    function btn_authorg() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "机构授权",
+            url: "/SystemManage/ModuleButton/Organizes?keyValue=" + keyValue,
+            width: "350px",
+            height: "550px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+</script>

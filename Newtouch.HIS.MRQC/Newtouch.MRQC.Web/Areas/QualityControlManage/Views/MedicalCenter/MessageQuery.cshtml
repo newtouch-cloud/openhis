@@ -1,0 +1,114 @@
+﻿@using Newtouch.Common.Operator;
+@using Newtouch.MRQC.Infrastructure;
+@{
+    ViewBag.Title = "质控消息查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">日期：</th>
+                <td class="formValue" colspan="3">
+                    <input id="ksrq" type="text" class="form-control input-wdatepicker" style="width: 42%; float: left;" value="@DateTime.Now.ToString("yyyy-MM-01 ")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left: 2%; float: left;">—</span>
+                    <input id="jsrq" type="text" class="form-control input-wdatepicker" style="width: 41%; float: left; margin-left: 2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <th class="formTitle">状态：</th>
+
+                <td class="formValue" colspan="2">
+                    <select id="sel_RecordStu" name="sel_RecordStu" data-enumtype="NoticeStuEnum">
+                        <option value="">全部</option>
+                    </select>
+
+                </td>
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                </td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr></tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        @*<div id="gridPager"></div>*@
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        gridListData();
+    });
+    function gridListData() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 160,
+            url: "/QualityControlManage/MedicalCenter/MessageSendQuery",
+            colModel:[
+                { label: "Id", name: "Id", hidden: true, key: true },
+                { label: "主题", name: "Title", width: 150, align: "left", },
+                { label: "发送人", name: "SendFrom", width: 80, align: "left", },
+                { label: "发送时间", name: "CreateTime", width: 120, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "收信人", name: "Recipient", width: 80, align: "left", },
+                { label: "收件人类型", name: "RecipientType", width: 80, align: "left", formatter: function (val) {
+                    return $.enum.getDescByValue("RecipientTypeEnum", val);
+                } },
+                { label: "详细内容", name: "Content", width: 200, align: "left", },
+                { label: "内容关联数据", name: "ContentData", width: 200, align: "left", },
+                {
+                    label: "消息状态", name: "NoticeStu", width: 80, align: "left", formatter: function (val) {
+                        return $.enum.getDescByValue("NoticeStuEnum",val);
+                    }
+                },
+                {
+                    label: "消息组业务类型", name: "GroupYwlx", width: 80, align: "left", formatter: function (val) {
+                        return $.enum.getDescByValue("GroupYwlxEnum", val);
+                    }
+                },
+                {
+                    label: "消息通知范围", name: "NoticeRange", width: 80, align: "left", formatter: function (val) {
+                        return $.enum.getDescByValue("MsgNoticeRangeEnum", val);
+                    }
+                },
+                {
+                    label: "队列执行类型", name: "QueueExecType", width: 80, align: "left", formatter: function (val) {
+                        return $.enum.getDescByValue("MsgQueueExecTypeEnum", val);
+                    }
+                },
+                { label: "执行表达式", name: "ExecCron", width: 100, align: "left", },
+            ],
+            pager: "#gridPager",
+            sortname: " CreateTime desc",
+            viewrecords: true
+    });
+
+    $("#btn_search").click(function () {
+        $('#gridList').jqGrid("clearGridData");//先清空明细
+        $gridList.jqGrid('setGridParam', {
+            postData: getSearchPostData(),
+            url: "/QualityControlManage/MedicalCenter/MessageSendQuery",
+        }).trigger('reloadGrid');
+    });
+
+    }
+    function getSearchPostData() {
+        var status = $("#sel_RecordStu").val();
+        var ksrq = $("#ksrq").val();
+        var jsrq = $("#jsrq").val();
+        return {
+            status: status, ksrq: ksrq, jsrq: jsrq
+        };
+    };
+</script>

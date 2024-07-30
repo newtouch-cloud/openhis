@@ -1,0 +1,400 @@
+﻿using Newtouch.HIS.Domain.IDomainServices;
+using System.Collections.Generic;
+using System.Linq;
+using Newtouch.Infrastructure;
+using Newtouch.HIS.Domain.Entity;
+using Newtouch.Common.Operator;
+using Newtouch.HIS.Domain.IRepository;
+using Newtouch.HIS.Domain.ValueObjects;
+using System.Data.SqlClient;
+using System.Data;
+using Newtouch.Core.Common.Utils;
+
+namespace Newtouch.HIS.DomainServices
+{
+    /// <summary>
+    /// 系统菜单、菜单按钮 DmnService
+    /// </summary>
+    public class SysModuleDmnService : DmnServiceBase, ISysModuleDmnService
+    {
+        private readonly ISysModuleRepo _sysModuleRepository;
+        private readonly ISysModuleButtonRepo _moduleButtonRepo;
+        private readonly ISysRoleAuthorizeRepo _sysRoleAuthorizeRepository;
+        private readonly ISysOrganizeAuthorizeRepo _sysOrganizeAuthorizeRepo;
+        private readonly ISysRoleRepo _sysRoleRepo;
+
+        public SysModuleDmnService(IBaseDatabaseFactory databaseFactory
+            , ISysModuleRepo sysModuleRepository
+            , ISysModuleButtonRepo moduleButtonRepo, ISysRoleAuthorizeRepo sysRoleAuthorizeRepository
+            , ISysOrganizeAuthorizeRepo sysOrganizeAuthorizeRepo, ISysRoleRepo sysRoleRepo)
+            : base(databaseFactory)
+        {
+            this._sysModuleRepository = sysModuleRepository;
+            this._moduleButtonRepo = moduleButtonRepo;
+            this._sysRoleAuthorizeRepository = sysRoleAuthorizeRepository;
+            this._sysOrganizeAuthorizeRepo = sysOrganizeAuthorizeRepo;
+            this._sysRoleRepo = sysRoleRepo;
+        }
+
+        /// <summary>
+        /// 根据角色 获取 配置的 权限 菜单
+        /// </summary>
+        /// <param name="roleId"></param>
+        /// <returns></returns>
+        public IList<SysModuleEntity> GetMenuListByTopOrg(string orgId, IList<string> roleIdList, bool isRoot = false, bool isAdministrator = false)
+        {
+            var query = _sysModuleRepository.IQueryable().Where(p => p.zt == "1" && p.Target != EnumModuleTargetType.subpage.ToString());
+            if (isAdministrator)
+            {
+                var mIdList = new List<string>();
+                var adminRoleId = _sysRoleRepo.IQueryable().Where(p => p.OrganizeId == "*" && p.Code == "Administrator").Select(p => p.Id).FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(adminRoleId))
+                {
+                    //向Role开放的
+                    mIdList = _sysRoleAuthorizeRepository.IQueryable(t => t.zt == "1"
+    && t.RoleId == adminRoleId).Select(p => p.ItemId).ToList();
+                }
+                query = query.Where(p => p.Name == "系统管理"
+                   || p.Name == "角色管理" || p.Name == "系统角色" || p.Name == "字典管理"
+                   || p.Name == "组织机构" || p.Name == "机构管理"
+                   || p.Name == "系统科室" || p.Name == "科室管理" || p.Name == "系统人员" || p.Name == "系统用户"
+                   || (mIdList.Contains(p.Id)));
+            }
+            else
+            {
+                //向角色开放的
+                if (roleIdList == null)
+                {
+                    return null;
+                }
+
+                //向organize开放的
+                var orgItemIdList = _sysModuleRepository.IQueryable(t => t.zt == "1"
+     && (t.OrganizeId == null || t.OrganizeId == orgId))
+     .Select(p => p.Id).ToList();
+                //向Role开放的
+                var idList = _sysRoleAuthorizeRepository.IQueryable(t => t.zt == "1"
+&& roleIdList.Contains(t.RoleId)).Select(p => p.ItemId);
+                query = query.Where(p => orgItemIdList.Contains(p.Id) && idList.Contains(p.Id));
+            }
+            var showDescToMenuTitle = ConfigurationHelper.GetAppConfigBoolValue("IS_ShowDescToMenuTitle");
+            if (showDescToMenuTitle == false)
+            {
+                //在菜单中不显示Description
+                var list = query.ToList();
+                list.ForEach(p => p.Description = null);
+                return list.OrderBy(t => t.px).ToList();
+            }
+            return query.OrderBy(t => t.px).ToList();
+        }
+
+        /// <summary>
+        /// 获取机构 系统菜单   grid
+        /// </summary>
+        /// <returns></returns>
+        public IList<SysModuleVO> GetMenuListByTopOrg(string topOrgId)
+        {
+            return this.FindList<SysModuleVO>(@"select * from
+(
+    select a.*, cast(1 as bit) IsOpenToOrg
+    from Sys_Module a
+    left join Sys_OrganizeAuthorize b
+    on a.Id = b.ItemId and b.ItemType = 1 and (b.TopOrganizeId = '*' or b.TopOrganizeId = @topOrganizeId)
+    where 
+    b.Id is not null
+
+    union
+
+    select a.*, cast(0 as bit) IsOpenToOrg
+    from Sys_Module a
+    left join Sys_OrganizeAuthorize b
+    on a.Id = b.ItemId and b.ItemType = 1 and (b.TopOrganizeId = '*' or b.TopOrganizeId = @topOrganizeId)
+    where 
+    b.Id is null
+
+) as t", new SqlParameter[] {
+                new SqlParameter("@topOrganizeId", topOrgId)
+            });
+        }
+
+        /// <summary>
+        /// 获取机构 系统菜单 按钮    grid
+        /// </summary>
+        /// <returns></returns>
+        public IList<SysModuleButtonVO> GetMenuButtonListByTopOrg(string topOrgId, string moduleId)
+        {
+            return this.FindList<SysModuleButtonVO>(@"select * from
+(
+select a.*, cast(1 as bit) IsOpenToOrg
+from Sys_ModuleButton a
+left join Sys_OrganizeAuthorize b
+on a.Id = b.ItemId
+where b.ItemType = 2 and a.ModuleId = @moduleId
+and (b.TopOrganizeId = '*' or b.TopOrganizeId = @topOrganizeId)
+union
+(
+select a.*, cast(0 as bit) IsOpenToOrg
+from Sys_ModuleButton a
+where a.ModuleId = @moduleId
+and Id not in
+(
+    select a.Id IsOpenToOrg
+    from Sys_ModuleButton a
+    left join Sys_OrganizeAuthorize b
+    on a.Id = b.ItemId
+    where b.ItemType = 2 and a.ModuleId = @moduleId
+    and (b.TopOrganizeId = '*' or b.TopOrganizeId = @topOrganizeId)
+))
+) as t", new SqlParameter[] {
+                new SqlParameter("@topOrganizeId", topOrgId)
+                ,new SqlParameter("@moduleId", moduleId)
+            });
+        }
+
+        /// <summary>
+        /// 获取机构 已开放 的菜单
+        /// </summary>
+        /// <returns></returns>
+        public IList<SysModuleEntity> GetOpenMenuListByTopOrg(string topOrgId)
+        {
+            return this.FindList<SysModuleEntity>(@"select a.*
+from Sys_Module a
+left join Sys_OrganizeAuthorize b
+on a.Id = b.ItemId
+where b.ItemType = 1
+and (b.TopOrganizeId = '*' or b.TopOrganizeId = @topOrganizeId)", new SqlParameter[] {
+                new SqlParameter("@topOrganizeId", topOrgId)
+            });
+        }
+
+        /// <summary>
+        /// 获取机构 已开放 的按钮
+        /// </summary>
+        /// <returns></returns>
+        public IList<SysModuleButtonEntity> GetOpenMenuButtonListByTopOrg(string topOrgId)
+        {
+            return this.FindList<SysModuleButtonEntity>(@"select a.*
+from Sys_ModuleButton a
+left join Sys_OrganizeAuthorize b
+on a.Id = b.ItemId
+where b.ItemType = 2
+and (b.TopOrganizeId = '*' or b.TopOrganizeId = @topOrganizeId)", new SqlParameter[] {
+                new SqlParameter("@topOrganizeId", topOrgId)
+            });
+        }
+
+        /// <summary>
+        /// 提交新建、更新 菜单
+        /// </summary>
+        /// <param name="moduleEntity"></param>
+        /// <param name="keyValue"></param>
+        public void SubmitForm(SysModuleEntity moduleEntity, string keyValue)
+        {
+            if (!string.IsNullOrEmpty(keyValue))
+            {
+                moduleEntity.Modify(keyValue);
+                _sysModuleRepository.Update(moduleEntity);
+            }
+            else
+            {
+                //新增
+                moduleEntity.Create(true);
+                _sysModuleRepository.Insert(moduleEntity);
+            }
+        }
+
+        /// <summary>
+        /// 提交新建、更新 权限按钮
+        /// </summary>
+        /// <param name="moduleButtonEntity"></param>
+        /// <param name="keyValue"></param>
+        public void ModuleButtonSubmitForm(SysModuleButtonEntity moduleButtonEntity, string keyValue, string topOrgId = null)
+        {
+            if (!string.IsNullOrEmpty(keyValue))
+            {
+                moduleButtonEntity.Modify(keyValue);
+                _moduleButtonRepo.Update(moduleButtonEntity);
+            }
+            else
+            {
+                //新增
+                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+                {
+                    moduleButtonEntity.Create(true);
+                    db.Insert(moduleButtonEntity);
+
+                    if (!string.IsNullOrWhiteSpace(topOrgId))
+                    {
+                        //自动为topOrganizeId分配ModuleButton的权限
+                        var authEntity = new SysOrganizeAuthorizeEntity()
+                        {
+                            TopOrganizeId = topOrgId,
+                            ItemId = moduleButtonEntity.Id,
+                            ItemType = 2
+                        };
+                        authEntity.Create(true);
+                        db.Insert(authEntity);
+                    }
+
+                    db.Commit();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <param name="orgList"></param>
+        /// <param name="itemType"></param>
+        public void UpdateAuthOrganizeList(string moduleId, string orgList, int itemType)
+        {
+            var orgIdArr = orgList.Trim(',');
+            if (string.IsNullOrWhiteSpace(orgIdArr))
+            {
+                var sql = @"
+delete from Sys_OrganizeAuthorize where ItemId = @moduleId and ItemType = @itemType
+";
+                _dataContext.Database.ExecuteSqlCommand(sql, new SqlParameter[] {
+                    new SqlParameter("@moduleId", moduleId),
+                    new SqlParameter("@itemType", itemType),
+                });
+            }
+            else
+            {
+                var sql = @"
+delete from Sys_OrganizeAuthorize where ItemId = @moduleId and ItemType = @itemType
+insert into Sys_OrganizeAuthorize(Id, TopOrganizeId, ItemId, ItemType, CreateTime, CreatorCode,zt)
+select newid(), Id, @moduleId, @itemType, GETDATE(), @creatorCode, '1'
+from Sys_Organize where zt = '1' and Id in (
+    select value from dbo.SplitToTable(@orgIdArr, ',')
+)";
+                _dataContext.Database.ExecuteSqlCommand(sql, new SqlParameter[] {
+                    new SqlParameter("@moduleId", moduleId),
+                    new SqlParameter("@itemType", itemType),
+                    new SqlParameter("@creatorCode", OperatorProvider.GetCurrent().UserCode),
+                    new SqlParameter("@orgIdArr", SqlDbType.VarChar, -1) { Value = orgIdArr }
+                });
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <param name="itemType"></param>
+        public void AuthAllOrganize(string moduleId, int itemType)
+        {
+            var sql = @"
+if exists (select 1 from Sys_Module where Id = @moduleId and @itemType = 1
+union select 1 from Sys_ModuleButton where Id = @moduleId and @itemType = 2)
+begin
+    delete from Sys_OrganizeAuthorize where ItemId = @moduleId and ItemType = @itemType
+    insert into Sys_OrganizeAuthorize(Id, TopOrganizeId, ItemId, ItemType, CreateTime, CreatorCode,zt)
+    values(newid(), '*', @moduleId, @itemType, GETDATE(), @creatorCode, '1')
+end";
+            _dataContext.Database.ExecuteSqlCommand(sql, new SqlParameter[] {
+                new SqlParameter("@moduleId", moduleId),
+                new SqlParameter("@itemType", itemType),
+                new SqlParameter("@creatorCode", OperatorProvider.GetCurrent().UserCode)
+            });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <param name="itemType"></param>
+        public void AuthCancelAllOrganize(string moduleId, int itemType)
+        {
+            var sql = @"delete from Sys_OrganizeAuthorize where ItemId = @moduleId and ItemType = @itemType";
+            this.ExecuteSqlCommand(sql, new SqlParameter[] {
+                new SqlParameter("@moduleId", moduleId)
+                ,new SqlParameter("@itemType", itemType)
+            });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="moduleId"></param>
+        /// <returns></returns>
+        public IList<SysOrganizeEntity> GetAuthedOrgListByModuleId(string itemId, int itemType)
+        {
+            var sql = @"if exists (select 1 from Sys_OrganizeAuthorize where ItemId = @itemId and ItemType = @itemType and TopOrganizeId = '*')
+begin 
+    --所有顶级组织机构
+	select * from Sys_Organize where ParentId is null and zt = '1'
+end
+else
+	select distinct b.* from Sys_OrganizeAuthorize a
+	left join Sys_Organize b
+	on a.TopOrganizeId = b.Id
+	where a.ItemId = @itemId and a.ItemType = @itemType";
+
+            return this.FindList<SysOrganizeEntity>(sql, new SqlParameter[] {
+                new SqlParameter("@itemId", itemId)
+                ,new SqlParameter("@itemType", itemType)
+            });
+        }
+
+        /// <summary>
+        /// 查看用户是否可访问该系统（根据对他开放的权限菜单来判定）
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="topOrgId"></param>
+        /// <param name="account"></param>
+        /// <returns></returns>
+        public bool CheckLoginable(string topOrgId, string account)
+        {
+            var sql = @"
+SELECT 1
+FROM [dbo].[Sys_RoleAuthorize]
+WHERE zt='1'
+        AND ItemType=1
+        AND RoleId in
+    (SELECT roleId
+    FROM [dbo].[Sys_UserRole]
+    WHERE zt='1'
+            AND userId = 
+        (SELECT Id
+        FROM [Sys_User]
+        WHERE zt='1'
+                AND Account=@account
+                AND topOrganizeId=@topOrgId ))
+";
+            var list = this.FindList<int>(sql, new SqlParameter[] {
+                new SqlParameter("@topOrgId", topOrgId)
+                ,new SqlParameter("@account", account)
+            });
+            if (list.Count > 0)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 获取系统菜单 grid
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <returns></returns>
+        public IList<SysModuleEntity> GetMenuListByOrg(string orgId)
+        {
+            var sql = @"select * from Sys_Module(nolock)
+where 
+(
+(@orgId <> '' and (OrganizeId is null or OrganizeId = @orgId))
+or
+(@orgId = '' and (OrganizeId is null))
+)
+order by isnull(px, 99999)";
+            return this.FindList<SysModuleEntity>(sql, new[] { new SqlParameter("@orgId", orgId ?? "") });
+        }
+
+    }
+
+}

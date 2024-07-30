@@ -1,0 +1,220 @@
+﻿@model HIS.SSO.Models.UserModel
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_roles()"><i class="fa fa-pencil-square-o"></i>用户角色</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="姓名/账户/工号" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="navb-bg">
+    <div class="dv-table-container">
+        <table id="usertable"></table>
+    </div>
+</div>
+<script>
+    $(function () {
+        initControl(); 
+        tableInit();
+    })
+
+    function initControl() {
+        $("#btn_search").on("click",function(){
+            tableRefresh();
+        });
+        //回车事件
+        $('#txt_keyword').keydownEnterEvent(function () {
+            $('#btn_search').trigger('click');
+        })
+    }
+
+    var $table = $('#usertable');
+    function tableInit()
+    {
+        $table.bootstrapTable({
+            url: "/SysManage/User/GetPagintionGridJson", //服务器返回数据的网址
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+            height: $(window).height() - 96,
+            queryParams: queryParams,
+            classes: "table table-bordered table-striped table-hover",
+            theadClasses: "table-light",//设置表头样式
+            idField: 'Id',
+            showColumns: false,
+            columns: [
+                {
+                    field: 'Id',
+                    visible: false
+                },  
+                {
+                    field: 'zt',
+                    title: '状态',
+                    halign: 'center',
+                    //sortable: true,
+                    halign: 'center',
+                    align: 'center',  
+                    width: '2',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        return cellvalue == "1" ? "<i class=\"fa fa-toggle-on icon-theme-success\"></i>" : "<i class=\"fa fa-toggle-off icon-theme-default\"></i>";
+                    }
+                }, {
+                    field: 'Account',
+                    title: '账号',
+                    halign: 'center',
+                    //sortable: true,
+                    halign: 'center',
+                    align: 'center',   
+                    width: '5',
+                    widthUnit: '%',
+                }, {
+                    field: 'gh',
+                    title: '工号',
+                    halign: 'center',
+                    halign: 'center',
+                    align: 'center',  
+                    width: '5',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'Name',
+                    title: '姓名',
+                    halign: 'center',
+                    align: 'center',  
+                    width: '10',
+                    widthUnit: '%',
+                    sortable: true,
+                },
+                {
+                    field: 'OrganizeName',
+                    title: '机构名称',
+                    halign: 'center',
+                    width: '10',
+                    widthUnit: '%',
+                },{
+                    field: 'DepartmentName',
+                    title: '科室名称',
+                    halign: 'center',
+                    sortable: true,
+                    width: '10',
+                    widthUnit: '%',
+                },{
+                    field: 'Locked',
+                    title: '账号状态',
+                    halign: 'center',
+                    //sortable: true,
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '10',
+                    widthUnit: '%',
+                    formatter: function (cellvalue, row, index) {
+                        if (cellvalue === true) {
+                            return '<span class=\"label label-default\">停用</span>';
+                        }
+                        else {
+                            return '<span class=\"label label-success\">正常</span>';
+                        }
+                    }
+                },
+                {
+                    field: 'OrganizeId',
+                    visible: false
+                }
+            ], 
+            uniqueId: 'Id',
+            pagination: true,                   //是否显示分页（*）
+            pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
+            pageSize: 30,                       //每页的记录行数（*）
+            pageList: [20, 50, 100],            //可供选择的每页的行数（*）
+            paginationHAlign: "left",
+            paginationDetailHAlign: "right",
+            sortable: true,                     //是否启用排序
+            sortOrder: "desc",                   //排序方式
+            sidePagination: 'server',           //分页方式：client客户端分页，server服务端分页（*）
+            //onSort: function (name, order) {
+            //    /*********第3步，刷新排序字段和排序方法，完成************/
+            //    $table.bootstrapTable('refreshOptions', {
+            //        sortName: name,
+            //        sortOrder: order
+            //    });
+            //},
+            onLoadSuccess: function (data) {
+          
+            },
+            onDblClickRow: function (row, $element, field) {
+                
+            },
+            onClickRow: function (row, $element, field) {
+                var selrow = $table.bootstrapTable("getSelections");
+                if (selrow != null && selrow.length > 0 && selrow[0] != null && selrow[0].Id != row.Id) {
+                    bstableSelectedToggle($table, "Id", [selrow[0].Id], false);
+                }
+                bstableSelected($table, "Id", [row.Id], $element);
+            },
+            formatLoadingMessage: function () {
+                return "<span class='table-loading-text'>正在加载中，请稍候</span>";
+            },
+            formatNoMatches: function () {
+                return "暂无数据";
+            }
+
+        });
+        $table.bootstrapTable('hideLoading');
+    }
+    function queryParams(params) {
+        // 自定义参数
+        var customParams = {
+            orgId: $("#OrganizeId option:selected").val(),
+            keyword: $("#txt_keyword").val()
+        };
+        // 合并自定义参数和插件默认参数
+        return Object.assign(params, customParams);
+    }
+    function tableRefresh() {
+        $table.bootstrapTable('refresh', { queryParams: queryParams, pageNumber: 1 });
+    }
+
+    function btn_roles() {
+        var seleRowid = $table.bootstrapTable("getSelections");
+        if (!seleRowid) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var thisOrgId = seleRowid[0].OrganizeId;
+        if (!!!thisOrgId) {
+            $.modalAlert("请先为用户关联人员", 'warning');
+            return;
+        }
+        var keyValue = seleRowid[0].Id;
+        $.modalOpen({
+            id: "Form",
+            title: "用户角色",
+            url: "/SysManage/User/UserRoles?keyValue=" + keyValue + '&orgId=' + thisOrgId,
+            width: "650px",
+            height: "600px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+
+                });
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,86 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="topPanel">
+    <div class="search">
+        <table>
+            <tr>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="zdlx" name="zdlx" class="form-control" data-EnumType="EnumZdlx">
+                        <option value="WM">西医</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="input-group" style="float:left;">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="诊断简拼/名称" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div style="padding:0px 10px;" class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+<div class="alert alert-danger" style="text-align: left; margin-bottom: 5px;">
+    <i class="fa fa-warning alert-dismissible" style="position: relative; bottom: 1px; font-size: 10px; padding-right: 5px;"></i>
+    若未选中一条新的诊断信息，【确认】后会清空当前诊断信息。若要保留，请点击【关闭】。
+</div>
+<script>
+
+    $(function () {
+        gridListInit();
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), zdlx: $("#zdlx option:selected").val() },
+            }).trigger('reloadGrid');
+        });
+    });
+
+    function gridListInit() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            rownumbers: false,
+            url: "/MedicalRecordManage/Blctgl/GetDiagnosisGrid",
+            postData: { keyword: "", zdlx: $("#zdlx option:selected").val() },
+            height: 375, //$(window).height() - 228,
+            colModel: [
+                { label: "icd10", name: "icd10", width: 150 },
+                { label: "诊断名称", name: "zdName", width: 200 },
+            ],
+            pager: "#gridPager",
+            sortname: 'zdName',
+            viewrecords: false,
+            rowNum: 15,
+        });
+    }
+
+    function AcceptClick(callBack) {
+        var rowData;
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        //if (!(seleRowid)) {
+        //    $.modalConfirm("未选择新的诊断，确认清空？",
+        //        function (flag) {
+        //            if (flag) {
+        //                rowData= "1";
+        //            }
+        //            else {
+        //                rowData= "0";
+        //            }
+        //        });
+        //    //$.modalAlert("请选中一条信息", 'warning');
+        //    //return;
+        //}
+        if (seleRowid != null && seleRowid != undefined) {
+            rowData = $("#gridList").jqGrid('getRowData', seleRowid);
+        }
+
+        $.modalClose();
+        return rowData;
+    }
+</script>

@@ -1,0 +1,360 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/cispage.css", false)" rel="stylesheet" />
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/layout/jquery.layout.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/css/framework-ui-compact.css")" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    #gridtyyzPager_center, #gridmedicinePager_center, #gridwordPager_center, #gridTakePager_center, #gridsfxmPager_center, #gridssyzPager_center {
+        display: none;
+    }
+
+    .ui-th-ltr, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr {
+        border: 1px solid #ddd;
+    }
+</style>
+@*导航栏*@
+<ul class="nav nav-tabs navb-bg" id="myTab" style="position:fixed;top:0;z-index:100009;width:99%">
+    <li role="presentation"><a href="#linkyzcx" role="tab" data-toggle="tab">医嘱查询</a></li>
+</ul>
+<div id="divPatientBasicInfo" style="position: fixed;top: 0px;z-index: 100009;width: 29%;line-height: 40px;font-size: 18px;white-space: nowrap;text-overflow: ellipsis;background: #e9f6fe;right: 1.2%;text-align:right;padding-right: 18px;display:none;color:#07bbf1;">
+</div>
+<div style="margin-top:40px;">
+    <div class="tab-content">
+        @Html.Partial("ZyyzQueryAdviceList")
+        @Html.Partial("~/Areas/DoctorManage/Views/DietaryAdvice/Index.cshtml")
+    </div>
+</div>
+<script>
+    window.alldataArray = [];
+    var transferbool = false;
+    $('#myTab a:first').trigger('click'); //初始化显示哪个tab
+
+    var currentobj = JSON.parse(sessionStorage.getItem('currentobj'));
+    if (currentobj) {
+        //sessionStorage.removeItem("currentobj");
+        $('#myTab a:first').trigger('click'); //初始化显示哪个tab
+        showPatientBasicInfo();
+    }
+
+    function showPatientBasicInfo() {
+        if (!$('#divPatientBasicInfo').is(':visible')) {
+            $('#myTab').css('width', '70%');
+            $('#divPatientBasicInfo').show();
+        }
+        $('#divPatientBasicInfo').html(window.currentobj.xm
+            + '&nbsp;/&nbsp;' +$.getGender(window.currentobj.sex)
+            + '&nbsp;/&nbsp;' + window.currentobj.age+"岁"
+            + '&nbsp;/&nbsp;' + window.currentobj.brxzmc
+            + '&nbsp;/&nbsp;' + window.currentobj.zyh);
+    }
+
+    function pickDate(cellvalue, options, cell) {
+        $(cell).find('input[type=text]').addClass("input-wdatepicker");
+        $(cell).find('input[type=text]').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })
+        });
+    }
+
+    //验证当前操作是否存在病人
+    function patobjValidate() {
+        //当前是否选中病人
+        if (currentobj == undefined || currentobj.zyh == "" || isNaN(currentobj.zyh)) {
+            $.modalAlert("缺少病人", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    function transferPage($thishref) {
+        switch ($thishref) {
+            case "#linkyzcx":
+                $('.dv-home-patInfo').hide();
+                btn_search();
+                break;
+            case "#linkyplr":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.Yp).ToString()));
+                if (!(window.alldataArray && window.alldataArray.ypyz)) {
+                    window.alldataArray.ypyz = new Array();
+                }
+                init_MedicinePrescription();
+                break;
+            case "#linkwzlr":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.Wz).ToString()));
+                if (!(window.alldataArray && window.alldataArray.wzyz)) {
+                    window.alldataArray.wzyz = new Array();
+                }
+                init_WordPrescription();
+                break;
+            case "#linkxmlr":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.sfxm).ToString()));
+                if (!(window.alldataArray && window.alldataArray.xmyz)) {
+                    window.alldataArray.xmyz = new Array();
+                }
+                init_ItemPrescription();
+                break;
+            case "#linkcydy":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.Cydy).ToString()));
+                if (!(window.alldataArray && window.alldataArray.cydy)) {
+                    window.alldataArray.cydy = new Array();
+                }
+                init_OutMedicinePrescription();
+                break;
+            case "#linkjy":
+                $('.dv-home-patInfo').hide();
+                $('#floatInspectTemplateTree').show();
+                window.SetCurrentPageJyjclx(@((int)EnumjyjcmbLx.jy));
+                init_jyPrescription();
+                break;
+            case "#linkjc":
+                $('.dv-home-patInfo').hide();
+                $('#floatInspectTemplateTree').show();
+                window.SetCurrentPageJyjclx(@((int)EnumjyjcmbLx.jc));
+                init_jcPrescription();
+                break;
+            case "#linkssyz":
+                 $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.ssyz).ToString()));
+                if (!(window.alldataArray && window.alldataArray.ssyz)) {
+                    window.alldataArray.ssyz = new Array();
+                }
+                init_FoodPrescription();
+                break;
+        }
+    }
+
+    function confirm(TargetHref) {
+        $.modalConfirm("当前页面还有医嘱数据未保存，是否仍需跳转?", function (flag) {
+            if (flag) {
+                transferbool = true;
+                $('#myTab a[href="' + TargetHref + '"]').trigger('click'); //初始化显示哪个tab
+            }
+            return false;
+        });
+    }
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('#floatPreTemplateTree').hide();
+            var targetHref = $(e.target).attr('href');
+            if (targetHref.indexOf('linkjy') == -1 && targetHref.indexOf('linkjc') == -1) {     //检验检查页
+                $('#floatInspectTemplateTree').hide();
+            } else {
+                $('#floatInspectTemplateTree').show();   //显示检验检查模板树
+            }
+            transferPage($(this).attr('href'));
+            transferbool = false;
+    });
+
+    $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+        if (!transferbool) {
+            var relatedTargetHref = $(e.relatedTarget).attr('href');
+            var TargetHref = $(this).attr("href");
+            if (relatedTargetHref.indexOf('#linkyplr') != -1 && $("#gridmedicine:visible").length == 1) {
+                if ($("#gridmedicine").jqGrid('getDataIDs').length > 0) {
+                    SaveDoctorService(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            }
+            else if (relatedTargetHref.indexOf('#linkwzlr') != -1 && $("#gridword:visible").length == 1) {
+                if ($("#gridword").jqGrid('getDataIDs').length > 0) {
+                    SaveWordMedicine(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            } else if (relatedTargetHref.indexOf('#linkxmlr') != -1 && $("#gridsfxm:visible").length == 1) {
+                if ($("#gridsfxm").jqGrid('getDataIDs').length > 0) {
+                    SaveItemMedicine(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            }
+            else if (relatedTargetHref.indexOf('#linkcydy') != -1 && $("#gridTake:visible").length == 1) {
+                if ($("#gridTake").jqGrid('getDataIDs').length > 0) {
+                    SaveTakeMedicine(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            } else if (relatedTargetHref.indexOf('#linkjy') != -1 && $("#alreadyJYAppliedList:visible").length == 1) {
+                if ($("#alreadyJYAppliedList").jqGrid('getDataIDs').length > 0) {
+                    SaveInspection(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            }
+            else if (relatedTargetHref.indexOf('#linkjc') != -1 && $("#alreadyJCAppliedList:visible").length == 1) {
+                if ($("#alreadyJCAppliedList").jqGrid('getDataIDs').length > 0) {
+                    SaveExamination(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            } else if (relatedTargetHref.indexOf('#linkssyz') != -1 && $("#gridssyz:visible").length == 1) {
+                if ($("#gridssyz").jqGrid('getDataIDs').length > 0) {
+                    SavessyzMedicine(null);
+                    //confirm(TargetHref);
+                }
+                //else {
+                //    return true;
+                //}
+            }
+        }
+    });
+
+    var cfColorArr = new Array();
+    var cfzhColorArr = new Array();
+    var cfSourceColorArr = [
+        { color: '#02a0ea', zhcolor: ['#015f95', '#017bbc', '#009ee7', '#4cb7e3', '#95d5f1'] },
+        { color: '#27c24c', zhcolor: ['#006c28', '#0b9b2c', '#27c24c', '#6fc874', '#94d794'] },
+        { color: '#f05050', zhcolor: ['#a50001', '#d32323', '#f0514e', '#ef827d', '#f5b0a9'] },
+        { color: '#1bd0c7', zhcolor: ['#02625e', '#01aca3', '#31d7d5', '#85d5d4', '#c0d2d2'] },
+        { color: '#6037af', zhcolor: ['#310075', '#6137b3', '#7266ba', '#938ece', '#b2a9d8'] },
+        { color: '#fe7e00', zhcolor: ['#c44300', '#eb4e00', '#ff7d00', '#f89e00', '#f6c579'] },
+        { color: '#b100ab', zhcolor: ['#59014f', '#7d197b', '#b13990', '#cc7eb2', '#cda7c0'] },
+        { color: '#f50090', zhcolor: ['#910159', '#c10071', '#f40191', '#f462b7', '#faa2d5'] },
+        { color: '#6b821a', zhcolor: ['#575c00', '#6b811c', '#91b225', '#98ac4d', '#beca8a'] },
+        { color: '#2d61d9', zhcolor: ['#17194c', '#002c8b', '#2d61db', '#6a8ee4', '#97b8e5'] }
+    ];
+
+    //获取处方呈现颜色
+    function getZhColor(zh) {
+        var matched = $.jsonWhere(cfColorArr, function (v) {
+            if (v.zh === zh) {
+                return v.color
+            }
+        });
+        if (matched && matched.length) {
+            return matched[0].color;
+        }
+        var unusedColor = $.jsonWhere(cfSourceColorArr, function (v) {
+            if (v) {
+                var usedArr = $.jsonWhere(cfColorArr, function (q) {
+                    return q && q.color === v.color;
+                });
+                if (!usedArr || usedArr.length == 0) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        if (unusedColor && unusedColor.length) {
+            var thisColor = unusedColor[0].color;
+            cfColorArr.push({ zh: zh, color: thisColor });
+            return thisColor;
+        }
+        return '#ddd';  //颜色用完了 默认一个颜色
+    }
+
+    //计算频次数量
+    function getpcsl(zxcs, zxzq, zxzqdw)
+    {
+        if (isNaN(zxzqdw) || zxzqdw=="") {
+            $.modalAlert("执行周期单位不能为空", 'error');
+            return;
+        }
+        var rtnsl;
+        switch (zxzqdw) {
+            case "1":
+                rtnsl = (zxcs / zxzq);
+                break;
+            case "2":
+                rtnsl = (zxcs / zxzq) * 24;
+                break;
+            case "3":
+                rtnsl = (zxcs / zxzq) * 24 * 60;
+                break;
+            case 4:
+                rtnsl = 0;
+                break;
+        }
+        return rtnsl;
+    }
+
+    //计算药品数量
+    function getypsl(jlzhxs, zyzhxs, ypjl, dwlb, zxcs, zxzq, zxzqdw, ts, qzfs)
+    {
+        var zysl = 0;
+        if (isNaN(dwlb) || dwlb == "") {
+            $.modalAlert("单位类别不能为空", 'error');
+            return;
+        }
+        var qzint = ypjl * ts;//默认住院单位 ，不需转换
+        if (dwlb == 1) {//剂量单位 转换成剂量单位
+            qzint = (ypjl * ts / jlzhxs / zyzhxs);
+        }
+        if (qzfs == "day") {
+            zysl = Number(Math.ceil(qzint * getpcsl(zxcs, zxzq, zxzqdw)));
+        } else if (qzfs == "times") {
+            zysl = Number(Math.ceil(qzint) * getpcsl(zxcs, zxzq, zxzqdw));
+        }
+        return zysl;
+    }
+
+    function ReviewToday() {
+        patobjValidate();
+        $.modalOpen({
+            id: "CurrentdayView",
+            title: "当日医嘱列表",
+            url: "/DoctorManage/Orginal/CurrentdayView?zyh=" + currentobj.zyh,
+            width: "800px",
+            height: "370px",
+            callBack: function (iframeId) {
+                $.modalClose("CurrentdayView");
+            }
+        });
+    }
+
+    //另存为模板
+    function saveAsTemplate(mbObj,mxList){
+        $.modalOpen({
+            id: "Form",
+            title: "套餐",
+            url: "/DoctorManage/DoctorsAdvice/Form",
+            width: "400px",
+            height: "300px",
+            callBack: function (iframeId) {
+                var obj = top.frames[iframeId].submitForm();
+                if (obj && obj.mbmc && obj.mblx) {
+                    $.modalClose("Form");
+                }
+                if (mbObj != typeof (undefined)) {
+                    mbObj.tcfw = obj.mblx;
+                    mbObj.tcmc = obj.mbmc;
+                }
+                $.najax({
+                    url: "@Url.Action("saveAsTemplate")",
+                    dataType: "json",
+                    data: { mbObj: mbObj, mxList: mxList },
+                    type: "POST",
+                    success: function (data) {
+                        $.modalMsg("保存成功", 'success');
+                        $("#beveltabs a:first").trigger('click');
+                    }
+                });
+            }
+        });
+    }
+
+    //清空 所有文本、处方、历史处方、grid列表
+    function newtouch_event_f4() {
+        window.alldataArray = [];
+    }
+</script>

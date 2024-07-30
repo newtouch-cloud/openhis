@@ -1,0 +1,313 @@
+﻿
+@using Newtouch.Infrastructure;
+@using Newtouch.Tools;
+@{
+	ViewBag.Title = "CatalogComparison";
+	Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form>
+	<div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+		<table class="form">
+			<tr>
+				<th class="formTitle"></th>
+                <td class="formValue" colspan="4">
+                    <input type="radio" name="radios" class="radios" value="101" checked="checked">西药中成药
+                    <input type="radio" name="radios" class="radios" value="102">中药饮片
+                    <input type="radio" name="radios" class="radios" value="201">服务项目
+                    <input type="radio" name="radios" class="radios" value="301">医用材料
+                </td>
+				<th class="formTitle">名称：</th>
+				<td class="formValue" colspan="2">
+					<input id="txt_keyword" type="text" style="width:200px;" class="form-control form-an" placeholder="名称">
+				</td>
+				<td class="formValue">
+					<input type="button" id="btn_search" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="查询" />
+				</td>
+				<th class="formTitle"></th>
+				<td class="formValue"></td>
+			</tr>
+		</table>
+	</div>
+	<div class="gridPanel">
+		<table id="gridList"></table>
+		<div id="gridPager"></div>
+	</div>
+	@*<div class="panel panel-default">
+		<div class="toolbar" style="margin-left:2%">
+			<div class="btn-group">
+				<label>医保药品名称：</label>
+			</div>
+			<div class="btn-group">
+				<input id="txt_gjybdm" type="text" style="width:200px; height:20px;" class="form-control form-an" placeholder="医保药品名称">
+			</div>
+			<div class="btn-group">
+				<label>批准文号：</label>
+			</div>
+			<div class="btn-group">
+				<input id="txt_pzwh" type="text" style="width:200px; height:20px;" class="form-control form-an" placeholder="医保批准文号">
+			</div>
+			<div class="btn-group">
+				<label>生产企业：</label>
+			</div>
+			<div class="btn-group">
+				<input id="txt_scqy" type="text" style="width:200px; height:20px;" class="form-control form-an" placeholder="医保生产企业">
+			</div>
+			<div class="btn-group">
+				<input type="button" id="btn_searchyb" class="btn btn-primary" value="查询" />
+			</div>
+			<div class="btn-group">
+				<input type="button" id="btn_save" class="btn btn-primary" value="对码" />
+			</div>
+		</div>
+	</div>
+	<div style="background-color: #fff; margin-top:5px;">
+		<table id="gridJSMXList"></table>
+	</div>*@
+</form>
+
+<script>
+	$(function () {
+		gridList();
+		//$("#btn_searchyb").click(function () {
+		//	$('#gridJSMXList').jqGrid("clearGridData");//先清空明细
+		//	btn_selectmx();
+		//});
+
+		//$("#btn_save").click(function () {
+
+		//	btn_save();
+		//});
+	});
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "@Url.Action("GetMldzxxlist")",
+            height: 500,
+            postData: getpostData(),
+            rowNum: 16,
+            rownumbers: true,
+            unwritten: false,
+            pager: "#gridPager",
+            viewrecords: true,
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, frozen: true, key: true },
+                { label: '名称', name: 'name', width: 300, align: 'center', sortable: false },
+                { label: '编码', name: 'code', width: 100, align: 'center', sortable: false },
+                { label: "国家医保代码", name: "gjybdm", width: 200, align: 'center', sortable: false },
+                { label: '药品规格', name: 'gg', width: 150, align: 'center', sortable: false },
+                { label: '是否对照', name: 'isdz', width: 110, align: 'center', sortable: false },
+                {
+                    label: "操作", name: "cz", width: 80, align: "center", formatter: function (cellvalue, options, rowObject) {
+                        //return rowObject.code + "" + rowObject.gjybdm;
+                        return "<input type=\"button\" id=\"btn_searchsc\" onclick=\"mldzsc('" + rowObject.code + "','" + rowObject.gjybdm + "','" + rowObject.name + "')\" class=\"btn btn-primary\" style=\"width: 20%;  \" value=\"上传\" />&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"button\" id=\"btn_searchcx\" onclick=\"mldzcx('" + rowObject.code + "','" + rowObject.gjybdm + "','" + rowObject.name + "')\" class=\"btn btn-primary\" style=\"width: 20%; \" value=\"撤销\" />"
+                    }
+                },
+            ],
+
+            onSelectRow_page: function (rowid) {
+                //btn_selectrow();
+            },
+            gridComplete: function (gridJszbList) {
+                jszbList = null;
+                if (gridJszbList && gridJszbList.rows) {
+                    jszbList = gridJszbList.rows;
+                }
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getpostData(),
+                page: 1,
+            }).trigger('reloadGrid');
+            //$("#txt_gjybdm").val("");
+            //$("#txt_pzwh").val("");
+            //$("#txt_scqy").val("");
+        });
+    }
+    function mldzsc(code, gjybdm,name) {
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/CatalogComparison3301",
+            dataType: "json",
+            data: { code: code, gjybdm: gjybdm, name: name, type: $('input:radio:checked').val()},
+            async: false,
+            success: function (data) {
+                var ybmlsc = eval('(' + data + ')');
+                if (ybmlsc.infcode == "0") {
+                    $.modalAlert("目录对照上传成功！", 'success');
+                    $('#btn_search').trigger('click');
+                }
+                else {
+                    $.modalAlert("目录对照上传失败:" + ybmlsc.err_msg, 'error');
+                    $('#btn_search').trigger('click');
+                }
+            },
+            error: function () {
+                $.loading(false);
+                $.modalAlert("服务不可访问", 'warning');
+            }
+        });
+    }
+        function mldzcx(code, gjybdm, name) {
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/CatalogComparison3302",
+            dataType: "json",
+            data: { code: code, gjybdm: gjybdm, name: name, type: $('input:radio:checked').val() },
+            async: false,
+            success: function (data) {
+                var ybmlsc = eval('(' + data + ')');
+                if (ybmlsc.infcode == "0") {
+                    $.modalAlert("目录对照撤销成功！", 'success');
+                    $('#btn_search').trigger('click');
+                }
+                else {
+                    $.modalAlert("目录对照撤销失败:" + ybmlsc.err_msg, 'error');
+                    $('#btn_search').trigger('click');
+                }
+            },
+            error: function () {
+                $.loading(false);
+                $.modalAlert("服务不可访问", 'warning');
+            }
+        });
+    }
+	//结算明细 jGrid声明
+	$('#gridJSMXList').newtouchLocalDataGrid({
+		height: $(window).height() - 520,
+		caption: "医保药品信息",
+		unwritten: false,
+		colModel: [
+			{ label: '国家医保代码', name: 'ypdm', width: 180, align: 'center' },
+			{ label: '医保名称', name: 'zcmc', width: 200, align: 'center'},
+			{ label: '医保药品名称', name: 'ybypmc', width: 80, align: 'center' },
+			{ label: '规格', name: 'sjgg', width: 110, align: 'center' },
+			{ label: '批准文号', name: 'pzwh', width: 130, align: 'center' },
+			{ label: '剂型', name: 'sjjx', width: 60, align: 'center' },
+			{ label: '生产企业', name: 'scqy', width: 180, align: 'center' },
+			{ label: '甲乙类', name: 'jyl', width: 80, align: 'center' },
+			{ label: '商品名称', name: 'spmc', width: 100, align: 'center' },
+			{ label: '药品企业', name: 'ypqy', width: 180, align: 'center' },
+			{ label: '医保剂型', name: 'ybjx', width: 80, align: 'center' },
+			{ label: '备注', name: 'bz', width: 80, align: 'center' },
+			{ label: '数据来源', name: 'sjly', width: 60, align: 'center' },
+			{ label: '包装材质', name: 'bzcz', width: 80, align: 'center' },
+			{ label: '最小包装数量', name: 'zxbzsl', width: 40, align: 'center' },
+			{ label: '最小制剂单位', name: 'zxzjdw', width: 40, align: 'center' },
+			{ label: '最小包装单位', name: 'zxbzdw', width: 80, align: 'center' },
+			{ label: '编号', name: 'bh', width: 80, align: 'center' },
+
+
+		],
+		viewrecords: true,
+		//ondblClickRow: function (row) {
+		//	btn_clickrow();
+		//}
+	});
+
+	function btn_selectmx() {
+
+		var ypid = $("#gridList").jqGrid('getGridParam', 'selrow');
+		if (!ypid) {
+			$.modalMsg("请选择需要对码的药品信息", "warning", 1000);
+			return false;
+		}
+
+		var pzwh = $("#txt_pzwh").val();
+		var scqy = $("#txt_scqy").val();
+		$('#gridJSMXList').jqGrid("clearGridData");
+		$.najax({
+			type: "POST",
+			url: "@Url.Action("GetYpypxxlist")",
+			data: { gjybdm: $("#txt_gjybdm").val(), ypmc: scqy, py:'' , pzwh: pzwh },
+			dataType: "json",
+			success: function (ajaxresp) {
+
+				$('#gridJSMXList').newtouchLocalDataGrid(null, ajaxresp);
+			}
+		});
+	}
+	function btn_selectrow() {
+		var gjybdm = $("#gridList").jqGridRowValue().gjybdm;
+		var ypmc = $("#gridList").jqGridRowValue().ypmc;
+		var yppy = $("#gridList").jqGridRowValue().py;
+		var pzwh = $("#gridList").jqGridRowValue().pzwh;
+		if (gjybdm != null && gjybdm!="0") {
+			$("#txt_gjybdm").val(gjybdm)
+		} else {
+			$("#txt_gjybdm").val(ypmc);
+		}
+
+		$("#txt_pzwh").val("");
+		$("#txt_scqy").val("");
+		//每次单击，先清空上一条明细 和合计
+		$('#gridJSMXList').jqGrid("clearGridData");
+		$.najax({
+			type: "POST",
+			url: "@Url.Action("GetYpypxxlist")",
+			data: { gjybdm: $("#txt_gjybdm").val(), ypmc: '', py: '', pzwh: '' },
+			dataType: "json",
+			success: function (ajaxresp) {
+				$('#gridJSMXList').newtouchLocalDataGrid(null, ajaxresp);
+			}
+		});
+	}
+
+
+	//保存对码
+	function btn_save() {
+
+		var ypid = $("#gridList").jqGrid('getGridParam', 'selrow');
+		if (!ypid) {
+			$.modalMsg("请选择需要对码的药品信息", "warning", 1000);
+			return false;
+		}
+		var ybid = $("#gridJSMXList").jqGrid('getGridParam', 'selrow');
+		if (!ybid ){
+			$.modalMsg("请选择医保药品信息", "warning", 1000);
+			return false;
+		}
+		var ybxx = {
+			ypdm: $("#gridJSMXList").jqGridRowValue().ypdm,
+			zcmc: $("#gridJSMXList").jqGridRowValue().zcmc,
+			jyl: $("#gridJSMXList").jqGridRowValue().jyl,
+		};
+		var ypId = $("#gridList").jqGridRowValue().ypId;
+		var zfxz = ybxx.jyl == "甲" ? "4" : ybxx.jyl == "乙" ? "5" : ybxx.jyl == "丙" ? "6" : "1";
+		$.najax({
+			type: "POST",
+			url: "@Url.Action("SaveYpYb")",
+			data: { ybxx: ybxx, ypId: ypId},
+			dataType: "json",
+			success: function (data) {
+
+				if (data != null && data !== "") {
+					//gridList();
+					$.modalAlert("该药品对码成功", 'success');
+					//$("#txt_gjybdm").val("");
+					//$('#btn_search').trigger('click');
+					$("#txt_pzwh").val("");
+					$("#txt_scqy").val("");
+					var datarow = {
+						gjybdm: $("#gridJSMXList").jqGridRowValue().ypdm,
+						gjybmc: $("#gridJSMXList").jqGridRowValue().zcmc,
+						zfxz: zfxz,
+					};
+					$("#gridList").jqGrid('setRowData', ypid, datarow);
+				}
+			}
+		});
+	}
+
+
+	function getpostData() {
+		return {
+			keyword: $("#txt_keyword").val(), type: $('input:radio:checked').val()
+		};
+	}
+
+</script>

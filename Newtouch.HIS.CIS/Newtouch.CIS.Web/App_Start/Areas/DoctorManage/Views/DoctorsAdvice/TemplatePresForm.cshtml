@@ -1,0 +1,132 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "TemplatePresForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="tabGrid">
+    <div>
+        <div class="gridPanel">
+            <table id="gridList" rel="tabGrid"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var tcId = $.request("tcId");
+    var tclx = $.request("tclx");
+
+    var yp = @Html.Raw(((int)EnumYzlx.Yp).ToString());
+    var wz = @Html.Raw(((int)EnumYzlx.Wz).ToString());
+    var sfxm = @Html.Raw(((int)EnumYzlx.sfxm).ToString());
+    var cydy = @Html.Raw(((int)EnumYzlx.Cydy).ToString());
+    var ssyz = @Html.Raw(((int)EnumYzlx.ssyz).ToString());
+    $(function () {
+        gridList();
+    });
+    function gridList() {
+        if (!tcId)
+        {
+            return;
+        }
+        var sltext = "数量";
+        if (tclx == cydy) {
+            sltext="总量"
+        }
+
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "@Url.Action("GetMBDetailByMainId")",
+            postData: { Id: tcId },
+            height: $(window).height() - 120,
+            unwritten: false,
+            rownumbers: true,
+            multiselect: true,
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '组号', name: 'zh', width: 30, align: 'center', hidden: tclx == yp ? null : true },
+                { label: '项目名称', name: 'xmmc', width: 120, align: 'left' },
+                { label: '剂量', name: 'ypjl', width: 40, align: 'center', hidden: tclx == yp ? null : tclx == cydy ? null : true },
+                { label: '单位', name: 'dw', width: 40, align: 'center', hidden: tclx == wz ? true : null },
+                { label: '用法', name: 'yfmcval', width: 40, align: 'center', hidden: tclx == yp ? null : tclx == cydy ? null : true },
+                { label: '每次治疗量', name: 'ypjl', width: 80, align: 'center', hidden: tclx == sfxm ? null : true },
+                { label: 'pcCode', name: 'pcCode', hidden: true },
+                { label: '频次', name: 'pcmc', width: 60, align: 'left' },
+                { label: sltext, name: 'sl', width: 70, align: 'center', hidden: tclx == wz ? true : tclx == ssyz ? true : null },
+                { label: '部位', name: 'bw', width: 60, align: 'center', hidden: tclx == sfxm ? null : true },
+                {
+                    label: '自备标志', name: 'zbbzzzzzzz', width: 50, align: 'center', hidden: tclx == yp ? null : true, formatter: function (val) {
+                        return val == 1 ? "是" : "否";
+                    }
+                },
+                { label: '嘱托', name: 'ztnr', width: 90, align: 'left' },
+                { label: '库存', name: 'kcsl', width: 50, hidden: true },
+                {
+                    label: '控制标志', name: 'kzbz', width: 50, hidden: tclx == yp ? null : tclx == cydy ? null : true,formatter: function (val) {
+                        if (val == "0") {
+                            return "正常";
+                        } else if (val == "1") {
+                            return "禁用"
+                        } else if (val == null) {
+                            return "";
+                        }
+                        return val;
+                    }
+                },
+                { label: 'jlzhxs', name: 'jlzhxs', hidden: true },
+                { label: 'zyzhxs', name: 'zyzhxs', hidden: true },
+                { label: 'qzfs', name: 'qzfs', hidden: true },
+                { label: 'dwjls', name: 'dwjls', hidden: true }
+
+            ],
+            viewrecords: true,
+            sortname: 'zh desc',
+            pager: "#gridPager",
+            loadComplete: function () {
+                var ids = $gridList.getDataIDs();
+                $.each(ids, function () {
+                    var rowid = String(this);
+                    var kcsl = $gridList.jqGrid('getRowData', rowid).kcsl;
+                    var kzbz = $gridList.jqGrid('getRowData', rowid).kzbz;
+                    if ((kcsl != "" && kzbz != "禁用" && (tclx == yp || tclx == cydy)) || (tclx != yp && tclx != cydy)) {
+                        $gridList.jqGrid('setSelection', rowid); //设置jqGrid选中
+                    }
+                });
+                $('#cb_gridList').prop('checked', true);//全选按钮
+            },
+            onSelectRow: function (rowid, status) {
+                if (status && tclx == yp) {
+                    var kcsl = $gridList.jqGrid('getRowData', rowid).kcsl;
+                    var kzbz = $gridList.jqGrid('getRowData', rowid).kzbz;
+                    if (kcsl == "") {
+                        $.modalAlert("该药品无库存，不可选", "warning");
+                        $gridList.jqGrid('setSelection', rowid, false); //设置jqGrid选中
+                        return;
+                    }
+                    if (kzbz == "禁用") {
+                        $.modalAlert("该药品禁用状态，不可选", "warning");
+                        $gridList.jqGrid('setSelection', rowid, false); //设置jqGrid选中
+                        return;
+                    }
+                }
+            }
+        });
+    }
+
+    function submitForm() {
+        var data = $("#gridList").jqGrid('getRowData_AllLine', true, true);
+        if(!data || data.length==0){
+            $.modalAlert("请选择明细进行复制", 'warning');
+            return;
+        }
+        var cfmxIdStr = "";
+        $.each(data, function () {
+            for (var i = 0; i < $(this).length; i++) {
+                cfmxIdStr = cfmxIdStr + $(this)[i].Id +",";
+            }
+        });
+        return cfmxIdStr;
+    }
+</script>
+
+

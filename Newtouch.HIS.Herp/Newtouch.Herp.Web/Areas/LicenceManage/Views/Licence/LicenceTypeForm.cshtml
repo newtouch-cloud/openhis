@@ -1,0 +1,96 @@
+﻿@using Newtouch.Herp.Infrastructure.Enum
+@{
+    ViewBag.Title = "新增/修改";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .formTitle span {
+        color: red;
+    }
+</style>
+<form id="form1">
+    <div class="container" style="padding:0;">
+        <div class="tab-content" style="margin-top:10px;padding-right:10px;">
+            <div role="tabpanel" class="tab-pane fade in active">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>证照所属：</th>
+                        <td class="formValue">
+                            <select class="form-control" id="belongedId">
+                                <option value="">全部</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>类型：</th>
+                        <td class="formValue">
+                            <input id="typeName" name="typeName" type="text" class="form-control required" placeholder="类型" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">选项：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+<script lang="javascript">
+    var keyWord = $.request("keyValue");
+
+    $(function () {
+        Init();
+        if (!!keyWord) {
+            $.najax({
+                url: "/LicenceManage/Licence/GetLicenceTypeFormJson",
+                data: { keyWord: keyWord },
+                dataType: "json",
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+
+    //初始化
+    function Init() {
+        //加载所属
+        $("#belongedId").bindSelect({
+            url: "/LicenceManage/Licence/Getbelonged"
+        });
+    }
+
+    //提交
+    function AcceptClick(callback) {
+        if (!DataValidate()) {
+            return;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/LicenceManage/Licence/SubmitLicenceTypeForm?keyWord=" + keyWord,
+            param: postData,
+            success: function () {
+                $.modalClose();
+                callback();
+            }
+        });
+    }
+
+    //数据效验
+    function DataValidate() {
+        if ($("#belongedId").val() === "") {
+            $.modalAlert("证照所属必选", 'warning');
+            return false;
+        }
+        if ($("#typeName").val() === "") {
+            $.modalAlert("类型必填", 'warning');
+            return false;
+        }
+        return true;
+    }
+</script>

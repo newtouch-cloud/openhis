@@ -1,0 +1,112 @@
+﻿@using System.IdentityModel.Metadata
+@{
+    ViewBag.Title = "门诊抗菌药物处方比例";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="ksrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { refReport(); } })"
+                           value="@DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jsrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { refReport(); } })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+                <th></th>
+                <td></td>
+                <th></th>
+                <td></td>
+                <th></th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    var curUsergh = '@(ViewBag.curUsergh)';
+    var uri = '/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%e9%97%a8%e8%af%8a%e6%8a%97%e7%94%9f%e7%b4%a0%e5%a4%84%e6%96%b9%e6%af%94%e4%be%8b&rs:Command=Render';
+    function submit() {
+        if ($('#ksrq').val().length == 0 || $('#jsrq').val().length == 0) {
+            $.modalAlert("请选择时间范围", "error");
+            return;
+        }
+
+        var url = getUrl();
+
+        url += "&dateBegin=" + $('#ksrq').val() + "&dateEnd=" + $('#jsrq').val();
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+
+    });
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+    function getUrl() {
+        if (uri.StartWith('/')) {
+            uri = uri.substr(1);
+        }
+        var srcUrl = uri;
+        srcUrl = reportServerHOST + srcUrl;
+
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheetBlankPage";
+            }
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "orgId=";
+            srcUrl += orgId;
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+        }
+
+        return srcUrl;
+    }
+
+</script>
+

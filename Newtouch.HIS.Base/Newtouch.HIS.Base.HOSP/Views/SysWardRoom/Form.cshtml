@@ -1,0 +1,150 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+        <ul class="nav nav-tabs" role="tablist" id="myTab">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 85px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>组织机构：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>病区：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="bqCode" name="bqCode" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>房间号：</th>
+                        <td class="formValue">
+                            <input id="bfNo" name="bfNo" type="text" class="form-control required" placeholder="请输入房间号" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>房间编码：</td>
+                        <td class="formValue">
+                            <input id="bfCode" name="bfCode" type="text" class="form-control required" placeholder="请输入编码" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">科室：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="ksCode" name="ksCode" class="form-control">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" valign="top" style="padding-top: 5px;">
+                            备注：
+                        </th>
+                        <td class="formValue">
+                            <textarea id="bz" name="bz" class="form-control" style="height: 60px;"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">状态：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/SysWardRoom/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+        else {
+            var newOrgId = $.request('orgId');
+            if (newOrgId) {
+                $("#OrganizeId").val(newOrgId).trigger('change');
+            }
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+        $("#OrganizeId").change(function () {
+            //病区下拉
+            $("#bqCode").bindSelect({
+                url: "/SysWardBed/GetWardBindSelect?orgId=" + $('#OrganizeId').val()
+            });
+
+            //组织对应的科室下拉框加载
+            $("#ksCode").bindSelect({
+                url: "/Department/GetTreeSelectJson?treeidFieldName=Code&organizeId=" + $('#OrganizeId').val()
+            });
+        });
+    }
+
+    var anPrevOrg = null;
+    $('#bfCode').focus(function () {
+        var organizeId = $("#OrganizeId").val();
+        if (!!!keyValue && ($.trim($(this).val()) === '' || organizeId != anPrevOrg)) {
+            anPrevOrg = organizeId;
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?topOrgIdIsStar=false&initFieldLength=5&fieldName=xt_bf.bfCode&orgId=" + organizeId + "&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#bfCode').val(data.data);
+                }
+            });
+        }
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/SysWardRoom/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>
+

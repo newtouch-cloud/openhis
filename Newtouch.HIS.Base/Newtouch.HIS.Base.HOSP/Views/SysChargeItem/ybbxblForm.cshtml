@@ -1,0 +1,172 @@
+﻿@{
+    ViewBag.Title = "YbbxblForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+
+<form id="form1">
+    <div style="padding-top: 10px; margin-right: 30px; ">
+        <div class="gridPanel" style="margin-top:1%">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+</form>
+
+<script>
+    debugger;
+    var xmdm = $.request("xmdm");
+    var xmmc = decodeURIComponent($.request("xmmc"));
+    $(function () {
+        $('#gridList').newtouchLocalDataGrid({
+            //caption: '计费明细',
+            height: $(window).height() - 80,
+            unwritten: false,
+            editurl: "clientArray",
+            //rownumbers: true,
+            colModel: [
+                { label: "xmcode", name: "xmcode", width: 130, align: "left", hidden: true },
+                { label: "xmmc", name: "xmmc", width: 130, align: "left", hidden: true },
+                { label: "性质名称", name: "xzId", width: 130, align: "left", hidden:true },
+                { label: "性质名称", name: "xzmc", width: 130, align: "left" },
+                {
+                    label: "自负比例(%)", name: "zfbl", width: 130, align: "left", editable: true, editrules: { numeric: true, minValue: 0.0, maxValue: 100 },
+                    editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("数值为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (cellval<0 ||cellval>100) {
+                                            $.modalAlert("自负比例：填写数值必须为0~100之间", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                    }
+                                }
+                        ]
+                    }
+                },
+                {
+                    label: "费用限额", name: "fyxe", width: 100, align: "left", editable: true, editrules: { numeric: true, minValue: 0.0, maxValue: 100 }, editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("数值为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (cellval < 0 || cellval > 100) {
+                                            $.modalAlert("费用限额：填写数值必须为0~100之间", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                    }
+                                }
+                        ]
+                    }
+                },
+                {
+                    label: "超限比例(%)", name: "cxbl", width: 130, align: "left", editable: true, editrules: { numeric: true, minValue: 0.0, }, editoptions: {
+                        dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("数值为空，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (cellval < 0 || cellval > 100) {
+                                            $.modalAlert("超限比例：填写数值必须为0~100之间", 'warning');
+                                            $(this).val('')
+                                            return;
+                                        }
+                                    }
+                                }
+                        ]
+                    }
+                },
+            ],
+            //multiselect: true,
+            gridComplete: function () {
+
+                //启用行内编辑框
+                EnableInlineEditBox();
+            },
+            onSelectRow: function (rowid) {
+                $("#" + $.jgrid.jqID(rowid) + "_cxbl").focus();
+            }
+
+        });
+        ajaxLoad();
+    });
+
+
+    function submitForm() {
+        debugger;
+        var res = true;
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) {
+                res = false;
+                 }, null, null);
+        }
+        if (!res)
+        {
+            return;
+        }
+        //获取所有选中行数据
+        var data = $("#gridList").jqGrid('getRowData_AllLine', false);
+        $.najax({
+            url: "/SysChargeItem/SaveYbblValue",
+            dataType: "json",
+            data: { entity: data, xmbm: xmdm, xmmc: xmmc },
+            type: "POST",
+            success: function (data) {
+                $.modalAlert("保存成功", 'success');
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+                $.modalClose("Form");
+                $.loading(false);
+            },
+            error: function (request, error, ex) {
+                $.modalAlert("服务不可访问", 'error');
+            }
+        });
+
+    }
+
+    function ajaxLoad()
+    {
+        $.najax({
+            type: "POST",
+            url: "/SysChargeItem/Getybbxbldata",
+            data: { keyValue: xmdm },
+            dataType: "json",
+            //async: false,
+            success: function (data) {
+                $("#gridList").newtouchLocalDataGrid(null, data);
+            }
+        });
+    }
+    //启用行内编辑框
+    function EnableInlineEditBox() {
+        //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").jqGrid('editRow', rowIds[i], true, null, null, null, null, function (callbackRowId) {    
+
+            });
+
+        }
+    }
+    
+</script>

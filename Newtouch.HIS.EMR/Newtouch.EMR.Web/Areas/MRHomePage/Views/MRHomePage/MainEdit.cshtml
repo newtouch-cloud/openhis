@@ -1,0 +1,1149 @@
+﻿
+@{
+    Layout = null;
+    var justshow = ViewBag.justshow;
+    //报表链接
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    .divtab {
+        padding-top: 50px;
+        /*height: 435px;*/
+        border-bottom: 2px double #f3a517;
+        border-bottom-left-radius: 20px;
+        border-bottom-right-radius: 20px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        height:590px;
+    }   
+
+    .newgridrow {
+        background-color: #d4e220;
+    }
+</style>
+<form id="frm_edit">
+    <div id="dv_edit" style="background-color:#ffffff;">
+		<ul class="nav nav-tabs navb-bg" id="myTab" style="position:fixed;top:0;z-index:100009;width:100%;">
+			<li role="presentation"><a href="#linkpat" role="tab" data-toggle="tab">患者信息</a></li>
+			<li role="presentation"><a href="#linkzd" role="tab" data-toggle="tab">诊断列表</a></li>
+			<li role="presentation"><a href="#linkzyinfo" role="tab" data-toggle="tab">住院信息</a></li>
+			<li role="presentation"><a href="#linkop" role="tab" data-toggle="tab">手术列表</a></li>
+			<li role="presentation"><a href="#linkfee" role="tab" data-toggle="tab">费用信息</a></li>
+			<li role="presentation"><a href="#linfyxx" role="tab" data-toggle="tab">副页信息</a></li>
+		</ul>
+		<div class="tab-content">
+			<div id="dv-pat" class="divtab" style="display: none;">
+				@Html.Partial("MainPatInfo")
+			</div>
+			<div id="dv-zd" class="divtab" style="display: none;">
+				@Html.Partial("MainDiag")
+			</div>
+			<div id="dv-op" class="divtab" style="display: none;">
+				@Html.Partial("MainOplist")
+			</div>
+			<div id="dv-zyinfo" class="divtab" style="display: none;">
+				@Html.Partial("MainZyInfo")
+			</div>
+			<div id="dv-fee" class="divtab" style="display: none;">
+				@Html.Partial("MainFeeInfo")
+			</div>
+			<div id="dv-fy" class="divtab" style="display: none;">
+				@Html.Partial("MainFyInfo")
+			</div>
+            <div style="margin-top:5px;margin-bottom:3px;width:100%;height:23px; float:right;position: fixed;bottom:6px;">
+                @*<a class='btn btn-default' style='width:80px;background:#c1958f;color:#eee;height:20px;font-size:13px;padding-top:5px;margin-right:15px;float:right;' onclick="submitArrange();"><span class="glyphicon glyphicon-remove">重置</span></a>
+        <a class='btn btn-default' style='width:80px;background:#00CD66;color:#eee;height:20px;font-size:13px;padding-top:5px;margin-right:15px;float:right;' onclick="submitArrange();"><span class="glyphicon glyphicon-ok">保存首页</span></a>*@
+
+                @if ((justshow == null ? "" : justshow).Equals("true"))
+                {
+                    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+                    {
+                        ShowKeyList = new int[] { 8,9 },
+                        //F2Text="保存基本信息",
+                        //F3Text = "保存诊断",
+                        //F6Text = "保存手术",
+                        //F7Text = "完整病案保存",
+                        F8Text = "预览打印",
+                        F9Text = "预览副页打印"
+                        //F10Text = "同步费用"
+                    })
+                }
+                else
+                {
+                    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+                    {
+                        ShowKeyList = new int[] { 2, 3, 6, 7,8,9,10 },
+                        F2Text="保存基本信息",
+                        F3Text = "保存诊断",
+                        F6Text = "保存手术",
+                        F7Text = "完整病案保存",
+                        F8Text = "预览打印",
+                        F9Text = "预览副页打印",
+                        F10Text = "同步费用"
+                    })
+                }
+
+
+            </div>
+		</div>
+
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    var zyh = $.request("zyh");
+    var mbbh = $.request("mbbh");
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    //var savedata = {};
+    $(function () {
+        $.ajax({
+            url: "/MRHomePage/MRHomePage/GetFormJson",
+            data: { keyValue: keyValue,zyh:zyh },
+            dataType: "json",
+            success: function (data) {
+                if (data != null && data.state == "error") {
+                    $.modalAlert(data.message, "error");
+                    return;
+                }
+                /*if (data.R_GJ != 156) {
+                    data.SFZH = "";
+                }*/
+                data.GMYW = data.GMYW ? data.GMYW : '-';
+                $("#frm_edit").formSerialize(data);
+                if (data != null) {
+                    //GG MZ ZY HY RYKB CYKB ZKKB
+                    $("#GJ").attr("data-code", data.R_GJ);
+                    $("#MZ").attr("data-code", data.R_MZ);
+                    $("#ZY").attr("data-code", data.R_ZY);
+                    $("#HY").attr("data-code", data.R_HY);
+                    $("#GX").attr("data-code", data.R_GX);
+                    $("#CYKB").attr("data-code", data.R_CYKB);
+                    $("#ZKKB").attr("data-code", data.R_ZKKB);
+                    $("#RYKB").attr("data-code", data.R_RYKB);
+                    $("#CYBF").attr("data-code", data.R_CYBF);
+                    $("#RYBF").attr("data-code", data.R_RYBF);
+                    getcitycode(data);
+                    SyncFee(JSON.stringify(data));
+
+                    /*设置默认值 */
+                    //入院途径
+                    debugger;
+                    $('#select2-RYTJ-container').each(function () {
+                        var myvalue = '门诊';
+                        $(this).html(myvalue);
+                    });
+                    $('#select2-RYTJ-container').attr('title', '门诊');
+                    $('#RYTJ option').filter(function () { return $(this).text() == '门诊'; }).attr('selected', true);
+                }
+                else {
+                    $.modalAlert("患者基本信息提取失败","error");
+                }
+            }
+        });
+        tabInit();
+        $("td span[role=combobox]").each(function () {
+            $(this).attr("style", "border:none");
+        });
+    });
+
+    function getcitycode(data) {
+        $("div[id*='citylist_']").each(function (i, e) {
+            var sncode = "";
+            var sicode = "";
+            var qxcode = "";
+            if (e.id.indexOf('_XZZ') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.XZZ_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.XZZ_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.XZZ_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+            }
+            else if (e.id.indexOf('_CSD') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.CSD_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.CSD_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.CSD_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+            }
+            else if (e.id.indexOf('_HKDZ') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.HKDZ_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.HKDZ_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.HKDZ_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+            }
+            else if (e.id.indexOf('_LXRDZ') != -1) {
+                sncode = $(this).find(" select[name='province']").find("option:contains('" + data.LXRDZ_SN + "')").val();
+                $(this).find(" select[name='province']").val(sncode).trigger("change");
+                sicode = $(this).find(" select[name='city']").find("option:contains('" + data.LXRDZ_SI + "')").val();
+                $(this).find(" select[name='city']").val(sicode).trigger("change");
+                qxcode = $(this).find(" select[name='area']").find("option:contains('" + data.LXRDZ_QX + "')").val();
+                $(this).find(" select[name='area']").val(qxcode).trigger("change");
+            }
+        });
+    }
+
+    function savecitycode(savedata) {
+        $("div[id*='citylist_']").each(function (i, e) {
+            if (e.id.indexOf('_XZZ') != -1) {
+                //$('#citylist_CSD select[name="province"] option:selected').text()
+                savedata.XZZ_SN = $(this).find(" select[name='province'] option:selected ").text();
+                savedata.XZZ_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.XZZ_QX = $(this).find(" select[name='area'] option:selected").text();
+                savedata.R_XZZ_SN = $(this).find(" select[name='province'] option:selected ").val();
+                savedata.R_XZZ_SI = $(this).find(" select[name='city'] option:selected").val();
+                savedata.R_XZZ_QX = $(this).find(" select[name='area'] option:selected").val();
+            }
+            else if (e.id.indexOf('_CSD') != -1) {
+                savedata.CSD_SN = $(this).find(" select[name='province'] option:selected").text();
+                savedata.CSD_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.CSD_QX = $(this).find(" select[name='area'] option:selected").text();
+                savedata.R_CSD_SN = $(this).find(" select[name='province'] option:selected ").val();
+                savedata.R_CSD_SI = $(this).find(" select[name='city'] option:selected").val();
+                savedata.R_CSD_QX = $(this).find(" select[name='area'] option:selected").val();
+            }
+            else if (e.id.indexOf('_HKDZ') != -1) {
+                savedata.HKDZ_SN = $(this).find(" select[name='province'] option:selected").text();
+                savedata.HKDZ_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.HKDZ_QX = $(this).find(" select[name='area'] option:selected").text();
+                savedata.R_HKDZ_SN = $(this).find(" select[name='province'] option:selected ").val();
+                savedata.R_HKDZ_SI = $(this).find(" select[name='city'] option:selected").val();
+                savedata.R_HKDZ_QX = $(this).find(" select[name='area'] option:selected").val();
+            }
+            else if (e.id.indexOf('_LXRDZ') != -1) {
+                savedata.LXRDZ_SN = $(this).find(" select[name='province'] option:selected").text();
+                savedata.LXRDZ_SI = $(this).find(" select[name='city'] option:selected").text();
+                savedata.LXRDZ_QX = $(this).find(" select[name='area'] option:selected").text();
+                savedata.R_LXRDZ_SN = $(this).find(" select[name='province'] option:selected ").val();
+                savedata.R_LXRDZ_SI = $(this).find(" select[name='city'] option:selected").val();
+                savedata.R_LXRDZ_QX = $(this).find(" select[name='area'] option:selected").val();
+            }
+        });
+
+        return savedata;
+    }
+
+
+    function tabInit  () {
+        $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+            switch ($(this).attr('href')) {
+                case "#linkpat":
+                    $("#dv-pat").show();
+                    $("#dv-op").hide();
+                    $("#dv-zd").hide();
+                    $("#dv-zyinfo").hide();
+					$("#dv-fee").hide();
+					$("#dv-fy").hide();
+                    break;
+                case "#linkop":
+                    $("#dv-pat").hide();
+                    $("#dv-op").show();
+                    $("#dv-zd").hide();
+                    $("#dv-zyinfo").hide();
+					$("#dv-fee").hide();
+					$("#dv-fy").hide();
+                    OpListGrid();
+                    break;
+                case "#linkzd":
+                    $("#dv-pat").hide();
+                    $("#dv-zd").show();
+                    $("#dv-op").hide();
+                    $("#dv-zyinfo").hide();
+					$("#dv-fee").hide();
+					$("#dv-fy").hide();
+                    ZdListGrid();
+
+                    break;
+                case "#linkzyinfo":
+                    $("#dv-zyinfo").show();
+                    $("#dv-op").hide();
+                    $("#dv-pat").hide();
+                    $("#dv-zd").hide();
+					$("#dv-fee").hide();
+					$("#dv-fy").hide();
+                    break;
+                case "#linkfee":
+                    $("#dv-zyinfo").hide();
+                    $("#dv-op").hide();
+                    $("#dv-pat").hide();
+					$("#dv-zd").hide();
+					$("#dv-fy").hide();
+                    $("#dv-fee").show();
+                    FyListGrid();
+					break;
+				case "#linfyxx":
+					$("#dv-zyinfo").hide();
+					$("#dv-op").hide();
+					$("#dv-pat").hide();
+					$("#dv-zd").hide();
+					$("#dv-fee").hide();
+					$("#dv-fy").show();
+					FyListGrid();
+					break;
+            }
+
+        });
+
+        $('#myTab a:first').trigger('click');
+    }
+
+    function amountcheck(str) {
+        //金额 只允许正数
+        //var exp = /(^[1-9]([0-9]+)?(\.[0-9]{1,2})?$)|(^(0){1}$)|(^[0-9]\.[0-9]([0-9])?$)/; 
+        //金额 允许正（+）负数
+        //var exp = /(^([+-]?)[1-9]([0-9]+)?(\.[0-9]{1,2})?$)|(^([+-]?)(0){1}$)|(^([+-]?)[0-9]\.[0-9]([0-9])?$)/; 
+
+        //金额 允许正负数
+        var exp = /(^([-]?)[1-9]([0-9]+)?(\.[0-9]{1,4})?$)|(^([-]?)(0){1}$)|(^([-]?)[0-9]\.[0-9]([0-9])?$)/;
+        if (exp.test(str)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    //费用格式校验
+    function amtCheck() {
+        var jecheck = "";
+        $("#dv_fee input[attr-desc]").each(
+            function () {
+                var fee = $(this).val();
+                if (fee != "" && fee != undefined) {
+                    if (!amountcheck(fee)) {
+                        jecheck += $(this).attr('attr-desc') + "格式有误；";
+                    }
+                }
+            }
+        );
+
+        return jecheck;
+    }
+    //患者信息参数
+    function getfromPara() {
+        var para = $("#frm_edit").formSerialize();
+        savecitycode(para);
+        $("input[data-code]").each(function () {
+            var code = $(this).attr("data-code");
+            var name = "R_" + $(this).attr("name");
+            para[name] = code;
+        }
+        );
+        $("input[data-staffgh]").each(function () {
+            var code = $(this).attr("data-staffgh");
+            var name = "R_" + $(this).attr("name");
+            para[name] = code;
+        }
+        );
+
+        return para;
+    }
+    function getSex() {
+        var para = getfromPara();
+        var idCard = para.SFZH;
+        var sexStr = "";
+        if (parseInt(idCard.slice(-2, -1)) % 2 == 1) {
+            sexStr = "男";
+        } else {
+            sexStr = "女";
+        }
+        return sexStr;
+    };
+    function getnl() {
+            var para = getfromPara();
+            var idCard = para.SFZH;
+            var ageDate = new Date()
+            var month = ageDate.getMonth() + 1
+            var day = ageDate.getDate()
+            var age = ageDate.getFullYear() - idCard.substring(6, 10) - 1
+            if (idCard.substring(10, 12) < month || idCard.substring(10, 12) === month && idCard.substring(12, 14) <= day) {
+                age++
+            }
+            if (age <= 0) {
+                age = 1
+            }
+            return age
+    }
+    function testandverify(para){
+        var gj = para.GJ;
+        if (para.XM == "") {
+            $.modalAlert('患者信息 患者姓名没有填写', 'warning');
+            return false;
+        }
+        if (para.JKKH == "") {
+            $.modalAlert('患者信息 病案号没有填写', 'warning');
+            return false;
+        }
+        if (para.GJ == "") {
+            $.modalAlert('患者信息 国籍没有填写', 'warning');
+            $("#GJ").focus();
+            return false;
+        }
+        if (para.MZ == "") {
+            $.modalAlert('患者信息 民族没有填写', 'warning');
+            return false;
+        }
+        if (para.GG == "") {
+            $.modalAlert('患者信息 籍贯没有填写', 'warning');
+            return false;
+        }
+        if (para.NL == "") {
+            $.modalAlert('患者信息 年龄没有填写', 'warning');
+            return false;
+        }
+        if (para.BZYZSNL > 365) {
+            $.modalAlert('患者信息 (年龄不足1周岁的)年龄不能大于365', 'warning');
+            return false;
+        }
+        if (para.BZYYSNL > 31) {
+            $.modalAlert('患者信息 (年龄不足1月者)年龄不能大于31', 'warning');
+            return false;
+        }
+        if (para.BZYZSNL != "" && para.BZYZSNL <= 28 && para.XSERYTZ=="") {
+            $.modalAlert('患者信息 新生儿年龄小于等于28天必须填写【新生儿入院体重】', 'warning');
+            return false;
+        }
+        if (para.BZYYSNL != "" && para.BZYYSNL <= 28 && para.XSERYTZ == "") {
+            $.modalAlert('患者信息 新生儿年龄小于等于28天必须填写【新生儿入院体重】', 'warning');
+            return false;
+        }
+        if (para.XSERYTZ != "" && (para.XSERYTZ < 100 || para.XSERYTZ >9999 )) {
+            $.modalAlert('患者信息 新生儿体重范围为100g-9999g', 'warning');
+            return false;
+        }
+        if (para.XSECSTZ != "" && (para.XSECSTZ < 100 || para.XSECSTZ > 9999)) {
+            $.modalAlert('患者信息 新生儿体重范围为100g-9999g', 'warning');
+            return false;
+        }
+        if (para.ZY == "") {
+            $.modalAlert('患者信息 职业没有填写', 'warning');
+            return false;
+        }
+        if (para.CSD == "" && gj == "中国") {
+            $.modalAlert('患者信息 出生地址没有填写', 'warning');
+            return false;
+        }
+        if (para.XZZ == "" && gj == "中国") {
+            $.modalAlert('患者信息 现住址没有填写', 'warning');
+            return false;
+        }
+        if (para.DH == "") {
+            $.modalAlert('患者信息 现住址电话没有填写', 'warning');
+            return false;
+        }
+        if (para.XZZYB == "") {
+            $.modalAlert('患者信息 现住址邮编没有填写', 'warning');
+            return false;
+        }
+        if (para.HKDZ == "" && gj == "中国") {
+            $.modalAlert('患者信息 户口地址没有填写', 'warning');
+            return false;
+        }
+        if (para.GZDWJDZ == "" ) {
+            $.modalAlert('患者信息 工作单位及地址没有填写', 'warning');
+            return false;
+        }
+        if (para.DWDH == "") {
+            $.modalAlert('患者信息 单位电话没有填写', 'warning');
+            return false;
+        }
+        if (para.DWYB == "") {
+            $.modalAlert('患者信息 单位邮编没有填写', 'warning');
+            return false;
+        }
+        if (para.LXRXM == "") {
+            $.modalAlert('患者信息 联系人没有填写', 'warning');
+            return false;
+        }
+        if (para.GX == "") {
+            $.modalAlert('患者信息 联系人关系没有填写', 'warning');
+            return false;
+        }
+        if (para.LXRDH == "") {
+            $.modalAlert('患者信息 联系人电话没有填写', 'warning');
+            return false;
+        }
+        if (para.LXRDZ == "") {
+            $.modalAlert('患者信息 联系人地址没有填写', 'warning');
+            return false;
+        }
+        if (para.MZZD == "") {
+            $.modalAlert('患者信息 门（急）诊诊断没有填写', 'warning');
+            return false;
+        }
+        if (para.RYZD == "") {
+            $.modalAlert('患者信息 入院诊断没有填写', 'warning');
+            return false;
+        }
+        var idCard = para.SFZH;
+        let birthday = idCard.substring(6, 10) + "-" + idCard.substring(10, 12) + "-" + idCard.substring(12, 14);
+        var ss = getSex();
+        var tt = getnl();
+        var yb = /^\d{6}$/;
+        var dh = /^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\d{8}$/;
+        var zjh = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/;
+        if (para.SFZH != "" && !zjh.exec(para.SFZH) && gj == "中国") {
+            $.modalAlert('患者信息 身份证格式不正确', 'warning');
+            return false;
+        }
+        if (para.XZZYB != "" && !yb.exec(para.XZZYB)) {
+            $.modalAlert('患者信息 现住址邮编格式不正确', 'warning');
+            return false;
+        }
+        if (para.HKDYB != "" && !yb.exec(para.HKDYB)) {
+            $.modalAlert('患者信息 户口地址邮编格式不正确', 'warning');
+            return false;
+        }
+        if (para.DWYB != "" && !yb.exec(para.DWYB)) {
+            $.modalAlert('患者信息 工作地址邮编格式不正确', 'warning');
+            return false;
+        }
+        if (para.DH != "" && !dh.exec(para.DH)) {
+            $.modalAlert('患者信息 现住址电话格式不正确', 'warning');
+            return false;
+        }
+        if (para.DWDH != "" && !dh.exec(para.DWDH)) {
+            $.modalAlert('患者信息 工作地址电话格式不正确', 'warning');
+            return false;
+        }
+        if (para.LXRDH != "" && !dh.exec(para.LXRDH)) {
+            $.modalAlert('患者信息 联系人电话格式不正确', 'warning');
+            return false;
+        }
+        if (!!para.SFZH && tt != para.NL) {
+            $.modalAlert('患者信息 年龄与身份证号不符', 'warning');
+            return false;
+        }
+        var qq;
+        if (ss == "男") {
+            qq = 1;
+        }
+        else {
+            qq = 2;
+        }
+
+        if (!!para.SFZH && qq != para.XB) {
+            $.modalAlert('患者信息 性别与身份证号不符', 'warning');
+            return false;
+        }
+        if (!!para.SFZH && birthday != para.CSRQ) {
+            $.modalAlert('患者信息 出生日期与身份证号不符', 'warning');
+            return false;
+        }
+        var jecheck = amtCheck();
+        if (jecheck != "") {
+            $.modalAlert(jecheck, 'warning');
+            return false
+        }
+        if (para.LXRXM != "" && (para.GX + para.LXRDH) == "") {
+            $.modalAlert('已输入联系人,没有填写联系人相关信息', 'warning');
+            return false;
+        }
+        if (para.LXRXM == "" && para.GX != "") {
+            $.modalAlert('未输入联系人,不能填写联系人相关信息', 'warning');
+            return false;
+        }
+        if (para.LXRXM == "" && para.LXRDH != "") {
+            $.modalAlert('未输入联系人,不能填写联系人相关信息', 'warning');
+            return false;
+        }
+        if (para.LXRXM == "" && para.LXRDZ_SN != "") {
+            $.modalAlert('未输入联系人,不能填写联系人相关信息', 'warning');
+            return false;
+        }
+        if (para.RYTJ == "") {
+            $.modalAlert('患者信息 入院途径不为空', 'warning');
+            return false;
+        }
+        if (para.RYTJ != 3 && para.QTYLJGZR != "") {
+            $.modalAlert('患者信息 入院途径不为其他医疗机构转入，不能填写其他医疗机构转入', 'warning');
+            return false;
+        }
+        if (para.RYTJ == 3 && para.QTYLJGZR == "") {
+            $.modalAlert('患者信息 没有填写其他医疗机构转入', 'warning');
+            return false
+        }
+        if (para.RYSJ == "") {
+            $.modalAlert('患者信息 入院时间不能为空', 'warning');
+            return false
+        }
+        if (para.RYKB == "" || para.RYBF == "") {
+            $.modalAlert('患者信息 入院科别不能为空', 'warning');
+            return false
+        }
+        if (para.CYSJ != "" && para.RYSJ > para.CYSJ  ) {
+            $.modalAlert('患者信息 入院时间不能大于出院时间', 'warning');
+            return false
+        }
+        if (para.CYSJ!="") {
+            var date = parseInt((Date.parse(para.CYSJ) - Date.parse(para.RYSJ)) / 1000 / 86400);
+            if (para.SJZYTS != date) {
+                $.modalAlert('患者信息 入院时间和出院时间计算的天数【' + date + '】跟实际住院天数【' + para.SJZYTS + '】不等', 'warning');
+                return false
+            }
+        }
+        if (para.QJCS != "" && para.QJCGCS == "") {
+            $.modalAlert('患者信息 抢救次数不为空,没有填写成功次数', 'warning');
+            return false;
+        }
+        if (para.QJCS == "" && para.QJCGCS != "") {
+            $.modalAlert('患者信息 抢救次数为空,不能填写成功次数', 'warning');
+            return false;
+        }
+        if (para.LYFS != 5 &&para.QJCS != para.QJCGCS) {
+            $.modalAlert('患者信息 当离院方式不为死亡时抢救次数等于成功次数', 'warning');
+            return false;
+        }
+        if (para.LYFS == 5 && (parseInt(para.QJCS) != parseInt(para.QJCGCS) + 1)) {
+            $.modalAlert('患者信息 当离院方式为死亡时抢救成功次数等于抢救次数-1', 'warning');
+            return false;
+        }
+        if (gj == "中国" && !$('#frm_edit').formValid()) {
+            $.modalAlert('信息填写不完整！', 'warning');
+            return false;
+        }
+        if (para.WBYY != "" && para.H23 == "") {
+            $.modalAlert('住院信息 损伤、中毒的外部原因，疾病编码必填', 'warning');
+            return false;
+        }
+        if (para.H23 != "" && para.WBYY == "") {
+            $.modalAlert('住院信息 疾病编码不为空，损伤、中毒的外部原因必填', 'warning');
+            return false;
+        }
+        if (para.BLZD != "" && para.BLZDDM == "" && para.BLZD != "-") {
+            $.modalAlert('住院信息 病理诊断不为空，疾病编码必填', 'warning');
+            return false;
+        }
+        if (para.BLZDDM != "" && para.BLZD == "") {
+            $.modalAlert('住院信息 疾病编码必填不为空，病理诊断必填', 'warning');
+            return false;
+        }
+        if (para.BLZD != "" && para.BLH == "" && para.BLZD != "-") {
+            $.modalAlert('住院信息 病理诊断不为空，病理号必填', 'warning');
+            return false;
+        }
+        if (para.BLZD == "" && para.BLH != "") {
+            $.modalAlert('住院信息 病理诊断为空，不能填写病理号', 'warning');
+            return false;
+        }
+        if (para.YWGM != 2 && para.GMYW != "-" && para.GMYW != "") {
+            $.modalAlert('住院信息 没有药物过敏，不能填写过敏药物', 'warning');
+            return false
+        }
+        if (para.YWGM == 2 && para.GMYW == "") {
+            $.modalAlert('住院信息 没有填写过敏药物', 'warning');
+            return false
+        }
+        var ids = $("#gridzdList").getDataIDs();
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                if (($("#gridzdList").getRowData(ids[i])).CYQK == 4 && para.LYFS != 5) {
+                    $.modalAlert('住院信息 出院诊断的出院情况为死亡时，离院方式必须为死亡', 'warning');
+                    return false;
+                };
+                if (($("#gridzdList").getRowData(ids[i])).CYQK != 4 && para.QJCS != para.QJCGCS) {
+                    $.modalAlert('患者信息 当出院情况不为死亡时抢救次数需等于成功次数', 'warning');
+                    return false;
+                };
+                if (($("#gridzdList").getRowData(ids[i])).CYQK == 4 && (parseInt(para.QJCS) != parseInt(para.QJCGCS) + 1)) {
+                    $.modalAlert('患者信息 当出院情况为死亡时抢救成功次数需等于抢救次数-1', 'warning');
+                    return false;
+                };
+            }
+        }
+        if (para.LYFS == 5 && para.SWHZSJ == "") {
+            $.modalAlert('住院信息 离院方式为死亡，没有选择死亡患者尸检', 'warning');
+            return false;
+        }
+        if (para.LYFS != 5 && (para.SWHZSJ != "" && para.SWHZSJ != "2")) {
+            $.modalAlert('住院信息 离院方式不为死亡,不能填写死亡患者尸检', 'warning');
+            return false;
+        }
+        if (para.SZ == "" && (para.SZQXZ + para.SZQXY + para.SZQXN) > 0) {
+            $.modalAlert('住院信息 没有选择随诊,不能填写随诊期限', 'warning');
+            return false;
+        }
+        if (para.SZ == "1" && (para.SZQXZ == "" && para.SZQXY == "" && para.SZQXN == "")) {
+            $.modalAlert('住院信息 选择了随诊,没有填写随诊期限', 'warning');
+            return false;
+        }
+        if (para.SZ == "2" && (para.SZQXZ + para.SZQXY + para.SZQXN) > 0) {
+            $.modalAlert('住院信息 没有选择随诊,不能填写随诊期限', 'warning');
+            return false;
+        }
+        if (para.KZR == "") {
+            $.modalAlert('住院信息 科主任不能为空', 'warning');
+            return false;
+        }
+        if (para.ZRYS == "") {
+            $.modalAlert('住院信息 主任（副主任）医师不能为空', 'warning');
+            return false;
+        }
+        if (para.ZZYS == "") {
+            $.modalAlert('住院信息 主诊医师不能为空', 'warning');
+            return false;
+        }
+        if (para.ZZYS1 == "") {
+            $.modalAlert('住院信息 主治医师不能为空', 'warning');
+            return false;
+        }
+        if (para.ZYYS == "") {
+            $.modalAlert('住院信息 住院医师不能为空', 'warning');
+            return false;
+        }
+        if (para.ZRHS == "") {
+            $.modalAlert('住院信息 责任护士不能为空', 'warning');
+            return false;
+        }
+        if (para.BMY == "") {
+            $.modalAlert('住院信息 编码员不能为空', 'warning');
+            return false;
+        }
+        if (para.ZKRQ != "" && para.ZKRQ < para.CYSJ) {
+            $.modalAlert('患者信息 质控日期【' + para.ZKRQ + '】必须大于出院时间【' + para.CYSJ+'】', 'warning');
+            return false
+        }
+        if (para.WCLCLJ == 1 && para.TCYY == "") {
+            $.modalAlert('住院信息 没有填写退出原因', 'warning');
+            return false
+        }
+        if (para.WCLCLJ != 1 && para.TCYY != "" && para.TCYY != "-") {
+            $.modalAlert('住院信息 完成临床路径,不能填写退出原因', 'warning');
+            return false
+        }
+        if (para.SFBY == 2 && para.BYYY == "") {
+            $.modalAlert('住院信息 没有选择变异原因', 'warning');
+            return false
+        }
+        if (para.SFZZYJH == 2 && para.MD == "") {
+            $.modalAlert('住院信息 没有填写目的', 'warning');
+            return false
+        }
+
+        if (para.SFZZYJH != 2 && para.MD != "" && para.MD != "-") {
+            $.modalAlert('住院信息 是否有出院31天内再住院计划,不能填写目的', 'warning');
+            return false
+        }
+        if (para.LYFS == 3 && para.WSY_YLJG == "") {
+            $.modalAlert('住院信息 没有填写医嘱转社区卫生服务机构/乡镇卫生院,拟接收医疗机构名称', 'warning');
+            return false;
+        }
+        if (para.LYFS == 2 && para.YZZY_YLJG == "") {
+            $.modalAlert('住院信息 没有填写医嘱转院拟接收医疗机构名称', 'warning');
+            return false;
+        }
+        if (para.SSLCLJ != 1 && para.WCLCLJ != "") {
+            $.modalAlert('住院信息 没有实施临床路径管理,不能填写是否完成临床路径', 'warning');
+            return false;
+        }
+        if (para.SSLCLJ == 2 && para.WCLCLJ == "-") {
+            $.modalAlert('住院信息 实施临床路径管理,没有填写是否完成临床路径', 'warning');
+            return false;
+        }
+        if (para.WCLCLJ == 2 && para.TCYY == "") {
+            $.modalAlert('住院信息 没有完成临床路径,没有填写原因', 'warning');
+            return false;
+        }
+        if (para.LYFS != 2 && para.YZZY_YLJG != "" && para.YZZY_YLJG != "-") {
+            $.modalAlert('住院信息 离院方式不为医嘱转院，不能填写医嘱转院拟接收医疗机构名称', 'warning');
+            return false;
+        }
+
+        if (para.LYFS != 3 && para.WSY_YLJG != "" && para.WSY_YLJG != "-") {
+            $.modalAlert('住院信息 离院方式不为医嘱转社区卫生服务机构/乡镇卫生院，不能填写医嘱转院拟接收医疗机构名称', 'warning');
+            return false;
+        }
+        if (para.SFBY != 1 && para.BYYY != "") {
+            $.modalAlert('住院信息 没有变异，不能填写变异原因', 'warning');
+            return false;
+        }
+        if (para.RYQ_T == "" || para.RYQ_XS == "" || para.RYQ_F=="") {
+            $.modalAlert('住院信息 颅脑损伤患者昏迷（入院前）时间必填', 'warning');
+            return false;
+        }
+        if (para.RYH_T == "" || para.RYH_XS == "" || para.RYH_F == "") {
+            $.modalAlert('住院信息 颅脑损伤患者昏迷（入院后）时间必填', 'warning');
+            return false;
+        }
+        if (para.YYGRQK == 1 && para.YYGRSSXG != "") {
+            $.modalAlert('副页信息 医院感染情况无，不能填写医院感染相关操作', 'warning');
+            return false;
+        }
+        if (para.YYGRQK == 1 && para.YYGRSFQRXG != "") {
+            $.modalAlert('副页信息 医院感染情况无，不能填写医院感染相关操作', 'warning');
+            return false;
+        }
+        if (para.YYGRQK == 2 && para.YYGRSSXG == "") {
+            $.modalAlert('副页信息 医院有感染情况，没有填写医院感染相关操作', 'warning');
+            return false;
+        }
+        if (para.YYGRQK == 2 && para.YYGRSFQRXG == "") {
+            $.modalAlert('副页信息 医院有感染情况，没有填写医院感染相关操作', 'warning');
+            return false;
+        }
+        if (para.KJYWSYQK != "" && para.KJYWMC1 == "" && para.KJYWMC2 == "" && para.KJYWMC3 == "" && para.KJYWMC4 == "" && para.KJYWMC5 == "" && para.KJYWMC6 == "") {
+            $.modalAlert('副页信息 抗菌药物使用情况，没有填写抗菌药物名称', 'warning');
+            return false;
+        }
+        if (para.SFFSYC == 1 && para.SFZYQJFS != "") {
+            $.modalAlert('副页信息 没有发生压疮，不能填写压疮相关操作', 'warning');
+            return false;
+        }
+        if (para.SFFSYC == 1 && para.YCFQ != "") {
+            $.modalAlert('副页信息 没有发生压疮，不能填写压疮相关操作', 'warning');
+            return false;
+        }
+        if (para.SFFSYC == 2 && para.SFZYQJFS == "") {
+            $.modalAlert('副页信息 有压疮反应,没有填写压疮相关操作', 'warning');
+            return false;
+        }
+        if (para.SFFSYC == 2 && para.YCFQ == "") {
+            $.modalAlert('副页信息 有压疮反应,没有填写压疮相关操作', 'warning');
+            return false;
+        }
+        if (para.SFFSYC == 2 && para.YFFYDYW == "") {
+            $.modalAlert('副页信息 有输液反应,没有填写输液相关操作', 'warning');
+            return false;
+        }
+        if (para.SFFSYC == 2 && para.SYLCBX == "") {
+            $.modalAlert('副页信息 有输液反应,没有填写输液相关操作', 'warning');
+            return false;
+        }
+        if (para.SYFY == 0 && para.YFFYDYW != "" && para.YFFYDYW != "-") {
+            $.modalAlert('副页信息 无输液反应，不能填写输液相关操作', 'warning');
+            return false;
+        }
+        if (para.SYFY == 0 && para.SYLCBX != "" && para.SYLCBX != "-") {
+            $.modalAlert('副页信息 无输液反应，不能填写输液相关操作', 'warning');
+            return false;
+        }
+        if (para.ZYSFDDHZC == 1 && para.ZYDDHZCDCD != "") {
+            $.modalAlert('副页信息 住院期间没有发生跌倒或坠床，不能填写跌倒或坠床相关操作', 'warning');
+            return false;
+        }
+        if (para.ZYSFDDHZC == 2 && para.ZYDDHZCDCD == "") {
+            $.modalAlert('副页信息 住院期间发生跌倒或坠床，没有填写跌倒或坠床相关操作', 'warning');
+            return false;
+        }
+        if (para.ZYSFDDHZC == 2 && para.DDHZCDYY == "") {
+            $.modalAlert('副页信息 住院期间发生跌倒或坠床，没有填写跌倒或坠床相关操作', 'warning');
+            return false;
+        }
+        if (para.ZYSFDDHZC == 1 && para.DDHZCDYY != "") {
+            $.modalAlert('副页信息 住院期间没有发生跌倒或坠床，不能填写跌倒或坠床相关操作', 'warning');
+            return false;
+        }
+        var xindex = para.HXB + para.XXB + para.XJ + para.QX + para.ZTXHS + para.BDB + para.LCD + para.QT
+        if (xindex > 0 && para.SXFY == 3) {
+            $.modalAlert('有输血量时，输血反应不能为未输', 'warning');
+            return false;
+        }
+        if (xindex <= 0 && para.SXFY != 3) {
+            $.modalAlert('没有输血量时，输血反应必须为未输', 'warning');
+            return false;
+        }
+        if (para.ZFY<=0) {
+            $.modalAlert('费用信息 患者住院总费用必须大于 0', 'warning');
+            return false;
+        }
+        if (para.ZFY < para.ZFJE) {
+            $.modalAlert('费用信息 患者住院总费用必须大于自付金额', 'warning');
+            return false;
+        }
+        if (para.FSSZLXMF < para.WLZLF ) {
+            $.modalAlert('费用信息 非手术治疗项目费必须大于等于临床物理治疗费', 'warning');
+            return false;
+        }
+        if (para.SSZLF < (para.MAF + para.SSF)) {
+            $.modalAlert('费用信息 手术治疗费必须大于等于麻醉费与手术费之和', 'warning');
+            return false;
+        }
+        if (para.XYF < para.KJYWF) {
+            $.modalAlert('费用信息 西药费必须大于等于抗菌药物费用', 'warning');
+            return false;
+        }
+    }
+    //功能键操作区
+	function newtouch_event_f2() {
+        var para = getfromPara();
+        if (testandverify(para)==false) {
+            return false;
+        };
+        $.submitForm({
+            url: "/MRHomePage/MRHomePage/SubmitPatBasic?keyValue=" + keyValue + "&mbbh=" + mbbh,
+            param: para,
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalAlert("患者信息保存成功", 'success');
+                } else {
+                    $.modalAlert(data.message, 'warning');
+                }
+            }
+        })
+    }
+    //诊断保存
+    function newtouch_event_f3() {
+        var msg = "";
+        var ids = $("#gridzdList").getDataIDs();
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridzdList").getRowData(ids[i]));
+            }
+        }
+        $.ajax({
+            url: "/MRHomePage/MRHomePage/SubmitZdList",
+            data: { dto: rows, zyh: $("#ZYH").val(), "Code": "DiagnosticSave" },
+            type: "post",
+            loading: "正在提交数据...",
+            async: false,
+            success: function (data) {
+                var obj = JSON.parse(data);
+                if (obj.data == "") {
+                    $.modalAlert("诊断信息保存成功", 'success');
+                }
+                else {
+                    window.setTimeout(function () {
+                        //var obj = JSON.stringify(data);
+                        console.info(obj); console.info(data);
+                        if (obj.data == "诊断信息保存成功") {
+                            $.modalAlert(obj.data, 'success');
+                            jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+                        }
+                        else {
+                            $.modalAlert(obj.data, 'warning');
+                        }
+                        //if (obj.state == "success") {
+                        //    $.modalAlert("诊断信息保存成功", 'success');
+                        //    jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+                        //}wwwwwwwwwwwwwwwwwwwww
+                        //else {
+                        //    $.modalAlert(obj.message, 'warning');
+                        //}
+                    }, 10);
+                }
+
+            }
+        });
+
+    }
+    //手术列表
+    function newtouch_event_f6() {
+        var msg = "";
+        var ids = $("#gridopList").getDataIDs();
+		var rows = [];
+        if (ids.length > 0) {
+			for (i = 0; i < ids.length; i++) {
+				var date = $("#gridopList").getRowData(ids[i]);
+				if (date.SSLX == '择期手术') {
+					date.SSLX = 0;
+				} else {
+					date.SSLX = 1;
+				}
+				rows.push(date);
+            }
+		}
+
+        $.ajax({
+            url: "/MRHomePage/MRHomePage/SubmitOpList",
+            data: { dto: rows },
+            loading: "正在提交数据...",
+            type: "post",
+            success: function (data) {
+                window.setTimeout(function () {
+                    var obj = JSON.parse(data);
+                    if (obj.state == "success") {
+                        $.modalAlert("手术信息保存成功", 'success');
+                        jQuery("#gridopList").jqGrid().trigger('reloadGrid');
+                    }
+                    else {
+                        $.modalAlert(obj.message, 'warning');
+                    }
+                }, );
+
+            }
+        });
+    }
+
+    function getzdGrid() {
+        var ids = $("#gridzdList").getDataIDs();
+        //var ids = $("#gridzdList").jqGrid('getDataIDs');
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridzdList").getRowData(ids[i]));
+            }
+        }
+        return rows;
+    }
+    function getopGrid() {
+        var ids = $("#gridopList").getDataIDs();
+        var rows = [];
+        var i = 0;
+        if (ids.length > 0) {
+            for (i = 0; i < ids.length; i++) {
+                rows.push($("#gridopList").getRowData(ids[i]));
+            }
+        }
+        return rows;
+    }
+
+    function newtouch_event_f7() {
+        var para = getfromPara();
+        if (testandverify(para) == false) {
+            return false;
+        };
+        $.submitForm({
+            url: "/MRHomePage/MRHomePage/SubmitPatBasic?mbbh=" + mbbh+"&keyValue=" + keyValue,
+            param: para,
+            success: function (data) {
+                if (data.state == "success") {
+                    var zdrows = getzdGrid();
+                    var oprows = getopGrid();
+                    $.ajax({
+                        url: "/MRHomePage/MRHomePage/SubmitMR?keyValue=" + keyValue,
+                        data: { zddto: zdrows, opdto: oprows, zyh: $("#ZYH").val(), "Code": "DiagnosticSave" },
+                        loading: "正在提交数据...",
+                        type: "post",
+                        success: function (data) {
+                            window.setTimeout(function () {
+                                var obj = JSON.parse(data);
+                                if (obj.state == "success") {
+                                    $.modalAlert("保存成功", 'success');
+                                    jQuery("#gridopList").jqGrid().trigger('reloadGrid');
+                                    jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+                                }
+                                else {
+                                    $.modalAlert(obj.message, 'warning');
+                                }
+                            }, 10);
+
+                        }
+                    });
+                    debugger;
+
+                } else {
+                    $.modalAlert(data.message, 'warning');
+                }
+            }
+        })
+
+    }
+
+    function newtouch_event_f8() {
+        var zyh = $("#ZYH").val();
+        var url = '@reportUrl' + "?tempCode=1295" + "&hospitalCode=" + orgId + "&systemCode=" + '@reportSystemCode';
+        window.open(url + "&orgId=" + orgId + "&zyh=" + zyh);
+
+    }
+    /*打印副页*/
+    function newtouch_event_f9() {
+        var zyh = $("#ZYH").val();
+        var url = '@reportUrl' + "?tempCode=1296" + "&hospitalCode=" + orgId + "&systemCode=" + '@reportSystemCode';
+        window.open(url + "&orgId=" + orgId + "&zyh=" + zyh);
+    }
+
+    function newtouch_event_f10() {
+        $.modalConfirm("同步数据会重置页面，请确认是否重置？", function (flag) {
+            if (flag) {
+                $.ajax({
+                    url: "/MRHomePage/MRHomePage/GetFormJsonFee?keyValue=" + keyValue,
+                    data: { zyh: zyh },
+                    loading: "正在同步数据...",
+                    type: "post",
+                    success: function (data) {
+                        SyncFee(data);
+                        $.modalAlert("同步完成", 'success');
+                    }
+                });
+
+            };
+        });
+    }
+
+    function SyncFee(data) {
+        var jsonObj = JSON.parse(data);
+        for (var item in jsonObj) {
+            if ($("#dv_fee input[id=" + item + "]").length > 0 && !!jsonObj[item]) {
+                $("#dv_fee input[id=" + item + "]").val(parseFloat(jsonObj[item]).toFixed(2));
+            }
+            else {
+                $("#dv_fee input[id=" + item + "]").val("");
+            }
+        }
+    }
+    /******************************************************/
+    //上传医保
+    function newtouch_event_f101() {
+        GetblData("7600");
+        if (ret == 1) {
+            GetblData("7610");
+        }
+    }
+
+    function GetblData(jydm) {
+        var ret = 0;
+        if (!!jydm) {
+            $.najax({
+                url: "/MRHomePage/MRHomePage/HomePageUploadJS",
+                data: { zyh: $("#ZYH").val(), jydm: jydm },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    if (data != null && data != undefined) {
+                        ret = Upload(data);
+                    }
+                    else {
+                        $.modalAlert("上传失败，请查看日志", "error");
+                    }
+                }
+            });
+        }
+        return ret;
+    }
+
+
+    function Upload(jsondata) {
+        $.ajax({
+            url: "http://127.0.0.1:33333/api/QHDSmartCheck/MedicalRecordUpload",//智能审核
+            dataType: "json",
+            data: jsondata,
+            type: "POST",
+            async: true,
+            success: function (ajaxdata) {
+                if (!!ajaxdata) {
+                    var resp = JSON.parse(ajaxdata);
+                    if (resp.code == "-1") {
+                        $.modalAlert("上传失败" + resp.message, "error");
+                    }
+                    else {
+                        $.modalAlert("上传成功", "success");
+                        UpdateYbUpload();
+                        return 1;
+                    }
+                }
+                else
+                    $.modalAlert("上传失败，请查看日志", "error");
+
+            }
+        });
+    }
+
+    function UpdateYbUpload() {
+        $.najax({
+            url: "/MRHomePage/MRHomePage/UpdateUploadStu",
+            data: { zyh: $("#ZYH").val() },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,314 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    //是否和医保交易
+    var openYbSett = SysConfigReader.Bool("Outpatient_ChargeFee_OpenYbSett");
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+    //医保所属地，区分系统将执行何处医保逻辑
+    var medicalInsurance = SysConfigReader.String("Outpatient_MedicalInsurance");
+}
+@if (openYbSett == true)
+{
+    <div id="readCard" style="color:orangered;display:none;width:200px">
+        @*<input type="button" id="btkhsr" value="证件号输入" class="form-control" style="border-color:#00a0e9; margin-left: 0px;margin-top: 2px; height: 22px;width:44px;padding-left:0px; float: left;vertical-align:central;" onclick="GetPatSbkh()" />*@
+        <i class="fa fa-id-card" style="font-size: 27px; float: left;vertical-align:central;" title="读卡"></i>
+        <select id="readCardCardType" class="form-control" style="margin-left: 0px;margin-top: 2px; height: 22px;width:70px;float: left;vertical-align:central;">
+            @if (openYbSett == true)
+            {
+                <option value="2">医保卡</option>
+                <option value="3">电子凭证</option>
+            }
+            <option value="4">身份证</option>
+            <option value="1">自费磁卡</option>
+            <option value="0">测试磁卡</option>
+        </select>
+    </div>
+}
+
+<script>
+    var ybkCardType = "@((int)EnumCardType.YBJYK)";
+    var medicalInsurance = '@medicalInsurance';
+    var cqPatInfo = {};//患者读卡信息，confirmform使用
+    var errmsg = "";//读卡错误提示
+    var brxzobj = { brxz: "1", brxzmc: "普通医保" };
+    $('#readCard i').click(function () {
+         $.loading(true, '正在读卡，请稍后…');
+         setTimeout("readCard();", 50);
+     });
+
+     //读卡
+    function readCard(khxx) {
+        debugger;
+         switch (medicalInsurance) {
+             case "shanghai":
+                 if (!khxx && $('#readCardCardType').val() != "2") {
+                     $.loading(false);
+                     klxchoose();
+                 } else {
+                     GetSHReadCardIno(khxx);
+                 }
+                 break;
+             case "tongyong"://通用使用国家医保
+                 var khxx = { "sbkh": "", "sfzh": "", "ecToken": "" };
+                 GetReadCardInfo(khxx);
+                 break;
+             default:
+                 $.modalAlert("医保所属地未设置，请设置后再进行刷卡", 'warning');
+                 return;
+         }
+     }
+
+     function GetSHReadCardIno(khxx)
+     {
+         debugger;
+         var yibaoCardInfo;
+         var sm01Info;
+         var jzpzlx = $('#readCardCardType').val();
+         var url ="http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_S000";
+         var payoptype = { "cardtype": "1","orgId":'@(opr.OrganizeId)', "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
+         if (jzpzlx=="0") {//磁条卡
+             payoptype.cardtype = "0";
+             payoptype.carddata = khxx.sbkh;
+             url = "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SM01";
+         }
+         if (jzpzlx == "2") {//保障卡
+             payoptype.cardtype = "1";
+         }
+         if (jzpzlx == "3") {//电子凭证
+             payoptype.cardtype = "3";
+             payoptype.carddata = khxx.sbkh;
+             payoptype.ecQrCode = khxx.sbkh;
+             payoptype.ecQrChannel = "1";
+             url = "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SE01";
+         }
+         if (jzpzlx == "4") {//身份证 目前为止只能用国家医保
+             payoptype.sfzh = khxx.sbkh;
+             GetReadCardInfo(payoptype);
+             return;
+         }
+         if (jzpzlx == "1") {
+             $.loading(false);
+             cqPatInfo.jzlx = jzpzlx;
+             yibaoCardInfo = {kh:""};
+             yibaoCardInfo.kh = khxx.sbkh;
+             yibaoCardInfo.jzlx = jzpzlx;
+             ReadCardCall({ yibaoCardInfo: yibaoCardInfo, ybkCardType: jzpzlx });
+             return;
+         }
+         $.ajax({
+             type: "POST",
+             url: url,
+             dataType: "json",
+             data: payoptype,
+             async: false,
+             success: function (data) {
+                 yibaoCardInfo = eval('(' + data + ')');
+             },
+             error: function (request, error, ex) {
+                 errmsg = "医保服务读卡不可访问：[" + ex + "]";
+             }
+         });
+         if (yibaoCardInfo) {
+             if (yibaoCardInfo.xxfhm === "P001") {
+                 sm01Info = yibaoCardInfo.sm01;//账户信息(s000 、se01 、sm01)
+                 cqPatInfo.xm = sm01Info.xm;
+                 cqPatInfo.sfzh = sm01Info.sfzh;
+                 cqPatInfo.xzqh = sm01Info.xzqh;
+                 cqPatInfo.cblb = sm01Info.accountattr;
+                 cqPatInfo.ecToken = sm01Info.ecToken;
+                 cqPatInfo.sbkh = sm01Info.cardid;
+                 cqPatInfo.accountattr = sm01Info.accountattr;
+                 if (jzpzlx=="3") {
+                     cqPatInfo.carddata = sm01Info.ecToken;
+                 }
+                 else if (jzpzlx == "0"||jzpzlx == "4") {
+                     cqPatInfo.carddata = khxx.sbkh;
+                 }
+                 else {
+                     cqPatInfo.carddata = "";
+                 }
+                 cqPatInfo.kh = sm01Info.kh;
+                 var bkbz = sm01Info.accountattr.substr(11, 1);//帮困 G、A
+                 var gbbz = sm01Info.accountattr.substr(1, 1);//干保 1
+                 debugger;
+                 var resultObjArr = new Array();
+                 if (bkbz == "G" || bkbz == "A" || gbbz == "1") {
+                     cqPatInfo.ybVer = "shanghaiV5";
+                     cqPatInfo.cardtype = payoptype.cardtype;
+                     cqPatInfo.jzlx = jzpzlx;
+                     getbrxz(bkbz);
+                     yibaoCardInfo.brxzdm = brxzobj.brxz;
+                     yibaoCardInfo.brxzmc = brxzobj.brxzmc;
+                     yibaoCardInfo.readCardCardType = jzpzlx;
+                     yibaoCardInfo.kh = sm01Info.kh;
+                     yibaoCardInfo.qtjz = jzpzlx != "1" ? cqPatInfo.sfzh : null;
+                     yibaoCardInfo.ybVer = "shanghaiV5";
+                     yibaoCardInfo.jzlx = jzpzlx;
+                     ReadCardCall({ yibaoCardInfo: yibaoCardInfo, ybkCardType: jzpzlx });
+                 }
+                 else {
+                     GetReadCardInfo(cqPatInfo);
+                 }
+
+
+             } else {
+                 $.loading(false);
+                 $.modalAlert("医保服务(获取医保中心患者信息失败):" + yibaoCardInfo.fhxx, 'error');
+             }
+         } else {
+             $.loading(false);
+             $.modalAlert(errmsg, 'error');
+         }
+     }
+
+    function getbrxz(brlx)
+    {
+        $.ajax({
+            url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
+            data: { xzlx: "" },
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (data) {
+                if (!!data) {
+                    $.each(data, function (idx, val) {
+                        if (val.insutype && val.insutype == brlx) {
+                            brxzobj.brxz = val.brxz;
+                            brxzobj.brxzmc = val.brxzmc;
+                        }
+                    });
+                }
+                return brxzobj;
+            },
+            error: function (request, error, ex) {
+                return brxzobj;
+            }
+        });
+
+    }
+
+     //读卡 获取人员信息
+     function GetReadCardInfo(sbkobj) {
+         debugger;
+         var cardInfo1;
+         var cardInfo2;
+         var cardInfo3;
+         var yibaoCardInfo;
+         var patsbkh = null;
+         var jzpzlx = $('#readCardCardType').val();
+         var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
+         var payoptype = { "mdtrt_cert_type": "02", "mdtrt_cert_no": sbkobj.sfzh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "口腔科" };
+         if (jzpzlx === "4") {//身份证
+             payoptype.mdtrt_cert_type = "02";
+             payoptype.mdtrt_cert_no = sbkobj.sfzh;
+             url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
+         }
+         else if (jzpzlx === "3") {//电子凭证
+             payoptype.mdtrt_cert_type = "01";
+             payoptype.mdtrt_cert_no = sbkobj.ecToken;
+             payoptype.psn_cert_type = "01";//身份证
+             payoptype.certno = sbkobj.sfzh;
+             payoptype.psn_name = sbkobj.xm;
+             url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
+         }
+         else if (jzpzlx === "0") {
+             payoptype.mdtrt_cert_type = "00";
+             payoptype.mdtrt_cert_no = sbkobj.carddata;
+         }
+         if (jzpzlx === "1") {//院内卡
+             $.loading(false);
+             $.modalAlert("院内卡读卡接口未开通", 'error');
+         }
+         else {
+             $.ajax({
+                 type: "POST",
+                 url: url,
+                 dataType: "json",
+                 data: payoptype,
+                 async: false,
+                 success: function (data) {
+                     yibaoCardInfo = eval('(' + data + ')');
+                 },
+                 error: function (request, error, ex) {
+                     errmsg = "医保服务读卡不可访问：[" + ex + "]";
+                 }
+             });
+             if (yibaoCardInfo) {
+                 if (yibaoCardInfo.infcode == "0" || yibaoCardInfo.infcode === 0) {
+                     if (!yibaoCardInfo || !yibaoCardInfo.output.baseinfo || !yibaoCardInfo.output.insuinfo[0]) {
+                         $.modalAlert("读卡失败:" + yibaoCardInfo.err_msg, 'error');
+                         return;
+                     }
+
+                     cardInfo1 = yibaoCardInfo.output.baseinfo; //医保基本信息
+                     cardInfo2 = yibaoCardInfo.output.insuinfo[0];//参保信息
+                     if (jzpzlx !== "3") {
+                         cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
+                         cqPatInfo.sbkh = sbkobj.sbkh;
+                     }
+                     if (jzpzlx == "3") {
+                         cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
+                         cqPatInfo.ecToken = cardInfo3.ecToken;
+                     }
+                     getbrxz(cardInfo2.insutype);
+                     yibaoCardInfo.brxzdm = brxzobj.brxz;
+                     yibaoCardInfo.brxzmc = brxzobj.brxzmc;
+
+                     cqPatInfo.xm = cardInfo1.psn_name;
+                     cqPatInfo.sfzh = cardInfo1.certno;
+                     cqPatInfo.xzqh = cardInfo2.insuplc_admdvs;
+                     cqPatInfo.cblb = cardInfo2.psn_type;
+                     cqPatInfo.xzlx = cardInfo2.insutype;
+                     cqPatInfo.grbh = cardInfo1.psn_no;
+                     cqPatInfo.jzlx = jzpzlx;
+                     cqPatInfo.ybVer = "gjyb";
+                     cqPatInfo.mdtrt_cert_type = payoptype.mdtrt_cert_type;
+                     cqPatInfo.mdtrt_cert_no = cqPatInfo.ecToken;
+
+                     yibaoCardInfo.readCardCardType = jzpzlx;
+                     yibaoCardInfo.kh = jzpzlx != "3" ? sbkobj.sbkh : null;
+                     yibaoCardInfo.qtjz = cardInfo1.certno;
+                     yibaoCardInfo.ybVer = "gjyb";
+                     yibaoCardInfo.jzlx = jzpzlx;
+                     //yibaoCardInfo.kh = jzpzlx=="01"?cardInfo1.certno:(jzpzlx=="02" ? cardInfo1.certno:cardInfo3.cardno) ;
+                     //upxtbrxx({ kh: yibaoCardInfo.kh, zjh: yibaoCardInfo.qtjz, cbdbm: cqPatInfo.xzqh, cblb: cqPatInfo.cblb, grbh: cqPatInfo.grbh, xzlx: cqPatInfo.xzlx });
+                     ReadCardCall({ yibaoCardInfo: yibaoCardInfo, ybkCardType: jzpzlx, cardInfo1: cardInfo1, cardInfo2: cardInfo2, cardInfo3: cardInfo3 });
+                 } else {
+                     $.loading(false);
+                     $.modalAlert("刷卡失败:" + yibaoCardInfo.err_msg, 'error');
+                 }
+
+             } else {
+                 $.loading(false);
+                 $.modalAlert(errmsg, 'error');
+             }
+         }
+     }
+        $("#readCardCardType").change(function () {
+            klxchoose();
+        })
+        function klxchoose() {
+            var jzpzlx = $('#readCardCardType').val();
+            switch (jzpzlx) {
+                case "0":
+                case "3":
+                case "4":
+                case "1":
+                    GetPatSbkh();
+                    break;
+            }
+        }
+
+    //手输社保卡号
+        function GetPatSbkh() {
+        $.modalOpen({
+            id: "sbkhInput",
+            title: "卡号输入",
+            url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random() + "&medicalInsurance=" + medicalInsurance,
+            width: "300px",
+            height: "150px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatSbkhData();
+            }
+        });
+    }
+</script>

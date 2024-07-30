@@ -1,0 +1,240 @@
+﻿@using Newtouch.OR.ManageSystem.Infrastructure
+@{
+    Layout = null;
+}
+@*<div class="panel-heading">
+    <span style="font-weight:bold;">患者详情</span>
+</div>*@
+<div id="dv_detail" role="tabpanel" >
+    <div id="dv_oplist" style="padding:2px 2px 2px 10px;">
+        <div id="dv_opinfo">
+            <table class="form" style="background-color:#eadaf8;" >
+                <tr>
+                    <td class="formTitle" rowspan="3" style="font-weight:bold;font-size:20px;color:#00a0ea;">
+                        <span id="xm" name="xm">姓名</span> 
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formValue" colspan="4" rowspan="2">
+                        (住院号：<span id="zyh" style="font-weight:bold;color:#00a0ea;width:100px;">___________</span>)
+                    </td>
+                    <td class="formValue" colspan="2" rowspan="3">
+                        <a class='btn btn-default glyphicon glyphicon-plus' style='width:100px;background:#00CD66;color:#eee;height:25px;font-size:16px;padding-top:5px;float:right;' onclick="showOpApply();">申请手术</a>
+                    </td>
+                </tr>
+                <tr>
+                </tr>
+                <tr>
+                    <th class="formTitle">性别：</th>
+                    <td class="formValue"><span id="xb">___________</span></td>
+                    <th class="formTitle">年龄：</th>
+                    <td class="formValue"><span id="nl">___________</span></td>
+                </tr>
+                <tr>
+                    <th class="formTitle">病区：</th>
+                    <td class="formValue"><span id="bqmc">___________</span></td>
+                    @*<th class="formTitle">护理级别：</th>
+                    <td class="formValue">I级</td>*@
+                    <th class="formTitle">床号：</th>
+                    <td class="formValue"><span id="bedcode">___________</span></td>
+                </tr>
+                <tr>
+                    <th class="formTitle">入院诊断：</th>
+                    <td class="formValue" colspan="3"><span id="ryzdmc">___________</span></td>             
+                </tr>
+            </table>
+        </div>
+
+    </div>
+    <div>
+        <table class="form">
+            <tr>
+                <td style="padding-right: 10px;padding-top:10px;">
+                    <div id="time_horizon" class="btn-group" style="float:right;">
+                        <a class="btn btn-default active" data-value="">全部</a>
+                        <a class="btn btn-default" data-value="@((int)EnumSqzt.dsh)">已申请</a>
+                        <a class="btn btn-default" data-value="@((int)EnumSqzt.ypb)">已审核</a>
+                        <a class="btn btn-default" data-value="@((int)EnumSqzt.yqx)">已取消</a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv_opdetail" class="contentPanel" style="padding:10px 10px 0px 5px;width:100%;">
+        <table id="gridListOP"></table>
+        <div id="gridPagerOP"></div>
+    </div>
+    @*@Html.Partial("ApplyCard");*@
+</div>
+
+<script>
+$(function () {
+    GridInitOPList();
+    });
+    
+
+
+
+    function GridInitOPList() {
+        var $gridList = $("#gridListOP");
+        $gridList.dataGrid({
+            postData: { zyh: $("#zyh").val() },
+            url: "/Operation/OpApply/GetGridListOP",
+            //autowidth: true,
+            height: $(window).height() - 270,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "Applyno", name: "Applyno", hidden: true },
+                { label: "手术名称", name: "ssmcn", width: 150, align: 'left' },
+                { label: "手术时间", name: "sssj", width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "主刀医生", name: "ysxm", width: 80, align: 'left' },
+                //{ label: "手术间", name: "ssj", width: 50, align: 'left' },
+                //{ label: "台次", name: "sstc", width: 30, align: 'left' },
+                { label: "sqzt", name: "sqzt", hidden: true },
+                {
+                    label: "手术状态", name: "sqztmc", width: 60, align: 'left', formatter: function (val, option, row) {
+                        if (row.sqzt == (@((int)EnumSqzt.dsh)))
+                            return "已申请";
+                        else if (row.sqzt == (@((int)EnumSqzt.ypb)))
+                            return "已排班";
+                        else if (row.sqzt == (@((int)EnumSqzt.yqx)))
+                            return "已取消申请";
+                        else
+                            return "状态异常";
+                        
+                    }
+                },
+                //{ label: "状态", name: "sqzt", width: 50, align: 'left' },
+                {
+                    label: "详情", name: "", width: 160, align: 'center', formatter(val, option, row) {
+                        // debugger
+                        
+                        if (row.sqzt == (@((int)EnumSqzt.dsh))) {
+                            
+                            return "<a class='btn btn-default' style='width:50px;font-weight:bold;' onclick='showDetail(" + option.rowId + ")'>查看</a><a class='btn btn-default' style='width:50px;font-weight:bold;color:red;' onclick='applyCancel(" + option.rowId + ")'>撤销申请</a>";
+
+                        }
+                        else {
+                            return "<a class='btn btn-default' style='width:50px;font-weight:bold;' onclick='showDetail(" + option.rowId + ")'>查看</a>";
+                        }
+                    }
+                }
+            ],
+            loadComplete: function () {
+                //$("#gridList").jqGrid('setCell', 1, 0, '', { background: '#4bde77' });
+                //$("#gridList").jqGrid('setCell', 2, 0, '', { background: '#4bde77' });
+                //$("#gridList").jqGrid('setCell', 3, 0, '', { background: '#4bde77' });
+                //var gfxScore = $('#gridList').jqGrid('getRowData', 1).AvgScore;
+                //$("#gfxScore").text(gfxScore);
+            },
+            //caption: "手术申请列表",
+            sortname: "sssj desc",
+            //rowNum: 10,
+            //pager: "#gridPagerOP",
+            viewrecords: false
+        });
+
+        //for ( var i = 0; i <= data.length; i++){
+        //    jQuery("#gridList").jqGrid('addRowData', i + 1, data[i]);
+        //}
+
+
+        $("#time_horizon a.btn-default").click(function () {
+            $("#time_horizon a.btn-default").removeClass("active");
+            $(this).addClass("active");
+            
+            var sq = $("#time_horizon a.active").attr('data-value');
+            var zyh = $("#zyh").html();
+            //var queryJson = {
+            //    zyh: zyh,
+            //    sqlx: sq,
+            //}
+            // var timeType = $("#time_horizon a.active").attr('data-value');
+            $gridList.jqGrid('setGridParam', {
+                postData: { zyh: zyh, sqlx: sq },
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //查看手术申请详情
+    function showDetailOld(rowid) {
+        //debugger
+        var dat = $("#gridListOP").jqGrid('getRowData', rowid);
+        var rowData = JSON.parse(JSON.stringify(dat));
+        console.info(rowData);
+        console.info("rowdata数据：" + rowData.Applyno);
+
+
+
+
+
+        if (rowData.sqzt ==@((int)EnumSqzt.dsh)) {
+            $("#dv_apply_btn").show();
+            $("#dv_cancel_btn").show();
+        }
+        else if (rowData.sqzt ==@((int)EnumSqzt.ypb)) {
+            $("#dv_apply_btn").hide();
+            $("#dv_cancel_btn").hide();
+        }
+        else if (rowData.sqzt ==@((int)EnumSqzt.yqx)) {
+            $("#dv_apply_btn").hide();
+            $("#dv_cancel_btn").hide();
+        }
+
+        //$('#Applyno').val(rowData.Applyno);
+        $('#myTab [href="#linkop"').trigger('click');
+        $.ajax({
+            url: "/Operation/OpApply/GetFormJson",
+            data: { keyValue: rowData.Applyno },
+            dataType: "json",
+            success: function (data) {
+				$("#formapply").formSerialize(data);
+				$("#Applyno").html("手术申请编号：" + data.Applyno);
+				if (data.sssj != null) {
+					$("#sssj").val(data.sssj.replace("T", " "));
+				}
+				$("#ysgh").val(data.ysxm);
+				$("#mzys").val(data.mzysName);
+				//手术名称
+				//$("#tablessmc").html('<tr><td><i class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td><td class="formValue"><input type="text"  id="ssmc" name="ssmc" class="form-control activeValue focusInput ssmcText" /><input id="ssdm" type="hidden" /></td></tr>');
+				//$("#tablessmc").html('<tbody><tr><td><i id="zdCircle" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td ><td class="formValue"><input type="text" class="form-control activeValue focusInput ssmcText" id="ssmc" name="ssmc" data-releatednfs="true"><input id="ssdm" type="hidden"></td></tr></tbody>');
+
+				//清空手术名称
+				$('#tablessmc .minusToggleCircle').click();
+				var number = data.ss.length;//手术数量
+				if (number > 0) {//主手术赋值
+					$("#ssmc").val(data.ss[0].ssmc);
+					$("#ssdm").val(data.ss[0].ssdm);
+				} else {
+					$("#ssmc").val("");
+					$("#ssdm").val("");
+				}
+				for (var i = 1; i < number; i++) {
+					var n = i + 1;
+					//if ($("#ssdm" + n).val() == "") {
+					//if ($("#ssdm" + n).length <= 0) {
+						//添加icon 并赋值
+						$('#tablessmc .plusToggleCircle').click();
+						$("#ssmc" + n).val(data.ss[i].ssmc);
+						$("#ssdm" + n).val(data.ss[i].ssdm);
+					//}
+				}
+			}
+        });
+    }
+    //撤销手术申请详情
+    function applyCancel(rowid) {
+        var rowData = $("#gridListOP").jqGrid('getRowData', rowid);
+        $.deleteForm({
+            prompt: "注：请确认是否撤销此项手术申请？",
+            url: "/Operation/OpApply/DeleteApply",
+            param: { keyValue: rowData.Applyno, ssmcn: rowData.ssmcn },
+            success: function () {
+                $("#gridListOP").resetSelection();
+                $("#gridListOP").trigger("reloadGrid");
+            }
+        });
+    }
+
+</script>

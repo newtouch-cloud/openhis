@@ -1,0 +1,377 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<style>
+    .formTitle span {
+        color: red;
+    }
+    
+</style>
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            基本信息
+        </div>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" id="basicInfo">
+                <input type="hidden" id="py" name="py" />
+                <input type="hidden" id="patid" name="patid" />
+                <input type="hidden" id="brxz" name="brxz">
+                <div id="divJbjyFee" class="tab-pane fade in active">
+                    <table class="form" style="width: 98%; border: 0">
+                        <tr>
+                            <td class="formTitle">
+                                <span>*</span>卡号
+                            </td>
+                            <td class="formValue">
+                                <input type="text" id="kh" class="form-control form-an">
+                                
+                            </td>
+                            <td class="formValue" colspan="2">
+                                @Html.Partial("YibaoRedCardCommon")
+                            </td>
+                            <td class="formTitle"><span>*</span>卡类型</td>
+                            <td class="formValue">
+                                @Html.DropDownList("cardtype", EnumCardType.XNK.ToDescSelectList(), new { @class = "form-control form-an", onchange = "TypeFunc(this.options[this.options.selectedIndex].value)" })
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="formTitle"><span>*</span>患者姓名</td>
+                            <td class="formValue">
+                                <input type="text" id="xm" name="xm" class="form-control form-an">
+                            </td>
+                            <td class="formTitle"><span>*</span>患者性质</td>
+                            <td class="formValue">
+                                <input type="text" id="brxzmc" name="brxzmc" class="form-control form-an">
+                            </td>
+                            <td class="formTitle">参保类别编码</td>
+                            <td class="formValue"><input type="text" id="cblb" class="form-control form-an" /></td>
+                        
+                        </tr>
+                        <tr>
+                            <td class="formTitle">参保类别</td>
+                            <td class="formValue">
+                                @*@Html.DropDownList("cblb", EnumCblb.none.ToDescSelectList(), new { @class = "form-control form-an" })*@
+                                <input type="text" id="cblbmc" name="cblbmc" class="form-control form-an">
+                            </td>
+                            <td class="formTitle"><span></span>参保地编码</td>
+                            <td class="formValue">
+                                <input type="text" id="cbdbm" name="cbdbm" class="form-control form-an">
+                            </td>
+                            <td class="formTitle"><span></span>险种类型</td>
+                            <td class="formValue">
+                                <input type="text" id="xzlx" name="xzlx" class="form-control form-an">
+                            </td>
+                            
+                        </tr>
+                        <tr>
+                            <td class="formTitle">个人编号</td>
+                            <td class="formValue">
+                                <input type="text" id="grbh" name="grbh" class="form-control form-an">
+                            </td>
+                            <td class="formTitle">异地</td>
+                            <td class="formValue">
+                                @Html.DropDownList("dybh", EnumYd.f.ToDescSelectList(), new { @class = "form-control form-an", onchange = "TypeFunc(this.options[this.options.selectedIndex].value)" })
+                            </td>
+                            <td class="formValue" colspan="2">
+                                <input type="button" id="btn_tianjia" style="float:right;width:60px;" onclick="SubmitCard()" class="btn btn-md btn-primary form-an" value="添加" />
+                            </td>
+
+                        </tr>
+
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-heading navb-bg">
+        就诊卡列表
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+
+
+<script>
+    var khpz = "@ViewBag.khpz";
+    var khvalue = "";
+    $("#readCard").show();
+    $("#btkhsr").css('display', 'none');
+    $("#readCard").css('margin-left', "50px");
+    $("#readCardCardType").css('width', "70px");
+    $(function () {
+        $("#xm").attr("disabled", "disabled").css("background-color", "#f1f4f6");
+        $("#kh").attr("disabled", "disabled").css("background-color", "#f1f4f6");
+        var patId = $.request("patId");
+        var xms = $.request("xm");
+        $("#xm").val(xms);
+        $("#patid").val(patId);
+        if (khpz == "ON") {
+            $.ajax({
+                url: "/PatientManage/HospiterRes/GetNewCardNoAndBLH",
+                data: { khsc: true, blhsc: true },
+                dataType: "json",
+                async: false,
+                cache: false,
+                success: function (data) {
+                    $('#kh').val(data.kh);
+                    khvalue = data.kh;
+                }
+            });
+        }
+        GetCardInfos(patId);
+
+    })
+
+    function TypeFunc(values) {
+        if (values == "1") {
+            $("#kh").val(khvalue);
+            $("#kh").attr("disabled", "disabled").css("background-color", "#f1f4f6");
+        }
+        else {
+            $('#kh').attr("disabled", false).css("background-color", "transparent");
+            $("#kh").val("");
+        }
+    }
+
+    function GetCardInfos(patIds) {
+        $("#gridList").dataGrid(
+            {
+                url: "/PatientManage/HospiterRes/GetCardNoInfo",
+                postData: { patId: patIds },
+                colModel: [
+                    { label: 'CardId', name: 'CardId', width: 100, align: 'left', hidden: true },
+                    { label: 'patid', name: 'patid', width: 100, align: 'left', hidden: true },
+                    { label: '卡号', name: 'CardNo', width: 100, align: 'left' },
+                    {
+                        label: '类型名称', name: 'CardType', width: 100, align: 'left', formatter: function (cellvalue) {
+                            return $.enum.getDescByValue("EnumCardType", cellvalue);
+                        }
+                    },
+                    {
+                        label: '险种', name: 'xzlx', width: 100, align: 'left', formatter: function (cellvalue) {
+                            return $.enum.getDescByValue("Enumxzlx", cellvalue);
+                        }
+                    },
+                    {
+                        label: '病人性质', name: 'brxz', width: 100, align: 'left', formatter: function (cellvalue) {
+                            return $.enum.getDescByValue("EnumBrxz", cellvalue);
+                        }
+                    },
+                    {
+                        label: "操作", name: "", width: 160, align: 'center', formatter(val, option, row) {
+                            return "<a class='btn btn-default' style='width:50px;font-weight:bold;textalign:center;color:red' onclick='CardVoidss(" + option.rowId + ")'>作废</a>";
+
+                        }
+                    }
+                ],
+                viewrecords: false,
+                width: "100%",
+                autowidth: true,
+                height: $(window).height() - 235,
+            });
+    }
+
+
+    function SubmitCard() {
+        var checkss = checkNotNulls();
+        if (checkss) {
+            var data = $("#form1").formSerialize();
+            $.ajax({
+                url: "/PatientManage/HospiterRes/SubmitCard",
+                dataType: "json",
+                async: false,
+                data: { "PatientBasicAndCardInfoVO": data },
+                type: "POST",
+                success: function (req) {
+                    if (req.message == "操作成功") {
+                        $("#gridList").jqGrid('setGridParam', {
+                            postData: { patId: data.patid },
+                        }).trigger('reloadGrid');
+                        if (khpz == "ON") {
+                            $.ajax({
+                                url: "/PatientManage/HospiterRes/GetNewCardNoAndBLH",
+                                data: { khsc: true, blhsc: true },
+                                dataType: "json",
+                                async: false,
+                                cache: false,
+                                success: function (data) {
+                                    $("#cardtype option[value='1']").prop("selected", true);
+                                    $("#kh").attr("disabled", "disabled").css("background-color", "#f1f4f6");
+                                    $('#kh').val(data.kh);
+                                    khvalue = data.kh;
+                                }
+                            });
+                        }
+                        $.modalAlert("操作成功", 'success');
+                    }
+                    else {
+                        $.modalAlert("相同类型不能添加多张卡！", 'warning');
+                    }
+
+                },
+                error: function () {
+                }
+            });
+        }
+
+
+    }
+
+    function CardVoidss(rowid) {
+        var rowdata = $('#gridList').jqGrid('getRowData', rowid);
+        $.modalConfirm("您确定要作废这张卡吗？", function (flag) {
+            if (flag) {
+                $.ajax({
+                    url: "/PatientManage/HospiterRes/CardVoids",
+                    dataType: "json",
+                    async: false,
+                    data: { "CardId": rowdata.CardId },
+                    type: "POST",
+                    success: function (req) {
+                        if (req.message == "作废成功") {
+                            $("#gridList").jqGrid('setGridParam', {
+                                postData: { patId: rowdata.patId },
+                            }).trigger('reloadGrid');
+                            $.modalAlert("作废成功", 'success');
+                        }
+
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        });
+
+
+    }
+
+
+    function checkNotNulls() {
+        //姓名
+        var xm = $("#xm").val();
+        if (!xm) {
+            $.modalAlert("请填写姓名！", 'warning');
+            return false;
+        }
+
+        //病人性质
+        var brxzmc = $("#brxzmc").val();
+        if (!brxzmc) {
+            $.modalAlert("请选择病人性质！", 'warning');
+            return false;
+        }
+
+        //卡号
+        var khs = $("#kh").val();
+        if (!khs) {
+            $.modalAlert("请输入卡号！", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    $("#brxzmc").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 300,
+        clickautotrigger: true,
+        filter: function (keyword) {
+            debugger;
+            //遍历数据源，用keyword来筛选出结果
+            var resultObjArr = new Array();
+            $.each(top.window.clients.sysPatientNatureList, function (idx, val) {
+                if ((val.py && val.py.toLowerCase().indexOf(keyword.toLowerCase()) >= 0) ||
+                    keyword.trim() == "" ||
+                    (val.brxzmc && val.brxzmc.toLowerCase().indexOf(keyword) >= 0)) {
+                    resultObjArr.push(val);
+                }
+            });
+            return resultObjArr;
+
+        },
+        caption: "病人性质",
+        colModel: [
+            { label: '编码', name: 'brxz', widthratio: 25 },
+            { label: '名称', name: 'brxzmc', widthratio: 25 },
+            { label: '拼音', name: 'py', widthratio: 25 }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            if ($thistr.attr('data-brxz') === "8") {
+                //判断是否需要读卡
+                if ($("#xnhylzh").val() === "" || $("#xnhgrbm").val() === "") {
+                    $.modalAlert("新农合病人请先读卡！", 'error');
+                    return;
+                }
+            }
+            $("#brxz").val($thistr.attr('data-brxz'));
+            $("#brxzmc").val($thistr.attr('data-brxzmc'));
+            return;
+        }
+    });
+
+    ////医保业务
+    function ReadCardCall(readCardObj) {
+        $.loading(false);
+        debugger;
+        if (!!readCardObj.cardInfo2.psn_type) {
+            var ybklx = $('#readCardCardType').val();
+            //$('#cardtype').val(ybkCardType);
+            $('#kh').val(readCardObj.yibaoCardInfo.kh);
+            var rylbmc = $.enum.getDescByValue("EnumRylb", readCardObj.cardInfo2.psn_type);
+            $("#cblbmc").val(rylbmc);
+            $("#cblb").val(readCardObj.cardInfo2.psn_type);
+            $("#xzlx").val(readCardObj.cardInfo2.insutype);
+            $("#grbh").val(readCardObj.cardInfo1.psn_no);
+            $("#cbdbm").val(readCardObj.cardInfo2.insuplc_admdvs);
+            var ybPatInfo2 = readCardObj.yibaoCardInfo.output.insuinfo[0];//参保信息
+            if (!!ybPatInfo2.insuplc_admdvs && ybPatInfo2.insuplc_admdvs.substring(0, 2) == "50") {
+                $('#dybh').val("0");
+            } else {
+                $('#dybh').val("1");
+            }
+            $("#cardtype").val(@((int)EnumCardType.YBJYK));
+            var resultObjArr = new Array();
+            $.each(top.window.clients.sysPatientNatureList, function (idx, val) {
+                if (val.xzlx && val.xzlx == ybPatInfo2.insutype) {
+                    resultObjArr.push(val);
+                }
+            });
+            if (!!resultObjArr) {
+                if (resultObjArr.length == 0) {
+                    var instype = "";
+                    instype = ybPatInfo2.insutype;
+                    $.ajax({
+                        url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
+                        data: { xzlx: instype },
+                        dataType: "json",
+                        async: false,
+                        cache: false,
+                        success: function (data) {
+                            if (!!data) {
+                                $("#brxzmc").val(data.brxzmc).attr("data-label", data.brxz);
+                            }
+                            else {
+                                $("#brxzmc").val('普通医保').attr("data-label", '11');
+                            }
+                        }
+                    });
+                }
+                else {
+                    $("#brxzmc").val(resultObjArr[0].brxzmc).attr("data-label", resultObjArr[0].brxz);
+                }
+
+            }
+            else {
+                $("#brxzmc").val('普通医保').attr("data-label", '11');
+            }
+        }
+    }
+</script>
+

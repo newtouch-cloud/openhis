@@ -1,0 +1,185 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<script src="~/Content/js/bootstrap-multiselect.js"></script>
+<link href="~/Content/js/bootstrap-multiselect.css" rel="stylesheet" />
+<style>
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+</style>
+<form name="form1">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+
+                <th class="formTitle">诊断名称：</th>
+                <td class="formValue">
+                    <input id="zdmc" type="text" class="form-control" style="float:left;" />
+                </td>
+                <th class="formTitle">模板权限：</th>
+                <td class="formValue">
+                    <select class="form-control" id="selmbqx" style="width:60px;">
+                        <option value="1" selected="selected">个人</option>
+                        <option value="2">科室</option>
+                    </select>
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_add" class="btn btn-primary btn-md" style="margin-left: 10px;" value="添加常用诊断" />
+                </td>
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+        <div class="gridPanel">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+</form>
+<script>
+    $(function () {
+        //查询列表
+        gridList();
+    });
+    $("#zdmc").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 600,
+        clickautotrigger: true,
+        url: "/NurseManage/WardMaintenance/GetryzdSelect",
+        ajaxparameters: function () {
+            return "ryzd=" + $("#zdmc").val() + "&ybnhlx=" + "";
+        },
+        caption: "常用诊断",
+        colModel: [
+            { label: '名称', name: 'zdmc', widthratio: 60 },
+            { label: '拼音', name: 'py', widthratio: 20 },
+            { label: 'icd10', name: 'icd10', widthratio: 20 },
+            { label: '编号', name: 'zdbh', hidden: true },
+            { label: '内码', name: 'zdnm', hidden: true }
+        ],
+        itemdbclickhandler: function ($this) {
+            $("#zdmc").val($this.attr('data-zdmc')).attr('data-zdCode', $this.attr('data-zdbh')).attr('data-icd10', $this.attr('data-icd10')).attr('data-py', $this.attr('data-py'));
+        }
+    });
+    //预约信息查询
+    function gridList() {
+        var $gridJsList = $("#gridList");
+        $gridJsList.dataGrid({
+            postData: { type: "1", keyword: $("#zdmc").val(), lx: $("#selmbqx").val()},
+            height: $(window).height() - 160,
+            width: "100px",
+            url: "/MedicalRecord/GetDiagsAdmin",
+            colModel: [
+                { label: 'Id', name: 'Id', width: 80, align: 'center', hidden: true },
+                { label: '编码', name: 'cyzdbm', width: 80, align: 'center' },
+                { label: '诊断名称', name: 'cyzdmc', width: 300, align: 'left' },
+                { label: '权限', name: 'isgr', width: 100, align: 'left' },
+                { label: '拼音', name: 'py', width: 150, align: 'left' },
+                { label: 'ICD10', name: 'icd10', align: 'left', width: 150 },
+                { label: '操作1', name: 'action', align: 'left', width: 100, formatter: function (val) { return "<input class='btn btn-default btn-md btn_add' type='button' value='删除诊断' onclick='deleteRow($(this).parent().parent().attr(\"Id\"))'/>"; } },
+            ],
+            pager: "#gridPager",
+            sortname: " cyzdbm asc",
+            rownumbers: true,  //是否显示序号
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: { type: "1", keyword: $("#zdmc").val(), lx: $("#selmbqx").val() },
+                url: "/MedicalRecord/GetDiags",
+            }).trigger('reloadGrid');
+        });
+        $("#btn_add").click(function () {
+            if ($("#zdmc").val() == null || $("#zdmc").val() == "" || $("#zdmc").attr('data-zdCode') == null || $("#zdmc").attr('data-zdCode')== "") {
+                $.modalMsg("请选择诊断进行添加！", 'error');
+                return;
+            }
+            AddDiags();
+        });
+    }
+    function deleteRow(rowid) {
+        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+        if (rowData == null) {
+            $.modalMsg("未找到当前行", 'error');
+        }
+        $.ajax({
+            url: "/DiagnosticTemplate/DelDiagnosticTemplate",
+            data: {
+                Id: rowData.Id,
+            },
+            type: "POST",
+            success: function (data) {
+                $("#btn_search").click();
+            }
+        });
+    }
+    function AddDiags() {
+        var zdtable =  "zdmc";
+        var zdmc = $('#' + zdtable ).val();
+        var zdbm = $('#' + zdtable ).attr('data-zdCode');
+        var icd = $('#' + zdtable ).attr('data-icd10');
+        var py = $('#' + zdtable ).attr('data-py');
+        if (zdmc != "" && zdbm != "" && zdmc != undefined && zdbm != undefined) {
+            $.ajax({
+                url: "/MedicalRecord/SubmitDiag",
+                dataType: "JSON",
+                async: false,
+                data: { "zdmc": zdmc, "zdbm": zdbm, "type": "1", "icd": icd, "py": py, "qxkz": $("#selmbqx").val() },
+                type: "POST",
+                success: function (req) {
+                    if (req.message == "添加成功") {
+                        $.modalAlert("添加成功", 'success');
+                        newtouch_globalevent_f4();
+                        $("#btn_search").click();
+                    }
+                    else {
+                        $.modalAlert("添加失败或已重复", 'warning');
+                    }
+                },
+                error: function () {
+                }
+            });
+        }
+        else {
+            $.modalAlert("请选择诊断", 'warning');
+        }
+
+    }
+</script>

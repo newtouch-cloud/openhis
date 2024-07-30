@@ -1,0 +1,401 @@
+﻿@using Newtouch.OR.ManageSystem.Infrastructure
+@using Newtouch.Tools
+
+@{
+    ViewBag.Title = "手术排班";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .container {
+        background-color: #ffffff !important;
+        height: 100vh; /*元素的高度与 window 的高度相同*/
+        width: 99%;
+    }
+
+    .tableth {
+        background-color: #e2eef1;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+    }
+    .btn{
+        font-weight:bold;
+        padding-left:15px;
+        padding-right:15px;
+    }
+
+    /*    .table {
+        margin: 30px 5px 0px 5px;
+        background-color: #ededfc;
+        border-bottom-right-radius: 5px;
+        border-bottom-left-radius: 5px;
+    }*/
+    /*解决设置表头列宽无效*/
+    /* #table{
+            table-layout: fixed;
+        }*/
+    /*解决固定表头后,表头与表内容不对齐*/
+    .table_list_box {
+        table-layout: fixed !important;
+    }
+
+    .fixed-table-header {
+        border-right: solid 1px #ddd;
+        border-top: solid 1px #ddd;
+    }
+
+        .fixed-table-header table {
+            border-top: solid 0px #ddd !important;
+            margin-top: -1px;
+        }
+    .input-wrap {
+        max-width: 100px;
+    }
+
+        .input-wrap input {
+            width: 100%;
+            overflow-wrap: break-word;
+        }
+    .btnopr {
+        margin: 2px 3px;
+    }
+</style>
+<div class="container">
+    <div class="row" style="height:99%;">
+        <div class="col-sm-12" style="height:100%;">
+            <div class="row toolbar" id="toolbar" style="height: 5%; width: 99%;">
+                <table class="form">
+                    <tr>
+                        <td class="formTitle">手术日期：</td>
+                        <td class="formValue" colspan="2">
+                            <input id="txt_ksrq" type="text" class="form-control input-wdatepicker" style="float:left;width:45%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-01")">
+                            <span style="float:left;">_</span>
+                            <input id="txt_jsrq" type="text" class="form-control input-wdatepicker" style="float:left;width:45%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.AddMonths(1).ToString("yyyy-MM-dd")">
+                        </td>
+                        <td class="formTitle">手术状态：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <select class="form-control" id="sszt" data-enumtype="EnumSSzt">
+                                <option value="">===全部===</option>
+                            </select>
+                        </td>
+                        <td class="formTitle">病区：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="bqlist" name="bqlist" class="form-control " style="float:left;">
+                                <option value=""> ==请选择== </option>
+                            </select>
+                        </td>
+                        <td class="formTitle"></td>
+                        <td class="formValue"></td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">患者姓名/住院号：</th>
+                        <td class="formValue" colspan="2">
+                            <input id="txt_keyword" name="txt_keyword" class="form-control" />
+                        </td>
+                        <td class="formTitle">主刀医生：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <input id="stafflist" value="undefined" type="hidden" />
+                            <input id="staffname" attr-code="" attr-zjm="" name="staffname" type="text" class="form-control required" autocomplete="off" />
+
+                        </td>
+                        <td class="formTitle">手术室：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="roomlist" name="roomlist" class="form-control ">
+                                <option value=""> ==请选择== </option>
+                            </select>
+                        </td>
+                        <td class="formTitle"></td>
+                        <td class="formTitle">
+                            <a class="btn btn-primary btn-md btn-block" id="btn_search" value=""><i class="fa fa-search"></i> 查 询</a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <table class="table" id="tabel_sspb" style="width:99%;"></table>
+        </div>
+    </div>
+</div>
+@*<div class="panel">
+        <div class="panel_body" style="margin-left: 15px;">
+
+            <div>
+                <div class="row toolbar" id="toolbar"></div>
+                <table id="gridList"></table>
+            </div>
+        </div>
+    </div>*@
+<script>
+	$(function() {
+        TableInit();
+		$("#bqlist").bindSelect({
+			url: "/Operation/Common/Getbqlist",
+			id: "bqcode",
+			text: "bqmc"
+		});
+		$("#roomlist").bindSelect({
+			url: "/Operation/Common/GetRoomlist",
+			id: "Code",
+			text: "Name",
+			minimumResultsForSearch: 0
+		});
+		$("#staffname").staffFloatingSelector({
+			organizeId: '',
+			width: 200,
+			itemdbclickhandler: function($this) {
+				$("#staffname").val($this.attr('data-name')).attr("attr-code", $this.attr('data-id'))
+					.attr("attr-zjm", $this.attr('data-zjm'));
+				var name = $("#stafflist").val($this.attr('data-name')).val();
+				var code = $("#stafflist").val($this.attr('data-code')).val();
+				$("#staffname").html(name);
+				$("#stafflist").html(code);
+			}
+        });
+        $('#btn_search').click(function () {
+            tableRefresh();
+        });
+	});
+
+    function arrangeShow(rowid) {
+        var rowData = $('#tabel_sspb').bootstrapTable("getRowByUniqueId", rowid);
+        keyValue = rowData.Id;
+        var menuname = "手术排班-" + rowData.xm;
+
+        top.top.$.Newtouchtab.addTabWithOutMenu({ name: menuname, enName: "", url: "/Operation/OpArrangement/OperationProcDetail?keyValue=" + keyValue + "&zyh=" + rowData.zyh });
+    //    top.top.$.Newtouchtab.addTabWithOutMenu({ name: menuname, enName: "", url: "/Operation/OpArrangement/ArrangementDetail?keyValue=" + keyValue });
+    }
+    function registOperation(rowid) {
+        var rowData = $('#tabel_sspb').bootstrapTable("getRowByUniqueId", rowid);
+        keyValue = rowData.Id;
+        var menuname = "手术登记";
+        top.top.$.Newtouchtab.addTabWithOutMenu({ name: menuname, enName: "", url: "/Operation/OpRegister/Index?keyValue=" + keyValue + "&zyh=" + rowData.zyh });
+    }
+
+    function arrangeCancel(val) {
+        window.$.modalConfirm("确定要取消吗？", function (flag) {
+            if (!flag) {
+                return false;
+            }
+            return true;
+        });
+        if ($("#gridList").jqGridRowValue() == undefined) {
+			var keyValue = $("#gridList").jqGridRowValue()[val].Id;
+        } else {
+			var keyValue = $("#gridList").jqGridRowValue().Id;
+        }
+        if (!!!keyValue) {
+            window.$.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        window.$.deleteForm({
+            url: "/Operation/OpArrangement/DeleteForm",
+            param: { keyValue: keyValue },
+            success: function () {
+                $.modalMsg("取消成功", "success");
+                $("#gridList").trigger("reloadGrid");
+            }
+        });
+        return true;
+    }
+
+    function getRoom(oproom) {
+        var roomName = "";
+        $.ajax({
+            url: "/Operation/Common/GetRoomlist",
+            data: { Code:oproom},
+            dataType: "json",
+            success: function (data) {
+                roomName= data[0].Name;
+            }
+        });
+        return roomName;
+    }
+
+    function tableRefresh() {
+        $('#tabel_sspb').bootstrapTable('refresh', { queryParams: queryParams });
+    }
+
+    //请求的参数
+    function queryParams(params) {
+        var data = {
+            //每页多少条数据
+            limit: params.limit,
+            //请求第几页
+            offset: params.offset,
+            order: params.order,
+            sort: params.sort,
+            search: params.search,
+            queryParams: {
+                keyword: $("#txt_keyword").val(),
+                ksrq: $("#txt_ksrq").val(),
+                jsrq: $("#txt_jsrq").val(),
+                sszt: $("#sszt option:selected").val(),
+                bq: $("#bqlist option:selected").val(),
+                ysgh: $("#stafflist").val(),
+                room: $("#roomlist option:selected").val()
+            }
+        };
+        return data;
+    }
+    function getPatListTableHeight() {
+        var height = $(window).height() - $('#toolbar').height()-20;
+        return height;
+    }
+    var tableCols = [{
+        field: 'Id',
+        title: 'Id',
+        visible: false
+    }, {
+        field: 'Applyno',
+        title: '申请编号',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+        width: 2,
+        unitWidth: "%",
+    }, {
+        field: 'xm',
+        title: '患者姓名',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+    }, {
+        field: 'xb',
+        title: '性别',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+        //width: 2,
+        //unitWidth: "%",
+        formatter: function (value, row, index) {
+            return $.getGender(row.xb);
+        }
+    }, {
+        field: 'nl',
+        title: '年龄',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }, {
+        field: 'zyh',
+        title: '住院号',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }, {
+        field: 'bq',
+        title: '病区',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }, {
+        field: 'ch',
+        title: '床号',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }, {
+        field: 'zd',
+        title: '诊断',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+    }, {
+        field: 'sqzt',
+        title: '手术状态',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+        formatter: function (value, row, index) {
+            if (row.sqzt == @((int) EnumSSzt.dpb)) {
+                return "待排班";
+            }
+            else if (row.sqzt == @((int) EnumSSzt.ypb)) {
+                return "已排班";
+            }
+            else if (row.sqzt == @((int) EnumSSzt.yzf)) {
+                return "已作废";
+            }
+            else if (row.sqzt == @((int) EnumSSzt.yzx)) {
+                return "已登记";
+            }
+            else {
+                return "待排班";
+            }
+        }
+    }, {
+        field: 'ssmc',
+        title: '手术名称',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+    }, {
+        field: 'sssj',
+        title: '手术时间',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+        formatter: function (value, row, index) {
+            return row.sssj.replace("T", " ");
+        }
+    }, {
+        field: 'ysxm',
+        title: '主刀医生',
+        halign: "center",
+        align: 'center',
+        valign: 'middle'
+    }, {
+        field: '',
+        title: '详情',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+        formatter: function (value, row, index) {
+            if (row.sqzt == '@((int)EnumSSzt.ypb)') {
+                return "<a class='btn btn-info btnopr'  onclick='arrangeShow(\"" + row.Id + "\")'>排班详情</a> <a class='btn btn-default btnopr' onclick='arrangeCancel(\"" + row.Id + "\")'>取消排班</a> <a class='btn btn-warning btnopr' onclick='registOperation(\"" + row.Id + "\")'>登 记</a>";
+            }
+            else if (row.sqzt == '@((int)EnumSSzt.dpb)' || row.sqzt == "" || row.sqzt == null) {
+                return "<a class='btn btn-success btnopr' onclick='arrangeShow(\"" + row.Id + "\")'>排 班</a>";
+            }
+            else if (row.sqzt=='@((int)EnumSSzt.yzx)') {
+                return "<a class='btn btn-info btnopr' onclick='arrangeShow(\"" + row.Id + "\")'>登记详情</a>";
+            }
+            return "";
+        }
+    }];
+    function TableInit() {
+        $('#tabel_sspb').bootstrapTable('destroy').bootstrapTable({
+            url: '/Operation/OpArrangement/GetGridList',
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+            // classes: "table table-bordered table-striped table-hover",
+            search: false,
+            striped: true, //是否显示行间隔色
+            toolbar: '#toolbar',            //工具按钮用哪个容器 #toolbar
+            //toolbarAlign: 'left',
+            uniqueId: "Id",
+            //******分页设置****
+            queryParams: queryParams,
+            pagination: true,                   //是否显示分页（*）
+            pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
+            pageSize: 10,                       //每页的记录行数（*）
+            pageList: [20, 50, 100],            //可供选择的每页的行数（*）
+            paginationHAlign: "left",
+            paginationDetailHAlign: "right",
+            //sortable: true,                     //是否启用排序
+            //sortOrder: "asc",                   //排序方式
+            sidePagination: 'client',           //分页方式：client客户端分页，server服务端分页（*）
+            showPaginationSwitch: false,
+            //******分页设置****
+            //******表格头部设置****
+            showHeader: true,                   //显示表格头部
+            theadClasses: "tableth",        //这里设置表头样式
+            //******表格头部设置****
+            showRefresh: false,//刷新按钮
+            height: getPatListTableHeight(),
+            columns: tableCols,
+            onDblClickRow: function (row, $element, field) {
+                //PatInit(row.zyh);
+
+            },
+        }).bootstrapTable("hideLoading");
+    }
+</script>

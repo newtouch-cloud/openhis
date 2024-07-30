@@ -1,0 +1,168 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .ul-zbq-pat {
+        width: 100%;
+        height: 95%;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .ul-zbq-pat li {
+            margin: 25px 5px 5px 5px;
+            display: inline;
+            float: left;
+            height: 400px;
+            width: 170px;
+            border: 1px solid #ccc;
+            border-radius: 5px 5px 0 0;
+            -webkit-box-shadow: #666 1px 2px 4px;
+            -moz-box-shadow: #666 1px 2px 4px;
+            box-shadow: #666 1px 2px 4px;
+            background: #e0ffff;
+        }
+
+    .tbformth {
+        padding: 5px;
+        font-size: 10px;
+        font-weight: normal;
+    }
+    .tbformtd {
+        padding: 5px;
+        font-size: 10px;
+        /*color: #2e8b57;*/
+    }
+    .tbtransth {
+        background: #2e8b57;
+    }
+
+    .sptxt {
+        font-weight: bold;
+    }
+</style>
+<div>
+    <ul class="ul-zbq-pat">
+        <li>
+            <div class="dv-cwmc" style="text-align: left;">
+                <i class="fa fa-user" aria-hidden="true"></i><span id="sp-cw" style="margin-left: 5px;">基本信息</span>
+            </div>
+            <div>
+                <table>
+                    <tr>
+                        <th class="tbformth">住 院 号</th>
+                        <td class="tbformtd">
+                            <span id="sp-zyh"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">入院日期</th>
+                        <td class="tbformtd">
+                            <span id="sp-ryrq"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">账户余额</th>
+                        <td class="tbformtd">
+                            <span id="sp-yjj" class="sptxt"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">总 费 用</th>
+                        <td class="tbformtd">
+                            <span id="sp-zfy" class="sptxt"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">医保现金支付</th>
+                        <td class="tbformtd">
+                            <span id="sp-ybxjzf" class="sptxt"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">剩 余 额</th>
+                        <td class="tbformtd">
+                            <span id="sp-sye" class="sptxt"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">已结费用</th>
+                        <td class="tbformtd">
+                            <span id="sp-jsfy" class="sptxt"></span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="tbformth">账户报警额</th>
+                        <td class="tbformtd">
+                            <span id="sp-yjjbje" class="sptxt"></span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div style="font-weight: bold; color: #2e8b57;padding:10px 5px 2px 5px;"><span>流转信息</span></div>
+            <div style="padding-left: 5px;">
+                <hr />
+                <table id="div_inpattransList" class="form" style="display:block; overflow: auto; height:200px">                    
+                </table>
+            </div>
+        </li>
+    </ul>
+
+
+</div>
+<script>
+    function patClear() {
+        $("#sp-cw").html("");
+        $("#sp-zyh").html("");
+        $("#sp-yjj").html("");
+        $("#sp-zfy").html("");
+        $("#sp-sye").html("");
+        $("#sp-ryrq").html("");
+        $("#div_inpattransList").html("");
+    }
+
+    function initInpatStu(currentobj) {
+        patClear();
+        $("#sp-cw").html(currentobj.xm + "，" + currentobj.age  + "，" + currentobj.brxzmc);
+        $("#sp-zyh").html(currentobj.zyh);
+        if (!!currentobj.zyh) {
+            $.najax({
+                url: "/PatientList/inpatientBedUsedInfo",
+                data: { zyh: currentobj.zyh },
+                dataType: "json",
+                type: "POST",
+                success: function (data) {
+
+                    $("#sp-yjj").html(data.rows.zhye);
+                    $("#sp-zfy").html(data.rows.zje);
+                    if (currentobj.brxzdm != "0") {
+                        $("#sp-sye").html((data.rows.zhye - data.rows.ybxjzf).toFixed(2));
+                    }
+                    else { 
+                        $("#sp-sye").html((data.rows.zhye - (data.rows.zje-data.rows.yjfy)).toFixed(2));
+                    }
+                    $("#sp-ryrq").html(data.rows.ryrq);
+                    $("#sp-jsfy").html(data.rows.yjfy);
+                    $("#sp-yjjbje").html(data.rows.bje.toFixed(2));
+                    $("#sp-ybxjzf").html(data.rows.ybxjzf.toFixed(2));
+                    if (!!data.rows.patTransList && data.rows.patTransList.length > 0) {
+                        var trhtml = "";
+                        for (var i = 0; i < data.rows.patTransList.length; i++) {
+                            var stu = $.enum.getDescByValue("EnumCwjlzt", data.rows.patTransList[i].Status);
+                            trhtml += "<tr style=\"display: block; overflow: auto;height:58px;\"><td>" + data.rows.patTransList[i].CreateTime + "" +
+                                "<br /><u style=\"color:red;\">"
+                                + data.rows.patTransList[i].BedNo + "</u> - " + data.rows.patTransList[i].WardName + " - " + data.rows.patTransList[i].DeptName + "</td></tr>"
+                        }
+
+                        $("#div_inpattransList").append(trhtml);
+                    }
+                }
+            });
+        }
+
+
+    }
+
+</script>

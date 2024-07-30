@@ -1,0 +1,174 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "医生绑定";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1" autocomplete="off">
+    <div class="panel panel-default" style="padding-right:10px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">医生分类：</th>
+                <td class="formValue">
+                    <select id="sel_doctorType" name="sel_doctorType" class="form-control required" data-EnumType="EnumYslx">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">医生姓名：</th>
+                <td class="formValue">
+                    <input id="txt_doctor" name="txt_doctor" type="text" class="form-control required" />
+                </td>
+            </tr>
+            @*<tr>
+                    <th class="formTitle">备注：</th>
+                    <td class="formValue">
+                        <textarea id="Description" name="Description" class="form-control" style="height: 60px;"></textarea>
+                    </td>
+                </tr>*@
+        </table>
+        @Html.Partial("_MiddleButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+   {
+       ShowKeyList = new[] { 2 },
+       F2Text = "添加"
+   })
+        <div class="gridPanel">
+            <table id="gridDoctorList"></table>
+        </div>
+    </div>
+</form>
+<script lang="javascript">
+    $(function () {
+        GetBedDocs();
+
+    })
+    function GetBedDocs() {
+        $.najax({
+            type: "GET",
+            url: "/NurseManage/WardMaintenance/GetBedDocs?r="+Math.random(),
+            data: { zyh: '@ViewBag.zyh' },
+            dataType: "json",
+            success: function (xmlist) {
+                $('#gridDoctorList').jqGrid("clearGridData");
+                $('#gridDoctorList').newtouchLocalDataGrid(null, xmlist);
+            }
+        })
+    }
+
+    $("#txt_doctor").dutyStaffFloatingSelector({
+        dutyCode: 'Doctor'
+    });
+    function clearData()
+    {
+        $("#txt_doctor").val("");
+        $("#txt_doctor").attr("data-StaffGh","");
+    }
+
+    //添加
+    function newtouch_event_f2() {
+        var dataobj={
+            Id: newGuid(),
+            ysgh:$("#txt_doctor").attr("data-StaffGh"),
+            Type:$("#sel_doctorType").val(),
+            ysmc:$("#txt_doctor").val(),
+            TypeName:$("#sel_doctorType").find("option:selected").text()
+        };
+
+        if ($("#sel_doctorType").val() == "1") {
+            var ishy = getDocIsZTYS();
+            if (ishy) {
+                $.modalAlert("该患者已经有住院医生，不可再添加！", 'warning');
+            }
+            else {
+                $("#gridDoctorList").jqGrid("addRowData", undefined, dataobj, "last");
+                clearData();
+            }
+            
+        }
+        else {
+            $("#gridDoctorList").jqGrid("addRowData", undefined, dataobj, "last");
+            clearData();
+        }
+        //clearData();
+    }
+
+    function getDocIsZTYS()
+    {
+        var sfhy = false;
+        var rowIds = $("#gridDoctorList").jqGrid('getDataIDs');
+        var obj = $("#gridDoctorList").jqGrid('getRowData');
+        obj.push($("#gridDoctorList").jqGrid('getRowData', rowIds[rowIds.length - 1]));
+        $.each(obj, function (n, item) {
+            if (item.Type == "1") {
+                sfhy = true;
+            }
+        })
+        return sfhy;
+    }
+
+    $("#gridDoctorList").newtouchLocalDataGrid({
+        height: 145,
+        unwritten: false,
+        colModel: [
+            { label: "Id", name: "Id", hidden: true },
+            { label: "ysgh", name: "ysgh", hidden: true },
+            { label: "Type", name: "Type", hidden: true },
+            { label: "医生姓名", name: "ysmc", width: 150, align: "center" },
+            { label: "医生分类", name: "TypeName", width: 150, align: "left" },
+            {
+                label: "操作",
+                name: "doctorGh",
+                width: 50,
+                align: "center",
+                formatter: function (cellvalue) {
+                    return "<a href=\#\" onclick='DeleteDoctors($(this).parent().parent().attr(\"id\"))'' title='删除' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>删除</a>";
+                }
+            }
+        ]
+    });
+
+    //删除医生
+    function DeleteDoctors(selRowId) {
+        if (!!selRowId) {
+            $("#gridDoctorList").jqGrid("delRowData", selRowId);
+        }
+    }
+    function newGuid() {
+        var guid = "";
+        for (var i = 1; i <= 32; i++) {
+            var n = Math.floor(Math.random() * 16.0).toString(16);
+            guid += n;
+            if ((i === 8) || (i === 12) || (i === 16) || (i === 20))
+                guid += "-";
+        }
+        return guid;
+    }
+    function SavaBindDocs() {
+        //if (!$('#form1').formValid()) {
+        //    return false;
+        //}
+        var ishy = getDocIsZTYS();
+        if (!ishy) {
+            $.modalAlert("请先选择住院医生！", 'warning');
+            return;
+        }
+        var rowIds = $("#gridDoctorList").jqGrid('getDataIDs');
+        var gridData = $("#gridDoctorList").jqGrid('getRowData');
+        gridData.push($("#gridDoctorList").jqGrid('getRowData', rowIds[rowIds.length - 1]));
+        for (var i = 0; i < gridData.length; i++) {
+            gridData[i]["undefined"] = "";
+        }
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/WardMaintenance/SavaBindDocs",
+            data: { mxList: gridData,zyh:'@ViewBag.zyh' },
+            dataType: "json",
+            async:false,
+            success: function () {
+                $.modalAlert("保存成功", 'warning');
+            }
+        })
+    }
+
+</script>

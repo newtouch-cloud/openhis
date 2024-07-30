@@ -1,0 +1,52 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div role="tabpanel" class="tab-pane fade in col-sm-10" style="padding-top: 20px;padding-bottom: 20px; margin:0 15px 0 5px;height:100%;overflow-y:auto;" id="userRole">
+        <div id="roleList"></div>
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    var orgId = $.request("orgId");
+    $(function () {
+        $.najax({
+            url: "/SysManage/SysRole/GetRoleList?orgId=" + orgId,
+            data: { orgId: orgId, userId: keyValue },
+            dataType: "json",
+            success: function (data) {
+                $('#roleList').treeview({
+                    color: "#428bca",
+                    showCheckbox: true,
+                    nodeIcon: 'fa fa-user',
+                    data: data,
+                    selectedBackColor:"#ffffff",
+                    selectedColor: "#428bca",
+
+                });
+                var selectNodes = data.filter(p => p.selected == true).map(item => item.text);
+                $.each(selectNodes,function(e){
+                    var find = getCheckableNodes($('#roleList'), this);
+                    checkNodes($('#roleList'), find, true);
+                });
+               
+            }
+        });
+    });
+
+    function AcceptClick(callBack) {
+        var postData = {};
+        postData["organizeId"] = orgId;
+        postData["roleList"] = ($("#roleList").treeview("getChecked").map(item => item.href));
+        $.submitForm({
+            url: "/SysManage/User/UpdateUserRole?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                callBack();
+                $.modalClose();
+            }
+        })
+    }
+</script>

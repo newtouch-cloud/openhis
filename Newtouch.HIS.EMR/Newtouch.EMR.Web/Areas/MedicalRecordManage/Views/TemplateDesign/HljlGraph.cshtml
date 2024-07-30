@@ -1,0 +1,501 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "HljlGraph";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+ 
+    .form-control {
+        /*width: 100% !important;*/
+        height: 100% !important;
+        padding: 0px !important;
+        
+    }
+ 
+ 
+    .ui-jqgrid tr.jqgrow td {
+        white-space: normal !important;
+        vertical-align: text-top;
+        padding-top: 2px;
+        word-break: break-all;
+    }
+    th.ui-th-column div {
+        white-space: normal !important;
+        height: auto !important;
+        padding: 0px;
+    }
+    
+
+</style>
+<div class="panel">
+    <div class="panel-body dv-body">
+        <div id="Infodiv" style="font-size:14px;color:#56cc99;">
+            <table class="form">
+                <tr>
+                    <td id="xm" class="formValue" colspan="2"><span class="glyphicon glyphicon-user"></span><label id="xmlb" style="font-weight:bold;font-size:18px;padding-left:5px;"></label><span id="xb"></span></td>
+                    <td id="zyh" class="formValue"><label>住院号：</label><label id="zyhlb"></label></td>
+                    <td class="formValue"><label>床号：</label><span id="sp_cw"></span></td>
+                    <td class="formValue" colspan="2"><label>诊断：</label><span id="sp_zd"></span></td>
+                    <td id="ks" class="formValue" colspan="2"><label>科室：</label><label id="kslb"></label></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+        <hr />
+        <table class="form">
+            <tr>
+                <th class="formTitle">记录范围：</th>
+                <td class="formValue" style="height:30px;" colspan="2">
+                    <input id="txt_ksrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:40%;float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { LoadGrid()}})" value="@DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd")" />
+                    <span style="padding:15px 15px;">_</span>  <input id="txt_jsrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:40%;float:right;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { LoadGrid() } })" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formValue" colspan="3">
+                    <div id="dv_prew">
+                        <a id="Printbl" class="btn btn-primary" style="padding-left:5px;" onclick="Printbl()">
+                            <i class="glyphicon glyphicon-print"></i> 预览打印
+                        </a>
+                        <a id="a_edit" class="btn btn-primary" style="display:none;" onclick="BtnEdit()">
+                            <i class="fa fa-pencil-square-o"></i> 编辑
+                        </a>
+                        <span id="a_tipshow"  class="btn btn-default" style="display:none;"></span>
+                    </div>
+                </td>
+                <td class="formValue" colspan="3">
+                    <div id="dv_tj" style="float:right;padding-right:20px;">
+                        <a id="tjyh" class="btn btn-default" onclick="addTCMRowData()">
+                            F6:新增行
+                        </a>
+                        <a id="btn_submitrow" class="btn btn-default" style="margin-left:5px;" onclick="BtnSubmit(1,null)">
+                            F2:保存更新
+                        </a>
+                        @*<a id="BtnSubmit" class="btn btn-default" style="margin-left:5px;" onclick="BtnSubmit()">
+                            F3:全部更新
+                        </a>*@
+                        <a id="btn_back" class="btn btn-primary" style="margin-left:5px;" onclick="editover()">
+                            返回
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="gridPanel" id="ZD">
+            <table id="gridList" style="border:1px solid #56cc99;"></table>
+            <div id="gridPager"></div>
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script>
+    $(".dv-body").height($(window).height()-50);
+    $(".dv-body").width($(window).width());
+    
+    var orgId = "@ViewBag.OrgId";
+    var ReportServerHOST = "@ViewBag.ReportServerHOST";
+    var OrganizeId = "@ViewBag.OrganizeId";
+   
+    var zyh = $.request("zyh");
+    var blId = $.request("blId");
+    var mbbh = $.request("mbbh");
+
+    var totals = "";
+    var lastiRow;
+    var lastiCol;
+
+    $(function () {
+        $(window).resize(function () {
+            $(".dv-body").height($(window).height() - 50);
+            $(".dv-body").width($(window).width());
+        });
+        window.hljlView = true;
+        document.onkeydown = hotkey; //当onkeydown 事件发生时调用hotkey函数
+        HljlCtrlQx(blId,mbbh);
+        pageInit();        
+        $("#dv_tj").hide();
+        Infodiv(zyh);
+        totals = $("#gridList").jqGrid('getGridParam', 'records');
+        
+    });
+    function pageInit() {
+        jQuery("#gridList").dataGrid({
+            postData: { zyh: zyh, blId: blId, kssj: $("#txt_ksrq").val(), jssj: $("#txt_jsrq").val(), mbbh: mbbh },
+            url: "/MedicalRecordManage/TemplateDesign/HljlLoadData",
+            height: $(window).height() - 200,
+            datatype: "json",
+            colModel: [
+                { label: "Id", name: "Id", width: 60, hidden: true },
+                { label: "blId", name: "blId", width: 60, hidden: true },
+                {
+                    label: '记录<br />日期', name: "jlwzsj", width: 100, editwidth: '100%',
+                    align: 'center',
+                    editable: true, formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' },
+                    editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'click',
+                                fn: function (e) {
+                                    $(this).find('input[type=text]').addClass("input-wdatepicker");
+                                    WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { } });
+                                }
+                            }
+                        ]
+                    },
+                    formatter: function (cellvalue, options, cell) {
+                        return (typeof (cellvalue) == "undefined") ? "" : cellvalue;
+                    }
+                },
+               
+                {
+                    label: "时间<br />备注", name: 'jlrq', align: 'center', width: 50, editable: true,
+                    align: 'center',
+                    editable: true, formatter: "date",
+                    formatoptions: { srcformat: 'H:m:s', newformat: 'H:m:s' },
+                    editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'click',
+                                fn: function (e) {
+                                    $(this).find('input[type=text]').addClass("input-wdatepicker");
+                                    WdatePicker({ dateFmt: 'HH:mm:ss', onpicked: function () { } });
+                                }
+                            }
+                        ]
+                    },
+                    formatter: function (cellvalue, options, cell) {
+                        return (typeof (cellvalue) == "undefined") ? "" : cellvalue;
+                    }
+                },
+                { label: "体温<br />℃", name: 'tw', align: 'center', width: 40, editable: true},
+                { label: "脉搏<br />次/分", name: 'mb', align: 'center', width: 30, editable: true }
+                , { label: "呼吸<br />次/分", name: 'hx', align: 'center', width: 30, editable: true},
+                { label: "血压<br />mmHg", name: 'xy', align: 'center', width: 60, editable: true },
+                { label: "氧饱和度 %", name: 'ybhd', align: 'center', width: 40, editable: true },
+                { label: "持续<br />心电监测", name: 'cxxdjc', align: 'center', width: 50, editable: true },
+                { label: "吸氧<br />L/分", name: 'xroyx', align: 'center', width: 30, editable: true },
+                { label: "基护<br />级别", name: 'hljb', align: 'center', width: 50, editable: true },
+                { label: "协助<br />进食/水", name: 'xzjs', align: 'center', width: 50, editable: true },
+                { label: "拍背及<br />有效咳痰", name: 'pbjyxkt', align: 'center', width: 60, editable: true },
+                { label: "压疮预防", name: 'ycyf', align: 'center', width: 50, editable: true },
+                { label: "跌倒预防", name: 'ddyf', align: 'center', width: 50, editable: true },
+                { label: "其他基护", name: 'qtjh', align: 'center', width: 50, editable: true },
+                { label: "专科护理", name: 'zkhl', align: 'center', width: 50, editable: true },
+                { label: "导管分类<br />/措施", name: 'dglb', align: 'center', width: 60, editable: true },
+                { label: "护理<br />指导", name: 'hlzd', align: 'center', width: 50, editable: true },
+                { label: "尿量<br />ml", name: 'nl', align: 'center', width:30, editable: true },
+                { label: "胃液<br />ml", name: 'wy', align: 'center', width: 30, editable: true },
+                {
+                    label: "病情观察/护理措施效果", name: 'bqhlcontent', width: 350, editable: true, edittype: "textarea",
+                    editoptions:
+                    {
+                        rows: 5,
+                    }
+                },
+                { label: "签名", name: 'hsqm', align: 'center', width: 80, editable: true },
+                    { label: "zt", name: 'zt', width: 80, hidden: true, editable: true },
+                    { label: "CreateTime", name: 'CreateTime', width: 80, hidden: true, editable: true },
+                    { label: "CreatorCode", name: 'CreatorCode', width: 80, hidden: true, editable: true },
+                    { label: "LastModifyTime", name: 'LastModifyTime', width: 80, hidden: true, editable: true },
+                    { label: "LastModifierCode", name: 'LastModifierCode', width: 80, hidden: true, editable: true },
+                { label: "OrganizeId", name: 'OrganizeId', width: 80, hidden: true, editable: true },
+                {
+                    label: "操作", name: 'caozuo', width: 150, hidden: true, formatter(val, option, row) {
+                        var ht = "";
+                        if (!!row.Id) {
+                            ht = "<input class='btn btn-default btn-md btn_add' type='button' value='更新' onclick='updRowData($(this).parent().parent().attr(\"id\"))'/> <input class='btn btn-default btn-md btn_del' type='button' value='删除' onclick='deletesubmit($(this).parent().parent().attr(\"id\"))'/>";
+                        }
+                        else {
+                            ht = "<input class='btn btn-default btn-md btn_del' type='button' value=' ━ ' title='移除行' onclick='deleteRowData($(this).parent().parent().attr(\"id\"))'/> <input class='btn btn-default btn-md btn_add' type='button' value=' ✚ ' title='新增行' onclick='addRowData($(this).parent().parent().attr(\"id\"))'/> ";
+                        }
+                        return ht;
+
+                    }
+                },
+
+            ],
+            rowNum: 10000,
+            pager: "#gridPager",
+            sortname: 'jlwzsj,jlrq ',
+            shrinkToFit: false,
+            autowidth: true,
+            viewrecords: true,
+            rownumbers: true,
+            cellsubmit: 'clientArray',
+            loadonce: true,
+            afterSaveCell: function (rowid, name, val, iRow, iCol) {
+                var amtval = jQuery("#gridList").jqGrid('getCell', rowid, iCol);
+                jQuery("#gridList").jqGrid('setRowData', val, { name:parseFloat(amtval) });
+
+                lastiRow = iRow;
+                lastiCol = iCol;
+            },
+            unwritten: false,
+            cellEdit: false
+        });
+        
+    }
+
+
+
+    (function ($) {
+        $.jgrid && $.jgrid.extend({
+            // 表格编辑完，数据保存完后，编辑状态还在，调用该方法清除该状态。
+            acceptChangedCells: function () {
+                this.each(function () {
+                    var $t = this;
+                    $($t.rows).each(function (j) {
+                        if ($(this).hasClass("edited")) {
+                            $(this).removeClass('edited');
+                            $('td.success', this).removeClass('success');
+                        }
+                    });
+                });
+            },
+            endEdit: function () {
+                var $cell = this.find(" .edit-cell");
+                if ($cell.length > 0) {
+                    var iRow = $cell.closest("tr").index(), iCol = $cell.index();
+                    // $("#orders").jqGrid("validationCell", $cell, "hhhh", iRow, iCol);
+                    this.jqGrid("saveCell", iRow, iCol);
+                }
+            }
+        });
+    })(jQuery);
+
+    
+
+    function LoadGrid(edit) {
+        if (!edit) {
+            edit = false;
+        }
+        if (window.hljlView == false) {
+            edit = true;
+        }
+        var postData = { zyh: zyh, blId: blId, kssj: $("#txt_ksrq").val(), jssj: $("#txt_jsrq").val(), mbbh: mbbh };
+        jQuery("#gridList").jqGrid('setGridParam', {
+            postData: postData,
+            datatype: "json",
+            cellEdit: edit,
+        }).trigger('reloadGrid');
+    }
+
+    function addTCMRowData() {
+
+        addRowData();
+    }
+
+    function updRowData(rowid) {
+        BtnSubmit(null, rowid);
+    }
+    function deleteRowData(selRowId) {
+        if (!!selRowId) {
+            $("#gridList").jqGrid("delRowData", selRowId);
+        }
+    }
+    function deletesubmit(rowid) {
+        var row = $("#gridList").getRowData(rowid);
+        $.najax({
+            url: "/MedicalRecordManage/TemplateDesign/DelRecords",
+            data: { Id: row.Id },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                if (!!data && data.state == "success") {
+                    $.modalMsg("删除成功", 'success');
+                }
+                else {
+                    $.modalMsg(data.message, 'error');
+                }
+                LoadGrid(true);
+            }
+        });
+    }
+    function addRowData() {
+        window.hljlView = false;
+        var rowData = $("#gridList").jqGrid('getGridParam', 'records');
+        var dataRow = {
+            jlwzsj:"@DateTime.Now.ToString("yyyy-MM-dd")",
+            blId: "" + blId + ""
+           
+        };
+
+        $("#gridList").jqGrid("addRowData", rowData + 1, dataRow, "last");
+        $("#gridList").jqGrid('saveRow', rowData + 1);
+        $("#gridList").jqGrid("setGridParam", {
+            cellEdit: true,
+        });
+    }
+
+
+    function BtnSubmit(type, rowid) {
+        $("#gridList").jqGrid("endEdit");
+        var rows = $("#gridList").jqGrid("getChangedCells");
+
+        $("#gridList").jqGrid("saveCell", lastiRow, lastiCol);
+
+        //初始化一个数组arrayData容器，用来存放rowData
+        var arrayData = new Array();
+        if (!!rowid) {
+            var row = $("#gridList").getRowData(rowid);
+            if (row.jlwzsj == null || row.jlwzsj == '' || !row.jlrq) {
+                $.modalAlert("记录日期及时间备注不可为空", 'warning');
+                return;
+            }
+            arrayData.push(row);
+        }
+        else if (rows.length > 0) {            
+            for (var i = 0; i < rows.length; i++) {
+                var rowData = $("#gridList").getRowData(rows[i].rn);
+                if (rowData.jlwzsj == null || rowData.jlwzsj == '' || !rowData.jlrq) {
+                    $.modalAlert("记录日期及时间备注不可为空", 'warning');
+                    return;
+                }
+                arrayData.push(rowData);             
+            }
+        }
+        
+        
+        if (arrayData.length == 0) { $.modalMsg('未找到待提交的记录', 'warning'); return; }
+        
+        $.ajax({
+            url:"/MedicalRecordManage/TemplateDesign/BtnSubmit",
+            dataType: "text",
+            async: false,
+            data: { "data": arrayData, mbbh: mbbh, zyh: zyh, totals: totals},
+               type:"POST",
+            success: function (req) {
+                $.modalMsg('提交成功', 'success');
+                editover();
+               },
+               error:function(){
+                   $.modalMsg('提交失败', 'error');
+               }
+           });
+    }
+
+    var flag = true;
+    function BtnEdit() {
+        window.hljlView = false;
+        jQuery("#gridList").setGridParam().showCol("caozuo").trigger("reloadGrid");
+        $("#gridList").jqGrid("setGridParam", {
+            cellEdit: true,
+        });
+        $("#dv_tj").show();
+        $("#txt_jsrq").attr("disabled", false);
+        $("#Infodiv").show();
+        $("#a_edit").hide();
+
+        //第一次点击编辑时添加一行
+        function once() {
+            if (flag) {
+                addRowData();
+                flag = false;
+            } else {
+                return;
+            }
+        }
+        once();
+        once();     
+    }
+
+    function HljlCtrlQx(blId, mbbh) {
+        $.ajax({
+            url: "/MedicalRecordManage/TemplateDesign/HljlCtrlQx",
+            dataType: "text",
+            async: false,
+            data: { blId: blId, mbbh: mbbh },
+            type: "POST",
+            success: function (data) {
+                if (!!data) {
+                    var json = JSON.parse(data);
+                    if (json.ctrlLevel ==@((int)EnummbqxFp.edit) ) {
+                        $("#a_edit").show();
+                        //if (json.IsLock == 0 || (json.IsLock == 1 && json.LastModifierCode=="")) {
+                        //    $("#a_edit").show();
+                        //}
+                        //else {
+                        //    $("#a_tipshow").show();
+                        //    $("#a_tipshow").html("【工号："+json.LastModifierCode + "】正在编辑中...");
+                        //}
+                        
+                    }
+                }
+            },
+            error: function () {
+                
+            }
+        });
+
+    }
+
+    function Infodiv(zyh) {
+        $.ajax({
+            url: "/MedicalRecordManage/TemplateDesign/Infodiv",
+            dataType: "json",
+            async: false,
+            data: { zyh: zyh },
+            type: "POST",
+            cache: false,
+            success: function (data) {
+                var datas = eval(data)[0];
+                //console.info(datas)
+                $("#xmlb").text(datas.xm);
+                if (!!datas.sex) {
+                    $("#xb").html(" ( "+datas.sex+" ) ");
+                }
+                $("#zyhlb").text(datas.zyh);
+                $("#kslb").text(datas.ks);
+                $("#sp_cw").html(datas.cwmc);
+                $("#sp_zd").html(datas.zd);
+            },
+            error: function () {
+
+            }
+        });
+
+    }
+
+    function Printbl() {
+        var ReportServerHOST = "@ViewBag.ReportServerHOST";
+        var rowIds = $("#gridList").getDataIDs();
+        var blids = $("#gridList").getRowData(rowIds).blId;
+        window.open(ReportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%E4%B8%B4%E5%BA%8A%E6%8A%A4%E7%90%86%E8%AE%B0%E5%BD%95&rs:Command=Render&zyh=" + zyh + "&orgId=" + orgId + "&kssj=" + $("#txt_ksrq").val() + "&jssj=" + $("#txt_jsrq").val() + "&blId=" + blids);
+    }
+    
+    function hotkey() {
+        if (!window.hljlView) {
+            if (window.event.keyCode == "113") {
+                BtnSubmit(1,null);
+            }
+            //else if (window.event.keyCode == "114") {
+            //    BtnSubmit();
+            //}
+            else if (window.event.keyCode == "117") {
+                addRowData();
+            }
+        }
+    } 
+    //编辑结束预览模式
+    function editover() {
+        window.hljlView = true;
+        jQuery("#gridList").setGridParam().hideCol("caozuo").trigger("reloadGrid");
+        LoadGrid();
+        $("#dv_tj").hide();
+        $("#a_edit").show();
+        @*$.ajax({
+            type: "POST",
+            url: "/MedicalRecord/LockRecord",
+            dataType: "json",
+            data: { blid: blId, bllx: '@((int)EnumBllx.hljl)', isToLock: 0 },
+            async: false,
+            success: function (ajaxresp) {
+            }
+        });*@  
+    }
+
+</script>

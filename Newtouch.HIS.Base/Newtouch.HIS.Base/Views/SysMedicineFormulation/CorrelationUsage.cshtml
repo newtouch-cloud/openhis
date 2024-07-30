@@ -1,0 +1,48 @@
+﻿
+@{
+    ViewBag.Title = "CorrelationUsage";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/SysMedicineFormulation/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#div").formSerialize(data);
+                }
+            });
+        }
+    })
+    function initControl() {
+        $("#permissionTree").treeview({
+            height: 180,
+            slimscroll: false,
+            showcheck: true,
+            url: "/SysMedicineFormulation/GetDosageTree",
+            param: { jxCode: keyValue }
+        });
+    }
+    function submitForm() {
+        var postData = $("#div").formSerialize();
+        debugger;
+        postData["yfCode"] = String($("#permissionTree").getCheckedValues());
+        $.submitForm({
+            url: "/SysMedicineFormulation/submitUsage?jxCode=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>
+<div>
+    <div id="permissionTree"></div>
+</div>
+

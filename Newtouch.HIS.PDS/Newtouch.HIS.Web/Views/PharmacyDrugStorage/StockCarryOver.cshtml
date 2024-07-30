@@ -1,0 +1,213 @@
+﻿
+@{
+    ViewBag.Title = "StockCarryOver";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            结转
+        </div>
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle" style="width:50px;">账期：</th>
+                    <td class="formValue">
+                        <select id="ddlZQ1" class="form-control"></select>
+                    </td>
+                    <th class="formTitle" style="width:50px;">结转账期：</th>
+                    <td class="formValue">
+                        <select id="ddlZQ2" class="form-control"></select>
+                    </td>
+                    <th class="formTitle">结转时间：</th>
+                    <td class="formValue" style="width: 150px;">
+                        <input id="txtJZTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">输入码：</th>
+                    <td class="formValue">
+                        <input id="txtSRM" type="text" class="form-control" placeholder="拼音/药品名/药品代码" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary" style="margin-left: 5px; width:70px;" value="查询" />
+                        <input type="button" id="btn_jz" class="btn btn-primary" style="margin-left: 5px;" value="结转" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDrugsList"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        gridDrugsList();//药品信息
+        ddlZQList();//加载账期
+        $("#btn_jz").click(function () {
+            CarryOverMedicine();
+        });
+    });
+
+    //加载账期
+    function ddlZQList() {
+        CheckddlZQList();
+        $("#ddlZQ2").bindSelect({
+            url: "/PharmacyDrugStorage/GetAccountList",
+            id: "accountId",
+            text: "account"
+        });
+    }
+
+    //不可倒叙结转，不可选择已结账期
+    function CheckddlZQList() {
+        $.najax({
+            url: "/PharmacyDrugStorage/GetLastAccountPeriod",
+            dataType: "text",
+            cache: false,
+            success: function (ajaxresp) {
+                $("#ddlZQ1").bindSelect({
+                    url: "/PharmacyDrugStorage/GetAccountList",
+                    id: "accountId",
+                    text: "account"
+                });
+                var array = $("#ddlZQ1 option");
+                var index;
+                for (var i = 0; i < array.length; i++) {
+                    if (array[i].text === ajaxresp) {
+                        index = i;
+                        break;
+                    }
+                }
+                for (var i = 0; i <= index; i++) {
+                    $(array[i]).attr('disabled', 'disabled');
+                }
+                $("#ddlZQ1").select2({ minimumResultsForSearch: -1 });
+            }
+        });
+    }
+
+    //结转
+    function CarryOverMedicine() {
+        if (!$("#ddlZQ1").find("option:selected").text()) {
+            $.modalAlert("未选中账期", 'warning');
+        }
+        var zq = $("#ddlZQ1").find("option:selected").text();
+        //获取最后一次结转时间
+        var lastCarryTime;
+        $.najax({
+            type: "get",
+            url: "/PharmacyDrugStorage/GetLastCarryTime?r=" + Math.random(),
+            dataType: "text",
+            success: function (ajaxresp) {
+                lastCarryTime = ajaxresp;
+                if (!lastCarryTime) {
+                    $.modalAlert("取上一次结转时间失败", 'error');
+                    return;
+                }
+                else {
+                    var currJzsj = $("#txtJZTime").val();
+                    if (currJzsj <= lastCarryTime) {
+                        $.modalAlert("结转时间需大于上次结转时间", 'warning');
+                        return;
+                    }
+                    $.modalConfirm("本次结转账期为" + zq + ",结转时间为:" + lastCarryTime + "~~~~" + currJzsj + ",您确定结转吗？", function (flag) {
+                        if (flag) {
+                            $.najax({
+                                url: "/PharmacyDrugStorage/CarryOverMedicine",
+                                type: "POST",
+                                data: { zq: zq, kssj: lastCarryTime, jssj: currJzsj },
+                                dataType: "json",
+                                success: function (ajaxresp) {
+                                    if (ajaxresp.state === 'success') {
+                                        $.modalAlert("结转成功", 'success');
+                                        ddlZQList();//刷新账期
+                                        $("#btn_search").trigger('click');
+                                    }
+                                    else {
+                                        $.newtouchAlert(ajaxresp);
+                                    }
+                                }
+                            });
+
+                        } else {
+                            return false;
+                        }
+                    }, true); //true:modalConfirm不关闭dialog
+
+                }
+            }
+        });
+    }
+
+    //药品信息
+    function gridDrugsList() {
+        var captionCon = "合计&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id='yeCon'>当前页 批价总额：" + "" + "元&nbsp;&nbsp;&nbsp;&nbsp;零售总额：" + "" + "元</span>";
+        var $gridDrugsList = $("#gridDrugsList");
+        $gridDrugsList.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 185,
+            url: "",
+            caption: captionCon,
+            colModel: [
+                { label: '账期', name: 'zq', width: 50, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 180, align: 'left' },
+                { label: '药品代码', name: 'ypdm', width: 65, align: 'left' },
+                { label: '规格', name: 'gg', width: 70, align: 'left' },
+                { label: '结转数量', name: 'jzsl', width: 60, align: 'left' },
+                { label: '单位', name: 'dw', width: 50, align: 'left' },
+                { label: '批次', name: 'pc', width: 110, align: 'left' },
+                { label: '生产厂家', name: 'sccj', width: 180, align: 'left' },
+                { label: '批发价', name: 'pfj', width: 55, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 55, align: 'left' },
+                { label: '批发总额', name: 'pfze', width: 70, align: 'left' },
+                { label: '零售总额', name: 'lsze', width: 70, align: 'left' }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            loadComplete: function (data) {
+                ComputePjzeAndLsze();//计算标题栏中的批价总额和零售总额
+            }
+        });
+
+        //查询
+        $("#btn_search").click(function () {
+            $gridDrugsList.jqGrid('setGridParam', {
+                postData: getSearchPostData(), url: '/PharmacyDrugStorage/SelectCarryOverMedicineList'
+            }).trigger('reloadGrid');
+        });
+    }
+    //查询条件
+    function getSearchPostData() {
+        var zq = $("#ddlZQ2").find("option:selected").text();
+        var inputCode = $("#txtSRM").val();
+        return { zq: zq, inputCode: inputCode };
+    };
+
+    //计算标题栏中的批价总额和零售总额
+    function ComputePjzeAndLsze() {
+        var titlePjze = 0;
+        var titleLsze = 0;
+        var count = $("#gridDrugsList").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridDrugsList").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowPjze = $("#gridDrugsList").getRowData(rowIds[i]).pfze;
+                var getRowLsze = $("#gridDrugsList").getRowData(rowIds[i]).lsze;
+                titlePjze += parseFloat(getRowPjze);
+                titleLsze += parseFloat(getRowLsze);
+            }
+            titlePjze = window.roundingBy4she6ru5chengshuang(titlePjze, 2);
+            titleLsze = window.roundingBy4she6ru5chengshuang(titleLsze, 2);
+            $("#yeCon").text("批价总额：" + titlePjze + "元;零价总额：" + titleLsze + "元");
+            $.loading(false);
+        }
+    }
+</script>

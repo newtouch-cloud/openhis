@@ -1,0 +1,167 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "MedicalInsuranceApprovalIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+    .editable {
+        width: 70% !important;
+    }
+</style>
+<div class="rows" style="margin-bottom: 1%;">
+    <div class="panel panel-default" style="margin-bottom:0;">
+        <div class="panel-heading navb-bg">
+            住院患者信息
+        </div>
+        <table class="form" style="width:96%;">
+            <tbody>
+                <tr>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input class="form-control" type="text" id="zyh" value="" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" class="btn btn-default btn-md btn-default-color" title="选择住院患者" style="" id="zy_btnsyy" value="查询" onclick="GetPatSerarchView();">
+                    </td>
+                    <th class="formTitle">
+                        日期：
+                    </th>
+                    <td class="formValue">
+                        <input id="searchTime" style="min-width:100px" type="text" class="form-control input-wdatepicker form-an"
+                               onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () {} })" value="@(System.DateTime.Now.ToString("yyyy-MM-dd"))" />
+
+                    </td>
+                    <th class="formTitle">
+                        出院诊断：
+                    </th>
+                    <td class="formValue">
+                        <label id="cyzd"></label>
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary" style="float: right;margin-right: 10px;" value="查询" />
+                    </td>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 4, 6 },
+    F6Text = "审批"
+})
+<script type="text/javascript">
+    var zyh;
+    $(function () {
+        initgridList();
+    });
+
+    $("#btn_search").click(function () {
+        if (!zyh) {
+            $.modalAlert("请选择病人", 'warning');
+            return;
+        }
+        $("#gridList").jqGrid('setGridParam', {
+            url: "@Url.Action("GetCurrentpatientcharge")",
+            postData: { zyh: zyh },
+        }).trigger('reloadGrid');
+    })
+
+    function initgridList() {
+        $('#gridList').dataGrid({
+            unwritten: false,
+            viewrecords: true,
+            height: $(window).height() - 175,
+            sortable: false,
+            colModel: [
+                { label: "jfbbh", name: "jfbbh", hidden: true, key: true },
+                { label: "收费项目", name: "sfxmmc", width: 180 },
+                { label: "大类", name: "dlmc", width: 80 },
+                { label: "医保编码", name: "ybbm", width: 80 },
+                {
+                    label: "开具时间", name: "CreateTime", width: 130,
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: "单位", name: "dw", width: 50 },
+                { label: "单价", name: "dj", width: 60 },
+                {
+                    label: "数量", name: "sl", width: 60, align: "left", formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+                },
+                {
+                    label: "总金额", name: "je", width: 60, align: "left", formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+                },
+            ]
+        });
+    }
+
+    function newtouch_event_f4() {
+        $('#gridList').jqGrid("clearGridData");//先清空明细
+        $('#zyh').val('');
+        $('#searchTime').val('');
+    }
+
+    function newtouch_event_f6() {
+        $.modalOpen({
+            id: "ApprovalSearch",
+            title: "审批查询",
+            url: "/HospitalizationManage/DischargeSettle/MedicalInsuranceApproval?zyh=" + zyh + "&searchTime=" + $('#searchTime').val(),
+            width: "700px",
+            height: "500px",
+            btn: ['审批', '关闭'],
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitform();
+                //top.frames[iframeId].$.modalClose(); //在弹出窗口事件
+            }
+        });
+    }
+
+    function GetPatSerarchView() {
+        $.modalOpen({
+            id: "patSearch",
+            title: "患者查询",
+            url: "/PatientManage/AccountManage/PatSearchView?brzybzType=" + '@((int)EnumZYBZ.Bqz + "," + (int)EnumZYBZ.Djz)' + "&t=" + Math.random() + "&zyh=" + zyh,
+            width: "700px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatDbGrid(); //在弹出窗口事件
+                //调用查询卡号和住院号
+            }//窗口点确定的回调函数
+        })
+    };
+
+    //选择的病人 callback
+    function getPatInfoAjax(selePatInfo) {
+        if (selePatInfo && selePatInfo.zyh) {
+            zyh = selePatInfo.zyh;
+            $('#zyh').val(selePatInfo.zyh);
+            $.najax({
+                type: "POST",
+                url: "/HospitalizationManage/DischargeSettle/GetCYZD",
+                data: { zyh: selePatInfo.zyh},
+                dataType: "json",
+                success: function (ajaxresp) {
+                    if (ajaxresp.data) {
+                        var zdmc = ajaxresp.data;
+                        $('#cyzd').html(zdmc);
+                        $("#btn_search").trigger("click");
+                    }
+                },
+                errorCallback: function () {
+                    newtouch_globalevent_f4();
+                    $('#zyh').trigger('focus');
+                }
+            });
+        }
+        else {
+            $('#zyh').val('');
+        }
+    }
+
+</script>

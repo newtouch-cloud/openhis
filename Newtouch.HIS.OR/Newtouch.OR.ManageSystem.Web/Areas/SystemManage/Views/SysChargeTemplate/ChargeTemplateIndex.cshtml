@@ -1,0 +1,122 @@
+﻿
+@{
+    ViewBag.Title = "ChargeTemplateIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="请输入要查询关键字" style="width: 200px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script type="text/javascript">
+
+    var $gridList = $("#gridList");
+    $gridList.dataGrid({
+        url: "/SystemManage/SysChargeTemplate/ChargeTemplate_GetGridJson",
+        postData: { keyword: $("#txt_keyword").val() },
+        height: $(window).height() - 146,
+        colModel: [
+            { label: "主键", name: "sfmbbh", hidden: true, key: true },
+            { label: '代码', name: 'sfmb', width: 100, align: 'left' },
+            { label: '收费模板名称', name: 'sfmbmc', width: 150, align: 'left' },
+            {
+                label: "门诊住院标志", name: "mzzybz", width: 60, align: "center",
+                formatter: function (cellvalue) {
+                    if (cellvalue == "0") {
+                        return "通用"
+                    } else if (cellvalue == "1") {
+                        return "门诊"
+                    } else {
+                        return "住院"
+                    }
+                }
+            },
+            {
+                label: "有效", name: "zt", width: 60, align: "center",
+                formatter: function (cellvalue) {
+                    return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>";
+                }
+            },
+            { label: '收费项目科室', name: 'ks', width: 100, align: 'left' },
+            { label: '总金额', name: 'zje', width: 100, align: 'left' },
+            {
+                label: '创建时间', name: 'CreateTime', width: 100, align: 'left',
+                formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' }
+            },
+        ],
+        sortname: 'sfmb asc',
+        pager: "#gridPager",
+        viewrecords: true,
+        rowNum: 15,
+    });
+
+    $("#btn_search").click(function () {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { keyword: $("#txt_keyword").val() },
+            page: 1,
+        }).trigger('reloadGrid');
+    });
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function btn_add() {
+        $.modalOpen({
+            id: "ChargeTemplateIndexEditForm",
+            title: "新增手术收费模板",
+            url: "/SystemManage/SysChargeTemplate/ChargeTemplate_EditForm",
+            width: "800px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().sfmbbh;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "ChargeTemplateIndexEditForm",
+            title: "修改手术收费模板",
+            url: "/SystemManage/SysChargeTemplate/ChargeTemplate_EditForm?keyValue=" + keyValue,
+            width: "800px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+</script>

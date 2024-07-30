@@ -1,0 +1,152 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="widget-body">
+        <div id="wizard" class="wizard" data-target="#wizard-steps" style="border-left: none; border-top: none; border-right: none;">
+            <ul class="steps">
+                <li data-target="#step-1" class="active"><span class="step">1</span>角色信息<span class="chevron"></span></li>
+                <li data-target="#step-2"><span class="step">2</span>功能权限<span class="chevron"></span></li>
+            </ul>
+        </div>
+        <div class="step-content" id="wizard-steps" style="border-left: none; border-bottom: none; border-right: none;">
+            <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+                <div class="alert alert-danger" style="text-align: left; margin-bottom: 10px;">
+                    <i class="fa fa-warning alert-dismissible" style="position: relative; top: 1px; font-size: 15px; padding-right: 5px;"></i>
+                    请填写角色信息，用于创建或修改角色信息！
+                </div>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">表单信息</h3>
+                    </div>
+                    <div class="panel-body" style="width: 98%; margin-left: -34px;">
+                        <table class="form">
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>组织机构：</th>
+                                <td class="formValue formDdlSelectorTd">
+                                    <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                                        <option value="">==请选择==</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>名称：</th>
+                                <td class="formValue">
+                                    <input id="Name" name="Name" type="text" class="form-control required" placeholder="请输入名称" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">编码：</th>
+                                <td class="formValue">
+                                    <input id="Code" name="Code" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">显示顺序：</th>
+                                <td class="formValue">
+                                    <input id="px" name="px" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle" style="height: 35px;">选项：</th>
+                                <td class="formValue" style="padding-top: 1px;">
+                                    <div class="ckbox">
+                                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle" valign="top" style="padding-top: 5px;">
+                                    备注：
+                                </th>
+                                <td class="formValue">
+                                    <textarea id="Description" name="Description" class="form-control" style="height: 60px;"></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="step-pane" id="step-2">
+                <div>
+                    <div id="permissionTree"></div>
+                </div>
+            </div>
+        </div>
+        <div class="form-button" id="wizard-actions">
+            <a id="btn_last" disabled class="btn btn-default btn-prev">上一步</a>
+            <a id="btn_next" class="btn btn-default btn-next" style="margin-right: 10px;">下一步</a>
+            <a id="btn_finish" class="btn btn-default" style="display: none;margin-right: 10px;" onclick="AcceptClick()">完成</a>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/SystemManage/SysRole/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+
+                    $("#OrganizeId").prop("disabled", true);
+                }
+            });
+        }
+    })
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+
+        $('#wizard').wizard().on('change', function (e, data) {
+            var $finish = $("#btn_finish");
+            var $next = $("#btn_next");
+            if (data.direction == "next") {
+                switch (data.step) {
+                    case 1:
+                        if (!$('#form1').formValid()) {
+                            return false;
+                        }
+                        $finish.show();
+                        $next.hide();
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                $finish.hide();
+                $next.show();
+            }
+        });
+        $("#permissionTree").treeview({
+            height: 400,
+            slimscroll: false,
+            showcheck: true,
+            url: "/SystemManage/SysRoleAuthorize/GetPermissionTree",
+            param: { roleId: keyValue }
+        });
+    }
+
+    function AcceptClick() {
+        var postData = $("#form1").formSerialize();
+        postData["permissionIds"] = String($("#permissionTree").getCheckedNodes());
+        $.submitForm({
+            url: "/SystemManage/SysRole/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+                $.modalClose();
+            }
+        });
+    }
+</script>

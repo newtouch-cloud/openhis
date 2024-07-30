@@ -1,0 +1,363 @@
+﻿@using Newtouch.Tools;
+@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "出入库单查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    var djlxItemStrs = Constants.CurrentYfbm.yfbmjb != "1" ?
+        new[] {
+(int) EnumDanJuLX.zhijiefayao,
+(int) EnumDanJuLX.shenlingfayao,
+(int) EnumDanJuLX.neibufayaotuihui,
+(int) EnumDanJuLX.keshifayao
+            }
+            : new[] {
+(int) EnumDanJuLX.yaopinruku,
+(int) EnumDanJuLX.waibucuku,
+(int) EnumDanJuLX.zhijiefayao,
+(int) EnumDanJuLX.shenlingfayao,
+(int) EnumDanJuLX.neibufayaotuihui,
+(int) EnumDanJuLX.keshifayao
+            };
+}
+<script src="~/Content/js/bootstrap-multiselect.js"></script>
+<link href="~/Content/js/bootstrap-multiselect.css" rel="stylesheet" />
+<style>
+    #btn_print {
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+</style>
+<form id="form1">
+    <div class="panel panel-default" id="dv_search">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">审核状态：</th>
+                    <td class="formValue" style="width: 100px;">
+                        @Html.DropDownList("ddlSHZT", EnumDjShzt.WaitingApprove.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue">
+                        <input id="txtStartDate" type="text" style="width: 150px;" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">至：</th>
+                    <td class="formValue">
+                        <input id="txtEndDate" type="text" style="width: 150px;" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">发票号：</th>
+                    <td class="formValue">
+                        <input id="txtFPH" type="text" class="form-control " />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">单据号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtPDH" />
+                    </td>
+                    <th class="formTitle">单据类型：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlDJLX", EnumDanJuLX.yaopinruku.ToSomeDescSelectList(String.Join(",", djlxItemStrs)), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle">供应商：</th>
+                    <td class="formValue">
+                        <select id="selgys" name="selgys" class="form-control" multiple="multiple"></select>
+                    </td>
+                    <th class="formTitle">进价总额：</th>
+                    <td class="formValue">
+                        <input type="text" id="jjze" name="jjze" class="form-control newtouch_Readonly" />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" id="btn_print" class="btn btn-md btn-primary" value="打印" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDJMainRecords"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+</form>
+<div id="TabGrid">
+    <ul class="nav nav-tabs navb-bg" role="tablist" id="myTab">
+        <li role="presentation" class="active">
+            <a href="#dv_djmx" id="linkSearch" role="tab" data-toggle="tab">单据明细</a>
+        </li>
+        <li style="float:right">
+            <span class="hiding glyphicon glyphicon-chevron-right btn-lg"></span>
+        </li>
+    </ul>
+    <div id="dv_djmx" style="">
+        <table id="gridDJMXInfo"></table>
+    </div>
+</div>
+<div class="showbotton">
+    <span class="glyphicon glyphicon-chevron-left btn-lg"></span>
+</div>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        $('#ddlSHZT').val('0');
+        //搜索框隐藏显示控制
+        $(".hiding,.rows,#dv_search,.toolbar").click(function () {
+            TabGridHide();
+        });
+        $(".showbotton").click(function () {
+            $(".showbotton").animate({ width: 'hide' }, "fast", function () {
+                $("#TabGrid").animate({ left: '0px' }, "slow");
+            });
+        });
+        TabGridHide();
+        gridDJMainRecords();
+        $("#btn_print").click(function () {
+            window.open("/Report/PrintReport?type=OutOrInStorageBill&param=Organizeid=@ViewBag.OrganizeId|YfbmCode=@Constants.CurrentYfbm.yfbmCode" +
+                "|shzt=" + ($('#ddlSHZT').val() === "" ? "n" : $('#ddlSHZT').val()) +
+                "|startTime=" + $('#txtStartDate').val() +
+                "|endTime=" + $('#txtEndDate').val() +
+                "|djlx=" + ($('#ddlDJLX').val() === "" ? 0 : $('#ddlDJLX').val()) +
+                "|fph=" + ($('#txtFPH').val() === "" ? "n" : $('#txtFPH').val()) +
+                "|gys=" + ($('#selgys').val() === null || $('#selgys').val() ===undefined ? "n" : $('#selgys').val()) +
+                "|pdh=" + ($('#txtPDH').val() === "" ? "n" : $('#txtPDH').val()))
+        });
+        BindGys();
+    });
+
+    //绑定供应商
+    function BindGys() {
+        $.najax({
+            type: "Get",
+            url: "/Medicine/MedicineSupplierList?keyword=",
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp !== null) {
+                    $("#selgys").html("");
+                    for (var i = 0; i < ajaxresp.length; i++) {
+                        $("#selgys").append("<option value='" + ajaxresp[i].gysCode + "'>" + ajaxresp[i].gysmc + "</option>");
+                    }
+                    $('#selgys').multiselect({
+                        buttonWidth: '100%',
+                        includeSelectAllOption: true,
+                        enableClickableOptGroups: true,
+                        enableCollapsibleOptGroups: true,
+                        selectAllText: "全选",
+                        nonSelectedText: "未选中",
+                        allSelectedText: "全选"
+                    });
+                }
+            }
+        });
+    }
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        var tabGridwith = $("#TabGrid").width() + 200;
+        if ($(".showbotton").is(":hidden")) {
+            $("#TabGrid").animate({ left: tabGridwith }, "slow", function () {
+                $(".showbotton").animate({ width: 'show' }, "fast");
+            });
+        }
+    }
+
+    //单据主记录
+    function gridDJMainRecords() {
+        var $gridDjMainRecords = $("#gridDJMainRecords");
+        $gridDjMainRecords.dataGrid({
+            height: $(window).height() - 185,
+            postData: getSearchPostData(),
+            url: "/PharmacyDrugStorage/SelectReceiptMainInfoV2?from=query",
+            colModel: [
+                {
+                    label: '审核状态', name: 'shzt', width: 60, align: 'left', formatter: function (val) {
+                        switch (val) {
+                        case '@((int)EnumDjShzt.WaitingApprove)':
+                            return "@EnumDjShzt.WaitingApprove.GetDescription()";
+                        case '@((int)EnumDjShzt.Approved)':
+                            return "@EnumDjShzt.Approved.GetDescription()";
+                        case '@((int)EnumDjShzt.Cancelled)':
+                            return "@EnumDjShzt.Cancelled.GetDescription()";
+                        case '@((int)EnumDjShzt.Rejected)':
+                            return "@EnumDjShzt.Rejected.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                {
+                    label: '单据类型', name: 'djlx', width: 65, align: 'left', formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumDanJuLX.zhijiefayao):
+                            return "@EnumDanJuLX.zhijiefayao.GetDescription()";
+                        case @((int)EnumDanJuLX.keshifayao):
+                            return "@EnumDanJuLX.keshifayao.GetDescription()";
+                        case @((int)EnumDanJuLX.neibufayaotuihui):
+                            return "@EnumDanJuLX.neibufayaotuihui.GetDescription()";
+                        case @((int)EnumDanJuLX.shenlingfayao):
+                            return "@EnumDanJuLX.shenlingfayao.GetDescription()";
+                        case @((int)EnumDanJuLX.waibucuku):
+                            return "@EnumDanJuLX.waibucuku.GetDescription()";
+                        case @((int)EnumDanJuLX.yaopinruku):
+                            return "@EnumDanJuLX.yaopinruku.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                { label: '单据号', name: 'pdh', width: 130, align: 'left' },
+                { label: '出库库房', name: 'ckbmmc', width: 100, align: 'left' },
+                { label: '供应商', name: 'gysmc', width: 100, align: 'left' },
+                { label: '入库库房', name: 'rkbmmc', width: 100, align: 'left' },
+                { label: '出入库方式', name: 'crkfsmc', width: 80, align: 'left' },
+                { label: '批发价金额', name: 'pjze', width: 80, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+                { label: '零售价金额', name: 'ljze', width: 80, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+                { label: '进价总金额', name: 'zje', width: 80, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+                { label: '提交时间', name: 'czsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' } },
+                { label: '零售总额', name: 'ljze', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); } },
+                { label: '进价总额', name: 'zje', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); } },
+                { label: '进销差价', name: 'jxcj', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); } },
+                { label: 'crkId', name: 'crkId', hidden: true },
+                { label: 'djlx', name: 'djlx', hidden: true, align: 'left' }
+            ],
+            unwritten: false,
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'czsj desc',
+            viewrecords: true,
+            gridComplete: function() {
+                ComputeJJze();
+            },
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                btn_selectrow(rowid);
+            }
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridDJMXInfo').jqGrid("clearGridData");
+            $gridDjMainRecords.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                url: "/PharmacyDrugStorage/SelectReceiptMainInfoV2?from=query"
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //组装查询条件
+    function getSearchPostData() {
+        var shzt = $("#ddlSHZT").val();
+        var qsrj = $("#txtStartDate").val();
+        var jsrj = $("#txtEndDate").val();
+        var pdh = $("#txtPDH").val();
+        var djlx = $("#ddlDJLX").val();
+        var fph = $("#txtFPH").val();
+        var gys = $("#selgys").val()
+        return { qsrj: qsrj, jsrj: jsrj, pdh: pdh, djlx: djlx, shzt: shzt, gys: gys, fph: fph};
+    };
+
+    //单击事件
+    function btn_selectrow(rowId) {
+        $('#gridDJMXInfo').jqGrid("clearGridData");//每次单击，先清空明细 再重新加载所有选中行明细
+        $.najax({
+            type: "POST",
+            url: "/PharmacyDrugStorage/SelectReceipDetailInfo",
+            data: { crkId: $("#gridDJMainRecords").jqGrid('getRowData', rowId).crkId, djlx: $("#gridDJMainRecords").jqGrid('getRowData', rowId).djlx },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp !== null) {
+                    $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp);
+                }
+                $(".showbotton").click().trigger("click");
+            }
+        });
+    }
+
+    //单据明细
+    $('#gridDJMXInfo').newtouchLocalDataGrid({
+        height: $(window).height() - 200,
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '出入库明细序号', name: 'crkmxId', hidden: true, width: 100, align: 'left' },
+            { label: '药品类别', name: 'yplbmc', width: 60, align: 'left' },
+            { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+            { label: '数量', name: 'slanddw', width: 60, align: 'left' },
+            { label: '批发总额', name: 'pjze', width: 70, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+            { label: '零售总额', name: 'ljze', width: 70, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+            { label: '进价单价', name: 'jj', width: 70, align: 'left', formatter: function (val) { return val.toFixed(2); } },
+            { label: '进价总额', name: 'zje', width: 70, align: 'left', formatter: function (val) { return val.toFixed(2); }},
+            { label: '进销差价', name: 'jxcj', width: 60, align: 'left', formatter: function (val) { return val.toFixed(2); }},
+            { label: '规格', name: 'gg', width: 80, align: 'left' },
+            { label: '批号', name: 'ph', width: 90, align: 'left' },
+            { label: '批次', name: 'pc', width: 90, align: 'left' },
+            { label: '发票', name: 'fph', width: 90, align: 'left' },
+            { label: '生产厂家', name: 'sccj', width: 150, align: 'left' }
+        ]
+    });
+
+    //计算进价总额
+    function ComputeJJze() {
+        var t = 0;
+        var count = $("#gridDJMainRecords").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridDJMainRecords").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowZje = $("#gridDJMainRecords").getRowData(rowIds[i]).zje;
+                t = parseFloat(t) + parseFloat(getRowZje);
+            }
+            $("#jjze").val(t.toFixed(2));
+        } else {
+            $("#jjze").val('');
+        }
+    }
+
+</script>

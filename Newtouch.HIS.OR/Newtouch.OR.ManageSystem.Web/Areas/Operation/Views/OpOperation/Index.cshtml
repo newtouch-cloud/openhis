@@ -1,0 +1,146 @@
+﻿
+@{
+    ViewBag.Title = "手术";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+    body {
+        background: #DFC2F2;
+        background-image: linear-gradient( 135deg, #d5b1f8 10%, #a49cf2 100%);
+        background-attachment: fixed;
+        background-size: cover;
+        /*color:#3dd73c*/
+    }
+</style>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="手术代码/手术名称" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        GridInit();
+    });
+
+    function GridInit() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Operation/OPOperation/GetPagintionList",
+            autowidth: true,
+            height: $(window).height() - 118,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "手术代码", name: "ssdm", width: 180, align: 'left' },
+                { label: "手术名称", name: "ssmc", width: 180, align: 'left' },
+                { label: "助记码", name: "zjm", width: 180, align: 'left' },
+                { label: "手术级别", name: "ssjb", width: 180, align: 'left' },
+                { label: "创建时间", name: "CreateTime", width: 180, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "创建人", name: "CreatorCode", width: 160, align: 'left' }
+            ],
+            sortname: "ID desc",
+            rowNum: 13,
+            pager: "#gridPager",
+            viewrecords: true,
+            ondblClickRow: function () {
+                btn_edit();
+            },
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val() }, page: 1
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function btn_add() {
+        window.$.modalOpen({
+            id: "Form",
+            title: "新增手术",
+            url: "/Operation/OPOperation/Form",
+            width: "500px",
+            height: "350px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        $.modalOpen({
+            id: "updateForm",
+            title: "修改手术",
+            url: "/Operation/OPOperation/Form?keyValue=" + keyValue,
+            width: "500px",
+            height: "350px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_delete() {
+        window.$.modalConfirm("确定要删除吗？", function (flag) {
+            if (!flag) {
+                return false;
+            }
+            return true;
+        });
+        var keyValue = window.$("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            window.$.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        window.$.deleteForm({
+            url: "/Operation/OpOperation/DeleteData",
+            param: { keyValue: keyValue },
+            success: function () {
+                $.modalMsg("删除成功", "success");
+                $('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                $("#btn_search").trigger("click");
+            }
+        });
+        return true;
+    }
+</script>

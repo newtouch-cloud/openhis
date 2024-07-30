@@ -1,0 +1,285 @@
+﻿@{
+    ViewBag.Title = "门诊排药冻结查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            处方筛选信息
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <td class="formTitle">姓名：</td>
+                    <td class="formValue">
+                        <input type="text" id="xm" class="form-control" placeholder="请输入姓名" />
+                    </td>
+                    <td class="formTitle">卡号：</td>
+                    <td class="formValue">
+                        <input type="text" id="cardNo" class="form-control" placeholder="请输入卡号" />
+                    </td>
+                    <td class="formTitle">发票号：</td>
+                    <td class="formValue">
+                        <input type="text" id="invoiceNo" class="form-control" placeholder="请输入发票号" />
+                    </td>
+                    <td class="formTitle">结算标志：</td>
+                    <td class="formValue">
+                        <select class="form-control" id="seljsbz">
+                            <option value="2">全部</option>
+                            <option value="0">未结算</option>
+                            <option value="1">已结算</option>
+                        </select>
+                    </td>
+                    <td class="formTitle" rowspan="2">
+                        <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">科室：</td>
+                    <td class="formValue">
+                        <input type="text" id="ksmc" name="ksmc" placeholder="请选择科室" class="form-control" />
+                        <input type="hidden" id="ksdm" name="ksdm" value="" />
+                    </td>
+                    <td class="formTitle"><span class="required">*</span>收费时间：</td>
+                    <td class="formValue">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddDays(-3).ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <td class="formTitle"><span class="required">*</span>至：</td>
+                    <td class="formValue">
+                        <input id="jssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <td class="formTitle">结算已过期：</td>
+                    <td class="formValue">
+                        <div class="ckbox">
+                            <input id="settExpired" name="settExpired" type="checkbox" checked="checked"><label for="settExpired">是</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<div style="float: left; width: 29%;" class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridListPager"></div>
+</div>
+<div style="float: left; width: 70.5%;margin-left: 0.5%; " class="gridPanel">
+    <table id="gridmxList"></table>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 6,7 },
+    F6Text = "取消排药",
+    F7Text = "打印"
+})
+<script>
+    var $gridList = $("#gridList");
+    var $gridmxList = $("#gridmxList");
+    $(".toolbar").width(180);
+    $(function() {
+        gridList();
+        gridmxList();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function(event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //初始化科室
+    $("#ksmc").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 360,
+        clickautotrigger: true,
+        url: "/DrugStorage/GetTheLowerKsCodeList",
+        ajaxmethod: 'POST',
+        ajaxreqdata: function() {
+            var reqData = {};
+            reqData.keyword = $.trim($("#ksmc").val());
+            return reqData;
+        },
+        caption: "科室",
+        colModel: [
+            { label: '科室编码', name: 'Code', width: 100 },
+            { label: '科室名称', name: 'Name', width: 220 }
+        ],
+        itemdbclickhandler: function($thistr) {
+            $("#ksmc").val($thistr.attr("data-Code"));
+            $("#ksdm").val($thistr.attr("data-Name"));
+            return;
+        }
+    });
+
+    //处方
+    function gridList() {
+        $gridList.dataGrid({
+            url: "/OutPatientPharmacy/QueryDrugArrangementRpByPage?r="+Math.random(),
+            postData: AssembleParam(),
+            height: $(window).height() - 220,
+            caption: "处方明细",
+            colModel: [
+                { label: '卡号', name: 'CardNo', align: 'center', width: 80 },
+                { label: '姓名', name: 'xm', align: 'center', width: 60 },
+                { label: '处方号', name: 'cfh', align: 'center', width: 90 },
+                {
+                    label: '收费时间',
+                    name: 'sfsj',
+                    align: 'center',
+                    width: 110,
+                    formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' }
+                },
+                {
+                    label: '排药时间',
+                    name: 'CreateTime',
+                    align: 'center',
+                    width: 110,
+                    formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' }
+                },
+                { label: '开立医生', name: 'ysmc', align: 'center', width: 60 }
+            ],
+            ondblClickRow: function(rowid, iRow, iCol, e) {
+                $gridmxList.jqGrid("clearGridData");
+                var data = $gridList.jqGrid('getRowData', rowid);
+                $gridmxList.jqGrid('setGridParam',
+                    {
+                        url: "/OutPatientPharmacy/QueryDrugArrangementRpDetail",
+                        postData: { cfh: data.cfh, cardNo: data.CardNo }
+                    }).trigger('reloadGrid');
+            },
+            gridComplete: function() {
+                $gridmxList.jqGrid("clearGridData");
+                var ids = new Array();
+                //getDataIDs()返回当前grid里所有数据的id
+                ids = $gridList.getDataIDs();
+                if (ids == null || ids.length <= 0) return;
+                //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
+                $gridList.setSelection(ids[0], true);
+                var data = $gridList.jqGrid('getRowData', ids[0]);
+                if (data == null) return;
+                $gridmxList.jqGrid('setGridParam',
+                    {
+                        url: "/OutPatientPharmacy/QueryDrugArrangementRpDetail?r=" + Math.random(),
+                        postData: { cfh: data.cfh, cardNo: data.CardNo }
+                    }).trigger('reloadGrid');
+            },
+            pager: "#gridListPager",
+            sortname: 'xm asc',
+        });
+        $("#btn_search").click(function() {
+            $gridList.jqGrid('setGridParam',
+                {
+                    url: "/OutPatientPharmacy/QueryDrugArrangementRpByPage",
+                    postData: AssembleParam()
+                }).trigger('reloadGrid');
+        });
+    }
+
+    //组装请求参数
+    function AssembleParam() {
+        return {
+            xm: $("#xm").val(),
+            cardNo: $("#cardNo").val(),
+            invoiceNo: $("#invoiceNo").val(),
+            ksmc: $("#ksmc").val(),
+            kssj: $("#kssj").val(),
+            jssj: $("#jssj").val(),
+            jszt: $("#seljsbz").val(),
+            settExpired: $("#settExpired").is(":checked") ? "1" : "0"
+        };
+    }
+
+    //处方明细
+    function gridmxList() {
+        $gridmxList.dataGrid({
+            url: "",
+            height: $(window).height() - 230,
+            caption: "处方明细",
+            shrinkToFit: true,
+            colModel: [
+                { label: '药品名称', name: 'ypmc', align: 'left' },
+                { label: '规格', name: 'gg', align: 'left' },
+                { label: '数量', name: 'sl', align: 'right' },
+                { label: '单位', name: 'dw', align: 'center' },
+                { label: '生产厂家', name: 'ycmc', align: 'left' },
+                { label: '剂量', name: 'jl', align: 'right' },
+                { label: '剂量单位', name: 'jldw', align: 'left' },
+                { label: '用法', name: 'yfmc', align: 'left' },
+                { label: '医生嘱托', name: 'yszt', align: 'left' }
+            ],
+            viewrecords: true
+        });
+        $("#btn_search").click(function() {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: $("#form1").formSerialize()
+                }).trigger('reloadGrid');
+        });
+    }
+
+    //取消排药
+    function newtouch_event_f6() {
+        $.modalConfirm("确定要取消排药吗？",
+            function(flag) {
+                if (!flag) return;
+                var id = $gridList.jqGrid("getGridParam", "selrow");
+                if (!id) {
+                    $.modalMsg("请选中患者信息！", 'warning');
+                    return;
+                }
+                var data = $gridList.jqGrid('getRowData', id);
+                if (data == null) {
+                    $.modalMsg("参数无效！", 'warning');
+                    return;
+                }
+                $.najax({
+                    type: "POST",
+                    url: "/OutPatientPharmacy/DrugArrangementReturn",
+                    dataType: "json",
+                    data: { cfh: data.cfh, cardNo: data.CardNo },
+                    success: function(res) {
+                        if (res.state === "success") {
+                            $.modalMsg('取消成功', 'success', 1000);
+                            $gridList.jqGrid("clearGridData");
+                            $gridList.resetSelection();
+                            $("#btn_search").trigger("click");
+                        } else {
+                            $.modalAlert(res.message, Error);
+                        }
+                    }
+                });
+            });
+    }
+
+    //取消排药
+    function newtouch_event_f7() {
+        var id = $gridList.jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalMsg("请选择要打印的处方！", 'warning');
+            return;
+        }
+        var data = $gridList.jqGrid('getRowData', id);
+        if (data == null) {
+            $.modalMsg("参数无效！", 'warning');
+            return;
+        }
+        var reportServerHOST = '@reportUrl' + "?tempCode=1293" + "&systemCode=" + '@reportSystemCode' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&orgId=" + '@ViewBag.OrganizeId' + "&cfh=" + data.cfh;
+        window.open(reportServerHOST);
+   }
+
+</script>

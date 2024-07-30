@@ -1,0 +1,499 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "病区房间床位维护";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+    .dv-body {
+        /*background-color: #00a0e9;*/
+    }
+
+    .dv-left {
+        width: 250px;
+        float: left;
+    }
+
+    .dv-left-title {
+        width: 100%;
+        height: 30px;
+        line-height: 30px;
+        background-color: #00a0e9;
+        text-align: center;
+        color: white;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    .dv-right-room {
+        width: 100%;
+    }
+
+    .dv-right-bed {
+        width: 100%;
+        margin-top: 5px;
+    }
+
+    .sp-showOrClose {
+        margin: 0 20px;
+        float: right;
+        cursor: pointer;
+        color: rgb(0, 160, 234);
+        font-size: 1.8rem;
+    }
+
+    .dv-grid {
+        width: 100%;
+    }
+
+    #dv_bed_grid {
+        display: none;
+    }
+</style>
+<div class="dv-body">
+    <div class="dv-left">
+        <div class="dv-left-title">病区列表</div>
+        <table id="gridBqList"></table>
+    </div>
+    <div class="dv-right">
+        <div class="dv-right-room">
+            <div class="topPanel">
+                <div class="toolbar">
+                    <div class="btn-group">
+                        <a class="btn btn-primary" onclick="RefreshRoom()"><span class="fa fa-refresh"></span></a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="AddRoom()">
+                            <i class="fa fa-plus"></i>房间新建
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="UpdateRoom()">
+                            <i class="fa fa-pencil-square-o"></i>房间修改
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="AttributesPlusRoom()">
+                            <i class="fa fa-pencil-square-o"></i>附加属性
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="DeleteRoom()">
+                            <i class="fa fa-trash-o"></i>房间删除
+                        </a>
+                    </div>
+                </div>
+                <span class="sp-showOrClose">
+                    <i class="fa fa-angle-down fa-lg" aria-hidden="true" onclick="roomShowOrClose(1)"></i>
+                    <i class="fa fa-angle-up fa-lg" aria-hidden="true" onclick="roomShowOrClose(0)"></i>
+                </span>
+            </div>
+            <div class="dv-grid" id="dv_room_grid">
+                <table id="gridRoomList"></table>
+            </div>
+        </div>
+        <div class="dv-right-bed">
+            <div class="topPanel">
+                <div class="toolbar">
+                    <div class="btn-group">
+                        <a class="btn btn-primary" onclick="RefreshBed()"><span class="fa fa-refresh"></span></a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="AddBed()">
+                            <i class="fa fa-plus"></i>床位新建
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="UpdateBed()">
+                            <i class="fa fa-pencil-square-o"></i>床位修改
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="AttributesPlusBed()">
+                            <i class="fa fa-pencil-square-o"></i>附加属性
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="AddCosts()">
+                            <i class="fa fa-pencil-square-o"></i>关联收费项目
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a authorize="yes" class="btn btn-primary" onclick="DeleteBed()">
+                            <i class="fa fa-trash-o"></i>床位删除
+                        </a>
+                    </div>
+                </div>
+                <span class="sp-showOrClose">
+                    <i class="fa fa-angle-down fa-lg" aria-hidden="true" onclick="roomShowOrClose(1)"></i>
+                    <i class="fa fa-angle-up fa-lg" aria-hidden="true" onclick="roomShowOrClose(0)"></i>
+                </span>
+            </div>
+            <div class="dv-grid" id="dv_bed_grid">
+                <table id="gridBedList"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<script lang="javascript">
+    var bqList = [
+        { bqCode: "10001", bqName: "三楼南区" },
+        { bqCode: "10002", bqName: "三楼北区" },
+        { bqCode: "10003", bqName: "四楼南区" },
+        { bqCode: "10004", bqName: "四楼北区" },
+        { bqCode: "10005", bqName: "五楼南区" },
+        { bqCode: "10006", bqName: "五楼北区" },
+        { bqCode: "10007", bqName: "六楼南区" },
+        { bqCode: "10001", bqName: "三楼南区" },
+        { bqCode: "10002", bqName: "三楼北区" },
+        { bqCode: "10003", bqName: "四楼南区" },
+        { bqCode: "10004", bqName: "四楼北区" },
+        { bqCode: "10005", bqName: "五楼南区" },
+        { bqCode: "10006", bqName: "五楼北区" },
+        { bqCode: "10007", bqName: "六楼南区" },
+        { bqCode: "10001", bqName: "三楼南区" },
+        { bqCode: "10002", bqName: "三楼北区" },
+        { bqCode: "10003", bqName: "四楼南区" },
+        { bqCode: "10004", bqName: "四楼北区" },
+        { bqCode: "10005", bqName: "五楼南区" },
+        { bqCode: "10006", bqName: "五楼北区" },
+        { bqCode: "10007", bqName: "六楼南区" },
+        { bqCode: "10001", bqName: "三楼南区" },
+        { bqCode: "10002", bqName: "三楼北区" },
+        { bqCode: "10003", bqName: "四楼南区" },
+        { bqCode: "10004", bqName: "四楼北区" },
+        { bqCode: "10005", bqName: "五楼南区" },
+        { bqCode: "10006", bqName: "五楼北区" },
+        { bqCode: "10007", bqName: "六楼南区" },
+        { bqCode: "10008", bqName: "六楼北区" }
+    ];
+    var roomList = [
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" },
+        { roomNo: "N0001", roomName: "N0001房间", bqName: "四楼北区", roomlevel: "普通病房", roomDept: "康复医学科", roomZt: "在用" }
+    ];
+    var bedList = [
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" },
+        { bedNo: "B0002", bedType: "女", tsbz: "普通", zt: "启用", sfzc: "空床", zysy: "王医生", zzys: "王医生", zrys: "张医生" }
+    ];
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 25;
+    $(".dv-right").width(rightWidth);
+    $(function() {
+        $(window).resize(function() { //浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body")($(window).width());
+        });
+        $('#gridBqList').jqGrid("clearGridData");
+        $('#gridBqList').newtouchLocalDataGrid(null, bqList);
+    });
+
+    //病区 
+    $('#gridBqList').newtouchLocalDataGrid({
+        width: $(".dv-left").width(),
+        height: $(window).height() - 70,
+        unwritten: false,
+        colModel: [
+            { label: '编码', name: 'bqCode', width: 80, align: 'center' },
+            { label: '病区', name: 'bqName', width: 80, align: 'center' }
+        ],
+        rownumbers: false,
+        ondblClickRow: function(rowid) {
+            $('#gridRoomList').jqGrid("clearGridData");
+            $('#gridRoomList').newtouchLocalDataGrid(null, roomList);
+        }
+    });
+
+    //房间 
+    $('#gridRoomList').newtouchLocalDataGrid({
+        height: $(window).height() - 145,
+        unwritten: false,
+        colModel: [
+            { label: '房间号', name: 'roomNo', align: 'center', width: 120 },
+            { label: '名称', name: 'roomName', align: 'center', width: 120 },
+            { label: '病区', name: 'bqName', align: 'center', width: 120 },
+            { label: '等级', name: 'roomlevel', align: 'center', width: 120 },
+            { label: '科室', name: 'roomDept', align: 'center', width: 120 },
+            { label: '状态', name: 'roomZt', align: 'center', width: 120 }
+        ],
+        rownumbers: false,
+        ondblClickRow: function(rowid) {
+            ShowBedList();
+        }
+    });
+
+    //床位信息展示
+    function ShowBedList() {
+        $("#gridRoomList").setGridHeight(($(window).height() - 100) / 2 - 35);
+        $("#dv_bed_grid").show(400);
+        $('#gridBedList').jqGrid("clearGridData");
+        $("#gridBedList").setGridWidth(rightWidth);
+        $('#gridBedList').newtouchLocalDataGrid(null, bedList);
+    }
+
+    //床位
+    $('#gridBedList').newtouchLocalDataGrid({
+        height: ($(window).height() - 100) / 2 - 45,
+        width: rightWidth,
+        shrinkToFit: true,
+        unwritten: false,
+        colModel: [
+            { label: '床号', name: 'bedNo', align: 'center', width: 100 },
+            { label: '床位类型', name: 'bedType', align: 'center', width: 80 },
+            { label: '特殊标志', name: 'tsbz', align: 'center', width: 100 },
+            { label: '是否启用', name: 'zt', align: 'center', width: 80 },
+            { label: '是否占床', name: 'sfzc', align: 'center', width: 100 },
+            { label: '住院医生', name: 'zysy', align: 'left', width: 100 },
+            { label: '主治医生', name: 'zzys', align: 'left', width: 100 },
+            { label: '主任医生', name: 'zrys', align: 'left', width: 100 }
+        ],
+        rownumbers: false
+    });
+
+    //房间列表扩大缩小
+    function roomShowOrClose(v) {
+        switch (v) {
+        case 0: //收起
+            if ($("#dv_room_grid").css('display') !== 'none') {
+                if ($("#dv_bed_grid").css('display') === 'none') {
+                    $("#gridRoomList").setGridHeight(($(window).height() - 100) / 2 - 35);
+                    $('#gridRoomList').jqGrid("clearGridData");
+                    $("#gridRoomList").newtouchLocalDataGrid(null, roomList);
+                    $("#dv_bed_grid").show(400);
+                    $("#gridBedList").setGridHeight(($(window).height() - 100) / 2 - 45);
+                    $("#gridBedList").setGridWidth(rightWidth);
+                    $('#gridBedList').jqGrid("clearGridData");
+                    $('#gridBedList').newtouchLocalDataGrid(null, bedList);
+                } else {
+                    $("#dv_room_grid").hide(300);
+                    $('#gridBedList').jqGrid("clearGridData");
+                    $("#gridBedList").setGridHeight($(window).height() - 145);
+                    $('#gridBedList').newtouchLocalDataGrid(null, bedList);
+                }
+            }
+            break;
+        case 1: //展开
+            if ($("#dv_room_grid").css('display') === 'none') {
+                $("#dv_room_grid").show(400);
+                $('#gridRoomList').jqGrid("clearGridData");
+                $("#gridRoomList").setGridHeight(($(window).height() - 100) / 2 - 35);
+                $('#gridRoomList').newtouchLocalDataGrid(null, roomList);
+                $("#gridBedList").setGridHeight(($(window).height() - 100) / 2 - 45);
+                $('#gridBedList').jqGrid("clearGridData");
+                $('#gridBedList').newtouchLocalDataGrid(null, bedList);
+            } else {
+                $("#dv_bed_grid").hide(300);
+                $('#gridRoomList').jqGrid("clearGridData");
+                $("#gridRoomList").setGridHeight($(window).height() - 145);
+                $('#gridRoomList').newtouchLocalDataGrid(null, roomList);
+            }
+            break;
+        }
+    }
+
+    //添加病房
+    function AddRoom() {
+        var keyValue = $("#gridBqList").jqGridRowValue().bqCode;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病区", 'warning');
+            return;
+        }
+        OpenRoomForm("");
+    }
+
+    //修改病房
+    function UpdateRoom() {
+        var keyValue = $("#gridRoomList").jqGridRowValue().roomNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病房", 'warning');
+            return;
+        }
+        OpenRoomForm(keyValue);
+    }
+
+    //delete room
+    function DeleteRoom() {
+        var keyValue = $("#gridRoomList").jqGridRowValue().roomNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病房", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/NurseManage/WardMaintenance/DeleteRoomForm",
+            param: { keyValue: $("#gridRoomList").jqGridRowValue().roomNo },
+            success: function() {
+                $.currentWindow().$("#gridRoomList").trigger("reloadGrid");
+            }
+        });
+    }
+
+    //附加属性
+    function AttributesPlusRoom() {
+        var keyValue = $("#gridRoomList").jqGridRowValue().roomNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病房", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "AttributesPlusRoomForm",
+            title: "病床附加属性",
+            url: "/NurseManage/WardMaintenance/AttributesPlusRoomForm?keyWord=" + keyValue,
+            width: "500px",
+            height: "550px",
+            callBack: function(iframeId) {
+                $("#gridRoomList").resetSelection();
+                $("#gridRoomList").trigger("reloadGrid");
+                $.modalClose("AttributesPlusRoomForm");
+            }
+        });
+    }
+
+    function OpenRoomForm(roomNo) {
+        var title = roomNo === "" ? "新增房间" : "修改房间";
+        $.modalOpen({
+            id: "RoomForm",
+            title: title,
+            url: "/NurseManage/WardMaintenance/RoomForm?RoomNo=" + roomNo,
+            width: "500px",
+            height: "360px",
+            callBack: function(iframeId) {
+                $("#gridRoomList").resetSelection();
+                $("#gridRoomList").trigger("reloadGrid");
+                $.modalClose("RoomForm");
+            }
+        });
+    }
+
+    //刷新病房
+    function RefreshRoom() {
+        $('#gridRoomList').jqGrid("clearGridData");
+        $('#gridRoomList').newtouchLocalDataGrid(null, roomList);
+    }
+
+    //添加病房
+    function AddBed() {
+        var keyValue = $("#gridRoomList").jqGridRowValue().roomNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病房", 'warning');
+            return;
+        }
+        OpenBedForm("");
+    }
+
+    //修改病房
+    function UpdateBed() {
+        var keyValue = $("#gridBedList").jqGridRowValue().bedNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病床", 'warning');
+            return;
+        }
+        OpenBedForm(keyValue);
+    }
+
+    //床位附加属性
+    function AttributesPlusBed() {
+        var keyValue = $("#gridBedList").jqGridRowValue().bedNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病床", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "AttributesPlusBedForm",
+            title: "病房附加属性",
+            url: "/NurseManage/WardMaintenance/AttributesPlusBedForm?keyWord=" + keyValue,
+            width: "500px",
+            height: "550px",
+            callBack: function(iframeId) {
+                $("#gridBedList").resetSelection();
+                $("#gridBedList").trigger("reloadGrid");
+                $.modalClose("AttributesPlusBedForm");
+            }
+        });
+    }
+
+    //delete room
+    function DeleteBed() {
+        var keyValue = $("#gridBedList").jqGridRowValue().bedNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病床", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/NurseManage/WardMaintenance/DeleteBedForm",
+            param: { keyValue: $("#gridBedList").jqGridRowValue().bedNo },
+            success: function() {
+                $.currentWindow().$("#gridBedList").trigger("reloadGrid");
+            }
+        });
+    }
+
+    //刷新床位
+    function RefreshBed() {
+        $('#gridBedList').jqGrid("clearGridData");
+        $('#gridBedList').newtouchLocalDataGrid(null, bedList);
+    }
+
+    function OpenBedForm(bedNo) {
+        var title = bedNo === "" ? "新增床位" : "修改床位";
+        $.modalOpen({
+            id: "BedForm",
+            title: title,
+            url: "/NurseManage/WardMaintenance/BedForm?bedNo=" + bedNo,
+            width: "500px",
+            height: "360px",
+            callBack: function(iframeId) {
+                $("#gridBedList").resetSelection();
+                $("#gridBedList").trigger("reloadGrid");
+                $.modalClose("BedForm");
+            }
+        });
+    }
+
+    //关联收费项目
+    function AddCosts() {
+        var keyValue = $("#gridBedList").jqGridRowValue().bedNo;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一病床", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "BedBindingCostForm",
+            title: "维护床位费",
+            url: "/NurseManage/WardMaintenance/BedBindingCostForm?keyValue" + keyValue + "&zyh=''" ,
+            width: "500px",
+            height: "480px",
+            callBack: function (iframeId) {
+                $.modalClose("BedBindingCostForm");
+            }
+        });
+    }
+
+</script>

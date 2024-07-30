@@ -1,0 +1,83 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.Common.Operator;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<div class="topPanel">
+    <div class="search">
+        <table>
+            <tr>
+                <td class="formValue">
+                    <input id="txt_keyword" type="text" class="form-control" onblur="yssx()" onkeypress="keypress()" placeholder="元素名称" style="width:100px;height:17px;">
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div id="dv_Medlist" class="gridPanel" style="width:200px;position:absolute;">
+    <table id="gridListYs"></table>
+</div>
+<script>
+    $(function () {
+        gridListYs();
+    })
+    function keypress() {
+        if (event.keyCode == 13)
+            yssx();
+    }
+
+    function yssx() {
+        $("#gridListYs").jqGrid('setGridParam', {
+            postData: { keyword: $("#txt_keyword").val() },
+        }).trigger('reloadGrid');
+    }
+    function gridListYs() {
+        var $gridList = $("#gridListYs");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Readonly",
+            url: "/SystemManage/Common/GetYsTreeList",
+            postData: { keyword: $("#txt_keyword").val() },
+            height: $(window).height() - 96,
+            colModel: [
+                { label: "Id", name: "Id", key: true, hidden: true },
+                { label: "Name", name: "BindingPath",hidden: true },
+                { label: "DataSource", name: "DataSource", hidden: true },
+                { label: "BindingPath", name: "BindingPath", hidden: true },
+                { label: "TypeName", name: "TypeName", hidden: true },
+                { label: "yslx", name: "yslx", hidden: true },
+                { label: "元素控件", name: "ysmc" },
+            ],
+            onSelectRow: function (rowid, status) {
+                if (status == true) {
+                    var rowData = $("#gridListYs").jqGrid('getRowData', rowid);
+                    if (rowData.isLeaf =="true") {
+                        var mxlist = null;
+                        $.ajax({
+                            type: "POST",
+                            url: "/SystemManage/Common/GetYsMXList",
+                            dataType: "json",
+                            data: { YsId: rowData.Id },
+                            async: false,
+                            success: function (ajaxresp) {
+                                debugger;
+                                if (ajaxresp!= null) {
+                                    mxlist=ajaxresp;
+                                }
+                            }
+                        });
+                        var param = { 'ysdata': rowData, 'mxlist': mxlist};
+                        window.parent.postMessage(param, '*');
+                    }
+                }
+            }
+
+
+        });
+    }
+    
+</script>

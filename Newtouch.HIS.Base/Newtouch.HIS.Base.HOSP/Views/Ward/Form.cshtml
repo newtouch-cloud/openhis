@@ -1,0 +1,199 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" >
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 6px; margin-right: 90px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>组织机构：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue">
+                            <input id="bqmc" name="bqmc" type="text" class="form-control required" placeholder="请输入名称" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>编码：</td>
+                        <td class="formValue">
+                            <input id="bqCode" name="bqCode" type="text" class="form-control required" placeholder="请输入编码" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>首拼：</th>
+                        <td class="formValue">
+                            <input id="py" name="py" type="text" class="form-control required" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">科主任：</th>
+                        <td class="formValue">
+                            <input id="kzr_gh" name="kzr_gh" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">护士长：</th>
+                        <td class="formValue">
+                            <input id="hsz_gh" name="hsz_gh" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">康复治疗师长：</th>
+                        <td class="formValue">
+                            <input id="kfzlsz_gh" name="kfzlsz_gh" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">状态：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/Ward/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+        //首拼
+        $('#bqmc').keyup(function () {
+            $('#py').val($(this).toShouPin());
+        })
+    }
+
+    var anPrevOrg = null;
+    $('#bqCode').focus(function () {
+        var organizeId = $("#OrganizeId").val();
+        if (!!!keyValue && ($.trim($(this).val()) === '' || organizeId != anPrevOrg)) {
+            anPrevOrg = organizeId;
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?topOrgIdIsStar=false&initFieldLength=8&fieldName=xt_bq.bqCode&orgId=" + organizeId + "&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#bqCode').val(data.data);
+                }
+            });
+        }
+    });
+
+
+    $("#kzr_gh").newtouchBatchFloatingSelector({
+        width: 300,
+        height: 200,
+        clickautotrigger: true,
+        caption: "科室主任",
+        url: '/Ward/Selectzccx',
+        ajaxparameters: function () {
+            return "xz=1";
+        },
+        itemdbclickhandler: function ($thistr) {
+            debugger
+            $('#kzr_gh').val($thistr.attr('data-gh'));
+        },
+        colModel: [{ label: '姓名', name: 'Name', widthratio: 25 },
+        { label: '工号', name: 'gh', widthratio: 25 },
+        { label: '职称', name: 'zc', widthratio: 25 },
+        ]
+    });
+
+    $("#hsz_gh").newtouchBatchFloatingSelector({
+        width: 300,
+        height: 200,
+        clickautotrigger: true,
+        caption: "科室主任",
+        url: '/Ward/Selectzccx',
+        ajaxparameters: function () {
+            return "xz=2";
+        },
+        itemdbclickhandler: function ($thistr) {
+            debugger
+            $('#hsz_gh').val($thistr.attr('data-gh'));
+        },
+        colModel: [{ label: '姓名', name: 'Name', widthratio: 25 },
+        { label: '工号', name: 'gh', widthratio: 25 },
+        { label: '职称', name: 'zc', widthratio: 25 },
+        ]
+    });
+
+    $("#kfzlsz_gh").newtouchBatchFloatingSelector({
+        width: 300,
+        height: 200,
+        clickautotrigger: true,
+        caption: "科室主任",
+        url: '/Ward/Selectzccx',
+        ajaxparameters: function () {
+            return "xz=3";
+        },
+        itemdbclickhandler: function ($thistr) {
+            debugger
+            $('#kfzlsz_gh').val($thistr.attr('data-gh'));
+        },
+        colModel: [{ label: '姓名', name: 'Name', widthratio: 25 },
+        { label: '工号', name: 'gh', widthratio: 25 },
+        { label: '职称', name: 'zc', widthratio: 25 },
+        ]
+    });
+
+
+
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/Ward/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>
+

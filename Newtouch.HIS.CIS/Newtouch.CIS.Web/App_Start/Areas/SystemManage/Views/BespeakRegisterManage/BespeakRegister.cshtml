@@ -1,0 +1,499 @@
+﻿@using Newtouch.Domain.ViewModels;
+@{
+    ViewBag.Title = "挂号预约维护";
+    Layout = "~/Views/Shared/_Form.cshtml";
+
+    var bdItems = ViewBag.defaultBespeakRegInfo as List<SysBespeakRegisterDateTimeVO>;
+}
+<style>
+    .dv-left {
+        float: left;
+        width: 300px;
+        padding: 0;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    #resources a {
+        padding: 5px 15px;
+    }
+
+    input[name=txtRegTime], [name=bespeakMaxCount] {
+        width: 40px;
+        float: left;
+        display: block;
+        color: #555;
+        background-color: #fff;
+        background-image: none;
+        border: 1px solid #ddd;
+        height: 24px;
+        line-height: 24px;
+        padding-top: 0px;
+        padding-bottom: 0px;
+        padding-right: 0px;
+        padding-left: 5px;
+        resize: none;
+        border-radius: 4px;
+        box-shadow: none;
+    }
+
+    input[name=txtRegTime] {
+        width: 90px;
+        text-align: center;
+    }
+
+    .sp-Separate {
+        margin-left: 10px;
+    }
+
+    .dv-right-content {
+        width: 830px;
+        overflow-x: auto;
+        position: relative;
+    }
+
+    .dv-right table {
+        float: left;
+    }
+
+        .dv-right table td, th {
+            border-bottom: 1px dashed #d7d7d7;
+            border-right: 1px dashed #d7d7d7;
+            width: 130px;
+            /*height: 25px;*/
+            padding: 2px;
+        }
+
+    table th {
+        text-align: center;
+    }
+
+    .ckbox-ext {
+        margin-top: 3px;
+        margin-left: 3px;
+        padding-right: 0;
+    }
+
+    .dv-addRow {
+        clear: both;
+        height: 25px;
+        width: 110px;
+        padding: 2px;
+        border-bottom: 1px solid #d7d7d7;
+        border-right: 1px solid #d7d7d7;
+        text-align: center;
+        line-height: 25px;
+    }
+</style>
+
+<form id="form1">
+    <div class="dv-left">
+        <div class="panel panel-default" style="margin-bottom: 5px;">
+            <div class="panel-heading navb-bg">科室选择</div>
+            @*<ul class="nav nav-tabs" role="tablist" id="resources">
+                    <li role="presentation" class="active">
+                        <a href="#dv-dept" role="tab" data-toggle="tab" id="li_dept" aria-expanded="true">科室</a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#dv-zj" role="tab" data-toggle="tab" id="li_zj">专家</a>
+                    </li>
+                </ul>*@
+            <div style="width: 300px; overflow-x: auto; margin: 0;">
+                <table id="deptGridList"></table>
+            </div>
+        </div>
+        <div class="panel panel-default" style="margin-bottom: 5px;">
+            <div class="panel-heading navb-bg">专家选择</div>
+            <div style="width: 300px; overflow-x: auto; margin: 0;">
+                <table id="zjGridList"></table>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-default dv-right">
+        <div class="panel-heading navb-bg">
+            排班
+            <span class="sp-Separate" id="sp_deptName"></span>
+            <span class="sp-Separate" id="sp_zjName"></span>
+        </div>
+        <div class="dv-right-content">
+            <table class="tab-regDate">
+                <thead id="thd_content">
+                    <tr id="tr_first">
+                        <th></th>
+                        @foreach (var item in bdItems[0].regTimes)
+                        {
+                            <td>
+                                <div class="ckbox ckbox-ext">
+                                    <input role="checkbox" type="checkbox" id="chk_@item.tmpId" name="chk_reg_col">
+                                    <label for="chk_@item.tmpId"></label>
+                                </div>
+                                <input name="txtRegTime" value="@item.regTime" id="@item.tmpId" attr-defaultBespeakMaxCount="@item.bespeakMaxCount" />
+                            </td>
+                        }
+                    </tr>
+                </thead>
+                <tbody id="tbd_content">
+                    @foreach (var item in bdItems)
+                    {
+                        <tr id="@item.tmpId" attr-regDate="@item.regDate">
+                            <th>
+                                @(item.week + "(" + item.regDate + ")")
+                                <div class="ckbox" style="float: right;padding-right: 0;">
+                                    <input role="checkbox" type="checkbox" id="chk_@item.tmpId" name="chk_reg_row">
+                                    <label for="chk_@item.tmpId"></label>
+                                </div>
+                            </th>
+                            @foreach (var p in item.regTimes)
+                            {
+                                <td>
+                                    <div class="ckbox ckbox-ext" style="margin-top: 3px;">
+                                        <input role="checkbox" type="checkbox" id="chk_@(item.tmpId+"_"+p.tmpId)" attr-tabId="@p.tabId" name="chk_reg" colId="@p.tmpId">
+                                        <label for="chk_@(item.tmpId+"_"+p.tmpId)"></label>
+                                    </div>
+                                    <input id="txt_@(item.tmpId+"_"+p.tmpId)" name="bespeakMaxCount" value="100" />
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <table style="display:inline-block;">
+                <tr>
+                    <th style="height: 25px;">
+                        <i class="fa fa-plus-square-o" style="font-size: large; color: #09a3ea;vertical-align: middle;" onclick="addColumn();">(列)</i>
+                    </th>
+                </tr>
+            </table>
+            <div class="dv-addRow">
+                <i class="fa fa-plus-square-o" style="font-size: large; color: #09a3ea;vertical-align: middle;" onclick="addRow(this);">(行)</i>
+            </div>
+        </div>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+    {
+        ShowKeyList = new[] { 7, 8 },
+        F7Text = "重置",
+        F8Text = "保存"
+    })
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    var $deptGridList = $("#deptGridList");
+    $(function () {
+        $(".dv-left").height($(window).height() - 15);
+        $(".dv-right-content").height($(window).height() - 90);
+        $(".dv-right-content").width($(document).width() - 310);
+        $("#li_zj").click(function () {
+            getZjData("");
+        });
+        deptGridList();
+        if (!!keyValue) {
+            $.najax({
+                url: "/SystemManage/BespeakRegisterManage/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    if (data != null) {
+                        $("#selyf").val(data.yfCode);
+                        $("#selitem").val(data.sfxmCode);
+                    }
+                    else {
+                        $.modalAlert("获取信息失败", 'error');
+                    }
+                }
+            });
+        };
+    });
+
+    //获取科室信息
+    function deptGridList() {
+        $deptGridList.dataGrid({
+            url: "/SystemManage/SysDepartment/GetSelectJson",
+            height: ($(window).height() - 105)/2,
+            width: 250,
+            postData: { organizeId: '@ViewBag.OrganizeId' },
+            colModel: [
+                { label: '科室代码', name: 'Code', width: 70, align: 'left' },
+                { label: '科室名称', name: 'Name', width: 150, align: 'left' }
+            ],
+            onSelectRow: function (rowid) {
+                //标记科室
+                var rowData = $('#deptGridList').jqGrid('getRowData', rowid);
+                $("#sp_deptName").html("/ " + rowData.Name);
+                $("#sp_zjName").html("");
+                //获取专家信息
+                rowData = $deptGridList.jqGrid('getRowData', rowid);
+                getZjData(rowData.Code);
+                //获取焦点科室已维护预约挂号
+                getDeptRegData(rowData.Code);
+            }
+        });
+    }
+
+    //获取科室预约
+    function getDeptRegData(ksCode) {
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/GetRegDataHtmlByKs",
+            data: { deptCode: ksCode },
+            dataType: "text",
+            success: function (data) {
+                if (data != null && data !== "") {
+                    var arrData = data.split('卐');
+                    $('#thd_content').html(arrData[0]);
+                    $('#tbd_content').html(arrData[1]);
+                } else {
+                    $('#thd_content').html("<tr id=\"tr_first\"><th></th></tr>");
+                    $('#tbd_content').html("");
+                }
+            }
+        });
+    }
+
+    //获取专家信息
+    function getZjData(ksCode) {
+        if (ksCode == null || ksCode === "") {
+            var rowid = $('#deptGridList').jqGrid('getGridParam', 'selrow');
+            if (rowid == null || rowid === "") {
+                $.modalMsg("请先选择科室", 'error', 1500);
+                return;
+            }
+            var rowData = $('#deptGridList').jqGrid('getRowData', rowid);
+            ksCode = rowData.Code;
+        }
+        $('#zjGridList').jqGrid("clearGridData");//每次双击，先清空明细 再重新加载所有选中行明细
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/GetStaff",
+            data: { deptCode: ksCode },
+            dataType: "json",
+            success: function (data) {
+                if (data != null && data.length>0) {
+                    $('#zjGridList').newtouchLocalDataGrid(null, data);
+                }
+                else {
+                    $.modalMsg("获取专家信息失败，请联系管理员", 'error', 1500);
+                }
+            }
+        });
+    }
+
+    //获取专家信息
+    $("#zjGridList").newtouchLocalDataGrid({
+        height: ($(window).height() - 120)/2-35,
+        width: 250,
+        unwritten: false,
+        colModel: [
+            { label: "主键", name: "Id", hidden: true, key: true },
+            { label: '工号', name: 'gh', width: 80, align: 'left' },
+            { label: '名称', name: 'Name', width: 120, align: 'left' },
+        ],
+        onSelectRow: function (rowid) {
+            var rowData = $('#zjGridList').jqGrid('getRowData', rowid);
+            $("#sp_zjName").html("/ " + rowData.Name);
+            //获取专家信息
+            getZjRegData(rowData.gh);
+        }
+    });
+
+    //获取科室预约
+    function getZjRegData(gh) {
+        var rowid = $('#deptGridList').jqGrid('getGridParam', 'selrow');
+        var rowData = $('#deptGridList').jqGrid('getRowData', rowid);
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/GetRegDataHtmlByKsAndGh",
+            data: { deptCode: rowData.Code, gh: gh },
+            dataType: "text",
+            success: function (data) {
+                if (data != null && data !== "") {
+                    var arrData = data.split('卐');
+                    $('#thd_content').html(arrData[0]);
+                    $('#tbd_content').html(arrData[1]);
+                } else {
+                    $('#thd_content').html("<tr id=\"tr_first\"><th></th></tr>");
+                    $('#tbd_content').html("");
+                }
+            }
+        });
+    }
+
+    //重置
+    function newtouch_event_f7() {
+        var rowid = $('#deptGridList').jqGrid('getGridParam', 'selrow');
+        var rowData = $('#deptGridList').jqGrid('getRowData', rowid);
+        getDeptRegData(rowData.Code);
+    }
+
+    //保存
+    function newtouch_event_f8() {
+        var deptRowid = $('#deptGridList').jqGrid('getGridParam', 'selrow');
+        if (!deptRowid) {
+            $.modalMsg('请选择科室', 'error', 1000);
+            return;
+        }
+        var allChk = $("input[name=chk_reg]");
+        if (allChk == undefined || allChk.length <= 0) {
+            return;
+        }
+        var ksCode = $('#deptGridList').jqGrid('getRowData', deptRowid).Code;
+        var zjRowid = $('#zjGridList').jqGrid('getGridParam', 'selrow');
+        var zjGh = "";
+        if (zjRowid) {
+            zjGh = $('#zjGridList').jqGrid('getRowData', zjRowid).gh;
+        }
+        var regData = [];
+        $.each(allChk, function (index, item) {
+            var colId = $(item).attr("colid");
+            regData.push({
+                Id: $(item).attr("attr-tabId"),
+                mzlx: zjGh === "" ? "1" : "3",
+                regDate: $(item).parent().parent().parent().attr("attr-regdate"),
+                regTime: $("#" + colId).val(),
+                departmentCode: ksCode,
+                ysgh: zjGh,
+                bespeakMaxCount: $("#txt_" + item.id.replace("chk_", "")).val(),
+                zt: $(item).is(":checked") ? "1" : "0"
+            });
+        });
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/SubmitForm",
+            data: { regData: regData},
+            dataType: "json",
+            type: "POST",
+            success: function (res) {
+                if (res.state === "success") {
+                    refleshData();
+                    $.modalMsg("提交成功", 'success');
+                } else {
+                    $.modalAlert(res.message, "error");
+                }
+            }
+        });
+    }
+
+    //刷新排班信息
+    function refleshData() {
+        var rowid = $('#deptGridList').jqGrid('getGridParam', 'selrow');
+        if (!rowid) {
+            return;
+        }
+        //标记科室
+        var rowData = $('#deptGridList').jqGrid('getRowData', rowid);
+        $("#sp_deptName").html("/ " + rowData.Name);
+        $("#sp_zjName").html("");
+        //获取专家信息
+        rowData = $deptGridList.jqGrid('getRowData', rowid);
+        getZjData(rowData.Code);
+        //获取焦点科室已维护预约挂号
+        getDeptRegData(rowData.Code);
+    }
+
+    //添加列
+    function addColumn() {
+        var alltr = $("#tbd_content").find("tr");
+        if (alltr.length != undefined && alltr.length != null && alltr.length > 0) {
+            $.najax({
+                url: "/SystemManage/BespeakRegisterManage/GetGuid",
+                data: { rowCount: alltr.length },
+                dataType: "json",
+                success: function (data) {
+                    if (data != null) {
+                        buildColHtml(data);
+                    }
+                    else {
+                        $.modalAlert("获取Guid失败，请联系管理", 'error');
+                    }
+                }
+            });
+        }
+    }
+
+    //添加列
+    function buildColHtml(guids) {
+        var firstColId = guids[0];
+        for (var i = 0; i < guids.length; i++) {
+            var item = guids[i];
+            var tdHtml = "";
+            if (i == 0) {
+                tdHtml += "<td><div class=\"ckbox ckbox-ext\">";
+                tdHtml += "<input type=\"checkbox\" id=\"chk_" + firstColId + "\" name=\"chk_reg_col\" role=\"checkbox\" >";
+                tdHtml += "<label for=\"chk_" + firstColId + "\"></label></div>";
+                tdHtml += "<input name='txtRegTime' value='' id='" + firstColId + "' /></td>";
+                $("#tr_first").append(tdHtml);
+            } else {
+                tdHtml = "<td>";
+                tdHtml += "<div class='ckbox ckbox-ext' style='margin-top:3px;'>";
+                tdHtml += "<input role=\"checkbox\" type=\"checkbox\" id=\"chk_" + item + "\" name=\"chk_reg\" attr-tabId=\"\" colId=\"" + firstColId + "\" >";
+                tdHtml += "<label for=\"chk_" + item + "\"></label>";
+                tdHtml += "</div>";
+                tdHtml += "<input id=\"txt_" + item + "\" name=\"bespeakMaxCount\" value=\"100\" />";
+                tdHtml += "</td>";
+                $($("#tbd_content").find("tr")[i - 1]).append(tdHtml);
+            }
+        }
+    }
+
+    //添加行
+    function addRow() {
+        var lastRegDate = $("#tbd_content tr:last").attr("attr-regDate");
+        if (lastRegDate == undefined || lastRegDate == "") return;
+        var allRegTimeInput = $("input[name=txtRegTime]");
+        if (allRegTimeInput == null || allRegTimeInput.length <= 0) return;
+        var regTimeData = [];
+        for (var i = 0; i < allRegTimeInput.length; i++) {
+            var item = {
+                tmpId: allRegTimeInput[i].id,
+                regTime:$(allRegTimeInput[i]).val(),
+                bespeakMaxCount:$(allRegTimeInput[i]).attr("attr-defaultBespeakMaxCount")
+            };
+            regTimeData.push(item);
+        }
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/GetNewRowHtml",
+            data: { lastRegDate: lastRegDate, regTime: JSON.stringify(regTimeData) },
+            dataType: "text",
+            success: function (data) {
+                if (data != null && data.length>0) {
+                    $("#tbd_content").append(data);
+                }
+                else {
+                    $.modalAlert("获取Guid失败，请联系管理", 'error');
+                }
+            }
+        });
+    }
+
+    //列全选
+    $("#thd_content").on("click", "input[name=chk_reg_col]", function () {
+        if ($(this).is(":checked")) {
+            var sourceId = this.id;
+            $("input[name=chk_reg]").each(function () {
+                if (("chk_" + $(this).attr("colId")) === sourceId) {
+                    $(this).prop("checked", true);
+                }
+            });
+        } else {
+            var sourceId = this.id;
+            $("input[name=chk_reg]").each(function () {
+                if (("chk_" + $(this).attr("colId")) === sourceId) {
+                    $(this).removeAttr('checked');
+                }
+            });
+        }
+    });
+    //行全选
+    $("#tbd_content").on("click", "input[name=chk_reg_row]",function () {
+        if ($(this).is(":checked")) {
+            $(this).parent().parent().parent().find("input[name=chk_reg]").each(function () {
+                $(this).prop("checked", true);
+            });
+        } else {
+            $(this).parent().parent().parent().find("input[name=chk_reg]").each(function () {
+                $(this).removeAttr('checked');
+            });
+        }
+    });
+
+</script>

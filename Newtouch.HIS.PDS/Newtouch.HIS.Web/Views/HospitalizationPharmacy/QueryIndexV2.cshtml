@@ -1,0 +1,436 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "QueryIndexV2";//住院发药查询
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<div class="rows">
+    <form id="form1">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                查询条件
+            </div>
+            <div style="padding: 2px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">病区：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="bqmc" class="form-control">
+                                <option value="">全部</option>
+                            </select>
+                        </td>
+                        <th class="formTitle">批次：</th>
+                        <td class="formValue">
+                            <input id="pc" type="text" class="form-control" placeholder="批次" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>开始时间：</th>
+                        <td class="formValue">
+                            <input id="Kssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>结束时间：</th>
+                        <td class="formValue">
+                            <input id="Jssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd 23:59")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd 23:59:59'})" />
+                        </td>
+                        <td class="formTitle" rowspan="2">
+                            <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">患者姓名：</th>
+                        <td class="formValue">
+                            <input id="patientName" type="text" class="form-control" placeholder="姓名" />
+                        </td>
+                        <th class="formTitle">药品：</th>
+                        <td class="formValue">
+                            <input id="ypmc" type="text" class="form-control" placeholder="药品" />
+                        </td>
+                        <th class="formTitle">床位号：</th>
+                        <td class="formValue">
+                            <input id="cw" type="text" class="form-control" placeholder="床位号" />
+                        </td>
+                        <th class="formTitle">操作类型：</th>
+                        <td class="formValue">
+                            <select id="fyzt" class="form-control">
+                                <option value="">全部</option>
+                                <option value="1">发药</option>
+                                <option value="2">退药</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="rows">
+    <table id="resultGridList"></table>
+    <div id="gridPager"></div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 6, 8 } ,
+    F6Text = "补打",
+    F8Text = "汇总打印",
+})
+
+<script type="text/javascript">
+    var $gridBRXXDrugsList = $("#resultGridList");
+    $(function () {
+        $("#bqmc").bindSelect({ //病区信息集合
+            url: "/HospitalizationPharmacy/GetBQSelectJson",
+            id: "bqCode",
+            text: "bqmc"
+        });
+        dispenseMedicinGridList();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+
+    var checkArray = [];
+    var pageNum = 1;
+
+    //用户发药详细信息
+    function dispenseMedicinGridList() {
+        $gridBRXXDrugsList.dataGrid({
+            multiselect: true,
+            url: '/HospitalizationPharmacy/GetZYFYCXDBGridJsonV2',
+            height: $(window).height() - document.getElementById('resultGridList').offsetTop - 150,
+            postData: {
+                Bq: $("#bqmc").val(), patientName: $("#patientName").val(),
+                ypmc: $("#ypmc").val(), pc: $("#pc").val(),
+                Kssj: $("#Kssj").val(), Jssj: $("#Jssj").val(),
+                cw: $("#cw").val(), operateType: $("#fyzt").val()
+            },
+            colModel: [
+                {
+                    label: '操作', name: 'czlx', width: 45, align: 'center',
+                    formatter: function (cellvalue) {
+                        return cellvalue === "发药" ? "<span style='color:#0000cd;'>发药</span>" : "<span style='color:#ff0000;'>退药</span>";
+                    }
+                },
+                { label: 'Id', name: 'Id',   align: 'left', hidden: true },
+                { label: 'zyh', name: 'zyh', align: 'left', hidden: true },
+                { label: '姓名', name: 'patientName', width: 65, align: 'left' },
+                { label: '批次', name: 'pc', width: 100, align: 'left' },
+                { label: '药品', name: 'ypmc', width: 100, align: 'left' },
+                { label: '床位号', name: 'cw', width: 60, align: 'center' },
+                { label: '发/退数量', name: 'slStr', width: 60, align: 'right' },
+                { label: '剂型', name: 'jxmc', width: 60, align: 'center' },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left' },
+                { label: '频次', name: 'pcmc', width: 50, align: 'center' },
+                { label: '组号', name: 'zh', width: 40, align: 'center' },
+                { label: '用量', name: 'ylStr', width: 60, align: 'center' },
+                { label: '医嘱性质', name: 'yzxzmc', width: 60, align: 'center' },
+                { label: '生产厂家', name: 'ycmc', width: 100, align: 'left' },
+                { label: '用法', name: 'zlff', width: 50, align: 'center' },
+                { label: '退药申请号', name: 'zytyapplyno', width: 126, align: 'center' },
+                { label: '操作员', name: 'CreatorCode', width: 70, align: 'center' },
+                { label: '操作时间', name: 'CreateTime', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: "医嘱ID", name: 'zxId', hidden: true },
+                { label: '单价', name: 'djStr', hidden: true },
+                { label: '金额', name: 'je', hidden: true },
+                { label: '使用数量', name: 'yl', hidden: true },
+                { label: '使用单位', name: 'yldw', hidden: true },
+                { label: "药品编码", name: 'ypCode', hidden: true },
+                { label: "yzId", name: 'yzId', hidden: true }
+            ],
+            caption: "发药/退药列表",
+            pager: "#gridPager",
+            sortname: 'CreateTime',
+            viewrecords: true,
+            //multiboxonly : false,
+            onSelectAll: function (rowIds, status) {
+                //选中全部时触发，rowIds为当页所有的rowId
+                //checkArray数组中把当页的全删除 jqGrid('getDataIDs');
+                for (var i = 0; i < rowIds.length; i++) {
+                    for (var j = 0; j < checkArray.length; j++) {
+                        if (checkArray[j].pageNum == pageNum && checkArray[j].rowId == rowIds[i]) {
+                            checkArray.splice(j, 1);
+                            break;
+                        }
+                    }
+                }
+                //如果是选择的选中，则把当页所有条目加上
+                if (status) {
+                    for (var i = 0; i < rowIds.length; i++) {
+                        var rowData = $gridBRXXDrugsList.jqGrid('getRowData', rowIds[i]);
+                        var checkedItem = { "pageNum": pageNum, "rowId": rowIds[i], "czlx": rowData.czlx, "yzId": rowData.yzId, "Id": rowData.Id, "zxId": rowData.zxId, "zyh": rowData.zyh, "zytyapplyno": rowData.zytyapplyno };
+                        checkArray.push(checkedItem)
+                    }
+                }
+            },
+            onSelectRow: function (rowId, status) {  //点击checkbox触发 rowId为当前触发的rowid
+                //选中行的行数据
+                var rowData = $gridBRXXDrugsList.jqGrid('getRowData', rowId);
+                var checkedItem = { "pageNum": pageNum, "rowId": rowId, "czlx": rowData.czlx, "yzId": rowData.yzId, "Id": rowData.Id, "zxId": rowData.zxId, "zyh": rowData.zyh, "zytyapplyno": rowData.zytyapplyno };
+                if (status) {
+                    //如果选中，则判断数组中如果没有的话加入数组
+                    for (var i = 0; i < checkArray.length; i++) {
+                        if (checkArray[i].pageNum == pageNum && checkArray[i].rowId == rowId) {
+                            return false;
+                        }
+                    }
+                    checkArray.push(checkedItem);
+                } else {
+                    //删除数组
+                    for (var i = 0; i < checkArray.length; i++) {
+                        if (checkArray[i].pageNum == pageNum && checkArray[i].rowId == rowId) {
+                            checkArray.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+                //console.log(checkArray)
+            },
+            //每个页面加载时触发
+            loadComplete: function (data) {
+                //改变全局变量pageNum页码
+                pageNum = data.page;
+                //循环数组，让当页中的rowId变为选中状态
+                for (var i = 0; i < checkArray.length; i++) {
+                    if (checkArray[i].pageNum == pageNum) {
+                        $gridBRXXDrugsList.jqGrid('setSelection', checkArray[i].rowId, true);
+                    }
+                }
+            }
+        });
+
+        $(".ui-pg-selbox").change(function () {
+            //要触发的事件
+            checkArray.splice(0);
+        });
+
+        //查询
+        $("#btn_search").click(function () {
+            if ($("#Kssj").val() === "") {
+                $.modalMsg("开始时间不能为空", "warning", 2000);
+                return false;
+            }
+            if ($("#Jssj").val() === "") {
+                $.modalMsg("结束时间不能为空", "warning", 2000);
+                return false;
+            }
+            $gridBRXXDrugsList.jqGrid('setGridParam', {
+                postData: {
+                    Bq: $("#bqmc").val(),
+                    patientName: $("#patientName").val(),
+                    ypmc: $("#ypmc").val(),
+                    pc: $("#pc").val(),
+                    Kssj: $("#Kssj").val(),
+                    Jssj: $("#Jssj").val(),
+                    cw: $("#cw").val(),
+                    operateType: $("#fyzt").val()
+                }
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function openWindowWithPost(url, name, keys, values) {
+        var newWindow = window.open(url, name);
+
+        if (!newWindow) return false;
+
+        var html = "";
+        html += "<html><head></head><body><form id='formid' method='post' action='" + url + "'>";
+
+        if (keys && values && (keys.length == values.length))
+            for (var i = 0; i < keys.length; i++)
+                html += "<input type='hidden' name='" + keys[i] + "' value='" + values[i] + "'/>";
+
+        html += "</form><script type='text/javascript'>document.getElementById(\"formid\").submit()</sc" + "ript></body></html>";
+
+        newWindow.document.write(html);
+        return newWindow;
+    }
+
+    //打印明细
+    function newtouch_event_f7() {
+        var yzIds = checkArray.map((item) => {
+            var czlx = item.czlx.indexOf("发药") != -1 ? "发药" : "退药";
+            return item.yzId + czlx + item.Id;
+        }).join(",");
+
+        var startTime = $("#Kssj").val();
+        var endTime = $("#Jssj").val();
+        var fybz = $("#fyzt").val();
+        var bqCode = $("#bqmc").val();
+        var patientName = $("#patientName").val();
+        var ypmc = $("#ypmc").val();
+        var cw = $("#cw").val();
+        var pc = $("#pc").val();
+
+        var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", startTime, endTime, fybz, bqCode, patientName, ypmc, cw, pc, yzIds);
+        var keys = new Array("OrganizeId", "yfbmCode", "kssj", "jssj", "operateType", "bqCode", "patientName", "ypmc", "cw", "pc", "yzIds");
+        openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFYCX_Detail&rs:Command=Render", "", keys, values);
+    }
+
+    //汇总打印
+    function newtouch_event_f8() {
+        var kssj = $("#Kssj").val();
+        var jssj = $("#Jssj").val();
+        var operateType = $("#fyzt").val();
+        if (operateType != 1 && operateType != 2) {
+            operateType = "1,2";
+        }
+        var fy = checkArray.filter((item) => item.czlx.indexOf("发药") > 0);
+        var ty = checkArray.filter((item) => item.czlx.indexOf("退药") > 0);
+
+        if (ty.length > 0) {
+
+            if (fy.length > 0) {
+                var fyCzIds = checkArray.map((item) => {
+                    if (item.czlx.indexOf("发药") > 0) {
+                        return item.Id
+                    }
+                }).join(",");
+
+                var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", "", "", "1", kssj, jssj, fyCzIds);
+                var keys = new Array("OrganizeId", "yfbmCode", "yzIds", "zxIds", "operateType", "kssj", "jssj", "czIds");
+
+                var uri = '@reportUrl' + "?tempCode=66" + "&systemCode=" + '@reportSystemCode'+ "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds= &zxIds="+"&operateType=1"+"&kssj="+kssj+"&jssj="+jssj + "&czIds=" + fyCzIds ;
+                window.open(uri);
+                //openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFYCX_Summary_bak&rs:Command=Render", "", keys, values);
+            }
+
+            var nullhash = tynonullunique(checkArray);
+
+            if (nullhash.length > 0) {
+                var czIds = nullhash.map((item) => {
+                    return item;
+                }).join(",");
+
+                var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", "", "", operateType, kssj, jssj, czIds);
+                var keys = new Array("OrganizeId", "yfbmCode", "yzIds", "zxIds", "operateType", "kssj", "jssj","czIds");
+
+                var uri = '@reportUrl' + "?tempCode=66"+ "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds= &zxIds="+"&operateType="+operateType+"&kssj="+kssj+"&jssj="+jssj + "&czIds=" + czIds ;
+                window.open(uri);
+                //openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFYCX_Summary_bak&rs:Command=Render", "", keys, values);
+            }
+
+            var hash = unique(checkArray);
+
+            for (var i = 0; i < hash.length; i++) {
+                var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", "", "", "2", kssj, jssj, "", hash[i].zytyapplyno, hash[i].zyh);
+                var keys = new Array("OrganizeId", "yfbmCode", "yzIds", "zxIds", "operateType", "kssj", "jssj", "czIds", "rdNo", "zyh");
+
+                var uri = '@reportUrl' + "?tempCode=65" + "&systemCode=" + '@reportSystemCode'+ "&OrganizeId=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds= &zxIds="+"&operateType=2"+"&kssj="kssj+"&jssj="jssj + "&czIds="+"&rdNo="+ hash[i].zytyapplyno+"&zyh="+hash[i].zyh ;
+                window.open(uri);
+                //openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFYCX_Summary_TY&rs:Command=Render", "", keys, values);
+            }
+
+        } else {
+            var czIds = checkArray.map((item) => {
+                return item.Id
+            }).join(",");
+            var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", "", "", operateType, kssj, jssj, czIds);
+            var keys = new Array("OrganizeId", "yfbmCode", "yzIds", "zxIds", "operateType", "kssj", "jssj","czIds");
+
+            var uri = '@reportUrl' + "?tempCode=66" + "&systemCode=" + '@reportSystemCode'+ "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds= &zxIds="+"&operateType="+operateType+"&kssj="+kssj+"&jssj="+jssj + "&czIds=" + czIds ;
+            window.open(uri);
+            //openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFYCX_Summary_bak&rs:Command=Render", "", keys, values);
+        }
+    }
+
+    function unique(arr) {
+        var result = [], isRepeated;
+        for (var i = 0, len = arr.length; i < len; i++) {
+            if (arr[i].zytyapplyno != "" && arr[i].zytyapplyno != null) {
+                isRepeated = false;
+                for (var j = 0, len1 = result.length; j < len1; j++) {
+                    if (arr[i].zytyapplyno == result[j].zytyapplyno) {
+                        isRepeated = true;
+                    }
+                }
+                if (!isRepeated) {
+                    result.push(arr[i]);
+                }
+            }
+        }
+        return result;
+    }
+
+    function tynonullunique(arr) {
+        var result = [], isRepeated;
+        for (var i = 0, len = arr.length; i < len; i++) {
+            if (arr[i].czlx.indexOf("退药") > 0 && (arr[i].zytyapplyno == "" || arr[i].zytyapplyno == null)) {
+                result.push(arr[i].Id);
+            }
+        }
+        return result;
+    }
+
+
+    function newtouch_event_f6() {
+        //补打 不支持发药退药混合打印
+        var operateType;
+        if (checkArray.length == 0) {
+            $.modalMsg("请选择操作记录", "warning");
+            return false;
+        }
+        var fy = checkArray.filter((item) => item.czlx.indexOf("发药") > 0);
+        var ty = checkArray.filter((item) => item.czlx.indexOf("退药") > 0);
+        if (fy.length > 0 && ty.length > 0) {
+            $.modalMsg("操作类型请选择退药或发药", "warning");
+            return false;
+        }
+        else if (fy.length > 0) {
+            operateType = 1;
+        }
+        else if (ty.length > 0) {
+            operateType = 2;
+        }
+
+        if (operateType == 1) {
+            var zyh = checkArray[0].zyh;
+            if (!!zyh && checkArray.filter((item) => item.zyh != zyh).length>0) {
+                $.modalMsg("多人打印请选择汇总打印", "warning");
+                return false;
+            }
+            var czIds = checkArray.map((item) => {
+                return item.Id
+            }).join(",");
+
+            var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", "", "", operateType, zyh, czIds, "");
+            var keys = new Array("OrganizeId", "yfbmCode", "yzIds", "zxIds","operateType","zyh","czIds","rdNo");
+            openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFY_CFD_bak&rs:Command=Render", "", keys, values);
+        } else {
+            var zyh = checkArray[0].zyh;
+            if (!!zyh && checkArray.filter((item) => item.zyh != zyh).length>0) {
+                $.modalMsg("多人打印请选择汇总打印", "warning");
+                return false;
+            }
+
+            var hash = unique(checkArray);
+
+            for (var i = 0; i < hash.length; i++) {
+                var values = new Array("@ViewBag.OrganizeId", "@ViewBag.yfbmCode", "", "", operateType, zyh, "", hash[i].zytyapplyno);
+                var keys = new Array("OrganizeId", "yfbmCode", "yzIds", "zxIds","operateType","zyh","czIds","rdNo");
+
+                var uri = '@reportUrl' + "?tempCode=65" + "&systemCode=" + '@reportSystemCode'+ "&OrganizeId=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds= &zxIds="+"&operateType="+operateType+ "&czIds="+"&rdNo="+ hash[i].zytyapplyno+"&zyh="+zyh ;
+                window.open(uri);
+                //openWindowWithPost("@(ViewBag.ReportServerHOST)/Pages/ReportViewer.aspx?%2fNewtouch.HIS.Bill%2fZYFY_CFD_TY&rs:Command=Render", "", keys, values);
+            }
+        }
+
+    }
+
+
+</script>

@@ -1,0 +1,275 @@
+﻿@{
+    ViewBag.Title = "QueryIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style type="text/css">
+    .ui-th-ltr, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr {
+        border: solid 1px #ddd;
+    }
+
+        .ui-th-ltr div, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr div {
+            text-align: center;
+        }
+
+    .ui-jqgrid .ui-jqgrid-btable tbody tr.jqgrow td {
+        border: solid 1px #ddd;
+    }
+
+    .ui-jqgrid .table-bordered th {
+        padding-top: 4px;
+        padding-bottom: 4px;
+    }
+</style>
+<form name="form1">
+    <div class="panel panel-default" style="margin-bottom:5px;">
+        <div style="width:1000px;padding: 2px 0;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue" colspan="2">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:1%;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input id="zyh" type="text" class="form-control" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_zyh" class="btn btn-default" value="住院号" />
+                    </td>
+                    <td class="formValue" colspan="3">
+                        &nbsp;&nbsp;
+                        <input type="button" id="btn_search" class="btn btn-primary" value=" 查 询 " />
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <input type="button" id="btn_add" class="btn btn-primary" value=" 新 录 入 " />
+                        &nbsp;
+                        <input type="button" id="btn_edit" class="btn btn-primary" value=" 修 改 " />
+                        &nbsp;
+                        <input type="button" id="btn_delete" class="btn btn-primary" value=" 作 废 " />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    });
+
+    function initControl() {
+        $('#btn_zyh').click(function () {
+            $.modalOpen({
+                id: "patSearch",
+                title: "住院患者查询",
+                url: "/PatientList/InPatSearchView?allowunselected=true&zybz=1,2,3,7&t=" + Math.random() + "&zyh=" + '',
+                width: "700px",
+                height: "600px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].AcceptClick(function (patData) {
+                        if (patData && patData.zyh) {
+                            $('#zyh').val(patData.zyh);
+                        }
+                        else {
+                            $('#zyh').val('');
+                        }
+                    });
+                }
+            });
+        });
+
+        $('#zyh').keyupEnterEvent(function () {
+            $('#btn_search').trigger('click');
+        });
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: {},
+            url: "/NurseManage/InpatientVitalSigns/GetGridJson",
+            postData: getSearchPostData(),
+            height: $(window).height() - 145,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "住院号", name: "zyh", width: 80, align: 'left' },
+                { label: "姓名", name: "xm", width: 80, align: 'left' },
+                {
+                    label: "日期", name: "rq", width: 150, align: 'left',
+                    formatter: function (cellvalue, options, rowobject) {
+                        //日期 时间点 相关状态
+                        var val = $.getDate({ date: cellvalue });
+                        val += " " + rowobject.sj + ":00";
+                        if (rowobject.brzt) {
+                            val += " " + $.enum.getDescByValue("EnumHlbrzt", rowobject.brzt);
+                        }
+                        return val;
+                    }
+                },
+                { label: "时间点", name: "sj", width: 50, align: 'left', hidden: true },
+                { label: "相关状态", name: "brzt", width: 60, align: 'left', hidden: true },
+                { label: "体温", name: "tw", width: 40, align: 'left' },
+                { label: "twclfs", name: "twclfs", width: 50, align: 'left', hidden: true },
+                { label: "心率", name: "xl", width: 40, align: 'left' },
+                { label: "脉搏", name: "mb", width: 40, align: 'left' },
+                { label: "qbq", name: "qbq", width: 50, align: 'left', hidden: true },
+                { label: "呼吸", name: "hx", width: 40, align: 'left' },
+                { label: "hxj", name: "hxj", width: 50, align: 'left', hidden: true },
+                {
+                    label: "血压", name: "xysz", width: 50, align: 'left',
+                    formatter: function (cellvalue, options, rowobject) {
+                        //上值 下值
+                        var val = cellvalue;
+                        if (rowobject.xyxz) {
+                            val += " - " + rowobject.xyxz;
+                        }
+                        return val || '';
+                    }
+                },
+                { label: "血压", name: "xyxz", width: 55, align: 'left', hidden: true },
+                { label: "体重", name: "tz", width: 40, align: 'left' },
+                { label: "tzclbz", name: "tzclbz", width: 50, align: 'left', hidden: true },
+
+                { label: "大便次数", name: "dbcs", width: 50, align: 'left' },
+                { label: "dbcsbz", name: "dbcsbz", width: 50, align: 'left', hidden: true },
+
+                { label: "输液量", name: "syl", width: 40, align: 'left' },
+                { label: "饮食量", name: "ysl", width: 40, align: 'left' },
+                { label: "输血量", name: "sxl", width: 40, align: 'left' },
+
+                { label: "呕吐量", name: "otl", width: 40, align: 'left' },
+                { label: "尿量", name: "xbl", width: 40, align: 'left' },
+                { label: "超液量", name: "cys", width: 40, align: 'left' },
+                { label: "伤口引流", name: "skyll", width: 50, align: 'left' },
+                { label: "胸液量", name: "xyl", width: 40, align: 'left' },
+                { label: "胃液量", name: "wyl", width: 40, align: 'left' },
+                { label: "负吸小球", name: "fxxq", width: 50, align: 'left' },
+                { label: "其他摄出", name: "qtsc", width: 50, align: 'left' },
+                { label: "吸氧/流量L/min", name: "xyll", width: 90, align: 'left' },
+                { label: "xyfs", name: "xyfs", width: 50, align: 'left', hidden: true },
+                { label: "血氧饱和度", name: "xybhd", width: 70, align: 'left' },
+                { label: "录入用户", name: "CreatorCode", width: 60, align: 'left' },
+                { label: '录入时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ],
+            rowNum: 10,
+            pager: "#gridPager",
+            sortname: 'rq , sj',
+            viewrecords: true,
+            rownumbers: false,
+            ondblClickRow: function (rowid) {
+                gridEditRow(rowid);
+            },
+            gridComplete: function () {
+
+            }
+        });
+
+        //二级菜单
+        $gridList.jqGrid('setGroupHeaders', {
+            useColSpanStyle: true,
+            groupHeaders: [
+            {
+                startColumnName: 'syl',
+                numberOfColumns: 3,
+                titleText: '摄入量'
+            },
+            {
+                startColumnName: 'otl',
+                numberOfColumns: 8,
+                titleText: '摄出量'
+            }
+            ]
+        });
+
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                page: 1,
+            }).trigger('reloadGrid');
+        })
+        $("#btn_search").trigger('click');
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        var zyh = $("#zyh").val();
+        return { zyh: zyh, kssj: kssj, jssj: jssj };
+    };
+
+    $("#btn_add").click(function () {
+        InpatientVitalSignsForm();
+    });
+
+    $("#btn_edit").click(function () {
+        var seleId = $('#gridList').jqGrid('getGridParam', 'selrow');
+        if (seleId) {
+            //请求修改该行
+            gridEditRow(seleId);
+        }
+        else {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+    });
+
+    $("#btn_delete").click(function () {
+        var seleId = $('#gridList').jqGrid('getGridParam', 'selrow');
+        if (seleId) {
+            //请求作废该行
+            gridDeleteRow(seleId);
+        }
+        else {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+    });
+
+    function gridEditRow(rowid) {
+        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+        InpatientVitalSignsForm(rowData.Id);
+    }
+
+    function gridDeleteRow(rowid) {
+        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+        $.deleteForm({
+            prompt: "注：您确定要作废该条数据吗？",
+            url: "/NurseManage/InpatientVitalSigns/DeleteForm",
+            param: { keyValue: rowData.Id },
+            success: function () {
+                $("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+    function InpatientVitalSignsForm(smtzId) {
+        $.modalOpen({
+            id: "InpatientVitalSignsForm",
+            title: "护理录入",
+            url: "/NurseManage/InpatientVitalSigns/Form?smtzId=" + smtzId,
+            width: "800px",
+            height: "510px",
+            showleftlalbel: !!!smtzId,  //新增时显示 '确认并关闭按钮'
+            leftlalbelchecked: true,
+            leftlabeltext: "连续录入",
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId, isClose) {
+                var ret = top.frames[iframeId].AcceptClick(function () {
+                    $("#gridList").trigger("reloadGrid");
+                    if (isClose === undefined || isClose === true) {
+                        top.frames[iframeId].$.modalClose();
+                    }
+                });
+            }
+        });
+    }
+
+</script>

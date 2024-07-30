@@ -1,0 +1,218 @@
+﻿
+@{
+    ViewBag.Title = "Skintestquery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+@*<div class="topPanel" style="height:50px;line-height:30px">
+    <table class="form">
+        <tr>
+            <th class="formTitle">查询日期：</th>
+            <td class="formValue" colspan="2">
+                <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                <span style="margin-left:1%;float:left">—</span>
+                <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+            </td>
+            <th class="formTitle">门诊号/姓名</th>
+            <td class="formValue">
+                <input id="cxtjtext" type="text" class="form-control" placeholder="门诊号/姓名" />
+            </td>
+            <th class="formTitle">药品名称</th>
+            <td class="formValue">
+                <input id="ypmctext" type="text" class="form-control" placeholder="药品名称" />
+            </td>
+            <th class="formTitle"></th>
+            <td class="formValue">
+                <div class="btn-group">
+                    <a id="btn_input" class="btn btn-primary" onclick="InputResult()" style="width:80px;">
+                        <i class="fa fa-refresh"></i>查询
+                    </a>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>*@
+
+
+<div class="dv-body">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+
+        <table class="form" style="width:95%">
+            <tbody>
+                <tr>
+                    <th class="formTitle">查询日期：</th>
+                    <td class="formValue" colspan="2">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddDays(-2).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:1%;float:left">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <th class="formTitle">姓名/门诊号：</th>
+                    <td class="formValue">
+                        <input id="keyword" type="text" class="form-control">
+                    </td>
+                    <td class="formValue">
+                        <a id="btn_refresh" class="btn btn-primary" onclick="RefreshOrder()" style="width:80px;">
+                            <i class="fa fa-refresh"></i>查询
+                        </a>
+                    </td>
+                    <td class="formValue">
+                        <a id="btn_input" class="btn btn-primary" onclick="InputResult()" style="width:80px;">
+                            <i class="fa fa-pencil-square-o"></i>再次执行
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    $(function() {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+        });
+        
+
+        gridList();
+    });
+
+    function RefreshOrder() {
+
+        var keyword = $("#keyword").val();
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        $('#gridList').jqGrid('setGridParam', {
+            postData: {
+                keyword: keyword, kssj: kssj, jssj: jssj
+            }
+        }).trigger("reloadGrid");
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        var keyword = $("#keyword").val();
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        $gridList.dataGrid({
+            postData: { keyword: keyword, kssj: kssj, jssj: jssj },
+            url: "/OutpatientNurse/skintesfrom",
+            height: $(window).height() - 130,
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            colModel: [
+                { label: 'gmxxid', name: 'gmxxid', align: 'center', hidden: true, key: true  },
+                { label: '处方明细ID', name: 'cfmxId', align: 'center', hidden: true},
+                { label: '门诊号', name: 'mzh', align: 'center', width: 100 },
+                { label: 'blh', name: 'blh', align: 'center', hidden: true },
+                { label: '患者姓名', name: 'xm', align: 'center', width: 60 },
+                { label: '性别', name: 'xb', align: 'left', width: 30 },
+                { label: '处方号', name: 'cfh', align: 'center', width: 100, formatter: function (val) { if (val != null) return val; else return ""; } },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 100, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '结果值', name: 'lrjg', align: 'center', width: 50, formatter: function (val) { if (val == "阳性") return "<span style='color:red;'>" + val + "</span>"; else return val; } },
+                { label: '处方内容', name: 'cfmxnr', align: 'center', width: 180 },
+                { label: '录入者', name: 'CreatorName', align: 'center', width: 50 },
+                { label: '录入时间', name: 'CreateTime', align: 'center', width: 100, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '更新者', name: 'LastModifierName', align: 'center', width: 50 },
+                { label: '更新时间', name: 'LastModifyTime', align: 'center', width: 100, formatter: function (val) { return val!=null? $.getTime({ date: val }):""; } },
+                { label: 'ypcode', name: 'ypcode', align: 'center', hidden: true },
+                { label: 'cancel', name: 'iscancel', align: 'center', hidden: true },
+                { label: '执行状态', name: 'cancel', align: 'center', width: 50, formatter: function (val) { return val == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '操作', name: 'action', align: 'center', width: 40, formatter: function (val) { return "<input class='btn btn-default btn-md btn_add' type='button' value='取消执行' onclick='cancelRow($(this).parent().parent().attr(\"id\"))'/>";} },
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime Desc',
+            viewrecords: true,
+            multiselect: true,
+            //onSelectRow: function (rowIndex, s) {
+            //    InputResult();
+            //} 
+        });
+    }
+    //取消执行
+    function cancelRow(rowid) {
+        var rowData = $("#gridList").jqGrid('getRowData', rowid);
+        if (rowData==null) {
+            $.modalMsg("未找到当前行", 'error');
+        }
+        $.ajax({
+            url: "/OutpatientNurse/skintescancel",
+            dataType: "json",
+            data: { "gmxxid": rowData.gmxxid },
+            type: "post",
+            success: function (data) {
+                RefreshOrder();
+                if (!!data && data.state == "success") {
+                    $.modalMsg('皮试取消执行成功', 'success');
+                }
+                else if (!!data && data.state == "error") {
+                    $.modalMsg(data.message, 'error');
+                }
+
+            }
+        });
+    }
+    //皮试再次执行
+    function InputResult() {
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        if (selRowIds.length == 0) {
+            $.modalAlert("请选择待执行项目", 'warning');
+            return;
+        }
+        var cfmxid = "";
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (rowData.iscancel == "1") {
+                $.modalAlert("选中执行项目中有未取消执行，先取消执行！", 'warning');
+                return false;
+            }
+            if (cfmxid == "") {
+                cfmxid = rowData.cfmxId;
+            }
+            else {
+                cfmxid += "," + rowData.cfmxId;
+            }
+        }
+        $.modalOpen({
+            id: "InpatientVitalSignsForm",
+            title: "皮试录入",
+            url: "/NurseManage/OrderAudit/Inputresults",
+            width: "400px",
+            height: "200px",
+            leftlalbelchecked: true,
+            leftlalbelcheckedasClose: false,
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (patData) {
+                    $.ajax({
+                        url: "/OutpatientNurse/EnteragainMuti",
+                        dataType: "json",
+                        data: { "cfmxid": cfmxid, "lrjg": patData },
+                        type: "post",
+                        success: function (data) {
+                            RefreshOrder();
+                            if (!!data && data.state == "success") {
+                                $.modalMsg('皮试执行成功', 'success');
+                            }
+                            else if (!!data && data.state == "error") {
+                                $.modalMsg(data.message, 'error');
+                            }
+
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,361 @@
+﻿@{
+    ViewBag.Title = "Inspection";
+    Layout = null;
+}
+
+<div id="linkjy" role="tabpanel" class="tab-pane" style="width:70.5%; float:right; margin-right: 10px; border:solid 1px #ddd; margin-top: 3px;">
+    <div style="background-color: #fff;">
+        <table id="gridjy"></table>
+    </div>
+    <div id="divGridjy" style="display:none;">
+        <table id="alreadyJYAppliedList"></table>
+    </div>
+    <div id="divGridjyzh" style="background-color:white">
+        <table id="alreadyJYAppliedGroupList"></table>
+    </div>
+    <table class="form">
+        <tr>
+            <td class="formTitle">
+                临床印象
+            </td>
+            <td class="formValue">
+                <input id="txt_jy_lcyx" name="txt_jy_lcyx" type="text" class="form-control" />
+            </td>
+            <td class="formTitle">
+                申请备注
+            </td>
+            <td class="formValue">
+                <input id="txt_jy_sqbz" name="txt_jy_sqbz" type="text" class="form-control" />
+            </td>
+            <td style="width:100px;"></td>
+            <td style="width:100px;"></td>
+        </tr>
+        <tr>
+            <td colspan="4"></td>
+            <td>
+                <input type="button" class="btn btn-primary" value="返回病历" style="display:table-cell" onclick="SaveInspectionbyZt()" />
+            </td>
+            <td class="formValue">
+                <input type="button" class="btn btn-primary" value="F3：保存申请单" style="display:table-cell" onclick="SaveInspectionbyZt('1')" />
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script>
+    var jyflag = 0;
+    var jylocaldata = new Array();
+    var thsNewJyCfh = null; //处方号
+    function init_Inspection() {
+        jylocaldata = new Array();
+        thsNewJyCfh = null;
+        if (window.alldataArray.jycf) {
+            jylocaldata = $.jsonWhere($.deepClone.clone(window.alldataArray.jycf), function (icf) {
+                if (!!!icf.cfh) {
+                    thsNewJyCfh = icf.cfh;
+                    return true;
+                }
+                return false;
+            });
+        }
+        else {
+            window.alldataArray.jycf = new Array(); //方便后面使用$.each()
+        }
+
+        if (!!!thsNewJyCfh) {
+            thsNewJyCfh = GetNewPresNo();
+        }
+
+        if (jyflag == 0) {   //该页面初始化
+            gridjy();
+            gridAlreadyJYApplied();
+            gridAlreadyJYGroupApplied();
+            jyflag = 1;
+        }
+        else {
+            //$("#gridjy").clearGridData();
+            //$('#alreadyJYAppliedList').clearGridData();
+            //
+            //$('#alreadyJYAppliedList').newtouchLocalDataGrid(null, jylocaldata);
+            EnableInspectionInlineEditBox();
+        }
+    }
+
+    //处方列表
+    function gridjy() {
+        var $gridjy = $("#gridjy");
+        $gridjy.dataGrid({
+            caption: "选择组套",
+            height: 130,
+            //multiselect: true,
+            unwritten: false,
+            colModel: [
+                { label: '项目名称', name: 'xmmc', width: 200, align: 'left' },
+                { label: '项目编码', name: 'xmCode', width: 200, align: 'left' },
+                {
+                    label: '单价', name: 'dj', width: 120, align: 'left', formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+                },
+                { label: '单位', name: 'dw', width: 120, align: 'left' },
+                { label: '数量', name: 'sl', width: 80, align: 'left' },
+                { label: 'zxks', name: 'zxks', width: 60, align: 'left', hidden: true },
+                { label: '执行科室', name: 'zxksmc', width: 80, align: 'left' },
+                { label: '是否医保', name: 'sfyb', width: 60, align: 'center' },
+                { label: '组套ID', name: 'ztId', width: 60, align: 'left', hidden: true },
+                { label: '组套名称', name: 'ztmc', width: 120, align: 'center' }
+            ],
+            //onSelectRow: function (rowid, status) {
+            //    gridjycheck([rowid], status);
+            //},
+            //onSelectAll: function (aRowids, status) {
+            //    gridjycheck(aRowids, status);
+            //}
+        });
+    }
+
+    function gridjycheck(aRowids, status) {
+        $.each(aRowids, function () {
+            if (status === true) {
+                var data = $("#gridjy").getRowData(this);
+                if (window.currPatientInfo.brxzCode != "" &&'@ViewBag.ControlbrxzCode'.indexOf(window.currPatientInfo.brxzCode) > -1 && data.sfyb == "否") {
+                    $.modalAlert("该患者为医保患者，不可选择自费项目【" + data.xmmc + "】", "warning");
+                    $("#gridjy").jqGrid('setSelection', rowid, false); //设置jqGrid选中
+                    return false;
+                }
+                addJYRow(this);
+            }
+            else {
+                deleteJYRow(this);
+            }
+        });
+        CalculateInsPresJYAmount($("#gridjy"));
+    }
+
+    function addJYRow(sourceRowid) {
+        var sourceRowData = $("#gridjy").getRowData(sourceRowid);
+        var rowIds = $("#alreadyJYAppliedList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var currRow = $("#alreadyJYAppliedList").getRowData(rowIds[i]);
+            if (currRow.xmCode === sourceRowData.xmCode) {
+                return; //已添加过  //不能重复加
+            }
+        }
+        //执行add
+        var aRowData = {};
+        aRowData.xmmc = sourceRowData.xmmc;
+        aRowData.xmCode = sourceRowData.xmCode;
+        aRowData.dj = sourceRowData.dj;
+        aRowData.dw = sourceRowData.dw;
+        aRowData.sl = sourceRowData.sl;
+        aRowData.zxks = sourceRowData.zxks;
+        aRowData.zxksmc = sourceRowData.zxksmc;
+        aRowData.ztId = sourceRowData.ztId;
+        aRowData.ztmc = sourceRowData.ztmc;
+        $('#alreadyJYAppliedList').newtouchLocalDataGrid(null, aRowData);
+        EnableInspectionInlineEditBox();
+    }
+
+    function deleteJYRow(sourceRowid) {
+        var sourceRowData = $("#gridjy").getRowData(sourceRowid);
+        var rowIds = $("#alreadyJYAppliedList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            var currRow = $("#alreadyJYAppliedList").getRowData(rowIds[i]);
+            if (currRow.xmCode === sourceRowData.xmCode) {
+                //执行移除
+                $('#alreadyJYAppliedList').jqGrid("delRowData", rowIds[i]);
+                return;
+            }
+        }
+    }
+
+    //计算申请单金额
+    function CalculateInsPresJYAmount($grid) {
+        var totalAmount = 0.00;
+        var allData = $grid.jqGrid('getRowData_AllLine', null, true);
+        $.each(allData, function () {
+            if (!!this.zhje) {
+                totalAmount += parseFloat(this.zhje);
+            }
+            else {
+                var sl = $("#alreadyJYAppliedList input[name=sl]").val();
+                totalAmount += parseFloat(this.dj) * parseFloat(sl);
+            }
+
+        });
+        $grid.jqGrid("setCaption", "已开申请单明细，申请单总金额：" + "<label style='color:red;'>￥"
+            + totalAmount.toFixed(2) + "</label>");   //重置caption属性值
+    }
+
+    function gridAlreadyJYApplied() {
+        //init 已开申请单
+        $('#alreadyJYAppliedList').newtouchLocalDataGrid({
+            height: $(window).height() - 390,
+            unwritten: false,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            caption: "已开申请单明细，申请单总金额：0.00",
+            colModel: [
+                { label: '项目名称', name: 'xmmc', width: 200, align: 'left' },
+                { label: '项目编码', name: 'xmCode', width: 200, align: 'left' },
+                { label: '单价', name: 'dj', width: 120, align: 'left' },
+                {
+                    label: '数量', name: 'sl', width: 80, align: 'left', editable: true,editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    CalculateInsPresJYAmount($('#alreadyJYAppliedList'));
+                                }
+                            }
+                        ]
+                    } },
+                { label: '单位', name: 'dw', width: 120, align: 'left' },
+                { label: 'zxks', name: 'zxks', width: 60, align: 'left', hidden: true },
+                { label: '执行科室', name: 'zxksmc', width: 120, align: 'left' },
+                { label: '组套ID', name: 'ztId', width: 60, align: 'left',  hidden: true },
+                { label: '组套名称', name: 'ztmc', width: 120, align: 'center' }]
+        });
+    }
+    function EnableInspectionInlineEditBox() {
+        var ids = $("#alreadyJYAppliedList").getDataIDs();
+        $.each(ids, function () {
+            var rowid = String(this);
+            //打开编辑模式
+            $("#alreadyJYAppliedList").jqGrid('editRow', rowid, false);
+        });
+
+    }
+
+    //保存
+    function SaveJY(savetodb, justUpdateAlldataArray) {
+        //作为一个新处方
+        var gridjyData = $("#alreadyJYAppliedList").jqGrid('getRowData_AllLine', null, true);
+        $.each(gridjyData, function () {
+            this.lcyx = $('#txt_jy_lcyx').val();
+            this.sqbz = $('#txt_jy_sqbz').val();
+            this.sl = $('#alreadyJYAppliedList input[name=sl]').val();
+            delete this.jqRowId;   //去掉jqRowId
+        });
+
+        //清空临床印象、申请备注
+        $('#txt_jc_lcyx').val('');
+        $('#txt_jc_sqbz').val('');
+
+        window.alldataArray.jycf = $.jsonWhere(window.alldataArray.jycf, function (icfmx) {
+            if (!!!icfmx.cfId) {
+                return false;   //编辑列表里有
+            }
+            return true;
+        });
+
+        $.each(gridjyData, function () {
+            this.cfh = thsNewJyCfh;
+            window.alldataArray.jycf.push(this);
+        });
+        if (!(justUpdateAlldataArray == true)) {
+            if (savetodb == '1') {
+                if (SaveData(false, function () {
+                    $.modalAlert("申请单保存成功", 'success');
+                    thsNewJyCfh = GetNewPresNo();
+                })) {
+                    $("#gridjy").clearGridData();
+                    $('#alreadyJYAppliedList').clearGridData();
+                }
+                $("#alreadyJYAppliedList").jqGrid("setCaption", "已开申请单明细，申请单总金额：0.00");   //重置caption属性值
+            }
+            else {
+                //跳回病历页
+                $('#myTab [href="#linkbl"]').trigger('click'); //初始化显示哪个tab
+                //病例页重新加载处方，处方数据发生了变更
+                triggleActive();
+            }
+        }
+        else {
+            triggleActive();
+        }
+    }
+
+    /********************************************************/
+    //显示选择检验组合
+    function gridAlreadyJYGroupApplied() {
+        $('#alreadyJYAppliedGroupList').newtouchLocalDataGrid({
+            height: $(window).height() - 410,
+            unwritten: false,
+            caption: "已开申请单明细，申请单总金额：0.00",
+            editurl: "clientArray",
+            colModel: [
+                { label: '组套ID', name: 'ztId', width: 60, align: 'left', key: true, hidden: true },
+                { label: '组套名称', name: 'ztmc', width: 300, align: 'left' },
+                {
+                    label: '金额', name: 'zhje', width: 100, align: 'center', formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' } },
+                { label: 'zxksdm', name: 'zxksdm', width: 60, align: 'center', hidden: true },
+                { label: '执行科室', name: 'zxksmc', width: 150, align: 'center' },
+                { label: '操作', name: 'action', width: 150, align: 'center' },
+            ],
+            gridComplete: function () {
+            }
+        });
+    }
+
+    function SaveInspectionbyZt(savetodb, justUpdateAlldataArray) {
+        //作为一个新处方
+        var rowIds = $("#alreadyJYAppliedGroupList").jqGrid('getDataIDs');
+        if (rowIds.length < 1) {
+            $.modalAlert("缺少检验单数据", "warning");
+            return;
+        }
+        $.najax({
+            url: "/TemplateManage/InspectionTemplate/GetGPackageDetailByZtIdArray",
+            data: { ztId: rowIds },
+            dataType: "json",
+            type: "POST",
+            async: false,
+            success: function (data) {
+                gridjyData = data;
+                $.each(gridjyData, function () {
+                    this.lcyx = $('#txt_jy_lcyx').val();
+                    this.sqbz = $('#txt_jy_sqbz').val();
+                });
+
+            }
+        });
+
+        //清空临床印象、申请备注
+        $('#txt_jc_lcyx').val('');
+        $('#txt_jc_sqbz').val('');
+
+        window.alldataArray.jycf = $.jsonWhere(window.alldataArray.jycf, function (icfmx) {
+            if (!!!icfmx.cfId) {
+                return false;   //编辑列表里有
+            }
+            return true;
+        });
+
+        $.each(gridjyData, function () {
+            this.cfh = thsNewJyCfh;
+            window.alldataArray.jycf.push(this);
+        });
+        if (!(justUpdateAlldataArray == true)) {
+            if (savetodb == '1') {
+                if (SaveData(false, function () {
+                    $.modalAlert("申请单保存成功", 'success');
+                    thsNewJyCfh = GetNewPresNo();
+                })) {
+                    $("#gridjy").clearGridData();
+                    $('#alreadyJYAppliedGroupList').clearGridData();
+                }
+                $("#alreadyJYAppliedGroupList").jqGrid("setCaption", "已开申请单明细，申请单总金额：0.00");   //重置caption属性值
+            }
+            else {
+                //跳回病历页
+                $('#myTab [href="#linkbl"]').trigger('click'); //初始化显示哪个tab
+                //病例页重新加载处方，处方数据发生了变更
+                triggleActive();
+            }
+        }
+        else {
+            triggleActive();
+        }
+    }
+</script>
+

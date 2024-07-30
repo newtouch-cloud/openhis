@@ -1,0 +1,103 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>名称：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control required" id="Name" name="Name" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>编码：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control required" id="Code" name="Code" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>首拼：</th>
+                <th class="formValue">
+                    <input type="text" class="form-control required" id="py" name="py" />
+                </th>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>分类：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="sfflCode" name="sfflCode" class="form-control required">
+                        <option value="">请选择</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">有效：</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var sfxmId = $.request("sfxmId");
+    $(function () {
+        //加载收费分类下拉
+        initBindSelect();
+
+        if (!!sfxmId) {
+            $.najax({
+                url: "/RehabChargeItem/GetFormJson?r=" + Math.random(),
+                data: { sfxmId: sfxmId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+        else {
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?orgIdIsStar=true&topOrgIdIsStar=true&initFieldLength=8&fieldName=kf_sfxm.Code&r=" + Math.random(),
+                dataType: "json",
+                cache :false,
+                success: function (data) {
+                    $('#Code').val(data.data);
+                }
+            });
+        }
+    })
+
+    //首拼
+    $('#Name').keyup(function () {
+        $('#py').val($(this).toShouPin());
+    })
+
+    //收费分类下拉
+    function initBindSelect() {
+        $("#sfflCode").bindSelect({
+            url: "/RehabChargeItem/GetsfflBindSelect"
+        });
+    }
+
+    //提交
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/RehabChargeItem/SubmitForm?sfxmId=" + sfxmId,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

@@ -1,0 +1,184 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "配送点";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+
+<form id="form1">
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+
+    <div class="panel panel-default">
+        <input type="button" id="btn_delete" class="btn btn-info" style="width:7%;display:inline-block;float:right;margin-left:20px;margin-top:30px;" value="作废" />
+        <input type="button" id="btn_submit" class="btn btn-info" style="width:7%;display:inline-block;float:right;margin-left:20px;margin-top:30px;" value="传报" />
+        <input type="button" id="btn_edit" class="btn btn-info" style="width:7%;display:inline-block;float:right;margin-left:20px;margin-top:30px;" value="修改" />
+        <input type="button" id="btn_add" class="btn btn-info" style="width:7%;display:inline-block;float:right;margin-left:20px;margin-top:30px;" value="新建" />
+        <input type="button" id="btn_search" class="btn btn-info" style="width:7%;float:right;margin-left:20px;margin-top:30px;" value="刷新" />
+    </div>
+
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        gridList();
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetLocationGridJson",
+            height: $(window).height() - 150,
+            colModel: [
+                { label: 'Id', name: 'Id', width: 140, align: 'left',hidden:true },
+                { label: '配送点编码', name: 'psdbm', width: 140, align: 'left' },
+                { label: '配送点名称', name: 'psdmc', width: 140, align: 'left' },
+                { label: '配送地址', name: 'psdz', width: 140, align: 'left' },
+                { label: '联系人姓名', name: 'lxrxm', width: 80, align: 'left' },
+                { label: '联系电话', name: 'lxdh', width: 80, align: 'left' },
+                { label: '邮政编码', name: 'yzbm', width: 80, align: 'left' },
+                { label: '备注信息', name: 'bzxx', width: 80, align: 'left' },
+                {
+                    label: '配送点状态', name: 'psdzt', width: 120, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '已保存';
+                        else if (cellvalue == 2) return '已传报';
+                        else if (cellvalue == 3) return '已作废';
+                        else return '';
+                    }
+                },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', hidden: true},
+                { label: '创建人', name: 'CreateCode', width: 80, align: 'left',hidden:true },
+            ],
+            multiselect: true,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            },
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { },
+            }).trigger('reloadGrid');
+        });
+    }
+
+
+
+    //新建
+    $('#btn_add').click(function () {
+        $.modalOpen({
+            id: "Form",
+            title: "配送点",
+            url: "/PurchaseManage/Purchase/LocationForm",
+            width: "25%",
+            height: "55%",
+            callBack: function (iframeId) {
+                top.frames[iframeId].SubmitForm();
+                //$.modalClose("Form");
+                $('#btn_search').trigger('click');
+            }
+        });
+    });
+
+    //修改
+    $('#btn_edit').click(function () {
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请选择需要修改的配送点", 'warning');
+            return;
+        }
+        if (selRowIds.length >= 2) {
+            $.modalAlert("只能选择一个配送点进行修改", 'warning');
+            return;
+        }
+        var rowData = $("#gridList").jqGrid('getRowData', selRowIds[0]);
+        if (rowData.psdzt != "已保存") {
+            $.modalAlert("选中的配送点不是已保存状态，不能修改", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "配送点",
+            url: "/PurchaseManage/Purchase/LocationForm?keyValue=" + rowData.Id,
+            width: "25%",
+            height: "55%",
+            callBack: function (iframeId) {
+                top.frames[iframeId].SubmitForm();
+                //$.modalClose("Form");
+                $('#btn_search').trigger('click');
+            }
+        });
+    });
+
+    //提交
+    $('#btn_submit').click(function () {
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请选择需要传报的配送点", 'warning');
+            return;
+        }
+        if (selRowIds.length >= 2) {
+            $.modalAlert("只能选择一个配送点进行传报", 'warning');
+            return;
+        }
+        var rowData = $("#gridList").jqGrid('getRowData', selRowIds[0]);
+        $.najax({
+            type: "POST",
+            url: "/PurchaseManage/Purchase/LocationUpload",
+            data: { Id: rowData.Id, psdzt: 2, czlx: "1" }, //psdzt 1已保存 2已传报 3已作废 //操作类型: 1新增 3作废
+            dataType: "json",
+            success: function (res) {
+                if (res.state == "success") {
+                    $.modalMsg("配送点传报成功！", 'success');
+                    $('#btn_search').trigger('click');
+                } else {
+                    $.modalMsg("配送点传报失败：" + res.message, 'warning');
+                }
+            }
+        });
+    });
+
+    //作废
+    $('#btn_delete').click(function () {
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请选择需要作废的配送点", 'warning');
+            return;
+        }
+        if (selRowIds.length >= 2) {
+            $.modalAlert("只能选择一个配送点进行作废", 'warning');
+            return;
+        }
+        var rowData = $("#gridList").jqGrid('getRowData', selRowIds[0]);
+        if (rowData.psdzt == "已作废" ) {
+            $.modalAlert("该配送点已作废", 'warning');
+            return;
+        }
+        $.najax({
+            type: "POST",
+            url: "/PurchaseManage/Purchase/LocationDelete",
+            data: { Id: rowData.Id, psdzt: 3,czlx:"3" }, //psdzt 1已保存 2已传报 3已作废 //操作类型: 1新增 3作废
+            dataType: "json",
+            success: function (res) {
+                if (res.state == "success") {
+                    $.modalMsg("配送点作废成功！", 'success');
+                    $('#btn_search').trigger('click');
+                } else {
+                    $.modalMsg("配送点作废失败：" + res.message, 'warning');
+                }
+            }
+        });
+    });
+
+
+</script>
+
+

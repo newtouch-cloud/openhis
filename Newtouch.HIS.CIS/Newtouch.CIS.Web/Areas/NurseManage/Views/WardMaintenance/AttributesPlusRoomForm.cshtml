@@ -1,0 +1,116 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "病床附加属性";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="padding-right:10px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">可选属性：</th>
+                <td class="formValue">
+                    <select id="sel_attr" name="sel" class="form-control" onchange="ChangeAttr()">
+                        <option value="">请选择属性</option>
+                        <option value="1">房间朝向</option>
+                        <option value="2">房间面积</option>
+                        <option value="3">房间床位数</option>
+                    </select>
+                </td>
+                <th class="formTitle"><span class="required">*</span>属性名称：</th>
+                <td class="formValue">
+                    <input id="txt_attrName" name="txt_attrName" type="text" class="form-control required" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">描述：</th>
+                <td class="formValue" colspan="3">
+                    <textarea id="txt_describe" name="txt_describe" class="form-control" style="height: 60px;"></textarea>
+                </td>
+            </tr>
+        </table>
+        @Html.Partial("_MiddleButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+       {
+           ShowKeyList = new[] { 2 },
+           F2Text = "添加"
+       })
+    </div>
+
+    <div class="gridPanel">
+        <table id="gridAttrList"></table>
+    </div>
+</form>
+<script lang="javascript">
+    var attrs = [];
+
+    //选择属性
+    function ChangeAttr() {
+        if ($("#sel_attr").val() !== "") {
+            $("#txt_attrName").val($("#sel_attr").find("option:selected").text());
+        } else {
+            $("#txt_attrName").val("");
+        }
+    }
+
+    $("#gridAttrList").newtouchLocalDataGrid({
+        height: 250,
+        unwritten: false,
+        colModel: [
+            { label: "attrCode", name: "attrName", hidden: true },
+            { label: "属性名称", name: "attrName", width: 100, align: "left" },
+            { label: "描述", name: "attrDescribe", width: 220, align: "center" },
+            {
+                label: "操作",
+                name: "attrCode",
+                width: 50,
+                align: "center",
+                formatter: function (cellvalue) {
+                    return "<a href=\#\" onclick='DeleteAttr(\"" + cellvalue + "\")'' title='删除属性' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>删除</a>";
+                }
+            }
+        ]
+    });
+
+    //添加
+    function newtouch_event_f2() {
+        if ($("#txt_attrName").val() === "") {
+            $.modalAlert("属性名称必填", 'warning');
+            return;
+        }
+        var attr = {
+            attrCode: newGuid(),
+            attrName: $("#txt_attrName").val(),
+            attrDescribe: $("#txt_describe").val()
+        };
+        attrs.push(attr);
+        $("#gridAttrList").jqGrid("clearGridData");//先清空数据
+        $("#gridAttrList").newtouchLocalDataGrid(null, attrs);
+    }
+
+    //删除属性
+    function DeleteAttr(options) {
+        if (attrs.length > 0) {
+            var tmpattrs = [];
+            $.each(attrs, function (index, element) {
+                if (element.attrCode !== options) {
+                    tmpattrs.push(element);
+                }
+            });
+            attrs = tmpattrs;
+        }
+        $('#gridAttrList').jqGrid("clearGridData");//先清空数据
+        $("#gridAttrList").newtouchLocalDataGrid(null, attrs);
+    }
+
+    function newGuid() {
+        var guid = "";
+        for (var i = 1; i <= 32; i++) {
+            var n = Math.floor(Math.random() * 16.0).toString(16);
+            guid += n;
+            if ((i === 8) || (i === 12) || (i === 16) || (i === 20))
+                guid += "-";
+        }
+        return guid;
+    }
+</script>

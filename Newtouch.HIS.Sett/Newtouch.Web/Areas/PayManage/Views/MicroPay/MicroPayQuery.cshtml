@@ -1,0 +1,212 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "扫码付交易";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="panel panel-default">
+    <table class="form">
+        <tr>
+            <th class="formTitle">开始日期：</th>
+            <td class="formValue">
+                <input id="ksrq" type="text" class="form-control input-wdatepicker formClearIgnore" 
+                       onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                       onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                       value="@DateTime.Now.AddDays(-7).ToString("yyyy-MM-dd")" />
+            </td>
+            <th class="formTitle">结束日期：</th>
+            <td class="formValue">
+                <input id="jsrq" type="text" class="form-control input-wdatepicker formClearIgnore" 
+                       onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                       onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                       value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+            </td>
+            <th class="formTitle">支付方式：</th>
+            <td class="formValue">
+                <select id="payType" data-EnumType="EnumTradeType">
+                    <option value="">==全部==</option>
+                </select>
+            </td>
+            <th class="formTitle"></th>
+            <td class="formValue" style="padding-left:20px;">
+                <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+            </td>
+        </tr>
+    </table>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+    @*<div class="gridPanel">
+        <table id="gridListRefd"></table>
+        <div id="gridPagerRefd"></div>
+    </div>*@
+</div>
+<script>
+    $(function() {
+        InitGrid();
+        //RefundGrid();
+    });
+
+    function InitGrid() {
+        var $gridJsList = $("#gridList");
+        $gridJsList.dataGrid({
+            height: $(window).height() - 120,
+            url: "/PayManage/MicroPay/MicroTradeQuery",
+            postData: { ksrq: $("#ksrq").val(), jsrq: $("#jsrq").val(), payType: 1 },
+            colModel: [
+                {
+                    label: '支付方式', name: 'PayType', width: 60, align: 'left',
+                    formatter: function (cellvalue) {
+                        return $.enum.getDescByValue("EnumTradeType", cellvalue);
+                    }
+                },
+                {
+                    label: '订单号',
+                    name: 'OutTradeNo',
+                    width: 160,
+                    align: "left"
+                },
+                { label: '姓名', name: 'xm', width: 110, align: 'left' },
+                { label: '门诊号/住院号', name: 'patno', width: 100, align: 'left' },
+                { label: '支付宝交易号', name: 'TradeNo', hidden: true },
+                { label: '支付宝账号', name: 'PayAccount', width: 100, align: 'left'  },
+                {
+                    label: '支付时间',
+                    name: 'OutTradeTime',
+                    width: 150,
+                    formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                {
+                    label: '支付金额',
+                    name: 'PayAmount',
+                    width: 80,
+                    align: 'left',
+                    formatter: function(cellvalue) {
+                        return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                    }
+                },
+                {
+                    label: '退款金额',
+                    name: 'RefundAmount',
+                    width: 80,
+                    align: 'left',
+                    formatter: function(cellvalue) {
+                        return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                    }
+                },
+                {
+                    label: '操作',
+                    name: 'Operate',
+                    width: 80,
+                    align: 'center',
+                    formatter: function(cellvalue, option, row) {
+                        return "<a onclick='show_tradeInfo(" + option.rowId + ")'>订单详情</a>";
+                    }
+                }
+            ],
+            pager: "#gridPager",
+            sortname: "OutTradeNo",
+            viewrecords: true
+            //caption:"交易记录"
+            //onSelectRow: function (rowid) {
+            //    btn_selectrow(rowid);
+            //},
+            //gridComplete: function (gridJszbList) {
+            //    jszbList = null;
+            //    if (gridJszbList && gridJszbList.rows) {
+            //        jszbList = gridJszbList.rows;
+            //    }
+            //}
+        });
+        $("#btn_search").click(function() {
+            $('#gridList').jqGrid("clearGridData"); //先清空明细
+            $gridJsList.jqGrid('setGridParam',
+                {
+                    postData: { ksrq: $("#ksrq").val(), jsrq: $("#jsrq").val(), payType: $("#payType option:selected").val() },
+                    url: '/PayManage/MicroPay/MicroTradeQuery',
+                    page: 1
+                }).trigger('reloadGrid');
+        });
+
+    }
+
+    function RefundGrid() {
+        var $gridJsList = $("#gridListRefd");
+        $gridJsList.dataGrid({
+            height: 200,
+            postData: { outTradeNo: "", tradeNo: "" },
+            colModel: [
+                //{ label: '支付方式', name: 'PayType', width: 60, align: 'left' },
+                {
+                    label: '订单号',
+                    name: 'OutTradeNo',
+                    width: 160,
+                    align: "left"
+                },
+                { label: '支付宝交易号', name: 'RefundStatus', width: 50, align: 'left' },
+                {
+                    label: '退款金额',
+                    name: 'Amount',
+                    width: 150,
+                    align: 'left',
+                    formatter: function(cellvalue) {
+                        return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                    }
+                },
+                { label: '退款说明', name: 'RefundReason', width: 100, align: 'left' },
+                {
+                    label: '退款时间',
+                    name: 'RefundDate',
+                    width: 150,
+                    formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                {
+                    label: '退款请求号',
+                    name: 'OutRequestNo',
+                    width: 160,
+                    align: "left"
+                },
+                { label: '备注', name: 'Memo', width: 110, align: 'left' }
+            ],
+            //pager: "#gridPager",
+            sortname: "OutRequestNo",
+            //viewrecords: true,
+            caption: "退费记录"
+        });
+    }
+
+    function btn_selectrow(rowId) {
+        if (rowId != null && rowId != undefined) {
+           
+            var row = $('#gridList').jqGrid("getRowData", rowId);
+            if (row != null) {
+                $('#gridListRefd').jqGrid("clearGridData"); //先清空明细
+                $('#gridListRefd').jqGrid('setGridParam',
+                    {
+                        postData: { outTradeNo: row.OutTradeNo, tradeNo: "" },
+                        url: '/PayManage/MicroPay/TradeRefundList',
+                        page: 1
+                    }).trigger('reloadGrid');
+            }
+        }
+    }
+
+    function show_tradeInfo(rowId) {
+        var row = $('#gridList').jqGrid("getRowData", rowId);
+
+        $.modalOpen({
+            id: "Form",
+            title: "交易详情",
+            url: "/PayManage/MicroPay/TradeInfo?outtradeno=" + row.OutTradeNo ,
+            width: "850px",
+            height: "500px",
+            btn: null,
+            callBack: function (iframeId) {
+                //top.frames[iframeId].checkFPH();//窗口点确定的回调函数
+            }
+        });
+    }
+</script>

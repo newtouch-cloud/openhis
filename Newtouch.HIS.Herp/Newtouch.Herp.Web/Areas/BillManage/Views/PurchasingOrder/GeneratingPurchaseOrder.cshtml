@@ -1,0 +1,319 @@
+﻿@model dynamic
+@{
+    ViewBag.Title = "生成采购单";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+
+    .form-control {
+        padding: 0 3px;
+    }
+
+    #dv_left {
+        z-index: 101;
+        float: left;
+        margin-bottom: 0;
+        margin-top: 75px;
+        width: 35.5%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        border-color: #f1f4f6;
+    }
+
+    #dv_right {
+        z-index: 100;
+        float: right;
+        width: 64%;
+        position: absolute;
+        margin-top: 75px;
+        top: 0;
+        right: 0;
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        border-color: #f1f4f6;
+    }
+
+    .toolbar {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+
+    .dv-remarks {
+        position: absolute;
+        bottom: 0;
+        margin: 10px 0;
+        line-height: 25px;
+    }
+
+    #remarks {
+        width: 300px;
+        border: 0;
+        border-bottom: 1px solid #ccc;
+        background-color: transparent;
+        padding: 0 10px;
+    }
+</style>
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">筛选信息</div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">采购计划单：</td>
+                <td class="formValue">
+                    <input type="text" id="cgdh" name="cgdh" class="form-control" placeholder="请输入采购计划单号" />
+                </td>
+                <td class="formTitle">采购科室：</td>
+                <td class="formValue">
+                    <select id="department" name="department" class="form-control"><option value="">全部</option></select>
+                </td>
+                <th class="formTitle"><span class="required">*</span>提交日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <th class="formTitle" style="width: 60px;"><span class="required">*</span>到：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv_left">
+        <table id="gridList"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div id="dv_right">
+        <table id="gridMxList"></table>
+        <div id="gridmxPager" rel="form1"></div>
+    </div>
+    <div class="dv-remarks"><span>备注：</span><input type="text" id="remarks" value="" /></div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+    {
+        ShowKeyList = new[] { 8 },
+        F8Text = "提交"
+    })
+</form>
+<script>
+    var $gridList = $("#gridList");
+    var $GridMxList = $("#gridMxList");
+    $(".toolbar").css("width", "15%");
+    $(function () {
+        gridList();
+        gridMxList();
+        $("#department").bindSelect({ url: "/DepartmentManage/Department/DepartmentQuery", id: "Code", text: "Name" });
+        $(".dv-remarks").css("margin-left", document.getElementById("dv_right").offsetLeft);
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //左侧，采购计划主信息区
+    function gridList() {
+        $gridList.dataGrid({
+            caption: "采购计划信息",
+            url: "/BillManage/PurchasingPlan/GetAdoptWaitingPurchasePlanInfo",
+            height: $(window).height() - 185,
+            postData: getSearchPostData(),
+            colModel: [
+                { label: '科室', name: 'rkbmmc', width: 80 },
+                { label: '计划单号', name: 'cgdh', width: 130 },
+                { label: '提交时间', name: 'LastModifyTime', width: 90, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } }
+            ],
+            pager: "#gridPager",
+            sortname: 'LastModifyTime desc',
+            multiselect: true,
+            viewrecords: false,
+            onSelectRow_page: function (rowid, status) {
+                $GridMxList.jqGrid("clearGridData");
+                $GridMxList.jqGrid('setGridParam', {
+                    url: "/BillManage/PurchasingPlan/GetWaitingPurchasePlanDetail",
+                    postData: getSelectRowPostData()
+                }).trigger('reloadGrid');
+            },
+            onSelectAll: function (rowids, statue) {
+                $GridMxList.jqGrid("clearGridData");
+                $GridMxList.jqGrid('setGridParam', {
+                    url: "/BillManage/PurchasingPlan/GetWaitingPurchasePlanDetail",
+                    postData: getSelectRowPostData()
+                }).trigger('reloadGrid');
+            },
+            gridComplete: function () {
+                $GridMxList.jqGrid("clearGridData");
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //组装查询条件
+    function getSelectRowPostData() {
+        var allCheckedTr = $(":checkbox:checked").parents("tr");
+        var ids = "";
+        if (allCheckedTr != null && allCheckedTr.length > 0) {
+            var arr = [];
+            for (var i = 0; i < allCheckedTr.length; i++) {
+                var rowData = $gridList.jqGrid('getRowData', allCheckedTr[i].id);
+                if (rowData != null && rowData.cgdh != null && rowData.cgdh !== "") {
+                    arr.push(rowData.cgdh);
+                }
+            }
+            ids = arr.join(",");
+        }
+        return { cgdh: ids };
+    };
+
+    //组装查询条件
+    function getSearchPostData() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        var cgdh = $("#cgdh").val();
+        var deptCode = $("#department").val();
+        return { kssj: kssj, jssj: jssj, cgdh: cgdh, deptCode: deptCode };
+    };
+
+    //右侧，明细区域
+    function gridMxList() {
+        $GridMxList.dataGrid({
+            caption: "采购计划单明细",
+            url: "",
+            height: $(window).height() - 220,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            colModel: [
+                { label: '物资名称', name: 'wzmc', width: 110, align: 'left' },
+                { label: '计划采购数', name: 'slStr', width: 70 },
+                { label: '已购数', name: 'sjslStr', width: 60 },
+                { label: '继续采购', name: 'jxcgs', width: 60, align: 'center', editable: true, editwidth: "90%" },
+                { label: '单位', name: 'unitName', width: 40, align: 'left' },
+                {
+                    label: '供应商', name: 'gysmc', width: 200, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"gys\" id=\"sel_gys_" + options.rowId + "\" rowid=" + options.rowId + " class=\"editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ></select>";
+                    }
+                },
+                { label: '进价', name: 'jj', width: 40, align: 'left' },
+                { label: '规格', name: 'gg', width: 110, align: 'left' },
+                { label: '品牌', name: 'brand', width: 110, align: 'left' },
+                { label: '厂家', name: 'sccj', width: 200, align: 'left' },
+                { label: '备注', name: 'remark', width: 150, align: 'left', editable: true, editwidth: "95%" },
+                { label: "productId", name: "productId", hidden: true },
+                { label: 'zhyz', name: 'zhyz', hidden: true },
+                { label: 'gysId', name: 'gysId', hidden: true },
+                { label: 'zxqds', name: 'zxqds', hidden: true },
+                { label: 'unitId', name: 'unitId', hidden: true },
+                { label: 'zxdwmc', name: 'zxdwmc', hidden: true },
+                { label: "pdId", name: "pdId", hidden: true }
+            ],
+            pager: "#gridmxPager",
+            sortname: 'wzmc asc',
+            multiselect: true,
+            viewrecords: false,
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            gridComplete: function () {
+                var ids = $GridMxList.getDataIDs();
+                if (ids != null && ids.length > 0) {
+                    for (var i = 0; i < ids.length; i++) {
+                        EnableInlineEditBox(ids[i]);
+                    }
+                }
+            }
+        });
+    }
+
+    //启用行内编辑
+    function EnableInlineEditBox(rowid) {
+        $GridMxList.jqGrid('editRow', rowid, false, initInlineFunc);//打开编辑模式
+    }
+
+    //初始化 浮层
+    function initInlineFunc(rowid) {
+        ////部分列只读
+        $("#" + rowid + "_wzmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_slStr").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_unitName").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_jj").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_gg").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_brand").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_sccj").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        InitGys(rowid + "_wzmc", rowid);
+        $("#" + rowid + "_sjsl").keyup(function () {
+            RowDataValidate(this);
+        });
+    }
+
+    //初始化单位
+    function InitGys($thistr, rowid) {
+        $("#sel_gys_" + rowid).bindSelect({ url: "/SupplierManage/Supplier/GetSuppliers", id: "Id", text: "name" });
+        $("#sel_gys_" + rowid).change(function () {
+            $("#" + rowid + "_gysId").val($(this).val());
+        });
+    }
+
+    //行编辑验证
+    function RowDataValidate(obj) {
+        var reg = /^[1-9]\d*$/;//大于0的整数
+        if (!reg.test($(obj).val())) {
+            $.modalMsg("实际采购数量必须为大于0的整数！", "warning", 1500);
+            $(obj).val("0");
+            return false;
+        }
+        return true;
+    }
+
+    //提交采购
+    function newtouch_event_f8() {
+        var rowIds = $GridMxList.getDataIDs();
+        if (rowIds == undefined || rowIds.length <= 0) {
+            $.modalMsg("请选择采购计划明细！", 'warning', 1500);
+            return false;
+        }
+        var cgmx = [];
+        $.each(rowIds, function (index, item) {
+            var rowData = $GridMxList.getRowData(this);
+            if (rowData != null) {
+                rowData.remark = $("#" + item + "_remark").val();
+                rowData.jxcgs = $("#" + item + "_jxcgs").val();
+                rowData.gysId = $("#sel_gys_" + item).val();
+                rowData.gysmc = $("#sel_gys_" + item).find("option:selected").text();
+                cgmx.push(rowData);
+            }
+        });
+        if (cgmx.length <= 0) {
+            $.modalMsg("未找到有效的出库明细！", 'warning', 1500);
+            return false;
+        }
+        $.najax({
+            type: "POST",
+            url: "/BillManage/PurchasingOrder/SubmitGeneratingPurchaseOrder",
+            data: { cgmx: cgmx, remark: $("#remarks").val() },
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('提交成功', 'success', 1000);
+                    $gridList.trigger("reloadGrid");
+                    $GridMxList.jqGrid("clearGridData");
+                } else if (res.state === "error") {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+</script>
+

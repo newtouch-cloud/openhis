@@ -1,0 +1,352 @@
+﻿
+@{
+    ViewBag.Title = "MZcasehistory";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<form name="form1">
+	<div class="panel panel-default">
+		<div class="panel-heading navb-bg">
+			筛选条件
+		</div>
+		<table class="form">
+			<tr>
+				<th class="formTitle">日期：</th>
+				<td class="formValue" style="width:10%">
+					<input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd")" />
+				</td>
+				<td class="formValue" style="width:8px;float:left;">-</td>
+				<td class="formValue" style="width:10%;float:left;">
+					<input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+				</td>
+				<td class="formValue" colspan="2">
+					<input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+					@*<input type="button" id="btn_print" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="打印" />*@
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div class="ui-layout" id="layout" style="height:70%;width:100%;">
+		<ul class="nav nav-tabs" id="myTab">
+			<li class="active"><a href="#librlb" id="alibrlb" data-toggle="tab" onclick="newtabchange('1')">门诊病历列表</a></li>
+			<li><a href="#linbl" id="alinbl" data-toggle="tab" onclick="newtabchange('2')">病历详情</a></li>
+			<li><a href="#linlsjz" id="alinlsjz" data-toggle="tab" onclick="newtabchange('3')">历史病历记录</a></li>
+		</ul>
+		<div class="tab-pane fade in active" id="librlb">
+			<table id="gridList"></table>
+			<div id="gridPager"></div>
+		</div>
+		<div class="tab-pane fade" id="linbl">
+			<iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+					scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+		</div>
+		<div class="tab-pane fade" id="linlsjz">
+			@*@Html.Partial("~/Areas/DoctorManage/Views/OutpatientQuery/MZcasehistorylsView.cshtml")*@
+			<div>
+				<table id="gridListls"></table>
+				<div id="gridPagerls"></div>
+			</div>
+			<div>
+				<table id="gridListlscfmx"></table>
+				<div id="gridPagerlscfmx"></div>
+			</div>
+			
+
+		</div>
+	</div>
+	
+</form>
+
+<script>
+	var mzh = "";
+	var blh = "";
+	var ogid = '@curOpr.OrganizeId';
+	var reportUrl = '@Html.Raw(reportUrl)';
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+		var h = $(window).height() - 100;
+		$('#layout iframe').css('height', h);
+		//newtabchange("1")
+        //查询列表
+		gridList();
+		lsblinfo();
+		lsjzcfmx();
+    });
+    //病历就诊记录查询
+    function gridList() {
+        var $gridJsList = $("#gridList");
+        $gridJsList.dataGrid({
+            postData: {kssj:$("#kssj").val(),jssj:$("#jssj").val()},
+			height: $(window).height() - 190,
+			url: "/DoctorManage/OutpatientQuery/GetMedicalRecordGridJson",
+            colModel: [
+				{ label: '病历号', name: 'blh', width: 100, align: 'left' },
+                { label: '门诊号码', name: 'mzh', width: 100, align: 'left' },
+                { label: '姓名', name: 'xm', align: 'left', width: 110 },
+                { label: '性别', name: 'xb', align: 'center', width: 80 },
+                { label: '年龄', name: 'nl', align: 'left', width: 50 },
+                { label: '诊断', name: 'zdmc', width: 150, align: 'left' },
+                { label: '开始时间', name: 'zlkssj', align: 'left', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '结束时间', name: 'zljssj', align: 'left', width: 120, formatter: function (val) { return val != "" && val != undefined ? $.getTime({ date: val }) : ""; } },
+                { label: '科室', name: 'ks', width: 80, align: 'left' },
+                { label: '就诊医生', name: 'ys', width: 80, align: 'left' },
+                { label: '家庭地址', name: 'dz', width: 80, align: 'left' },
+                { label: '转归', name: 'zg', width: 80, align: 'left', hidden: true }
+            ],
+            pager: "#gridPager",
+            sortname: " zlkssj asc",
+            rownumbers: true,  //是否显示序号
+			viewrecords: true,
+			ondblClickRow: function (rowid) {
+				doubleclick(rowid);
+			},
+        });
+
+		$("#btn_search").click(function () {
+			//点击查询重置各个列表查询
+			blh = "";
+            $('#gridList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val() },
+                url: "/DoctorManage/OutpatientQuery/GetMedicalRecordGridJson",
+				page: 1,
+			}).trigger('reloadGrid');
+
+
+			$("#iframerightiframerightiframerightttt").attr('src', "");
+
+
+			$('#gridListls').jqGrid("clearGridData");//先清空明细
+			$("#gridListls").jqGrid('setGridParam', {
+				postData: { blh: blh },
+				url: "/DoctorManage/OutpatientQuery/MZBLlsinfo",
+				page: 1,
+			}).trigger('reloadGrid');
+
+
+			$('#gridListlscfmx').jqGrid("clearGridData");//先清空明细
+			$("#gridListlscfmx").jqGrid('setGridParam', {
+				postData: { jzid: "" },
+				url: "/DoctorManage/OutpatientQuery/MZlsjzCfInfo",
+				page: 1,
+			}).trigger('reloadGrid');
+        });
+	}
+
+	//病历详情查询
+	function blxqinfo() {
+		$("#alinbl").click();
+		var uri = reportUrl + "?tempCode=1253&mzh=" + mzh + "&systemCode=" + '@reportSystemCode' + "&orgId=" + ogid + "&row=1";
+		$("#iframerightiframerightiframerightttt").attr('src', uri);
+	}
+
+	//切换卡片操作
+	function newtabchange(tabaction) {
+		switch (tabaction) {
+			case "1":
+				$("#librlb").show();
+				$("#linbl").hide();
+				$("#linlsjz").hide(); 
+				break;
+			case "2":
+				$("#librlb").hide();
+				$("#linbl").show();
+				$("#linlsjz").hide();
+				break;
+			case "3":
+				$("#librlb").hide();
+				$("#linbl").hide();
+				$("#linlsjz").show();
+				//console.log("本次双击病历号：", blh);
+				
+				break;
+			default:
+
+				break;
+		}
+	}
+
+	//双击病历就诊记录操作
+	function doubleclick(rowid) {
+		var selRowData = $("#gridList").getRowData(rowid);
+		if (selRowData==null) {
+			$.modalAlert("请选择一条患者信息", 'warning');
+			return;
+		}
+		//$.modalMsg("选择患者的门诊号为：" + selRowData.mzh, 'warning');
+		mzh = selRowData.mzh;//病历详情信息使用
+		blh = selRowData.blh;//历史病历信息使用
+		blxqinfo();//加载病历详情信息
+
+		$('#gridListls').jqGrid("clearGridData");//先清空明细
+		$("#gridListls").jqGrid('setGridParam', {
+			postData: { blh: blh },
+			url: "/DoctorManage/OutpatientQuery/MZBLlsinfo",
+			page: 1,
+		}).trigger('reloadGrid');
+
+		$('#gridListlscfmx').jqGrid("clearGridData");//先清空明细
+		$("#gridListlscfmx").jqGrid('setGridParam', {
+			postData: { jzid: "" },
+			url: "/DoctorManage/OutpatientQuery/MZlsjzCfInfo",
+			page: 1,
+		}).trigger('reloadGrid');
+		
+	}
+
+	//历史病历就诊查询
+	function lsblinfo() {
+		var $gridlsList = $("#gridListls");
+		$gridlsList.dataGrid({
+			postData: { blh: blh },
+			height: $(window).height() - 500,
+			url: "/DoctorManage/OutpatientQuery/MZBLlsinfo",
+			caption: "历史就诊记录",
+			colModel: [
+				{ label: '病历号', name: 'blh', width: 100, align: 'left' },
+				{ label: '门诊号码', name: 'mzh', width: 100, align: 'left' },
+				{ label: '姓名', name: 'xm', width: 80, align: 'left' },
+				{ label: '性别', name: 'xb', width: 50, align: 'center' },
+				{ label: '年龄', name: 'nl', width: 50, align: 'left' },
+				{ label: '诊断', name: 'zdmc', width: 150, align: 'left' },
+				{ label: '开始时间', name: 'zlkssj', width: 120, align: 'left', formatter: function (val) { return $.getTime({ date: val }); } },
+				{ label: '结束时间', name: 'zljssj', width: 120, align: 'left', formatter: function (val) { return val != "" && val != undefined ? $.getTime({ date: val }) : ""; } },
+				{ label: '科室', name: 'ks', width: 80, align: 'left' },
+				{ label: '就诊医生', name: 'ys', width: 80, align: 'left' },
+				{ label: '家庭地址', name: 'dz', width: 80, align: 'left' },
+				{ label: '就诊ID', name: 'jzId', width: 80, align: 'left', hidden: true }
+			],
+			pager: "#gridPagerls",
+			sortname: " zlkssj asc",
+			rownumbers: true,  //是否显示序号
+			viewrecords: true,
+			onSelectRow: function (rowid) {
+				var rowdata = $("#gridListls").getRowData(rowid);
+				if (rowdata) {
+					//console.log("选中就诊ID：", rowdata.jzId);
+					var jzid = rowdata.jzId;
+					$('#gridListlscfmx').jqGrid("clearGridData");//先清空明细
+					$("#gridListlscfmx").jqGrid('setGridParam', {
+						postData: { jzid: jzid },
+						url: "/DoctorManage/OutpatientQuery/MZlsjzCfInfo",
+						page: 1,
+					}).trigger('reloadGrid');
+                }
+            },
+			ondblClickRow: function (rowid) {
+				var selRowData = $("#gridListls").getRowData(rowid);
+				if (selRowData == null) {
+					$.modalAlert("请选择一条患者信息", 'warning');
+					return;
+				}
+				mzh = selRowData.mzh;//病历详情信息使用
+				blxqinfo();//加载病历详情信息
+				
+			},
+		});
+	}
+
+	function lsjzcfmx() {
+		var $gridlscfmxList = $("#gridListlscfmx");
+		$gridlscfmxList.dataGrid({
+			postData: { jzid: "" },
+			height: $(window).height() - 400,
+			url: "/DoctorManage/OutpatientQuery/MZlsjzCfInfo",
+			caption: "历史处方明细",
+			colModel: [
+				{ label: '处方类型', hidden: true, name: 'cflx', width: 140, align: 'left', formatter: function (val) { return $.enum.getDescByValue("EnumCflx", val); } },
+				{ label: '处方号', name: 'cfh', width: 140, align: 'left' },
+				{ label: '项目代码', name: 'sfxmcode', width: 100, align: 'left', hidden: true },
+				{ label: '项目名称', name: 'sfxmmc', width: 140, align: 'left' },
+				{ label: '单价', name: 'dj', align: 'left', width: 80 },
+				{ label: '单位', name: 'dw', align: 'left', width: 80},
+				{ label: '数量', name: 'sl', align: 'center', width: 80 },
+				{ label: '金额', name: 'je', align: 'left', width: 80 },
+				{ label: '开立医生', name: 'klys', width: 130, align: 'left' },
+				{ label: '开立科室', name: 'klks', width: 130, align: 'left' },
+			],
+			pager: "#gridPagerlscfmx",
+			sortname: " cfh asc",
+			rownumbers: true,  //是否显示序号
+			viewrecords: true,
+			grouping: true,
+			groupingView: {
+				//groupSummary: [true],//合计列是否显示  在需要合计的列加summaryType属性  'sum'
+				groupCollapse: true,//初始化是否折叠分组详细 true折叠 false展开
+				groupColumnShow: [true],
+				groupText: ['<b>{0}       明细数: {1} </b>'],
+				groupField: ['cflx'],
+				groupOrder: ['asc']
+			}
+		});
+	}
+	function cs() {
+		$("#grid").jqGrid({
+			url: 'data.json',
+			datatype: "json",
+			colModel: [
+				{ label: 'ID', name: 'id', key: true, width: 75 },
+				{ label: '姓名', name: 'name', width: 150 },
+				{ label: '年龄', name: 'age', width: 150 },
+				{ label: '城市', name: 'city', width: 150 },
+				{ label: '国家', name: 'country', width: 150 }
+			],
+			viewrecords: true,
+			height: 250,
+			rowNum: 20,
+			pager: "#pager",
+			caption: "示例表格",
+			subGrid: true,
+			subGridRowExpanded: function (subgridDivId, rowId) {
+				var subgridTableId = subgridDivId + "_t";
+				$("#" + subgridDivId).html("<table id='" + subgridTableId + "'></table>");
+
+				$("#" + subgridTableId).jqGrid({
+					url: 'subgrid_data.json',
+					datatype: "json",
+					colModel: [
+						{ label: 'ID', name: 'id', key: true, width: 75 },
+						{ label: '订单号', name: 'order_number', width: 150 },
+						{ label: '金额', name: 'amount', width: 150 },
+						{ label: '日期', name: 'date', width: 150 }
+					],
+					height: '100%',
+					rowNum: 5,
+					subGrid: true,
+					subGridOptions: {
+						plusicon: "fa fa-plus",
+						minusicon: "fa fa-minus",
+						openicon: "fa fa-folder-open",
+						reloadOnExpand: false,
+					},
+					subGridRowExpanded: function (subgridDivId, rowId) {
+						var subgridTableId = subgridDivId + "_t";
+						$("#" + subgridDivId).html("<table id='" + subgridTableId + "'></table>");
+
+						$("#" + subgridTableId).jqGrid({
+							url: 'subgrid2_data.json',
+							datatype: "json",
+							colModel: [
+								{ label: 'ID', name: 'id', key: true, width: 75 },
+								{ label: '产品名称', name: 'product_name', width: 150 },
+								{ label: '数量', name: 'quantity', width: 150 },
+								{ label: '单价', name: 'price', width: 150 }
+							],
+							height: '100%',
+							rowNum: 5
+						});
+					}
+				});
+			}
+		});
+	}
+</script>

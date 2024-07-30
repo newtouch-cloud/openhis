@@ -1,0 +1,133 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using FrameworkBase.MultiOrg.Domain.Entity;
+using Newtouch.Infrastructure.EF.Attributes;
+
+namespace Newtouch.Herp.Domain.Entity
+{
+    /// <summary>
+    /// 物资_调价
+    /// </summary>
+    [Table("wz_priceAdjustment")]
+    public class WzPriceAdjustmentEntity : IEntity<WzPriceAdjustmentEntity>
+    {
+        /// <summary>
+        /// 主键 物资调价Id
+        /// </summary>
+        [Key]
+        public string wztjId { get; set; }
+
+        /// <summary>
+        /// 组织机构Id（有具体业务的医院）
+        /// </summary>
+        public string OrganizeId { get; set; }
+
+        /// <summary>
+        /// 库房ID    (提交调价库房)
+        /// </summary>
+        public string warehouseId { get; set; }
+
+        /// <summary>
+        /// 物资ID
+        /// </summary>
+        public string productId { get; set; }
+
+        /// <summary>
+        /// 转化因子
+        /// </summary>
+        public int zhyz { get; set; }
+
+        /// <summary>
+        /// 零售价 与转化因子对应，一般为部门单位价格
+        /// </summary>
+        [DecimalPrecision(11, 4)]
+        public decimal lsj { get; set; }
+
+        /// <summary>
+        /// 原零售价 与转化因子对应，一般为部门单位价格
+        /// </summary>
+        [DecimalPrecision(11, 4)]
+        public decimal ylsj { get; set; }
+
+        /// <summary>
+        /// 单位 与zhyz对应，一般为部门单位
+        /// </summary>
+        public string dwmc { get; set; }
+
+        /// <summary>
+        /// 审核状态   0:未审核 1:已审核 2:已拒绝 3.已撤销
+        /// </summary>
+        public string shzt { get; set; }
+
+        /// <summary>
+        /// 修改类型
+        /// </summary>
+        public string xglx { get; set; }
+
+        /// <summary>
+        /// 调整时间
+        /// </summary>
+        public DateTime tzsj { get; set; }
+
+        /// <summary>
+        /// 调整文件
+        /// </summary>
+        public string tzwj { get; set; }
+
+        /// <summary>
+        /// 执行时间
+        /// </summary>
+        public DateTime zxsj { get; set; }
+
+        /// <summary>
+        /// 调整操作人
+        /// </summary>
+        public string tzczy { get; set; }
+
+        /// <summary>
+        /// 审操作人
+        /// </summary>
+        public string shczy { get; set; }
+
+        /// <summary>
+        /// 执行操作人
+        /// </summary>
+        public string zxczy { get; set; }
+
+        /// <summary>
+        /// 执行标志   0:未执行 1:已执行
+        /// </summary>
+        public string zxbz { get; set; }
+
+        /// <summary>
+        /// 状态  0:作废；1.有效
+        /// </summary>
+        public string zt { get; set; }
+
+        /// <summary>
+        /// 排序
+        /// </summary>
+        public int? px { get; set; }
+
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        public DateTime CreateTime { get; set; }
+
+        /// <summary>
+        /// 创建人
+        /// </summary>
+        public string CreatorCode { get; set; }
+
+        /// <summary>
+        /// 最后修改时间
+        /// </summary>
+        public DateTime? LastModifyTime { get; set; }
+
+        /// <summary>
+        /// 最后修改人
+        /// </summary>
+        public string LastModifierCode { get; set; }
+    }
+}

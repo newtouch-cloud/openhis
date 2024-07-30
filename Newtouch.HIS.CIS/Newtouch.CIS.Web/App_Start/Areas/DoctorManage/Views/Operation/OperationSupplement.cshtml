@@ -1,0 +1,755 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "OperationSupplement";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #leftPart {
+        float: left;
+        width: 24%;
+    }
+
+        #leftPart .btn-group {
+            float: right;
+            font-size: 12px;
+            font-weight: 200;
+        }
+
+    #rightPart {
+        float: left;
+        width: 75%;
+        padding-left: 7px;
+    }
+</style>
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+<div id="leftPart" class="rows">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form" style="width:95%">
+            <tr>
+                <th class="formTitle" style="width:100px;">&nbsp;&nbsp; <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>&nbsp;&nbsp;姓名/住院号：</th>
+                <td class="formValue">
+                    <input id="keyword" type="text" class="form-control" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridPatList"></table>
+    </div>
+</div>
+<div id="rightPart" class="rows">
+    <div id="dv_baseInfoAndItem">
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                基本信息
+            </div>
+            <table class="form" style="margin-bottom:10px;margin-top:10px;">
+                <tr>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <label id="zyh"></label>
+                    </td>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <label id="xm"></label>
+                    </td>
+                    <th class="formTitle">性别：</th>
+                    <td class="formValue">
+                        <label id="xb"></label>
+                    </td>
+                    <th class="formTitle">年龄：</th>
+                    <td class="formValue">
+                        <label id="nl"></label>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        @*眼睛图标移除*@
+        <i id="expandIcon" class="fa" style="text-align: center; width: 100%;">打开项目收费</i>
+        @*<i id="expandIcon" class="fa fa-eye" aria-hidden="true" style="font-size: large; text-align: center; width: 100%;"></i>*@
+        <div class="panel panel-default" id="singleItemDiv">
+            <div class="panel-heading navb-bg">
+                @*眼睛图标移除*@
+                @*<i id="singleItemIcon" class="fa fa-eye-slash" style="font-size:larger;"></i>*@
+                项目收费&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <i id="singleItemIcon" class="fa">(关闭)</i>
+            </div>
+            <form id="form1">
+                <label id="dwjls" hidden="hidden"></label>@*单次计量数，和单次治疗量作比较*@
+                <input id="zfxz" type="text" style="display:none;" class="form-control" />
+                @{
+                    @Html.Partial("originalCharge"); //常规收费。数量
+                }
+
+            </form>
+        </div>
+
+        @Html.Partial("_MiddleButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+   {
+       ShowKeyList = new int[] { 2, 3, 6, 9 },
+       F2Text = "添加",
+       F3Text = "修改",
+       F6Text = "删除",
+       F9Text = "取消修改",
+       F9Hidden = true
+   })
+    </div>
+    <div class="gridPanel">
+        <table id="gridFeeList"></table>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new[] { 4, 8 },
+    F8Text = "确认提交"
+})
+</div>
+<script>
+    //
+    var multiTimesSettWithUnSettedSingleItem = false; //开关配置：可多次交易模式 非处方未收费项目是否自动带入
+    //
+    var leftdata = [];//左边数据源
+    var respmzh; //门诊号验证（没有换）
+    var editingNewid = null; //正在修改的行
+    var patInfoPostObj = {}; //个人信息Object对象 要提交到后台
+    $(function () {
+        $("#gridFeeList").newtouchLocalDataGrid(null, []);
+        hideEditBotton();
+        $(".fa_icontoggle").click(function () {
+            if ($(this).find("i").hasClass("fa-angle-double-down")) {
+                $("#gridFeeList").setGridHeight($(window).height() - 245);
+            }
+            else {
+                $("#gridFeeList").setGridHeight($(window).height() - 265);
+            }
+        });
+        $('#expandIcon:visible').trigger('click');
+        //
+        initGridPatList();
+        //否则看不到loading效果
+        setTimeout("gridPatList()", 50);
+    });
+
+    //页面中元素，计算总金额 数量版本
+    function reCalcZjeFromsl() {
+        var resultZje = "0.00";
+        var txtDj = $("#dj").html();
+        var txtSl = $('#sl').val();
+        if (txtDj && txtSl) {
+            if (!isNaN(txtDj) && !isNaN(txtSl)) {
+                resultZje = roundingBy4she6ru5chengshuang((parseFloat(txtDj) * parseFloat(txtSl)), 2);
+            }
+        }
+        $('#zje').html(resultZje);
+    }
+
+    ///隐藏编辑按钮
+    function hideEditBotton() {
+        $('#btn_bottombutton_f2,#btn_bottombutton_f3,#btn_bottombutton_f6').hide();
+    }
+    //显示编辑按钮
+    function showEditBotton() {
+        //$('#btn_bottombutton_f3').attr('disabled', 'disabled');
+        //$('#btn_bottombutton_f6').attr('disabled', 'disabled');
+        $('#btn_bottombutton_f2,#btn_bottombutton_f3,#btn_bottombutton_f6').show();
+    }
+
+    //展开项目计费输入面板
+    $('#expandIcon').click(function () {
+        $(this).hide();
+        $('#singleItemDiv').show();
+        $('#form1').show();
+        showEditBotton();
+        $("#gridFeeList").setGridHeight($(window).height() - $("#dv_baseInfoAndItem").outerHeight(true) - 89);
+    });
+
+    //隐藏项目计费输入面板
+    $('#singleItemIcon').click(function () {
+        $('#singleItemDiv').hide();
+        $('#form1').show().hide();
+        $('#expandIcon').show();
+        hideEditBotton();
+        $("#gridFeeList").setGridHeight($(window).height() - $("#dv_baseInfoAndItem").outerHeight(true) - 89);
+    });
+
+    //gridPatList结构
+    function initGridPatList() {
+        $("#gridPatList").newtouchLocalDataGrid({
+            height: $(window).height() - 125,
+            unwritten: false,
+            rownumbers: false,
+            url: "@Url.Action("GetOperatPatSearchList")",
+            colModel: [
+                { label: '住院号', name: 'zyh', width: 60, align: 'left' },
+                { label: '姓名', name: 'xm', width: 70, align: 'left' },
+                { label: 'xb', name: 'xb', width: 70, align: 'left', hidden: true },
+                { label: 'nl', name: 'nl', width: 70, align: 'left', hidden: true }
+            ],
+            ondblClickRow: function (rowid) {
+                newtouch_event_f4();
+                var rowData = $("#gridPatList").jqGrid('getRowData', rowid);
+                $("#zyh").html(rowData.zyh);
+                $("#xm").html(rowData.xm);
+                if(rowData.xb=="1")
+                {
+                    $("#xb").html("男");
+                }
+                else if(rowData.xb=="2")
+                {
+                    $("#xb").html("女");
+                }
+                $("#nl").html(rowData.nl);
+                gridFeeList();
+            }
+        });
+    }
+
+    //刷新患者列表
+    function gridPatList() {
+        $.najax({
+            type: "GET",
+            url: "@Url.Action("GetOperatPatSearchList")",
+            loading: true,
+            loadingtext: "正在加载患者列表，请稍后...",
+            success: function (ajaxresp) {
+                newtouch_event_f4();
+                leftdata = ajaxresp;
+                var $gridPatList = $("#gridPatList");
+                $gridPatList.resetSelection();
+                $gridPatList.clearGridData();
+                $gridPatList.newtouchLocalDataGrid({ posttofirst: false }, leftdata);
+            }
+        });
+    }
+
+    //刷新费用列表
+    function gridFeeList() {
+        $.najax({
+            type: "GET",
+            url: "@Url.Action("getSupplement")",
+            data: { zyh: $("#zyh").html() },
+            loading: true,
+            loadingtext: "正在加载费用列表，请稍后...",
+            success: function (ajaxresp) {
+                $("#gridFeeList").resetSelection();
+                $("#gridFeeList").clearGridData();
+                $("#gridFeeList").newtouchLocalDataGrid({ posttofirst: false }, ajaxresp);
+                fillGridDataToMxList();
+            }
+        });
+    }
+
+    $("#gridFeeList").newtouchLocalDataGrid({
+        height: $(window).height() - 225,
+        unwritten: false,
+        url: "@Url.Action("getSupplement")",
+        colModel: [
+            {
+                label: "newid", name: "newid", align: "left", hidden: true, formatter: function (cellvalue, options, rowObject) {
+                    if ($.trim(rowObject.Id).length > 0) {
+                        return rowObject.Id;
+                    } else {
+                        return rowObject.newid;
+                    }
+                }
+            },
+            { label: "Id", name: "Id", align: "left", hidden: true },
+            {
+                label: "类型", name: "yzlb", width: 50, align: "left", formatter: function (cellvalue) {
+                    if (cellvalue == "0") {
+                        return "药品"
+                    }
+                    else if (cellvalue == "-1") {
+                        return "项目";
+                    }
+                    else {
+                        return "error";
+                    }
+                }
+            },
+            { label: "项目名称", name: "xmmc", width: 170, align: "left" },
+            { name: "xmdm", align: "left", hidden: true },
+            { label: "dxmdm", name: "dxmdm", hidden: true },
+            { label: "gg", name: "gg", hidden: true },
+            { label: "总计费数量", name: "sl", width: 70, align: "left" },
+            { label: "单位", name: "dw", width: 40, align: "left" },
+            {
+                label: "单价(元)", name: "dj", width: 80, align: "left", formatter: "number"
+                , formatoptions: { decimalPlaces: 4, defaultValue: '0.0000' }
+            },
+            {
+                label: "金额(元)", name: "zje", width: 80, align: "left", formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+            }, {
+                label: "执行状态", name: "zxzt", width: 50, align: "left", formatter: function (cellvalue) {
+                    if (cellvalue == "0") {
+                        return "未执行"
+                    }
+                    else if (cellvalue == "1") {
+                        return "已执行";
+                    }
+                    else {
+                        return "error";
+                    }
+                }
+            },
+            { label: "dwxs", name: "dwxs", hidden: true },
+            { label: "ykxs", name: "ykxs", hidden: true },
+            { label: "ybshbz", name: "ybshbz", hidden: true },
+            { label: "ybdm", name: "ybdm", hidden: true }
+        ],
+        onSelectRow: function (rowid) {
+            //$('#btn_bottombutton_f3').removeAttr('disabled');
+            //$('#btn_bottombutton_f6').removeAttr('disabled');
+        },
+        ondblClickRow: function (rowid) {
+            var rowData = $("#gridFeeList").jqGrid('getRowData', rowid);
+            if (rowData.zxzt == "已执行")
+            {
+                $.modalAlert("该费用已执行，不允许修改。", "warning");
+                return;
+            }
+            sfxmgridDbclickRow(rowData);
+        }
+    });
+    //治疗项目 浮层
+    var searchTypePart1 = "yp";
+    var searchTypePart2 = "sfxm";
+    searchTypePart1 += '.kc';
+    searchTypePart2 += '.dwjls';
+
+    $('#sfxmmc').sfxmFloatingSelector({
+        searchType: 'yp,sfxm',
+        leftshift: 100, //整体左偏移
+        ajaxparameters: function ($thisinput) {
+            return "dllb=1,2&mzzybz=2&keyword=" + $.trim($thisinput.val());
+        },
+        itemdbclickhandler: function ($thistr, $thisinput) {
+            if ($.trim($("#zyh").html) == "") {
+                $.modalAlert("尚未选择患者", "warning");
+                return;
+            }
+            if ($thisinput.attr('id') === 'sfxmmc') {
+                $('#yzlx').val($thistr.attr('data-yzlx'));
+                $('#sfxmmc').val($thistr.attr('data-sfxmmc'));
+                $('#sfxmCode').val($thistr.attr('data-sfxmCode'));
+                $('#gg').val($thistr.attr('data-gg'));
+                $('#sfdlCode').val($thistr.attr('data-sfdlCode'));
+                $('#dwjls').val($thistr.attr('data-dwjls'));
+                $('#zfxz').val($thistr.attr('data-zfxz'));
+                $('#cls').val($thistr.attr('data-cls'));
+                $('#ybdm').val($thistr.attr('data-ybdm'));
+                $('#yfbmcode').val($thistr.attr('data-yfbmcode'));
+
+                var djVal = parseFloat($thistr.attr('data-dj')).toFixed(4);
+                $('#dj').html(djVal);
+                $('#dw').html($thistr.attr('data-dw'));
+            }
+        }
+    });
+
+    //添加
+    function newtouch_event_f2() {
+        if ($("#zyh").html() == "") {
+            $.modalAlert("缺少患者基本信息", 'warning');
+            return;
+        }
+
+        var data = getEditRowData();
+        if (!checkEditingRowData(data)) {    //数据是否完善，检查必填项
+            return;
+        }
+        reCalcZjeFromsl();
+        var addgoon = function () {
+
+            if (!checkEditingRowData(data)) {    //数据是否完善，检查必填项
+                return;
+            }
+            data.zje = $('#zje').html();
+            data.zxzt = "0";
+            data.newid = Math.random().toString() + new Date().getMilliseconds();   //newid()
+            gridMxList.unshift(data);   //作为新项添加 //”数组最前端“
+
+            //重新将xm数组呈现至grid
+            fillDataToGrid();
+            Clearjzxm();
+        }
+
+        if (data && parseFloat(data.dj) < '0') {
+            $.modalAlert("单价为不小于0的数字", 'warning');
+            return;
+        }
+        else if (data && parseFloat(data.dj) == '0') {
+            $.modalConfirm("单价为0，确认是否添加", function (flag) {
+                if (!flag) {
+                    return;
+                }
+                else {
+                    addgoon();
+                }
+            });
+        }
+        else {
+            addgoon();
+        }
+    }
+
+    //修改
+    function newtouch_event_f3() {
+        if ($("#zyh").html() == "") {
+            $.modalAlert("缺少患者基本信息", 'warning');
+            return;
+        }
+        if (editingNewid) {
+            var data = getEditRowData();
+            if (!(checkEditingRowData(data))) {
+                //数据是否完善，检查必填项
+                return;
+            }
+            reCalcZjeFromsl();
+            data.zje = $('#zje').html();
+            data.zxzt = "0";
+            updategoon = function () {
+
+                data.newid = editingNewid;
+                if (editingNewid.length == 36) {//GUID则保留ID,否则为新数据ID不用赋值
+                    data.Id = editingNewid;
+                }
+
+                //检查重复项
+
+                //先在xm数组中找到之
+                if (editingNewid) {
+                    var matchedIndex = -1;
+                    for (var ii = 0; ii < gridMxList.length; ii++) {
+                        if (gridMxList[ii].newid == data.newid) {
+                            matchedIndex = ii;
+                            break;
+                        }
+                    }
+                    if (matchedIndex == -1) {
+                        return; //应该是异常
+                    }
+                    gridMxList.remove(matchedIndex);   //移除该项
+                    gridMxList.unshift(data);   //作为新项添加    //”数组最前端“
+                }
+
+                //重新将xm数组呈现至grid
+                fillDataToGrid();
+                Clearjzxm();
+
+                editingNewid = null;    //正在修改的行
+
+            }
+            if (data && parseFloat(data.dj) < '0') {
+                $.modalAlert("单价为不小于0的数字", 'warning');
+                return;
+            }
+            else if (data && parseFloat(data.dj) == '0') {
+                $.modalConfirm("单价为0，确认是否修改", function (flag) {
+                    if (!flag) {
+                        return;
+                    }
+                    else {
+                        updategoon();
+                    }
+                });
+            }
+            else {
+                updategoon();
+            }
+        }
+        else {
+            //$('#btn_bottombutton_f2').attr('disabled', 'disabled');
+            //获取grid当前选中的那一行
+            var seleId = $('#gridFeeList').jqGrid('getGridParam', 'selrow');
+            if (seleId) {
+                //请求修改该行
+                gridEditRow(seleId);
+            }
+            else {
+                return;
+            }
+        }
+    }
+
+    //清除
+    function newtouch_event_f4() {
+        gridMxList = [];
+        $("#gridFeeList").clearGridData();
+        $('#xm,#xb,#nl,#zjh').html('');
+        $("#zje").html('0.00');
+        Clearjzxm();
+    };
+
+    //删除
+    function newtouch_event_f6() {
+        //获取grid当前选中的那一行
+        var rowid = $('#gridFeeList').jqGrid('getGridParam', 'selrow');
+        //请求删除该行
+        if (rowid) {
+            var rowData = $("#gridFeeList").jqGrid('getRowData', rowid);
+            if (rowData.zxzt == "已执行") {
+                $.modalAlert("该费用已执行，不允许修改。", "warning");
+                return;
+            }
+            if (rowData) {
+                if (!!rowData.newid) {
+                    if (gridMxList.length > 0) {
+                        for (var jj = (gridMxList.length - 1) ; jj >= 0 ; jj--) {
+                            if (gridMxList[jj].newid == rowData.newid) {
+                                gridMxList.remove(jj);   //移除
+                            }
+                        }
+                    }
+                }
+            }
+            //重新将xm数组呈现至grid
+            fillDataToGrid();
+        }
+    }
+
+    //确认
+    function newtouch_event_f8() {
+
+        if ($("#zyh").html() == "") {
+            $.modalAlert("缺少患者基本信息", 'warning');
+            return;
+        }
+        var dataIDs = $("#gridFeeList").jqGrid('getDataIDs');
+        var dataInfo = [];
+        $.each(dataIDs, function () {
+            var detail = $("#gridFeeList").jqGrid('getRowData', this);
+            detail.yzlb = detail.yzlb == "药品" ? "0" : "-1";
+            detail.zxzt = detail.zxzt == "已执行" ? "1" : "0";
+            delete detail.newid;
+            dataInfo.push(detail);
+        });
+
+        $.najax({
+            type: "POST",
+            url: "@Url.Action("submitForm_Supplement")",
+            data: { RequestItems: dataInfo, zyh: $("#zyh").html() },
+            dataType: "json",
+            success: function (ajaxresp) {
+                $.modalAlert("提交成功", 'success');
+                gridFeeList();
+                Clearjzxm();
+            },
+            complete: function () {
+                $.loading(false);
+            }
+        });
+    }
+
+    //获取明细
+    function getEditRowData() {
+        var data = {
+            xmdm: $('#sfxmCode').val(),
+            xmmc: $('#sfxmmc').val(),
+            yzlb: $('#yzlx').val() == "1" ? "0" : "-1",
+            gg: $('#gg').val(),
+            ykxs: $('#cls').val(),
+            ybdm: $('#ybdm').val(),
+            dj: $('#dj').html(),
+            dw: $('#dw').html(),
+            sl: $('#sl').val(),
+            dxmdm: $('#sfdlCode').val(),
+            dwxs: $('#dwjls').val(),
+            zje: $('#zje').html(),
+            ybshbz: $('#zfxz').val(),
+            zxzt: "0"
+        };
+        return data;
+    }
+
+    //双击收费项目
+    function sfxmgridDbclickRow(rowData) {
+        if (!!rowData.newid) {
+            if (rowData) {
+                editingNewid = rowData.newid;
+                //序列化至编辑域中
+
+                $('#sfxmmc').val(rowData.xmmc);
+                $('#sfxmCode').val(rowData.xmdm);
+                $('#gg').val(rowData.gg);
+                $('#yzlx').val(rowData.yzlb == "药品" ? "1" : "2");// yzlx:1 药品,2 收费项目
+                $('#sfdlCode').val(rowData.dxmdm);
+                $('#dw').html(rowData.dw);
+                '@(ViewBag.sfxm_dj)' === 'ON'
+                    ? $('#dj').val(rowData.dj)
+                    : $('#dj').html(rowData.dj);
+                $('#sl').val(rowData.sl);
+                $('#dwjls').val(rowData.dwxs);
+                $('#zje').html(rowData.zje);
+                $('#zfxz').val(rowData.ybshbz);
+                $('#cls').val(rowData.ykxs);
+                $('#ybdm').val(rowData.ybdm);
+                $('#expandIcon').trigger('click');
+                //$('#btn_bottombutton_f6').attr('disabled', 'disabled');
+                //$('#btn_bottombutton_f9').show();
+                //$('#btn_bottombutton_f2').attr('disabled', 'disabled');
+                //$('#btn_bottombutton_f3').removeAttr('disabled');
+            }
+        }
+        else {
+            $.modalAlert("不能对此明细做修改", "warning");
+            return;
+        }
+    }
+
+    //
+    var patModel = null;
+
+    //检查正在编辑的数据（待提交）的完整性
+    function checkEditingRowData(rowData) {
+        if (!rowData.xmdm || !rowData.xmmc || !rowData.yzlb || !rowData.dxmdm) {
+            $.modalAlert("请选择收费项目", 'warning');
+            return;
+        }
+        if (!!!rowData.sl || isNaN(rowData.sl)) {
+            $.modalAlert("缺少数量", 'warning');
+            return;
+        }
+        //常规，数量
+        if (!((/^(\+|-)?\d+$/).test(rowData.sl)) || rowData.sl < 1) {
+            $.modalAlert("数量为大于0的整数", 'warning');
+            return;
+        }
+        else if (!!!rowData.dw) {
+            $.modalAlert("缺少项目单位信息", 'warning');
+        }
+        else if (!((/^(([1-9][0-9]*\.[0-9][0-9]*)|([0]\.[0-9][0-9]*)|([1-9][0-9]*)|([0]{1}))$/).test(rowData.dj))) {
+            $.modalAlert("单价为不小于0的数字", 'warning');
+        }
+        else if (rowData.dj == "" || isNaN(rowData.dj)) {
+            $.modalAlert("缺少项目单价信息", 'warning');
+        }
+        else {
+            return true;
+        }
+        return false;
+    }
+
+    //请求 编辑 行
+    function gridEditRow(rowid) {
+        if (rowid) {
+            var rowData = $("#gridFeeList").jqGrid('getRowData', rowid);
+            if (rowData) {
+                if (!!rowData.newid) {
+                    //在gridMxList找 start
+                    rowDataArr = $.jsonWhere(gridMxList, function (v) {
+                        return v && v.newid == rowData.newid;
+                    });
+                    if (!rowDataArr || rowDataArr.length == 0) {
+                        return; //为什么没找到
+                    }
+                    rowData = rowDataArr[0];  //通过rowData.newid从对象数组中取出该行数据
+                    if (true) { //&&可编辑
+                        editingNewid = rowData.newid;    //正在修改的行
+                    }
+                    else {
+                        return;
+                    }
+                    //在gridMxList找 end
+                }
+                else {
+                    //$('#btn_bottombutton_f2').removeAttr('disabled');
+                    $.modalAlert("不能对此明细做修改", "warning");
+                    return;
+                }
+                //序列化至编辑域中
+                $('#sfxmmc').val(rowData.xmmc);
+                $('#sfxmCode').val(rowData.xmdm);
+                $('#gg').val(rowData.gg);
+                $('#yzlx').val(rowData.yzlb == "0" ? "1" : "2");// yzlb:-1 收费项目,0 药品;yzlx:1 药品,2 收费项目
+                $('#sfdlCode').val(rowData.dxmdm);
+                $('#dw').html(rowData.dw);
+                '@(ViewBag.sfxm_dj)' === 'ON'
+                    ? $('#dj').val(rowData.dj)
+                    : $('#dj').html(rowData.dj);
+                $('#sl').val(rowData.sl);
+                $('#dwjls').val(rowData.dwjls);
+                $('#zje').html(rowData.zje);
+                $('#zfxz').val(rowData.ybshbz);
+                $('#cls').val(rowData.ykxs);
+                $('#ybdm').val(rowData.ybdm);
+                //$('#btn_bottombutton_f6').attr('disabled', 'disabled');
+                //$('#btn_bottombutton_f9').show();
+
+                //$('#btn_bottombutton_f2').attr('disabled', 'disabled');
+            }
+        }
+    }
+    var gridMxList = [];
+    //向gridFeeList grid里填充数据
+    function fillDataToGrid() {
+        $("#gridFeeList").resetSelection();
+        $("#gridFeeList").clearGridData();
+        for (var i = 0; i <= gridMxList.length; i++) {
+            $("#gridFeeList").newtouchLocalDataGrid(null, gridMxList[gridMxList.length - i]);
+        }
+    }
+
+
+    function fillGridDataToMxList() {
+        gridMxList = [];
+        var dataIDs = $("#gridFeeList").jqGrid('getDataIDs');
+        $.each(dataIDs, function () {
+            var detail = $("#gridFeeList").jqGrid('getRowData', this);
+            detail.yzlb = detail.yzlb == "药品" ? "0" : "-1";
+            detail.zxzt = detail.zxzt == "已执行" ? "1" : "0";
+            gridMxList.push(detail);
+        });
+    }
+
+    //清空记账项目
+    function Clearjzxm() {
+        $('#zfxz').val('');
+        $('#sfxmmc').val('');
+        $('#sfxmCode').val('');
+        $('#gg').val('');
+        $('#yzlx').val('');
+        $('#sfdlCode').val('');
+        $('#dw').html('');
+        $('#dj').html('')
+        $('#dwjls').val('');
+        $('#sl').val('');
+        $('#cls').val('');
+        $('#ybdm').val('');
+        $('#yfbmcode').val('');
+    }
+
+    //搜索病人信息
+    $('#keyword').keyup(function () {
+        if (leftdata != null && leftdata.length > 0) {
+            $("#gridPatList").resetSelection();
+            $("#gridPatList").clearGridData();
+            var redata = [];
+            var $this = $(this).val();
+            for (var i = 0; i < leftdata.length; i++) {
+                if (leftdata[i].zyh.indexOfIgnoreCase($this) != -1 ||
+                    leftdata[i].xm.indexOfIgnoreCase($this) != -1 ||
+                    leftdata[i].py.indexOfIgnoreCase($this) != -1 ||
+                    $this.trim() == '') {
+                    redata.push(leftdata[i]);
+                }
+            }
+            $("#gridPatList").newtouchLocalDataGrid({ posttofirst: false }, redata);
+        }
+    });
+
+
+    //延迟调用帮助函数
+    var timeoutFunc = null;
+    var timeoutFuncParam1 = null;
+    var timeoutFuncParam2 = null;
+    var timeoutFuncParam3 = null;
+    var timeoutFuncParam4 = null;
+    function invokeTimeoutFunc() {
+        if (timeoutFunc) {
+            timeoutFunc(timeoutFuncParam1, timeoutFuncParam2, timeoutFuncParam3, timeoutFuncParam4);
+        }
+    }
+</script>

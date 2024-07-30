@@ -1,0 +1,178 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "医嘱页";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<style>
+    /*.btn {
+        float: left;
+        background-color: #ffffff;
+        height: 12px;
+        width: 130px;
+        padding: 10px;
+        color: #00a0ea;
+        border: solid 1px #00a0ea;
+    }*/
+</style>
+
+<form id="formPatSer" style="margin:2px;margin-top:10px;">
+    <div class="gridPanel">
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">开始日期：</th>
+                    <td class="formValue">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" onchange="" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { btn_search() } })" value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                    </td>
+                    <th class="formTitle">结束日期：</th>
+                    <td class="formValue">
+                        <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" onchange="" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { btn_search() }  })" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                    </td>
+                    <td><input type="button" id="yzmc" name="jgdc" style="float:right;width:50px" value="医嘱" class="btn btn-primary" /></td>
+                    <td><input type="button" id="yfyl" name="jgdc" style="float:right;" value="医嘱+用量+用法+频次" class="btn btn-primary" /></td>
+                    <td><input type="button" id="yzt" name="jgdc" style="float:right;width:150px" value="医嘱+用量+用法+频次+嘱托" class="btn btn-primary" /></td>
+                </tr>
+            </table>
+        </div>
+        <div class="gridPanel">
+            <table id="gridPatientList"></table>
+            <div id="gridPatPager" style="padding-right:20%"></div>
+        </div>
+    </div>
+    @*onclick="document.getElementById('myWriterControl').DCExecuteCommand('Spechars', true, 'test');"*@
+</form>
+
+<script lang="javascript">
+
+    var zyh = $.request("zyh");
+
+    $("#kssj").change(function () {
+        $("#gridPatientList").jqGrid('setGridParam', {
+            postData: getSearchPostData(),
+        }).trigger('reloadGrid'); //重新加载当前表格
+    });
+
+    $("#jssj").change(function () {
+        $("#gridPatientList").jqGrid('setGridParam', {
+            postData: getSearchPostData(),
+        }).trigger('reloadGrid'); //重新加载当前表格
+    });
+
+    $(function () {
+        gridPatientList();
+    });
+
+    function gridPatientList() {
+        $('#gridPatientList').dataGrid({
+            url: "@Url.Action("AdviceGridView")",
+            height: 400,
+            postData: getSearchPostData(),
+            unwritten: false,
+            pager: '#gridPatPager',
+            //sortname: 'zh,yzlb,yzlx,kssj desc',
+            sortname: 'yzlx,kssj desc,zh',
+            rowNum: 100,
+            rownumbers: true,
+            colModel: [
+                { label: '医嘱ID', name: 'Id', align: 'center', hidden: true },
+                { label: '医嘱类别', name: 'yzlb', align: 'center', width: 50 },
+                {
+                    label: '医嘱类型', name: 'yzlx', align: 'center', width: 50, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumYzlx", val);
+                    }
+                },
+                {
+                    label: '状态', name: 'yzzt', align: 'center', width: 30, formatter: function (val, options, rowObject) {
+                        if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.DC).ToString())) {//DC状态
+                            //有执行时间，取已执行状态，有审核时间，取已审核状态
+                            if (rowObject["zxsj"] && rowObject["zxsj"] !== typeof (undefined) && rowObject["zxsj"] !== "") {
+                                return "执行";
+                            } else {
+                                return "审核";
+                            }
+                        } else if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.TZ).ToString())) {
+                            if (rowObject["yzlb"] == "长") {
+                                return "停止";
+                            } else {
+                                return "作废";
+                            }
+                        }
+                        return $.enum.getDescByValue("EnumYzzt", val);
+                    }
+                },
+                { label: '开始时间', name: 'kssj', align: 'center', width: 109, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '医生', name: 'ysmc', align: 'center', width: 40 },
+                { label: '医嘱', name: 'yznr', align: 'center', width: 205 },
+                { label: '同组', name: 'zh', align: 'center', width: 30 },
+                {
+                    label: '停止时间', name: 'tzsj', align: 'center', width: 110, formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: '用量', name: 'yl', align: 'center', width: 50 },
+                { label: '用量单位', name: 'yldw', align: 'center', width: 80 },
+                { label: '用法', name: 'yf', align: 'center', width: 50 },
+                { label: '频次', name: 'pc', align: 'center', width: 50 },
+                { label: '医嘱托', name: 'yzt', align: 'center', width: 30 },
+            ],
+            multiselect: true
+        });
+    }
+
+    function getSearchPostData() {
+        var wsh = true;
+        var dryz = true;
+        var yzlb = "长临";
+        var kssj = $('#kssj').val();
+        var jssj = $('#jssj').val();
+        var yzlx = "";
+        var yx = "qb"
+        return { dryz: dryz, yzlb: yzlb, wsh: wsh, yx: yx, kssj: kssj, jssj: jssj, yzlx: yzlx, zyh: zyh };
+    }
+
+    $("#yzmc").click(function () {
+        rowIds = $('#gridPatientList').jqGrid('getGridParam', 'selarrrow');
+        if (rowIds.length < 1) {
+            alert("请至少选择一条医嘱导出！");
+        }
+        else {
+            var jg = "";
+            for (var k = 0; k < rowIds.length; k++) {
+                var rowData = $("#gridPatientList").jqGrid('getRowData', rowIds[k]);
+                jg += (rowData.yznr == undefined ? " " : rowData.yznr) + "，";
+            };
+            $.currentWindow().document.getElementById('myWriterControl').DCExecuteCommand('Spechars', true, jg);
+        };
+    });
+
+    $("#yfyl").click(function () {
+        rowIds = $('#gridPatientList').jqGrid('getGridParam', 'selarrrow');
+        if (rowIds.length < 1) {
+            alert("请至少选择一条医嘱导出！");
+        }
+        else {
+            var jg = "";
+            for (var k = 0; k < rowIds.length; k++) {
+                var rowData = $("#gridPatientList").jqGrid('getRowData', rowIds[k]);
+                jg += (rowData.yznr == undefined ? " " : rowData.yznr) + " " + (rowData.yl == undefined ? " " : rowData.yl) + " " + (rowData.yf == undefined ? " " : rowData.yf) + " " + (rowData.pc == undefined ? " " : rowData.pc) + "，";
+            };
+            $.currentWindow().document.getElementById('myWriterControl').DCExecuteCommand('Spechars', true, jg);
+        };
+    });
+
+    $("#yzt").click(function () {
+        rowIds = $('#gridPatientList').jqGrid('getGridParam', 'selarrrow');
+        if (rowIds.length < 1) {
+            alert("请至少选择一条医嘱导出！");
+        }
+        else {
+            var jg = "";
+            for (var k = 0; k < rowIds.length; k++) {
+                var rowData = $("#gridPatientList").jqGrid('getRowData', rowIds[k]);
+                jg += (rowData.yznr == undefined ? " " : rowData.yznr) + " " + (rowData.yl == undefined ? " " : rowData.yl) + " " + (rowData.yf == undefined ? " " : rowData.yf) + " " + (rowData.pc == undefined ? " " : rowData.pc) + " " + (rowData.yzt == undefined ? " " : rowData.yzt) + "，";
+            };
+            $.currentWindow().document.getElementById('myWriterControl').DCExecuteCommand('Spechars', true, jg);
+        };
+    });
+
+</script>

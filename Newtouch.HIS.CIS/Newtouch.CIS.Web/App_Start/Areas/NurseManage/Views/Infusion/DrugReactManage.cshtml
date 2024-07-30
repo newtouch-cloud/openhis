@@ -1,0 +1,740 @@
+﻿@{
+    ViewBag.Title = "不良反应药品管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+
+    #TabGrid {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        top:0;
+        bottom: 10px;
+        right: 0;
+        z-index: 8888;
+        background-color: white;
+        filter: alpha(Opacity=95);
+        -moz-opacity: 0.95;
+        opacity: 0.95;
+        box-shadow: 0px 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=95);
+            -moz-opacity: 0.95;
+            opacity: 0.95;
+        }
+
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 5px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid .form-control {
+        border-top: 0px;
+        border-left: 0px;
+        border-right: 0px;
+        border-radius: 0px !important;
+    }
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading navb-bg">
+        筛选条件
+    </div>
+    <div style="padding: 2px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle">卡号：</td>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="cardno" placeholder="卡号" />
+                </td>
+                <td class="formTitle">创建时间：</td>
+                <td class="formValue">
+                    <input id="txt_zxrq" type="text" class="form-control input-wdatepicker" style="width:80%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-01")">
+                </td>
+                <td class="formTitle" style="width:10px">至</td>
+                <td class="formValue">
+                    <input id="txt_zxrq" type="text" class="form-control input-wdatepicker" style="width:80%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                </td>                
+                <td class="formTitle"></td>
+                <td class="formTitle"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridListPatient"></table>
+    <div id="gridPager1" rel="form1"></div>
+</div>
+<div id="TabGrid">
+    <ul class="nav nav-tabs navb-bg" role="tablist" id="myTab">
+        <li role="presentation" class="active">
+            <a id="linkSearch" role="tab" data-toggle="tab">新增药品不良反应</a>
+        </li>
+        <li style="float:right">
+            <span class="hiding glyphicon glyphicon-chevron-right btn-lg"></span>
+        </li>
+    </ul>
+    <div class="panel panel-default" style="height:91%;overflow-x:hidden;overflow-y:auto;text-align:center;">
+        <div style="padding: 7px;">
+            <table class="form">
+                <tr>
+                    <td colspan="6">
+                        <h1>药品不良反应报告</h1>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">报告类型：</td>
+                    <td class="formValue">
+                        <div class="ckbox">
+                            <input id="ch0_1" name="ch0" type="checkbox" autocomplete="off"><label for="ch0_1">首次报告</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch0_2" name="ch0" type="checkbox" autocomplete="off"><label for="ch0_2">跟踪报告</label>
+                        </div>
+                    </td>
+                    <td class="formTitle">报告性质：</td>
+                    <td class="formValue">
+                        <div class="ckbox">
+                            <input id="ch1_1" name="ch1" type="checkbox" autocomplete="off"><label for="ch1_1">新的</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch1_2" name="ch1" type="checkbox" autocomplete="off"><label for="ch1_2">严重</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch1_3" name="ch1" type="checkbox" autocomplete="off"><label for="ch1_3">一般</label>
+                        </div>
+                    </td>
+                    <td class="formTitle">编码：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="cardno" placeholder="" />
+                    </td>
+                </tr>
+                <tr>                    
+                    <td class="formTitle">报告单位类别：</td>
+                    <td class="formValue" colspan="3">
+                        <div class="ckbox">
+                            <input id="ch2_1" name="ch2" type="checkbox" autocomplete="off"><label for="ch2_1">医疗机构</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch2_2" name="ch2" type="checkbox" autocomplete="off"><label for="ch2_2">经营企业</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch2_3" name="ch2" type="checkbox" autocomplete="off"><label for="ch2_3">成产企业</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch2_4" name="ch2" type="checkbox" autocomplete="off"><label for="ch2_4">个人</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch2_5" name="ch2" type="checkbox" autocomplete="off"><label for="ch2_5">其他</label>
+                        </div>
+                    </td>
+                    <td class="formTitle"></td>
+                    <td class="formTitle"></td>
+                </tr>
+                <tr>
+                    <td class="formTitle">姓名：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="name" placeholder="姓名" />
+                    </td>
+                    <td class="formTitle">性别：</td>
+                    <td class="formValue">
+                        <div class="ckbox">
+                            <input id="sex_1" name="sex" type="checkbox" autocomplete="off"><label for="sex_1">男</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="sex_2" name="sex" type="checkbox" autocomplete="off"><label for="sex_2">女</label>
+                        </div>
+                    </td>
+                    <td class="formTitle">出生日期：</td>
+                    <td class="formValue">
+                        <input id="txt_zxrq" type="text" class="form-control input-wdatepicker" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">民族：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        <select class="form-control" id="lb">
+                            <option value="">汉</option>
+                        </select>
+                    </td>
+                    <td class="formTitle">体重：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="weight" placeholder="" />
+                    </td>
+                    <td class="formTitle">联系方式：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="phone" placeholder="" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">原患疾病：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="yhjb" placeholder="" />
+                    </td>
+                    <td class="formTitle">医院名称：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="yymc" placeholder="" />
+                    </td>
+                    <td class="formTitle">病历号：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="blh" placeholder="" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">既往药品不良反应：</td>
+                    <td class="formValue">
+                        <div class="ckbox">
+                            <input id="ch3_1" name="ch3" type="checkbox" autocomplete="off"><label for="ch3_1">有</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch3_2" name="ch3" type="checkbox" autocomplete="off"><label for="ch3_2">无</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch3_3" name="ch3" type="checkbox" autocomplete="off"><label for="ch3_3">不详</label>
+                        </div>
+                    </td>
+                    <td class="formTitle">描述：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="jwblms" placeholder="" />
+                    </td>                    
+                    <td class="formTitle"></td>
+                    <td class="formTitle"></td>
+                </tr>
+                <tr>
+                    <td class="formTitle">家族药品不良反应：</td>
+                    <td class="formValue">
+                        <div class="ckbox">
+                            <input id="ch4_1" name="ch4" type="checkbox" autocomplete="off"><label for="ch4_1">有</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch4_2" name="ch4" type="checkbox" autocomplete="off"><label for="ch4_2">无</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch4_3" name="ch4" type="checkbox" autocomplete="off"><label for="ch4_3">不详</label>
+                        </div>
+                    </td>
+                    <td class="formTitle">描述：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="jzblms" placeholder="" />
+                    </td>
+                    <td class="formTitle"></td>
+                    <td class="formTitle"></td>
+                </tr>
+                <tr>
+                    <td class="formTitle">相关重要信息：</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch5_1" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_1">吸烟史</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch5_2" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_2">饮酒史</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch5_3" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_3">妊娠期</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch5_4" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_4">肝病史</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch5_5" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_5">肾病史</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch5_6" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_6">过敏史</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch5_7" name="ch5" type="checkbox" autocomplete="off"><label for="ch5_7">其他</label>
+                        </div>
+                    </td>
+                    <td class="formTitle"></td>
+                </tr>
+                <tr>
+                    <td colspan="6">
+                        <div class="gridPanel" style="padding-top:10px;">
+                            <table id="gridXGYP"></table>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">不良反应/事件名称：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="jwsj" placeholder="" />
+                    </td>
+                    <td class="formTitle" colspan="2">不良反应/事件发生时间：</td>
+                    <td class="formValue">
+                        <input id="txt_zxrq" type="text" class="form-control input-wdatepicker" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="">
+                    </td>
+                    <td class="formTitle"></td>
+                </tr>
+                <tr>
+                    <td class="formTitle" colspan="2">不良反应/事件过程描述（包括症状，体征，临床检验等）及处理情况：</td>
+                    <td class="formValue" colspan="4">
+                        <input type="text" class="form-control" id="gcms" placeholder="" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" colspan="2">不良反应/事件的结果：</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch6_1" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_1">痊愈</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch6_2" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_2">好转</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch6_3" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_3">未好转</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch6_4" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_4">不详</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch6_5" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_5">有后遗症</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch6_6" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_6">死亡</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch6_7" name="ch6" type="checkbox" autocomplete="off"><label for="ch6_7">直接死亡</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" colspan="2">停药或减量后，反应/事件是否消失或减轻？</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch7_1" name="ch7" type="checkbox" autocomplete="off"><label for="ch7_1">是</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch7_2" name="ch7" type="checkbox" autocomplete="off"><label for="ch7_2">否</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch7_3" name="ch7" type="checkbox" autocomplete="off"><label for="ch7_3">不明</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch7_4" name="ch7" type="checkbox" autocomplete="off"><label for="ch7_4">未停药或未减量</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" colspan="2">再次使用可疑药品后是否再次出现同样反应/事件？</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch8_1" name="ch8" type="checkbox" autocomplete="off"><label for="ch8_1">是</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch8_2" name="ch8" type="checkbox" autocomplete="off"><label for="ch8_2">否</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch8_3" name="ch8" type="checkbox" autocomplete="off"><label for="ch8_3">不明</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch8_4" name="ch8" type="checkbox" autocomplete="off"><label for="ch8_4">未再使用</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" colspan="2">对原患疾病影响？</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch9_1" name="ch9" type="checkbox" autocomplete="off"><label for="ch9_1">不明显</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch9_2" name="ch9" type="checkbox" autocomplete="off"><label for="ch9_2">病程延长</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch9_3" name="ch9" type="checkbox" autocomplete="off"><label for="ch9_3">病情加重</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch9_4" name="ch9" type="checkbox" autocomplete="off"><label for="ch9_4">导致后遗症</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch9_5" name="ch9" type="checkbox" autocomplete="off"><label for="ch9_5">导致死亡</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" rowspan="2" colspan="2">关联性评价（报告人评价）</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch10_1" name="ch10" type="checkbox" autocomplete="off"><label for="ch10_1">肯定</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch10_2" name="ch10" type="checkbox" autocomplete="off"><label for="ch10_2">很可能</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch10_3" name="ch10" type="checkbox" autocomplete="off"><label for="ch10_3">可能</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch10_4" name="ch10" type="checkbox" autocomplete="off"><label for="ch10_4">可能无关</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch10_5" name="ch10" type="checkbox" autocomplete="off"><label for="ch10_5">待评价</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch10_6" name="ch10" type="checkbox" autocomplete="off"><label for="ch10_6">无法评价</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch11_1" name="ch11" type="checkbox" autocomplete="off"><label for="ch11_1">肯定</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch11_2" name="ch11" type="checkbox" autocomplete="off"><label for="ch11_2">很可能</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch11_3" name="ch11" type="checkbox" autocomplete="off"><label for="ch11_3">可能</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch11_4" name="ch11" type="checkbox" autocomplete="off"><label for="ch11_4">可能无关</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch11_5" name="ch11" type="checkbox" autocomplete="off"><label for="ch11_5">待评价</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch11_6" name="ch11" type="checkbox" autocomplete="off"><label for="ch11_6">无法评价</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" rowspan="2">报告人信息</td>
+                    <td class="formTitle">联系电话：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="lxdh" placeholder="" />
+                    </td>                
+                    <td class="formTitle">职业：</td>
+                    <td class="formValue" colspan="2">
+                        <div class="ckbox">
+                            <input id="ch12_1" name="ch12" type="checkbox" autocomplete="off"><label for="ch12_1">医生</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch12_2" name="ch12" type="checkbox" autocomplete="off"><label for="ch12_2">医师</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch12_3" name="ch12" type="checkbox" autocomplete="off"><label for="ch12_3">护士</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch12_4" name="ch12" type="checkbox" autocomplete="off"><label for="ch12_4">其他</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">电子邮箱：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="email" placeholder="" />
+                    </td>
+                    <td class="formTitle">签名：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="signname" placeholder="" />
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" rowspan="2">报告单位信息</td>
+                    <td class="formTitle">单位名称：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="dwmc" placeholder="" />
+                    </td>
+                    <td class="formTitle">联系人：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="lxr" placeholder="" />
+                    </td>                   
+                </tr>
+                <tr>
+                    <td class="formTitle">电话：</td>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="phone" placeholder="" />
+                    </td>
+                    <td class="formTitle">报告日期：</td>
+                    <td class="formValue">
+                        <input id="bgrq" type="text" class="form-control input-wdatepicker" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle" colspan="2">生产企业请填写信息来源：</td>
+                    <td class="formValue" colspan="4">
+                        <div class="ckbox">
+                            <input id="ch13_1" name="ch13" type="checkbox" autocomplete="off"><label for="ch13_1">医疗机构</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch13_2" name="ch13" type="checkbox" autocomplete="off"><label for="ch13_2">经营企业</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch13_3" name="ch13" type="checkbox" autocomplete="off"><label for="ch13_3">个人</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch13_4" name="ch13" type="checkbox" autocomplete="off"><label for="ch13_4">文献报道</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch13_5" name="ch13" type="checkbox" autocomplete="off"><label for="ch13_5">上市后研究</label>
+                        </div>
+                        <div class="ckbox">
+                            <input id="ch13_6" name="ch13" type="checkbox" autocomplete="off"><label for="ch13_6">其他</label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                <td class="formTitle">备注：</td>
+                <td class="formValue" colspan="5">
+                    <input type="text" class="form-control" id="remark" placeholder="" />
+                </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 7, 8 },
+    F7Text = "新增",
+    F8Text = "明细"
+})
+<script>
+    var kflocaldata = new Array();
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+
+        });
+        $(".hiding").click(function () {
+            TabGridHide();
+        });
+        $(".showbotton").click(function () {
+            $(".showbotton").animate({ width: 'hide' },
+                "fast",
+                function () {
+                    $("#TabGrid").animate({ left: '0px' }, "slow");
+                    gridXGYP();
+                });
+        });
+        Initial();
+    });
+
+    //初始化
+    function Initial() {
+        gridList();
+        TabGridHide();
+        $('#TabGrid input[type=checkbox]').bind('click', function () {
+            //当前的checkbox是否选中
+            if (this.checked) {
+                var id = this.id;
+                var name = id.substr(0, id.length - 2);
+                $("#TabGrid input[name='"+ name + "']").not(this).attr("checked", false);
+            } else {
+                this.checked = true
+            }
+        });
+    }
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        var tabGridwith = $("#TabGrid").width() + 200;
+        $("#TabGrid").animate({ left: tabGridwith },
+                "slow",
+                function () {
+                    $(".showbotton").animate({ width: 'show' }, "fast");
+                });
+    }
+
+    //类别
+    function getLbSelectTree() {
+        $("#lb").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.itemDetails) {
+                    $.each(top.clients.itemDetails, function (idx, val) {
+                        if (val.Type === "SSDFL") {
+                            $.each(val.Items, function (key, value) {
+                                $('#lb').append('<option value="' + value.Code + '">' + value.Name + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+        $('#lb').change(function () {
+            $('#btn_search').trigger('click');
+        });
+    }
+
+    //主表信息
+    function gridList() {
+        var $gridList = $("#gridListPatient");
+        $gridList.dataGrid({
+            url: "/NurseManage/Infusion/GetPatientListJson",
+            postData: $("#form1").formSerialize(),
+            height: $(window).height() - document.getElementById('gridListPatient').offsetTop - 120,
+            colModel: [
+                { label: 'Id', name: 'Id', key: true, hidden: true },
+                { label: '卡号', name: 'Name', width: 50, align: 'center' },
+                { label: '姓名', name: 'py', width: 100, align: 'center' },
+                { label: '不良反应记录', name: 'py', width: 50, align: 'center' },
+                { label: '门诊号', name: 'py', width: 100, align: 'center' },
+                { label: '病历号', name: 'py', width: 100, align: 'center' },
+                { label: '患者类型', name: 'py', width: 50, align: 'center' },
+                { label: '农合卡号', name: 'py', width: 100, align: 'center' },
+                { label: '性别', name: 'py', width: 50, align: 'center' },
+                { label: '电话', name: 'py', width: 50, align: 'center' },
+                { label: '家庭地址', name: 'py', width: 100, align: 'center' },
+                { label: '家庭邮编', name: 'py', width: 50, align: 'center' },
+                { label: '创建日期', name: 'py', width: 100, align: 'center' }
+            ],
+            pager: "#gridPager1",
+            rowNum: '15',
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                localdata = [];
+            },
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: $("#form1").formSerialize()
+                }).trigger('reloadGrid');
+        });
+    }
+
+    //相关药品
+    function gridXGYP() {
+        var $gridXGYP = $("#gridXGYP");
+        $gridXGYP.jqGrid({
+            datatype: 'local',
+            data: kflocaldata,
+            height: 100,
+            //altRows: true,//隔行换色
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            multiselect: true,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                { label: 'cfId', name: 'cfId', hidden: true },
+                { label: '批准文号', name: 'cfh', width: 150, align: 'center', editrules: { required: true } },
+                {
+                    label: '商品名称', name: 'xmmc', width: 160, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true
+                },
+                {
+                    label: '通用名称(含剂型)', name: 'dj', width: 150, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true
+                },
+                { label: '生产厂家', name: 'dw', width: 120, editwidth: '100%', align: 'center', editrules: { required: true }, editable: true },
+                { label: '成产批号', name: 'dwjls', width: 100, editwidth: '100%', align: 'center', editable: true },
+                { label: '用法用量', name: 'jjcl', width: 80, editwidth: '100%', align: 'center', editable: true },
+                
+                { label: '操作', name: 'action', width: 100, align: 'center' }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            pager: "#gridXGYPPager",
+            loadComplete: function () {
+                ////自动触发新处方
+                //if (kflocaldata && kflocaldata.length == 0) {
+                //    newRehPresData();
+                //}
+            },
+            gridComplete: function () {
+                EnableRehabInlineEditBox();
+            }
+        });
+    }
+
+    //启用行内编辑
+    function EnableRehabInlineEditBox(){
+        var ids = $("#gridXGYP").getDataIDs();
+        $.each(ids, function () {
+            //打开编辑模式
+            $("#gridkfcf").jqGrid('editRow', String(this), false, initRehabInlineFunc);
+
+            //标识处方颜色
+            var cfh = $("#gridkfcf").getRowData(String(this)).cfh;
+            $('#gridkfcf tr[id="' +  String(this) + '"]').css('border-left-color','white');
+            $('#gridkfcf tr[id="' +  String(this) + '"]').css('border-left-style','solid');
+            $('#gridkfcf tr[id="' +  String(this) + '"]').css('border-left-width','5px');
+
+        });
+    }
+
+    function newsfxmData() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条膳食信息", 'warning');
+            return;
+        }
+         var dataRow = {
+             Id: Math.random().toString() + new Date().getMilliseconds(),
+             action: getActionStr(),
+             baseId: $("#gridList").jqGridRowValue().Id
+            };
+        $gridMxList.jqGrid("addRowData", undefined, dataRow, "last");
+    }
+
+    function getActionStr() {
+        return "<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;' onclick='deleteRowData($(this).parent().parent().attr(\"id\"))'></i>";
+    }
+
+    function saveData() {
+
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $gridMxList.jqGrid('getDataIDs');
+        if (rowIds < 1) {
+            $.modalAlert("当前没有保存的膳食内容", 'warning');
+            return;
+        }
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $gridMxList.saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+            if (!saveResult) {
+                EnableInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                return;   //保存失败，则return
+            }
+        }
+
+        var gridMxData = $gridMxList.jqGrid('getRowData_AllLine', null, true);
+        if (gridMxData.length < 1) {
+            $.modalAlert("当前没有保存的医嘱内容", 'warning');
+        }
+
+        $.each(gridMxData, function () {
+            delete this.action;
+             });
+
+
+        $.najax({
+            url: "@Url.Action("SaveData")",
+            data: { gridMxData: gridMxData, deldata: deldata },
+            dataType: "json",
+            type: "POST",
+            async: false,
+            success: function (data) {
+                $.modalMsg("保存成功", "success");
+                $(".hiding").click();
+            }
+        });
+    }
+
+    //新增
+    function newtouch_event_f7() {
+        $("#TabGrid").animate({ left: '0px' }, "slow");
+        gridXGYP();
+    }
+</script>

@@ -1,0 +1,446 @@
+﻿@using Newtouch.Herp.Infrastructure;
+@using Newtouch.Herp.Infrastructure.Enum;
+@using Newtouch.Tools
+@{
+    ViewBag.Title = "我的暂存单据";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    var djlxItemStrs = "1";
+}
+<style>
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+
+    .showbotton {
+        display: none;
+        position: fixed;
+        bottom: 50px;
+        right: 0;
+        z-index: 9999;
+        background-color: #ccc;
+        width: 50px;
+        height: 44px;
+        filter: alpha(Opacity=90);
+        -moz-opacity: 0.9;
+        opacity: 0.9;
+        cursor: pointer;
+        border-radius: 100px 0 0 100px;
+    }
+
+    #TabGrid {
+        width: 100%;
+        position: fixed;
+        bottom: 50px;
+        right: 0;
+        z-index: 8888;
+        background-color: #253443;
+        filter: alpha(Opacity=92);
+        -moz-opacity: 0.92;
+        opacity: 0.92;
+        box-shadow: 0 2px 10px #909090;
+    }
+
+        #TabGrid > * {
+            filter: alpha(Opacity=92);
+            -moz-opacity: 0.92;
+            opacity: 0.92;
+        }
+
+    input[name=fph] {
+        padding: 2px;
+        width: 90%;
+        height: 90%;
+        border-radius: 4px;
+        color: #555;
+        border-radius: 4px;
+        -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+        box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
+        -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
+        -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+        transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+        background-color: #fff;
+        background-image: none;
+        border: 1px solid #ddd;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" id="dv_search">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">配送单号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="deliveryNo" placeholder="配送单号" />
+                    </td>
+                    <th class="formTitle">日期：</th>
+                    <td class="formValue">
+                        <input id="txtStartDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">至：</th>
+                    <td class="formValue">
+                        <input id="txtEndDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">发票号：</th>
+                    <td class="formValue">
+                        <input id="txtFPH" type="text" class="form-control " />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">单据号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtPDH" />
+                    </td>
+                    <th class="formTitle">单据类型：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlDJLX", EnumOutOrInStorageBillType.Wbrk.ToSomeDescSelectList(djlxItemStrs), "全部", new { @class = "form-control" })
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                    </td>
+                    <td class="formTitle" colspan="3"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridDJMainRecords"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+</form>
+<div id="TabGrid">
+    <ul class="nav nav-tabs navb-bg" role="tablist" id="myTab">
+        <li role="presentation" class="active">
+            <a href="#dv_djmx" id="linkSearch" role="tab" data-toggle="tab">单据明细</a>
+        </li>
+        <li style="float:right">
+            <span class="hiding glyphicon glyphicon-chevron-right btn-lg"></span>
+        </li>
+    </ul>
+    <div id="dv_djmx" style="">
+        <table id="gridDJMXInfo"></table>
+    </div>
+</div>
+<div class="showbotton">
+    <span class="glyphicon glyphicon-chevron-left btn-lg"></span>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 8,9},
+    F8Text = "导入外部入库",
+    F9Text = "删除"
+})
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        Init();
+        //搜索框隐藏显示控制
+        $(".hiding,.rows,#dv_search,.toolbar").click(function () {
+            TabGridHide();
+        });
+        $(".showbotton").click(function () {
+            $(".showbotton").animate({ width: 'hide' }, "fast", function () {
+                $("#TabGrid").animate({ left: '0px' }, "slow");
+            });
+        });
+    });
+
+    $(document).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //初始化
+    function Init() {
+        var djlx = getQueryString("djlx");
+        if (djlx != null) {
+            $("#txtStartDate").val("1970-01-01");
+            $("#ddlDJLX").val(djlx);
+        } else {
+            $("#ddlDJLX").val(@((int)EnumOutOrInStorageBillType.Wbrk));
+        }
+        TabGridHide();
+        gridDJMainRecords();
+    }
+
+    //隐藏搜索框并显示箭头
+    function TabGridHide() {
+        var tabGridwith = $("#TabGrid").width() + 200;
+        if ($(".showbotton").is(":hidden")) {
+            $("#TabGrid").animate({ left: tabGridwith }, "slow", function () {
+                $(".showbotton").animate({ width: 'show' }, "fast");
+            });
+        }
+    }
+
+    //单据主记录
+    function gridDJMainRecords() {
+        var $gridDjMainRecords = $("#gridDJMainRecords");
+        $gridDjMainRecords.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 230,
+            url: "/OutOrInStorageBill/SelectReceiptMainInfo?from=approval",
+            colModel: [
+                {
+                    label: '审核状态', name: 'shzt', width: 60, align: 'left', formatter: function (val) {
+                        switch (val) {
+                            case '@((int)EnumAuditState.Temporary)':
+                                return "@EnumAuditState.Temporary.GetDescription()";
+                            case '@((int)EnumAuditState.Adopt)':
+                                return "@EnumAuditState.Adopt.GetDescription()";
+                            case '@((int)EnumAuditState.Cancelled)':
+                                return "@EnumAuditState.Cancelled.GetDescription()";
+                            case '@((int)EnumAuditState.Refuse)':
+                                return "@EnumAuditState.Refuse.GetDescription()";
+                            case '@((int)EnumAuditState.Waiting)':
+                                return "@EnumAuditState.Waiting.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                {
+                    label: '单据类型', name: 'djlx', width: 70, align: 'left', formatter: function (val) {
+                        switch (val) {
+                            case @((int)EnumOutOrInStorageBillType.Nbth):
+                                return "@EnumOutOrInStorageBillType.Nbth.GetDescription()";
+                            case @((int)EnumOutOrInStorageBillType.Wbck):
+                                return "@EnumOutOrInStorageBillType.Wbck.GetDescription()";
+                            case @((int)EnumOutOrInStorageBillType.Wbrk):
+                                return "@EnumOutOrInStorageBillType.Wbrk.GetDescription()";
+                            case @((int)EnumOutOrInStorageBillType.Zjck):
+                                return "@EnumOutOrInStorageBillType.Zjck.GetDescription()";
+                            default:
+                                return "";
+                        }
+                    }
+                },
+                { label: '单据号', name: 'Pdh', width: 140, align: 'left' },
+                { label: '配送单号', name: 'deliveryNo', width: 130, align: 'left' },
+                { label: '出库库房', name: 'ckbmmc', width: 130, align: 'left' },
+                { label: '入库库房', name: 'rkbmmc', width: 130, align: 'left' },
+                { label: '出入库方式', name: 'crkfsmc', width: 100, align: 'left' },
+                { label: '操作时间', name: 'czsj', width: 110, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' } },
+                { label: '零售总额', name: 'ljze', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); } },
+                { label: '进价总额', name: 'jjze', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: '进销差价', name: 'jxcj', width: 80, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: 'crkId', name: 'crkId', hidden: true },
+                { label: 'rkbmId', name: 'rkbmId', hidden: true },
+                { label: 'ckbmId', name: 'ckbmId', hidden: true },
+                { label: 'crkfsId', name: 'crkfsId', hidden: true },
+                { label: 'djlx', name: 'djlx', hidden: true }
+            ],
+            unwritten: false,
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'czsj desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                btn_selectrow(rowid);
+            }
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridDJMXInfo').jqGrid("clearGridData");
+
+            $gridDjMainRecords.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger('click');
+    }
+
+    //组装查询条件
+    function getSearchPostData() {
+        var kssj = $("#txtStartDate").val();
+        var jssj = $("#txtEndDate").val();
+        var pdh = $("#txtPDH").val();
+        var fph = $("#txtFPH").val();
+        var djlx = $("#ddlDJLX").val();
+        var deliveryNo = $("#deliveryNo").val();
+        return { kssj: kssj, jssj: jssj, pdh: pdh, fph: fph, djlx: djlx, shzt: @((int)EnumAuditState.Temporary), deliveryNo: deliveryNo };
+    };
+
+    //单击事件
+    function btn_selectrow(rowid) {
+        $('#gridDJMXInfo').jqGrid("clearGridData");//每次单击，先清空明细 再重新加载所有选中行明细
+        $.najax({
+            type: "POST",
+            url: "/OutOrInStorageBill/SelectReceipDetailInfo",
+            data: { crkId: $("#gridDJMainRecords").jqGrid('getRowData', rowid).crkId },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp !== null) {
+                    $('#gridDJMXInfo').newtouchLocalDataGrid(null, ajaxresp);
+                }
+                $(".showbotton").click().trigger("click");
+            }
+        });
+    }
+
+    //单据明细
+    $('#gridDJMXInfo').newtouchLocalDataGrid({
+        height: $(window).height() - 240,
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '出入库明细序号', name: 'crkmxId', hidden: true, width: 100, align: 'left' },
+            { label: '类别', name: 'lbmc', width: 100, align: 'left' },
+            { label: '名称', name: 'wzmc', width: 150, align: 'left' },
+            { label: '数量', name: 'slStr', width: 60, align: 'right' },
+            { label: '数量', name: 'sl', hidden: true },
+            { label: '零售总额', name: 'ljze', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); } },
+            { label: '进价总额', name: 'jjze', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+            { label: '进销差价', name: 'jxcj', width: 60, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+            { label: '单位', name: 'dw', hidden: true },
+            { label: '规格', name: 'gg', width: 80, align: 'left' },
+            { label: '批号', name: 'ph', width: 90, align: 'center' },
+            { label: '批次', name: 'pc', width: 90, align: 'center' },
+            //{ label: '发票号', name: 'fph', width: 90, align: 'left' },
+            {
+                label: '发票号', name: 'fph', width: 90, align: 'center',
+                formatter: function (cellvalue, options) { return cellvalue === "" || cellvalue === null ? "<input type=\"text\" name=\"fph\" rowid=" + options.rowId + " role=\"textbox\" onblur=\"UpdateFph(this)\">" : cellvalue; }
+            },
+            { label: '生产厂家', name: 'sccj', width: 150, align: 'left' }
+        ]
+    });
+
+    //补发票号
+    function UpdateFph(obj) {
+        var fph = $(obj).val();
+        var crkmxId = $("#gridDJMXInfo").getRowData($(obj).attr("rowid")).crkmxId;
+        if (fph != "") {
+            $.modalConfirm("您确定要将发票号改为" + fph + "吗？", function (flag) {
+                if (flag)
+                {
+                    $.najax({
+                        url: "/OutOrInStorageBill/UpdateFph",
+                        type: "POST",
+                        data: { crkmxId: crkmxId,fph: fph },
+                        dataType: "json",
+                        success: function (data) {
+                            if (data.state === 'success') {
+                                $.modalMsg("发票号修改成功", "success", 1000);
+                            }
+                            else {
+                                $.newtouchAlert(data);
+                            }
+                        }
+                    });
+                }
+            })
+
+        }
+    }
+
+    //导入外部入库
+    function newtouch_event_f8() {
+         var selRowData = $("#gridDJMainRecords").jqGridRowValue();
+        if (!selRowData || !selRowData.crkId || !selRowData.djlx) {
+            $.modalMsg('请选择一条暂存单', 'warning',1500);
+            return;
+        }
+        if (selRowData.shzt !== "@EnumAuditState.Temporary.GetDescription()") {
+            $.modalMsg('【导入外部入库】只针对暂存单', 'warning', 1500);
+            return;
+        }
+        setTimeout("jumpToInStorage()", 500);
+    }
+
+    //导入外部入库
+    function jumpToInStorage() {
+        var selRowData = $("#gridDJMainRecords").jqGridRowValue();
+        var shzt = "@(EnumAuditState.Temporary.GetDescription())";
+        var deliveryNo= selRowData.deliveryNo;
+        var djh = selRowData.Pdh;
+        var gysId = selRowData.ckbmId;
+        var gysmc = selRowData.ckbmmc;
+        var crkfsId = selRowData.crkfsId;
+        var url = "/StorageManage/Storage/InStorageInlineEdit?shzt=" + shzt + "&deliveryNo=" + deliveryNo + "&djh=" + djh + "&gysId=" + gysId + "&gysmc=" + gysmc + "&crkfsId=" + crkfsId;
+        top.top.$.Newtouchtab.tryCloseTab({ name: "", url: url });
+        top.top.$.Newtouchtab.addTabWithOutMenu({ name: "外部入库", enName: "", url: url });
+    }
+
+    //删除暂存
+    function newtouch_event_f9() {
+        var selRowData = $("#gridDJMainRecords").jqGridRowValue();
+        if (!selRowData || !selRowData.crkId || !selRowData.djlx) {
+            $.modalMsg('请选择一条暂存单', 'warning',1500);
+            return;
+        }
+        if (selRowData.shzt != "@EnumAuditState.Temporary.GetDescription()") {
+            $.modalMsg('【删除暂存】只针对暂存单', 'warning', 1500);
+            return;
+        }
+        var postData = { djId: selRowData.crkId, djlx: selRowData.djlx, shzt: "" };
+        $.najax({
+            url: "/OutOrInStorageBill/DeleteTemporaryCrkdj",
+            data: postData,
+            type: 'POST',
+            dataType: 'json',
+            success: function (ajaxresp) {
+                if (ajaxresp.state === 'success') {
+                    $.modalMsg("操作成功", 'success', 1000);
+                }
+                else {
+                    $.modalAlert(ajaxresp.message, 'error');
+                }
+                return;
+            },
+            complete: function () {
+                $("#btn_search").trigger('click');
+            }
+        });
+    }
+
+    //更新单据审核状态，提交至服务器
+    function submitReceiptApproval(dstnShzt) {
+        var selRowData = $("#gridDJMainRecords").jqGridRowValue();
+        if (!selRowData || !selRowData.crkId || !selRowData.djlx) {
+            $.modalAlert('请选择一条单据', 'error');
+            return;
+        }
+        if (selRowData.crkId && selRowData.djlx) {
+            var postData = { djId: selRowData.crkId, djlx: selRowData.djlx, shzt: dstnShzt };
+            $.najax({
+                url: "/OutOrInStorageBill/SubmitReceiptApproval",
+                data: postData,
+                type: 'POST',
+                dataType: 'json',
+                success: function (ajaxresp) {
+                    if (ajaxresp.state === 'success') {
+                        $.modalMsg("操作成功", 'success',1500);
+                    }
+                    else {
+                        $.modalAlert(ajaxresp.message, 'error');
+                    }
+                    return;
+                },
+                complete: function () {
+                    $("#btn_search").trigger('click');
+                }
+            });
+        }
+    }
+
+    //获取url中的参数
+    function getQueryString(name) {
+        // 匹配目标参数
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var result = window.location.search.substr(1).match(reg); // 对querystring匹配目标参数
+        if (result != null) {
+            return decodeURIComponent(result[2]);
+        } else {
+            return null;
+        }
+    }
+</script>

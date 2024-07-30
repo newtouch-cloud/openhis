@@ -1,0 +1,466 @@
+﻿
+@{
+    ViewBag.Title = "住院退药";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<link href="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.css")" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.js")"></script>
+
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<style>
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: #ffffff;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: #ffffff;
+    }
+
+    .form-control {
+        padding: 0 3px;
+    }
+</style>
+<div style="float:left;width:20%;">
+    <div class="dv-left-title">患者列表</div>
+    <div class="dv-left-tree" id="BqTreeList"></div>
+</div>
+
+<div style="float:left;width:79.5%;margin-left:0.5%;">
+    <form id="form1">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                查询条件
+            </div>
+            <div style="padding: 2px;">
+                <input type="hidden" id="Fyzt" value="2" />
+                <table class="form">
+                    <tr>
+                        <th class="formTitle" style="width: 80px;">药品名称：</th>
+                        <td class="formValue">
+                            <input id="ypmc" type="text" class="form-control" placeholder="药品名称" />
+                        </td>
+                        <th class="formTitle" style="width: 80px;">发药状态：</th>
+                        <td class="formValue formDdlSelectorTd" style="width: 90px;">
+                            <select id="sel_fybz" class="form-control">
+                                <option value="2">未退药</option>
+                                <option value="3">已退药</option>
+                            </select>
+                        </td>
+                        <th class="formTitle" style="width: 75px; padding-right: 0px;"><span class="required">*</span>开始时间：</th>
+                        <td class="formValue">
+                            <input id="Kssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" />
+                        </td>
+                        <th class="formTitle" style="width: 40px;padding-right: 0;"><span class="required">*</span>至：</th>
+                        <td class="formValue">
+                            <input id="Jssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm:ss'})" />
+                        </td>
+                        <td class="formTitle" style="width: 45px;">
+                            <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </form>
+    <div class="gridPanel" id="dv_bybtach" style="display: none;">
+        <table id="dispenseMedicinGridListByBatch"></table>
+    </div>
+    <div class="gridPanel" id="dv_nobtach">
+        <table id="dispenseMedicinGridListNoBatch"></table>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+    {
+        ShowKeyList = new[] { 6 },
+        F6Text = "退药"
+    })
+    <div class="ckbox" style="margin-left: 0.5%;margin-top: 10px;">
+        <input id="autoPrint" name="autoPrint" type="checkbox"><label for="autoPrint">自动打印明细</label>
+    </div>
+    <div class="ckbox" style="margin-left: 0.5%;margin-top: 10px;">
+        <input id="dispenseByBatch" name="dispenseByBatch" type="checkbox"><label for="dispenseByBatch">按批次退药</label>
+    </div>
+    <div class="ckbox" style="margin-top: 10px;">
+        <input id="autoPrintSum" name="autoPrintSum" type="checkbox"  @ViewBag.returnDrugAutoPrint><label for="autoPrintSum">打印汇总</label>
+    </div>
+</div>
+<script type="text/javascript">
+    var ThisbqCode = "";//初始化病区Code
+    var ThisbrCode = "";//初始化病人Code
+    var globalData = [];
+    $(".toolbar").css("width", 250);
+    var $dispenseMedicinGridListByBatch = $("#dispenseMedicinGridListByBatch");
+    var $dispenseMedicinGridListNoBatch = $("#dispenseMedicinGridListNoBatch");
+    var tyzyh = [];
+    $(function () {
+        //绑定病区
+        bqGridList();
+        //绑定病人发药详细信息
+        dispenseMedicinGridList(null);
+        //查询
+        $("#btn_search").click(function () {
+            if ($("#dispenseByBatch").is(":checked")) {
+                //按批次
+                $dispenseMedicinGridListByBatch.jqGrid("clearGridData");
+                $dispenseMedicinGridListByBatch.jqGrid('setGridParam', {
+                    postData: {
+                        Zyh: ThisbrCode,
+                        fybz: $("#sel_fybz").val(),
+                        Kssj: $("#Kssj").val(),
+                        Jssj: $("#Jssj").val(),
+                        ypmc: $("#ypmc").val()
+                    }
+                }).trigger('reloadGrid');
+            } else {
+                //不按批次
+                $dispenseMedicinGridListNoBatch.jqGrid("clearGridData");
+                $dispenseMedicinGridListNoBatch.jqGrid('setGridParam', {
+                    postData: {
+                        Zyh: ThisbrCode,
+                        fybz: $("#sel_fybz").val(),
+                        Kssj: $("#Kssj").val(),
+                        Jssj: $("#Jssj").val(),
+                        ypmc: $("#ypmc").val()
+                    }
+                }).trigger('reloadGrid');
+            }
+        });
+
+        $("#dispenseByBatch").click(function() {
+            if ($("#dispenseByBatch").is(":checked")) {
+                //按批次
+                $("#dv_bybtach").show();
+                $("#dv_nobtach").hide();
+
+            } else {
+                //不按批次
+                $("#dv_bybtach").hide();
+                $("#dv_nobtach").show();
+            }
+            $("#btn_search").trigger("click");
+        });
+
+        $("#autoPrintSum").change(function (e) {
+            if ($('#autoPrintSum').is(':checked')) {
+                $('#autoPrint').attr('checked', false);
+            }
+        });
+        $("#autoPrint").change(function (e) {
+            if ($('#autoPrint').is(':checked')) {
+                $('#autoPrintSum').attr('checked', false);
+            }
+        });
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //绑定病区和病人
+    function bqGridList() {
+        $("#BqTreeList").treeview({
+            height: $(window).height() - 35,
+            slimscroll: false,
+            showcheck: true,
+            url: "/HospitalizationPharmacy/GetZytybrGridJsonV2",
+            param: {},
+            oncheckboxclick: function (item, s) {
+                getOrderExecutionList(item, s);
+            }
+        });
+    }
+
+    function getOrderExecutionList(item, s) {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+        var patzyh = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 === "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 === "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 == "c") {
+                patzyh += patlist[i].value + ",";
+            }
+        }
+        if (s == 1) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c") {
+                        patzyh += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh += patlistFath.value;
+            }
+        }
+        else if (s == 0) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c" && patlistFath[j].checkstate == 1) {
+                        patzyh = patzyh.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh = patzyh.replace(patlistFath.value + ",", "");
+            }
+        }
+
+        ThisbrCode = patzyh;//存储点击的病人code
+        //重新加载病人发药详细信息
+        $("#btn_search").click();
+    }
+
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    //init jqrid
+    function dispenseMedicinGridList() {
+        dispenseMedicinGridListByBatch();//按批次
+        dispenseMedicinGridListNoBatch();//不按批次
+    }
+
+    //用户发药详细信息 按执行批次
+    function dispenseMedicinGridListByBatch() {
+        $dispenseMedicinGridListByBatch.dataGrid({
+            url: '/HospitalizationPharmacy/GetReturnDrugDetail',
+            height: $(window).height() - 200,
+            postData: {
+                Zyh: "",
+                fybz: $("#sel_fybz").val(),
+                Kssj: $("#Kssj").val(),
+                Jssj: $("#Jssj").val(),
+                ypmc: $("#ypmc").val()
+            },
+            colModel: [
+                { label: '姓名', name: 'patientName', width: 70, align: 'left' },
+                { label: '床位号', name: 'cw', width: 60, align: 'left' },
+                { label: '药品', name: 'ypmc', width: 100, align: 'left' },
+                { label: '退数量', name: 'tysl', width: 60, align: 'left', editable: true, editwidth: "85%" },
+                { label: '单位', name: 'bmdw', width: 45, align: 'center' },
+                { label: '可退数', name: 'slStr', width: 80, align: 'left' },
+                { label: "批次", name: 'pc', width: 100, align: 'center' },
+                { label: "批号", name: 'ph', width: 100, align: 'center' },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left' },
+                { label: '用量', name: 'ylStr', width: 60, align: 'left' },
+                { label: '组号', name: 'zh', width: 50, align: 'left' },
+                { label: '医嘱性质', name: 'yzxzmc', width: 80, align: 'left' },
+                { label: '生成厂家', name: 'ycmc', width: 100, align: 'left' },
+                { label: "申请退药单号", name: 'applyNo', width: 100, align: 'center' },
+                { label: '单价', name: 'djStr', hidden: true },
+                { label: '金额', name: 'je', hidden: true },
+                { label: '可退数量', name: 'sl', hidden: true },
+                { label: "药品编码", name: 'ypCode', hidden: true },
+                { label: "yzId", name: 'yzId', hidden: true },
+                { label: "zxId", name: 'zxId', hidden: true },
+                { label: "转化因子", name: 'zhyz', hidden: true },
+                { label: "申请退药明细ID", name: 'rdbdId', hidden: true },
+                { label: "住院号", name: 'zyh', hidden: true }
+            ],
+            gridComplete: function () {
+                EnableInlineEditBox($dispenseMedicinGridListByBatch);
+            },
+            caption: "需退药列表",
+            viewrecords: true
+        });
+    }
+
+    function dispenseMedicinGridListNoBatch() {
+        $dispenseMedicinGridListNoBatch.dataGrid({
+            url: '/HospitalizationPharmacy/GetReturnDrugDetailNoBatch',
+            height: $(window).height() - 200,
+            postData: {
+                Zyh: "",
+                fybz: $("#sel_fybz").val(),
+                Kssj: $("#Kssj").val(),
+                Jssj: $("#Jssj").val(),
+                ypmc: $("#ypmc").val()
+            },
+            colModel: [
+                { label: '姓名', name: 'patientName', width: 70, align: 'left' },
+                { label: '床位号', name: 'cw', width: 60, align: 'center' },
+                { label: '药品', name: 'ypmc', width: 100, align: 'left' },
+                { label: '退数量', name: 'tyslStr', width: 70, align: 'right' },
+                { label: '最多可退', name: 'slStr', width: 70, align: 'right' },
+                { label: '规格', name: 'ypgg', width: 100, align: 'center' },
+                { label: '用量', name: 'ylStr', width: 60, align: 'right' },
+                { label: '组号', name: 'zh', width: 50, align: 'center' },
+                { label: '医嘱性质', name: 'yzxzmc', width: 80, align: 'center' },
+                { label: '生成厂家', name: 'ycmc', width: 100, align: 'left' },
+                { label: "申请退药单号", name: 'applyNo', width: 120, align: 'center' },
+                { label: "批次", name: 'pc', hidden: true },
+                { label: "批号", name: 'ph', hidden: true },
+                { label: '单位', name: 'bmdw', width: 45, hidden: true },
+                { label: '单价', name: 'djStr', hidden: true },
+                { label: '金额', name: 'je', hidden: true },
+                { label: '可退数量', name: 'sl', hidden: true },
+                { label: '申请退药数（最小单位）', name: 'tysl', hidden: true },
+                { label: "药品编码", name: 'ypCode', hidden: true },
+                { label: "yzId", name: 'yzId', hidden: true },
+                { label: "zxId", name: 'zxId', hidden: true },
+                { label: "转化因子", name: 'zhyz', hidden: true },
+                { label: "申请退药明细ID", name: 'rdbdId', hidden: true },
+                { label: "住院号", name: 'zyh', hidden: true }
+            ],
+            gridComplete: function () {
+                EnableInlineEditBox($dispenseMedicinGridListNoBatch);
+            },
+            caption: "需退药列表",
+            viewrecords: true
+        });
+    }
+
+    //启用行内编辑框
+    function EnableInlineEditBox(jgr) {
+        var rowIds = jgr.jqGrid('getDataIDs'); //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        for (var i = 0; i < rowIds.length; i++) {
+            jgr.jqGrid('editRow',
+                rowIds[i],
+                true,
+                null,
+                null,
+                null,
+                null,
+                function (callbackRowId) { //true: when set to true we can use [Enter] key to save the row and [Esc] to cancel editing.
+                });
+        }
+    }
+
+    // 退药
+    function newtouch_event_f6() {
+        var jqr = null;
+        if ($("#dispenseByBatch").is(":checked")) {
+            //按批次
+            jqr = $dispenseMedicinGridListByBatch;
+        } else {
+            //不按批次
+            jqr = $dispenseMedicinGridListNoBatch;
+        }
+        var ids = jqr.jqGrid('getDataIDs'); //获取所有行Id，遍历使编辑框处于保存状态
+        if (ids == null || ids.length === 0) {
+            $.modalMsg('请查询退药明细', 'warning', 2000);
+            return false;
+        }
+        var tymx = [];
+        tyzyh = [];
+        for (var i = 0; i < ids.length; i++) {
+            jqr.saveRow(ids[i], null, null, null, function (callbackRowId) { }, null, null);
+            var rowData = jqr.jqGrid('getRowData', ids[i]);
+            if (!rowData) {
+                return false;
+            }
+            if (rowData.tysl.replace(/(^\s*)|(\s*$)/g, "") === "" ||
+                rowData.tysl === "" ||
+                isNaN(rowData.tysl) ||
+                rowData.tysl < 0) {
+                $.modalAlert("【" + rowData.ypmc + "】退药数量应为自然数，请确认。", "warning");
+                EnableInlineEditBox(jqr); //启用行内编辑框
+                return false;
+            }
+            if (parseInt(rowData.tysl) > parseInt(rowData.sl)) {
+                $.modalAlert("【" + rowData.ypmc + "】退药数量不得超过" + rowData.slStr + "。", "warning");
+                EnableInlineEditBox(jqr); //启用行内编辑框
+                return false;
+            }
+            if (parseInt(rowData.sl) > 0) {
+                tymx.push({
+                    "applyNo": rowData.applyNo,
+                    "rdbdId": rowData.rdbdId,
+                    "yzId": rowData.yzId,
+                    "zxId": rowData.zxId,
+                    "ph": rowData.ph,
+                    "pc": rowData.pc,
+                    "ypCode": rowData.ypCode,
+                    "ypmc": rowData.ypmc,
+                    "sl": rowData.tysl,
+                    "zhyz": rowData.zhyz,
+                    "zyh": rowData.zyh
+                });
+
+                if (!tyzyh.find((item) => item.zyh == rowData.zyh)) {
+                    tyzyh.push({ "zyh": rowData.zyh });
+                }
+
+            }
+        }
+
+        $.modalConfirm("确定进行退药吗？", function (flag) {
+            if (!flag) return false;
+            $.najax({
+                type: "POST",
+                url: "/HospitalizationPharmacy/ExecuteReturnDrug",
+                data: { tyParams: tymx },
+                alerterror: false,
+                success: function (res) {
+                    if (res.state === "success") {
+                        if ($("#autoPrint").is(":checked")) {
+                            printRpDetail(res.data);
+                        }
+                        else if ($("#autoPrintSum").is(":checked")) {
+                            printRpSummary(res.data);
+                        }
+                        $.modalMsg('退药成功', 'success', 2000);
+                        bqGridList(); //绑定病区
+                        jqr.trigger("reloadGrid");
+                    } else {
+                        $.modalAlert(res.message, 'error');
+                        EnableInlineEditBox(jqr); //启用行内编辑框
+                    }
+                }
+            });
+        }, false);
+    }
+
+    //打印明细
+    function printRpDetail(rdNo) {
+        for (var i = 0; i < tyzyh.length; i++) {
+            var uri = '@reportUrl' + "?tempCode=64" + "&systemCode=" + '@reportSystemCode' + "&OrganizeId=" + '@ViewBag.OrganizeId' + "&systemCode=" + systemCode + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds=" + "&zxIds=" + "&czIds=" + "&zyh=" + tyzyh[0].zyh + "&operateType=2" + "&rdNo=" + rdNo;
+            window.open(uri);
+        }
+    }
+
+    function printRpSummary(rdNo) {
+        var uri = '@reportUrl' + "?tempCode=66" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&systemCode=" + systemCode + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&yzIds= &zxIds=&operateType=2&kssj=&jssj=" + "&rdNo=" + rdNo + "&czIds=";
+        window.open(uri);
+    }
+</script>

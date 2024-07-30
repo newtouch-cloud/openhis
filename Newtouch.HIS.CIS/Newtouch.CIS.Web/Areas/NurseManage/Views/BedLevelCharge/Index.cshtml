@@ -1,0 +1,169 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .form .formTitle {
+        position: relative;
+        text-align: right;
+        white-space: nowrap;
+        font-weight: normal;
+        width: 55px;
+        padding-right: 15px;
+    }
+</style>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="inputedit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a id="inputdel" class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-pencil-square-o"></i>删除</a>
+        </div>
+    </div>
+    <div style="height:45px !important;">
+        <table class="form" style="width:750px;height:45px !important;">
+            <tr>
+                <th class="formTitle" style="padding-left:40px">床位等级：</th>
+                <td class="formValue" style="width:75px;">
+                    <select id="LevelCode" name="LevelCode" class="form-control" style="width:65px">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary form-an" value="查询" style="margin-left:35px;width:50px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+<script lang="javascript">
+
+    $(function () {
+        $('#LevelCode').change(function () {
+            $("#btn_search").trigger("click");
+        });
+        gridList();
+    });
+
+    $('#LevelCode').newtouchBindSelect({
+        datasource: function () {
+            var resultObjArr = new Array();
+            if (top.clients.itemDetails) {
+                $.each(top.clients.itemDetails, function (idx, val) {
+                    if (val.Type === "BedGrade") {
+                        $.each(val.Items, function (key, value) {
+                            $('#LevelCode').append('<option value="' + value.Code + '">' + value.Name + '</option>');
+                        });
+                    }
+                });
+            }
+            return resultObjArr;
+        }
+    });
+    function gridList() {
+        var $gridList = window.$("#gridList");
+        $gridList.dataGrid({
+            url: "@Url.Action("GetIndexGridJson")",
+            height: window.$(window).height() - 120,
+            postData: getSearchData(),
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '床位等级', name: 'LevelCode', hidden: true },
+                { label: '床位等级', name: 'LevelName', width: 100 },
+                { label: '收费项目', name: 'sfxmCode', width: 250, hidden: true },
+                { label: '收费项目名称', name: 'sfxmmc', width: 150, align: 'left' },
+                { label: '数量', name: 'sl', width: 70, align: 'left' },
+                { label: '单价', name: 'dj', width: 120, align: 'left', formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 } },
+                { label: '单位', name: 'dw', width: 120, align: 'left' }],
+            pager: "gridPager",
+            sortname: 'LevelName ',
+            viewrecords: true,
+            unwritten: false,
+            ondblClickRow: function () {
+                btn_edit();
+            }
+        });
+
+        //查询
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: getSearchData(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function getSearchData() {
+        var LevelCode = $('#LevelCode').val();
+        return { LevelCode: LevelCode};
+    }
+
+    //新增
+    function btn_add() {
+        window.$.modalOpen({
+            id: "Form",
+            title: "新增等级费用绑定",
+            url: "@Url.Action("Form")",
+            width: "650px",
+            height: "350px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm(function (data) {
+                    $('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                    $("#btn_search").trigger("click");
+                });
+            }
+        });
+    }
+
+    //修改
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        $.modalOpen({
+            id: "updateForm",
+            title: "修改站点收支统计表",
+            url: "/NurseManage/BedLevelCharge/Form?keyValue=" + keyValue,
+            width: "500px",
+            height: "400px",
+        });
+    }
+
+    //删除
+    function btn_delete() {
+        window.$.modalConfirm("确定要删除吗？", function (flag) {
+            if (!flag) {
+                return false;
+            }
+            return true;
+        });
+        var keyValue = window.$("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            window.$.modalAlert("请选中一条信息", 'warning');
+            return false;
+        }
+        window.$.deleteForm({
+            url: "/NurseManage/BedLevelCharge/DeleteData",
+            param: { keyValue: keyValue },
+            success: function () {
+                $.modalMsg("删除成功","success");
+                $('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                $("#btn_search").trigger("click");
+            }
+        });
+        return true;
+    }
+</script>

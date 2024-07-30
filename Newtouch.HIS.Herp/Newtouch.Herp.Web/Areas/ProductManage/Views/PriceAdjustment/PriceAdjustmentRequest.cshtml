@@ -1,0 +1,195 @@
+﻿
+@{
+    ViewBag.Title = "调价申请";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">筛选条件</div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">关键字</th>
+                    <td class="formValue">
+                        <input type="text" id="wzmc" class="form-control" placeholder="物资名称/拼音" />
+                    </td>
+                    <td class="formValue" colspan="3">
+                        <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <div class="gridPanel">
+            <table id="gridYPInfoList"></table>
+            <div id="gridPager" rel="form1"></div>
+        </div>
+    </div>
+    <div class="panel panel-default" style="margin-top:10px; margin-bottom:0;">
+        <div class="panel-heading">调价明细</div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>零售价</th>
+                    <td class="formValue">
+                        <input type="text" id="txtLSJ" class="form-control" style="width:65%;float: left;" />
+                        <span name="sp_bmdw" style="line-height:24px;margin-left: 10px;">(元/)</span>
+                        <input type="hidden" id="dwmc" class="form-control" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>执行文件</th>
+                    <td class="formValue">
+                        <input type="text" id="txtZXWJ" class="form-control" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>执行时间</th>
+                    <td class="formValue">
+                        <input id="txtZXSJ" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ minDate: '%y-%M-#{%d+1}' })" />
+                    </td>
+                    <th class="formTitle">原零售价</th>
+                    <td class="formValue">
+                        <input type="text" id="txtYLSJ" class="form-control newtouch_Readonly" style="width:65%;float: left;" />
+                        <span name="sp_bmdw" style="line-height:24px;margin-left: 10px;">(元/)</span>
+                        <input type="hidden" id="productId" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 6 },
+    F6Text = "申请"
+})
+
+<script>
+    var $gridYpInfoList;
+    $(function () {
+        gridYPInfoList();
+        $("#btn_search").click(function () {
+            $gridYpInfoList.jqGrid('setGridParam',
+                {
+                    postData: getSearchPostData()
+                }).trigger('reloadGrid');
+        });
+        $("#wzmc").bind("keyup", function () {
+            if (event.keyCode === 13) {
+                $("#btn_search").trigger("click");
+            }
+        });
+    });
+
+    function gridYPInfoList() {
+        $gridYpInfoList = $("#gridYPInfoList");
+        $gridYpInfoList.dataGrid({
+            postData: getSearchPostData(),
+            url: "/StorageManage/Storage/DepartmentStockListQueryByPage",
+            height: $(window).height() - document.getElementById('gridYPInfoList').offsetTop - 195,
+            colModel: [
+                { label: '类别', name: 'lbmc', width: 150, align: 'left' },
+                { label: '物资', name: 'name', width: 150, align: 'left' },
+                { label: '规格', name: 'gg', width: 120, align: 'left' },
+                {
+                    label: '零售价', name: 'bmlsj', width: 100, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(4);
+                    }
+                },
+                { label: '零售单位', name: 'bmdwmc', width: 80, align: 'center' },
+                { label: '转化因子', name: 'zhyz', width: 80, align: 'left' },
+                { label: '最小单位', name: 'mindwmc', width: 80, align: 'left' },
+                { label: '生产厂家', name: 'supplierName', width: 150, align: 'left' },
+                { label: "Id", name: "Id", hidden: true }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'name desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+                if (rowid) {
+                    $("#txtLSJ").val("");
+                    var getRowData = $("#gridYPInfoList").jqGrid('getRowData', rowid);
+                    if (getRowData) {
+                        $("#txtYLSJ").val(getRowData.bmlsj);
+                        $("#productId").val(getRowData.Id);
+                        $("span[name=sp_bmdw]").html("(元/" + getRowData.bmdwmc + ")").attr("data-zhyz", getRowData.zhyz);
+                        $("#dwmc").val(getRowData.bmdwmc);
+                    }
+                }
+            }
+        });
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        return { key: $("#wzmc").val() };
+    };
+
+    //提交申请
+    function newtouch_event_f6() {
+        if (!CheckData()) {//校验数据
+            return false;
+        }
+        var yzhyz = isNaN($("[name=sp_bmdw]").attr("data-zhyz")) ? 1 : parseFloat($("[name=sp_bmdw]").attr("data-zhyz"));
+        $.najax({
+            url: "/ProductManage/PriceAdjustment/SubmitPriceAdjustmentRequest",
+            dataType: "json",
+            data: {
+                productId: $("#productId").val(),
+                lsj: parseFloat($("#txtLSJ").val()),
+                zhyz: yzhyz,
+                ylsj: parseFloat($("#txtYLSJ").val()),
+                tzwj: $("#txtZXWJ").val(),
+                zxsj: $("#txtZXSJ").val(),
+                dwmc: $("#dwmc").val()
+            },
+            type: "POST",
+            async: "false",
+            success: function (data) {
+                if (data.state === "success") {
+                    $.modalAlert("申请提交成功", 'success');
+                    $("#txtLSJ").val("");
+                    $("#txtZXWJ").val("");
+                    $("#txtZXSJ").val("");
+                    $("#txtYLSJ").val("");
+                    $("#dwmc").val("");
+                    $("span[name=sp_bmdw]").html("(元/)").attr("data-zhyz", "");
+                } else {
+                    $.modalAlert(data.message, 'error');
+                }
+            }
+        });
+    }
+
+
+    //校验数据
+    function CheckData() {
+        if ($("#txtYLSJ").val() === "") {
+            $.modalAlert("请选择物资！", 'warning');
+            return false;
+        }
+        if ($("#txtLSJ").val() === "") {
+            $.modalAlert("零售价不能为空！", 'warning');
+            return false;
+        }
+        if (isNaN($("#txtLSJ").val())) {
+            $.modalAlert("零售价格式错误,请填写数字！", 'warning');
+            return false;
+        }
+        if ($("#txtZXWJ").val() === "") {
+            $.modalAlert("执行文件不能为空！", 'warning');
+            return false;
+        }
+        if ($("#txtZXSJ").val() === "") {
+            $.modalAlert("执行时间不能为空！", 'warning');
+            return false;
+        }
+        if ($("#txtLSJ").val() === $("#txtYLSJ").val()) {
+            $.modalAlert("批发价不能与原价相同！", "warning");
+            return false;
+        }
+        return true;
+    }
+</script>

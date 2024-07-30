@@ -1,0 +1,213 @@
+﻿@using Newtouch.Herp.Infrastructure.Enum
+@{
+    ViewBag.Title = "新增/修改";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .formTitle span {
+        color: red;
+    }
+</style>
+<script src="~/Content/js/jquery.form.js"></script>
+<form id="form1">
+    <div class="container" style="padding:0;">
+        <div class="tab-content" style="margin-top:10px;padding-right:10px;">
+            <div role="tabpanel" class="tab-pane fade in active">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>证照所属：</th>
+                        <td class="formValue">
+                            <select class="form-control" id="belongedId" onchange="changeBelonged()"></select>
+                        </td>
+                        <td rowspan="4" style="width:250px;" align="center">
+                            <img id="fileUrl" src="~/Content/img/productDefault.png" style="width:200px; height:140px;" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>证照类型：</th>
+                        <td class="formValue">
+                            <select class="form-control" id="licenceTypeId"></select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>证照号：</th>
+                        <td class="formValue">
+                            <input id="licenceNo" name="licenceNo" type="text" class="form-control required" placeholder="证照号" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>对象名称：</th>
+                        <td class="formValue">
+                            <input id="objectName" name="objectName" type="text" class="form-control required" placeholder="证照对象名称" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>起效日期：</th>
+                        <td class="formValue">
+                            <input id="qxrq" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        </td>
+                        <td class="formValue" style="padding-left:25px;">
+                            <input id="fileUpload" name="fileUpload" type="file" style="float:left;" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>失效日期：</th>
+                        <td class="formValue">
+                            <input id="sxrq" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddYears(1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        </td>
+                        <td class="formValue" style="padding-left: 25px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+<script lang="javascript">
+    var keyWord = $.request("keyValue");
+    $(function () {
+        Init();
+        if (!!keyWord) {
+            $.najax({
+                url: "/LicenceManage/Licence/GetLicenceFormJson",
+                data: { keyWord: keyWord },
+                dataType: "json",
+                success: function (data) {
+                    fillInput(data);
+                }
+            });
+        }
+    });
+
+    //回填input
+    function fillInput(data) {
+        $("#zt").attr("checked", data.zt === "1" ? true : false);
+        if (data.fileUrl !== "") {
+            $("#fileUrl").attr("src", data.fileUrl);
+        }
+        $("#belongedId").val(data.belongedId).trigger("change");
+        $("#licenceTypeId").val(data.licenceTypeId).trigger("change");
+        $("#licenceNo").val(data.licenceNo);
+        $("#objectName").val(data.objectName);
+        $("#qxrq").val(data.qxrq.substring(0,10));
+        $("#sxrq").val(data.sxrq.substring(0,10));
+    }
+
+    //初始化
+    function Init() {
+        //加载所属
+        $("#belongedId").bindSelect({
+            url: "/LicenceManage/Licence/Getbelonged"
+        });
+        $("#licenceTypeId").bindSelect({
+            url: "/LicenceManage/Licence/GetlicenceType?belonged=" + $("#belongedId").val()
+        });
+        $("#fileUpload").change(function (e) {
+            var file = e.delegateTarget.files[0];
+            if (file.name === "") { }
+            else {
+                var n1 = file.name.lastIndexOf('.') + 1;
+                var fileExt = file.name.substring(n1, n1 + 3).toLowerCase();
+                if (fileExt !== "jpg" && fileExt !== "bmp" && fileExt !== "png"
+                    && fileExt !== "ppt" && fileExt !== "pptx"
+                    && fileExt !== "xls" && fileExt !== "xlsx"
+                    && fileExt !== "doc" && fileExt !== "docx"
+                    && fileExt !== "pdf") {
+                    $.modalAlert("目前系统仅支持jpg、bmp、png、ppt、pptx、xlsx、docx、pdf后缀图片上传!", 'warning');
+                    $("#fileUrl").val("");
+                    $("#fileUpload").val("");
+                    return false;
+                }
+                if (file.size/1024/2014 > @ViewData["maxSize"]) {
+                    $.modalAlert("文件大小不能超过"+@ViewData["maxSize"]+"M!", 'warning');
+                    $("#fileUrl").val("");
+                    $("#fileUpload").val("");
+                    return false;
+                }
+            }
+            var reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (ret) {
+                //预览图片
+                $("#fileUrl").attr({ "src": reader.result });
+            }
+        });
+    }
+
+    //切换所属 获取类型
+    function changeBelonged() {
+        var s = $("#belongedId").val();
+        if (s !== "") {
+            $("#licenceTypeId").html("");
+            //加载类型
+            $("#licenceTypeId").bindSelect({
+                url: "/LicenceManage/Licence/GetlicenceType?belonged=" + $("#belongedId").val()
+            });
+        }
+    }
+
+    //提交
+    function AcceptClick(callback) {
+        if (!DataValidate()) {
+            return;
+        }
+        var form = $("#form1");
+        var postData = {
+            zt: document.getElementById("zt").checked,
+            belongedId: $("#belongedId").val(),
+            licenceTypeId: $("#licenceTypeId").val(),
+            licenceNo: $("#licenceNo").val(),
+            objectName: $("#objectName").val(),
+            qxrq: $("#qxrq").val(),
+            sxrq: $("#sxrq").val()
+        };
+        var options = {
+            url: '/LicenceManage/Licence/SubmitLicenceForm?keyValue=' + keyWord,
+            type: 'post',
+            data: postData,
+            beforeSubmit: function () {
+                if (!DataValidate()) {
+                    return false;
+                }
+                return true;
+            },
+            success: function (data) {
+                $.modalClose();
+                callback();
+            }
+        };
+        form.ajaxSubmit(options);
+    }
+
+    //数据效验
+    function DataValidate() {
+        if ($("#belongedId").val() === "") {
+            $.modalAlert("证照所属必选", 'warning');
+            return false;
+        }
+        if ($("#licenceTypeId").val() === "") {
+            $.modalAlert("证照类型必选", 'warning');
+            return false;
+        }
+        if ($("#licenceNo").val() === "") {
+            $.modalAlert("证照号必填", 'warning');
+            return false;
+        }
+        if ($("#objectName").val() === "") {
+            $.modalAlert("对象名必填", 'warning');
+            return false;
+        }
+        if ($("#qxrq").val() === "") {
+            $.modalAlert("起始日期不能为空", 'warning');
+            return false;
+        }
+        if ($("#sxrq").val() === "") {
+            $.modalAlert("失效日期不能为空", 'warning');
+            return false;
+        }
+        return true;
+    }
+</script>

@@ -1,0 +1,306 @@
+﻿
+@{
+    ViewBag.Title = "MedicalSkillExecution";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+        .form .formTitle {
+            position: relative;
+            left: 0px;
+            text-align: right;
+            white-space: nowrap;
+            font-weight: normal;
+            width: 60px;
+            padding-right: 10px;
+            padding-left: 5px;
+        }
+    </style>
+<form name="form1">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle" id="thshrq" style="width:50px">审核时间：</th>
+                <td class="formValue" colspan="3" style="width:330px">
+                    <input id="txtkssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 42%; float: left;" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    <span style="margin-left: 2%; float: left;">—</span>
+                    <input id="txtjssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 41%; float: left; margin-left: 2%;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                </td>
+                <th class="formTitle" style="width:50px">执行状态：</th>
+                <td class="formValue" style="width:110px">
+                    <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" checked value="0" />未执行</label>
+                    <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" value="1" />已执行</label>
+                </td>
+                <th class="formTitle">患者类型：</th>
+                <td class="formValue">
+                    <select class="form-control" id="hzlx">
+                        <option value="qb" selected>全部</option>
+                        <option value="mz">门诊</option>
+                        <option value="zy">住院</option>
+                    </select>
+                </td>
+                <th class="formTitle">费用类型：</th>
+                <td class="formValue">
+                    <select class="form-control" id="fylx">
+                        <option value="qb" selected>全部</option>
+                        <option value="jy">检查</option>
+                        <option value="jc">检验</option>
+                    </select>
+                </td>
+                <th class="formTitle">申请单类型：</th>
+                <td class="formValue">
+                    <select class="form-control" id="sqdlx">
+                        <option value="" selected>全部</option>
+                    </select>
+                </td>
+                
+            </tr>
+            <tr>
+                <td class="formValue" colspan="3">
+                    <input id="txt_keyword" name="txt_keyword" type="text" class="form-control" placeholder="请输入患者姓名/就诊号/身份证号/申请单号" />
+                </td>
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                </td>
+                <th></th>
+                <td></td>
+                <th></th>
+                <td></td>
+                <th></th>
+                <td></td>
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_Exec" class="btn btn-primary btn-md" style="margin-left: 0px; " value="批量执行" />
+                    <input type="button" id="btn_CancalExec" class="btn btn-primary btn-md" style="margin-left: 0px; background:red" value="取消执行" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        $("#btn_CancalExec").hide();
+       
+        gridListData();
+    });
+    
+    var checkTrigger = false;
+    var list = new Array();
+    var liststu = false;
+    var j = 0;
+    function gridListData() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            multiselect: true,
+            postData: getSearchPostData(),
+            height: $(window).height() - 160,
+            url: "@Url.Action("GetJyjcExecGridJson")",
+            colModel: [
+                { label: 'Id', name: 'Id', align: 'center', width: 50, key: true, hidden: true },
+                { label: 'cfh', name: 'cfh', align: 'left',hidden:true },
+                { label: '患者类型', name: 'hzlx', width: 60, align: 'left' },
+                { label: '就诊号/住院号', name: 'mzzyh', width: 90, align: 'left' },
+                { label: '患者姓名', name: 'hzxm', align: 'center', width: 80 },
+                { label: '身份证', name: 'zjh', align: 'center', width: 120 },
+                { label: 'cflx', name: 'cflx', align: 'center', width: 80 ,hidden:true},
+                { label: '费用类型', name: 'cflxstr', align: 'center', width: 80 },
+                { label: '申请单号', name: 'sqdh', align: 'center', width: 120 },
+                { label: '申请单类型', name: 'sqdlx', align: 'center', width: 70 },
+                { label: '项目名称', name: 'ztmc', width: 90, align: 'left' },
+                { label: '规格', name: 'gg', width: 50, align: 'left' },
+                { label: '单位', name: 'dw', width: 50, align: 'left' },
+                { label: '费用数量', name: 'sl', width: 50, align: 'left' },
+                { label: 'dj', name: 'dj', width: 50, align: 'left', hidden: true },
+                { label: '金额', name: 'je', width: 50, align: 'left' },
+                { label: '执行人', name: 'zxr', width: 80, align: 'left' },
+                { label: '执行日期', name: 'zxrq', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+                { label: '执行科室', name: 'zxksmc', width: 100, align: 'left' },
+                { label: '记账人', name: 'jzr', width: 80, align: 'left' },
+                { label: '记账时间', name: 'kdrq', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: 'zxks', name: 'zxks', width: 100, align: 'left', hidden: true },
+                { label: 'kdks', name: 'kdks', width: 100, align: 'left', hidden: true },
+                { label: 'kdys', name: 'kdys', width: 100, align: 'left', hidden: true },
+                { label: 'shr', name: 'shr', width: 100, align: 'left', hidden: true },
+                { label: 'ztId', name: 'ztId', width: 100, align: 'left', hidden: true },
+                { label: 'ztmc', name: 'ztmc', width: 100, align: 'left', hidden: true },
+                { label: '开单科室', name: 'kdksmc', width: 100, align: 'left' },
+                { label: '开单医生', name: 'kdysmc', width: 100, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: " kdrq asc,sqdh",
+            viewrecords: true,
+            onSelectRow: function (rowIndex, s) {
+                if (!checkTrigger) {
+                    var len = 0;
+                    var rowData = $("#gridList").jqGrid('getRowData', rowIndex);
+                    var ids = $("#gridList").jqGrid('getRowData_AllLine');
+                    liststu = s; //同步状态
+                    if (rowData.sqdh != "") {
+                        for (var i = 0; i < ids.length; i++) {
+                            if (ids[i].sqdh === rowData.sqdh && ids[i].sqdh !== "") {
+                                if (s === true) {
+                                    if (rowIndex !== ids[i].Id) {
+                                        list[len] = ids[i].Id;
+                                        len += 1;
+                                    }
+                                }
+                                else {
+                                    if (rowIndex !== ids[i].Id) {
+                                        list[len] = ids[i].Id;
+                                        len += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    checkTrigger = true;
+                }
+
+                if (list.length > 0) {
+
+                    for (j; j < list.length; j++) {
+                        if (liststu) //同组选中
+                        {
+                            j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j - 1], true);
+
+                        }
+                        else { //同组取消选中
+                            //j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j], false);      //取消不触发onselectrow
+                        }
+
+                    }
+                }
+
+                j = 0;
+                checkTrigger = false;
+                list = new Array();
+                liststu = false;
+            }
+        });
+
+        $("#btn_search").click(function () {
+            btn_search();
+        });
+    }
+    function btn_search()
+    {
+        $('#gridList').jqGrid("clearGridData");//先清空明细
+        $("#gridList").jqGrid('setGridParam', {
+            postData: getSearchPostData(),
+            url: '@Url.Action("GetJyjcExecGridJson")'
+        }).trigger('reloadGrid');
+    }
+
+    function getSearchPostData() {
+        var keyword = $("#txt_keyword").val();
+        var kssj = $("#txtkssj").val();
+        var jssj = $("#txtjssj").val();
+        var hzlx = $("#hzlx").val();
+        var fylx = $("#fylx").val();
+        var sqdlx = $("#sqdlx").val();
+        var zxzt = $('input[name="optionsRadios"]:checked').val();
+        return {
+            keyword: keyword, kssj: kssj, jssj: jssj, hzlx: hzlx, fylx: fylx, sqdlx: sqdlx,zxzt:zxzt
+        };
+    };
+
+    $("input[name='optionsRadios']").click(function () {
+        var yzxz = $('input[name="optionsRadios"]:checked').val();
+        if (yzxz == 0) {
+            $("#btn_Exec").show();
+            $("#btn_CancalExec").hide();
+
+        } else {
+            $("#btn_Exec").hide();
+            $("#btn_CancalExec").show();
+        }
+        btn_search();
+    });
+
+    $("#btn_Exec").click(function () {
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds.length == 0) {
+            $.modalAlert("请选中需执行的申请单", 'warning');
+            return;
+        }
+        var array = new Array();
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            var sqdobj = {
+                mzzyh: rowData.mzzyh,
+                hzlx: rowData.hzlx == "门诊" ? "1" : "2",
+                xm: rowData.hzxm,
+                fylx: rowData.cflx,
+                sqdlx: rowData.sqdlx,
+                sqdh: rowData.sqdh,
+                sl: rowData.sl,
+                dj: rowData.dj,
+                je: rowData.je,
+                zxks: rowData.zxks,
+                kdks: rowData.kdks,
+                ztId: rowData.ztId,
+                ztmc: rowData.ztmc,
+                kdrq: rowData.kdrq,
+                kdys: rowData.kdys,
+                shr: rowData.shr,
+                dw: rowData.dw,
+                gg: rowData.gg,
+            }
+            array.push(sqdobj)
+        }
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/OrderExecution/jyjcExec",
+            data: { jyjclist: array },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state === "success") {
+                    $.modalAlert("执行成功", 'warning');
+
+                    btn_search();
+                }
+                else {
+                    $.modalAlert(ajaxresp.message, 'warning');
+                }
+            }
+        });
+    });
+
+    $("#btn_CancalExec").click(function () {
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds.length == 0) {
+            $.modalAlert("请选中需取消执行的申请单", 'warning');
+            return;
+        }
+        var array = new Array();
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            array.push(rowData.sqdh)
+        }
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/OrderExecution/CancaljyjcExec",
+            data: { jyjclist: array },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state === "success") {
+                    $.modalAlert("取消执行成功", 'warning');
+
+                    btn_search();
+                }
+                else {
+                    $.modalAlert(ajaxresp.message, 'warning');
+                }
+            }
+        });
+    });
+
+</script>

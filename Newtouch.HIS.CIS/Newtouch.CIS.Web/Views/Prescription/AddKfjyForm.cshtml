@@ -1,0 +1,142 @@
+﻿@{
+    ViewBag.Title = "康复建议";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+<script lang="javascript">
+    var brlx = $.request("brlx");
+    var mzzyh = $.request("mzzyh");
+    $(function () {
+        gridList();
+
+    })
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Prescription/kfjyGridJson",
+            postData: { brlx: brlx, mzzyh: mzzyh },
+            height: $(window).height() - 60,
+            unwritten: false,
+            rownumbers: true,
+            multiselect: true,
+            colModel: [
+               { label: 'jyId', name: 'jyId', hidden: true },
+               { label: 'zhbz', name: 'zhbz', hidden: true },
+               { label: 'sfxmCode', name: 'sfxmCode', hidden: true },
+               { label: '项目名称', name: 'sfxmmc', align: 'left', width: 120, cellattr: addCellAttr },
+               {
+                   label: '单价', name: 'dj', width: 50, align: 'left', formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+               },
+               { label: '单位', name: 'dw', align: 'left', width: 40 },
+               { label: 'jjcl', name: 'jjcl', hidden: true },
+               { label: '单位计数量', name: 'dwjls', align: 'left', width: 60 },
+               { label: '每次治疗量', name: 'mczll', align: 'left', width: 70 },
+               { label: '数量', name: 'sl', align: 'left', width: 50 },
+               { label: 'pc', name: 'pc', hidden: true },
+               { label: '频次', name: 'pcmc', align: 'left', width: 60 },
+               { label: 'bw', name: 'bw', hidden: true },
+	            { label: 'zxcs', name: 'zxcs', hidden: true },
+	            { label: 'zxzq', name: 'zxzq', hidden: true },
+	            { label: 'zxzqdw', name: 'zxzqdw', hidden: true },
+               { label: 'bz', name: 'bz', hidden: true },
+               { label: 'zxks', name: 'zxks', hidden: true },
+               { label: '执行科室', name: 'zxksmc', align: 'left', width: 90 },
+               { label: '开立人员', name: 'CreatorName', align: 'left', width: 70 },
+               { label: '开立日期', name: 'CreateTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            ],
+            viewrecords: true,
+            //gridComplete: function (data) {
+            //    if (data && data.length) {
+            //        $('#cb_gridList').trigger('click'); //全选checked
+            //    }
+            //},
+            onSelectRow: function (rowid) {
+                gridjycheck([rowid], true);
+            },
+            onSelectAll: function (aRowids, status) {
+                gridjycheck(aRowids, status);
+            }
+        });
+    }
+    function addCellAttr(rowId, val, rawObject, cm, rdata) {
+        if (rdata.zhbz=="1") {
+            return "style='color:#AAAAAA;' ";
+        }
+    }
+    function gridjycheck(aRowids, status) {
+        $.each(aRowids, function () {
+            if (status === true) {
+                var data = $("#gridList").getRowData(this);
+                if (data.zhbz == "1") {
+                    $.modalAlert("【"+data.sfxmmc+"】该康复建议已经被引用！", "warning");
+                    $("#gridList").jqGrid('setSelection', this, false); //设置jqGrid选中
+                    return false;
+                }
+            }
+        });
+    }
+    ////推送未被选择的数据
+    //function GetNocheck() {
+    //    var allIds = $("#gridList").jqGrid('getDataIDs');//全部id 
+    //    var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");//选中的id  
+    //    var rowList = $("#gridList").jqGrid('getRowData_AllLine', false);//全部行数据
+    //    var NOchekcId = [];//未被选中的jqid
+    //    //获取未选中的 jqid
+    //    for (key in allIds) {
+    //        var stra = allIds[key]; //未选中的 jqid
+    //        var count = 0;
+    //        for (var j = 0; j < selRowIds.length; j++) {
+    //            var strb = selRowIds[j];
+    //            if (stra == strb) {
+    //                count++;
+    //            }
+    //        }
+    //        if (count === 0) {
+    //            NOchekcId.push(stra);
+    //        }
+    //    }
+
+    //    var NochekedData = [];
+    //    // NocheckedRefeResult 未被选择的zhbz=2
+    //    var NocheckedRefeResult = [];
+    //    for (var i = 0; i < NOchekcId.length - 1; i++) {
+    //        var roleid = NOchekcId[i]
+    //        NochekedData.push(rowList[roleid - 1]);
+    //        NocheckedRefeResult.push({ jyId: NochekedData[i].jyId, zhbz: 2 });
+    //    }
+    //    return NocheckedRefeResult;
+    //}
+
+    function AcceptClick(callBack) {
+        //要推送的未选择的数据
+        //var addRefeResult1 = GetNocheck();
+        var rowList = $("#gridList").jqGrid('getRowData_AllLine', true);
+        if (!(rowList && rowList.length)) {
+            $.modalAlert("未选择康复建议", 'warning');
+            return;
+        }
+        //返回治疗建议引用结果
+        var addRefeResult = callBack(rowList);
+        if (!(addRefeResult === false)) {
+            //
+            addRefeResult2 = new Array();
+            $.each(addRefeResult, function () {
+                addRefeResult2.push({ jyId: this.jyId, zhbz: (this.result === true ? 1 : 0) });
+            });
+           // addRefeResult2.push.apply(addRefeResult2, addRefeResult1);
+            $.ajax({
+                url: "/Prescription/UpdateSuggestionCvStatus",
+                type: 'POST',
+                data: { cvList: addRefeResult2 },
+                dataType: "json",
+                async: false
+            });
+            //
+            $.modalClose();
+        }
+    }
+</script>

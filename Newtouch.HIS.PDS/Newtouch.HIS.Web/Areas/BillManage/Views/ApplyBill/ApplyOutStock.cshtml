@@ -1,0 +1,372 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@using Newtouch.Tools;
+@{
+    ViewBag.Title = "ApplyDelivery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+    .txt-ffsl {
+        height: 18px;
+        line-height: 20px;
+        margin: 3px !important;
+        width: 80px;
+    }
+
+    .form-control {
+        padding: 0 3px;
+    }
+
+    .sp-content {
+        position: relative;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+
+    #dv_left {
+        z-index: 101;
+        float: left;
+        margin-bottom: 0;
+        width: 600px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        box-shadow: 0 1px 12px rgba(0, 0, 0, 1);
+        -webkit-box-shadow: 0 1px 12px rgba(0,0,0,1);
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        border-color: #f1f4f6;
+    }
+
+    #dv_right {
+        z-index: 100;
+        float: right;
+        width: 1000px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        box-shadow: 0 1px 12px rgba(0, 0, 0, 1);
+        -webkit-box-shadow: 0 1px 12px rgba(0,0,0,1);
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        border-color: #f1f4f6;
+    }
+</style>
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">筛选信息</div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">申领单号：</td>
+                <td class="formValue">
+                    <input type="text" id="djh" name="djh" class="form-control" placeholder="请输入申领单号" />
+                </td>
+                <td class="formTitle">申领部门：</td>
+                <td class="formValue">
+                    <input type="text" id="slbm" name="slbm" class="form-control" placeholder="请输入申领部门" autocomplete="off" />
+                </td>
+                <th class="formTitle" style="width: 75px;padding-right: 0;">申请日期：</th>
+                <td class="formValue" style="width:130px;">
+                    <input id="startTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                </td>
+                <th class="formTitle" style="width: 35px;padding-right: 0;">到：</th>
+                <td class="formValue" style="width:130px;">
+                    <input id="endTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                </td>
+                <td class="formTitle">发药状态：</td>
+                <td class="formValue">
+                    @Html.DropDownList("ffzt", EnumSLDDeliveryStatus.None.ToDescSelectList(), "全部", new { @class = "form-control" })
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="sp-content">
+        <div id="dv_left">
+            <table id="parentgridList"></table>
+            <div id="gridPager" rel="form1"></div>
+        </div>
+        <div id="dv_right">
+            <table id="MedicineGridList"></table>
+            <div id="gridmxPager" rel="form1"></div>
+            @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+           {
+               ShowKeyList = new[] { 8 },
+               F8Text = "发药"
+           })
+        </div>
+    </div>
+</form>
+<script>
+    var lastRowId;
+    var $gridList = $("#parentgridList");
+    var $MedicineGridList = $("#MedicineGridList");
+    $(".sp-content").height($(window).height() - 80);
+    $(function () {
+        initLayout();
+        $(window).resize(function () {
+            initLayout();
+        });
+        gridList();
+        medicineGridList();
+        $("#dv_left").click(function () {
+            $("#dv_left").css("z-index", 101);
+            $("#dv_right").css("z-index", 100);
+        });
+        $("#dv_right").click(function () {
+            $("#dv_left").css("z-index", 100);
+            $("#dv_right").css("z-index", 101);
+        });
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //左侧，申请单区
+    function gridList() {
+        $gridList.dataGrid({
+            caption: "申领信息",
+            url: "/BillManage/ApplyBill/ApplyMainInfoSearch",
+            height: $(window).height() - 190,
+            postData: getSearchPostData(),
+            colModel: [
+                {
+                    label: '发药状态', name: 'ffzt', width: 60, align: 'left',
+                    formatter: function (cellvalue) {
+                        switch (cellvalue) {
+                            case @((int)EnumSLDDeliveryStatus.None): return "@EnumSLDDeliveryStatus.None.GetDescription()";
+                            case @((int)EnumSLDDeliveryStatus.Part): return "@EnumSLDDeliveryStatus.Part.GetDescription()";
+                            case @((int)EnumSLDDeliveryStatus.All): return "@EnumSLDDeliveryStatus.All.GetDescription()";
+                            case @((int)EnumSLDDeliveryStatus.Abandon): return "@EnumSLDDeliveryStatus.Abandon.GetDescription()";
+                        }
+                    }
+                },
+                { label: "申领单号", name: "Sldh", width: 120, align: 'left' },
+                { label: '申领时间', name: 'CreateTime', width: 110, align: 'left', formatter: 'date', formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: '申领部门', name: 'slbmmc', width: 100, align: 'left' },
+                {
+                    label: '终止', name: '', width: 50, align: 'center', formatter: function (cellvalue, options, rowObject) {//AbandonZT(" + arguments[1].rowId + ")
+                        if (rowObject.ffzt === @((int)EnumSLDDeliveryStatus.Abandon)||rowObject.ffzt === @((int)EnumSLDDeliveryStatus.All)) {
+                            return "";
+                        }
+                        return "<input type=\"button\" class=\"btn btn-default btn-md\" value=\"终止\" onclick=\"btn_Abandon('" + options.rowId + "');\" />";
+                    }
+                },
+                { label: "主键", name: "sldId", hidden: true, key: true },
+                { label: "ffzt", name: "ffzt", hidden: true }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            multiselect: true,
+            viewrecords: false,
+            onSelectRow_page: function (rowid, status) {
+                var data = $("#parentgridList").jqGrid('getRowData', rowid);
+                var cancel = false;
+                if (data.ffzt === '@((int)EnumSLDDeliveryStatus.Abandon)') {
+                    $("#jqg_parentgridList_" + rowid).hide();
+                    $.modalMsg("该条记录已终止", 'warning', 1500);
+                    cancel = true;
+                } else if (data.ffzt === '@((int)EnumSLDDeliveryStatus.All)') {
+                    $("#jqg_parentgridList_" + rowid).hide();
+                    $.modalMsg("该条记录已全发药", 'warning', 1500);
+                    cancel = true;
+                }
+                if (cancel) {
+                    $("#jqg_parentgridList_" + rowid).prop("checked", false);
+                    return;
+                }
+                $MedicineGridList.jqGrid("clearGridData");
+                $MedicineGridList.jqGrid('setGridParam', {
+                    url: "/BillManage/ApplyBill/ApplyOutStockDetailSearch",
+                    postData: getSelectRowPostData()
+                }).trigger('reloadGrid');
+            },
+            onSelectAll: function (rowids, statue) {
+                if (!statue) return;
+                if (rowids == null || rowids.length <= 0) return;
+                for (var i = 0; i < rowids.length; i++) {
+                    var rowid = rowids[i];
+                    var data = $("#parentgridList").jqGrid('getRowData', rowid);
+                    if (data.ffzt === '@((int)EnumSLDDeliveryStatus.Abandon)') {
+                        $("#jqg_parentgridList_" + rowid).prop("checked", false);
+                    } else if (data.ffzt === '@((int)EnumSLDDeliveryStatus.All)') {
+                        $("#jqg_parentgridList_" + rowid).prop("checked", false);
+                    }
+                }
+
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        $("#cb_parentgridList").click(function () {
+            $MedicineGridList.jqGrid("clearGridData");
+            $MedicineGridList.jqGrid('setGridParam', {
+                url: "/BillManage/ApplyBill/ApplyOutStockDetailSearch",
+                postData: getSelectRowPostData()
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //组装查询条件
+    function getSearchPostData() {
+        var ffzt = $("#ffzt").val() === "" ? -1 : $("#ffzt").val();
+        var djh = $("#djh").val();
+        var startTime = $("#startTime").val();
+        var endTime = $("#endTime").val();
+        return { ffzt: ffzt, djh: djh, startTime: startTime, endTime: endTime };
+    };
+
+    //组装查询条件
+    function getSelectRowPostData() {
+        var allCheckedTr = $(":checkbox:checked").parents("tr");
+        var ids = "";
+        if (allCheckedTr != null && allCheckedTr.length > 0) {
+            var arr = [];
+            for (var i = 0; i < allCheckedTr.length; i++) {
+                if (allCheckedTr[i].id != null && allCheckedTr[i].id != "") {
+                    arr.push(allCheckedTr[i].id);
+                }
+            }
+            ids = arr.join(",");
+        }
+        return { sldIds: ids };
+    };
+
+    //右侧，明细区域
+    function medicineGridList() {
+        $MedicineGridList.dataGrid({
+            caption: "申领明细",
+            url: "",
+            height: $(window).height() - 230,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            colModel: [
+                { label: '现发数量', name: 'xfsl', width: 60, align: 'center', editable: true, editwidth:"90%"},
+                { label: '单位', name: 'zxdw', width: 50, align: 'left' },
+                { label: '已发数量', name: 'yfslStr', width: 55, align: 'right' },
+                { label: '申领数量', name: 'slslStr', width: 55, align: 'right' },
+                { label: '现有库存', name: 'kyslStr', width: 80, align: 'center' },
+                { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+                { label: '生产厂家', name: 'sccj', width: 110, align: 'left' },
+                { label: '批发单价', name: 'pfjdwdj', width: 80, align: 'right' },
+                { label: '零售单价', name: 'lsjdwdj', width: 80, align: 'right' },
+                { label: '批发总额', name: 'pjze', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); }},
+                { label: '零价总额', name: 'lsze', width: 70, align: 'right', formatter: function (val) { return val.toFixed(2); } },
+                { label: "slbm", name: "slbm", hidden: true },
+                { label: "sldmxId", name: "sldmxId", hidden: true },
+                { label: "sldh", name: "sldh", hidden: true },
+                { label: 'bzdw', name: 'bzdw', hidden: true },
+                { label: 'zhyz', name: 'zhyz', hidden: true },
+                { label: "sldId", name: "sldId", hidden: true },
+                { label: 'zxdwxfsl', name: 'zxdwxfsl', hidden: true },
+                { label: 'bzs', name: 'bzs', hidden: true },
+                { label: 'ypdm', name: 'ypdm', hidden: true },
+                { label: 'zxdwpfj', name: 'zxdwpfj', hidden: true },
+                { label: 'zxdwlsj', name: 'zxdwlsj', hidden: true },
+                { label: 'sysl', name: 'sysl', hidden: true },//剩余待发数量 初次加载与xfsl相同
+                { label: 'kykc', name: 'kykc', hidden: true }
+            ],
+            onSelectRow: function (rowid, status) {
+                if (rowid && lastRowId && rowid !== lastRowId) {
+                    if (!RowDataValidate()) return;
+                }
+                lastRowId = rowid;
+                $MedicineGridList.jqGrid('editRow', rowid, true, null, function (result) {}, null, null, function () {});
+            },
+            pager: "#gridmxPager",
+            sortname: 'sldh desc',
+            viewrecords: false,
+        });
+    }
+
+    //行编辑验证
+    function RowDataValidate(){
+        $MedicineGridList.saveRow(lastRowId, function (result) { }); //先保存处于编辑状态的那一行
+        var lastdata = $MedicineGridList.getRowData(lastRowId);
+        var reg = /^[1-9]\d*$/;//大于0的整数
+        if (!reg.test(lastdata.xfsl)) {
+            $.modalMsg("发药数量必须为大于0的整数！", "warning", 1500);
+            $MedicineGridList.jqGrid('editRow', lastRowId, true, null, function (result) { }, null, null, function () { });
+            return false;
+        }
+        var zxdwfysl = parseInt(lastdata.xfsl) * parseInt(lastdata.zhyz)
+        if (parseInt(lastdata.xfsl) - parseInt(lastdata.sysl) > 0) {
+            $.modalMsg("现发数量不可大于" + lastdata.sysl + "！", 'warning', 1500);
+            $MedicineGridList.jqGrid('editRow', lastRowId, true, null, function (result) { }, null, null, function () { });
+            return false;
+        }
+        if (parseInt(lastdata.xfsl) !== 0 && (zxdwfysl - parseInt(lastdata.kykc) > 0)) {
+            $.modalMsg("现发数量不可大于可用库存！", 'warning', 1500);
+            $MedicineGridList.jqGrid('editRow', lastRowId, true, null, function (result) { }, null, null, function () { });
+            return false;
+        }
+        return true;
+    }
+
+    //终止
+    function btn_Abandon(id) {
+        $.modalConfirm("确定要终止吗，终止后将无法继续发药！",
+            function (flag) {
+                if (flag) {
+                    $.najax({
+                        url: "/BillManage/ApplyBill/Abandonzt?sldId=" + id,
+                        dataType: "json",
+                        cache: false,
+                        success: function (res) {
+                            if (res.state === "success") {
+                                $.modalMsg("终止成功！", 'success', 1000);
+                                $gridList.resetSelection();
+                                $gridList.trigger("reloadGrid");
+                                $MedicineGridList.jqGrid("clearGridData");
+                            } else {
+                                $.modalAlert(res.message, 'error');
+                            }
+                        }
+                    });
+                }
+            });
+
+    }
+
+    //发药
+    function newtouch_event_f8() {
+        $MedicineGridList.saveRow(lastRowId, null, null, null, function (callbackRowId) {}, null, null);
+        var fymx = $MedicineGridList.jqGrid('getRowData_AllLine');
+        if (fymx === [] || fymx.length === 0) {
+            $.modalMsg("发药失败,无药品信息！", 'warning',1500);
+            return false;
+        }
+        if (lastRowId&&!RowDataValidate()) {
+            return false;
+        }
+        $.najax({
+            type: "POST",
+            url: "/BillManage/ApplyBill/SubmitApplyOutStock",
+            data: { fymx: fymx},
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('发药成功', 'success', 1000);
+                    $gridList.trigger("reloadGrid");
+                    $MedicineGridList.jqGrid("clearGridData");
+                } else if (res.state === "error") {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+</script>
+

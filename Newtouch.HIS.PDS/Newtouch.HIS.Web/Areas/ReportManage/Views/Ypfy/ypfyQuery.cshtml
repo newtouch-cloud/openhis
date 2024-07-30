@@ -1,0 +1,136 @@
+﻿@{
+    ViewBag.Title = "药品发药统计";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    //报表链接
+    //var reportUrl = SysConfigReader.OrgReportLink();
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
+                </td>
+                <th class="formTitle" style="padding-right:5px;">结束日期</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                </td>
+                <th class="formTitle">药品类型：</th>
+                <td class="formValue">
+                    <input type="text" id="ypflMc" name="ypflMc" class="form-control" />
+                    <input type="text" style="display:none;" id="ypflCode" name="ypflCode" class="form-control" />
+                </td>
+                <th class="formTitle">统计方式：</th>
+                <td class="formValue">
+                    <select id="tjfs" class="form-control">
+                        <option value="1">按病人性质</option>
+                        <option value="2">按发药人</option>
+                        <option value="3">按配药人</option>
+                        <option value="4">按特殊药品</option>
+                        <option value="5">按开单科室</option>
+                        <option value="6">按基药类别</option>
+                    </select>
+                </td>
+                @*<th class="formTitle">是否门诊：</th>
+                <td class="formValue">
+                    <select id="ismz" class="form-control">
+                        <option value="0">否</option>
+                        <option value="1" selected="selected">是</option>
+                    </select>
+                </td>*@
+                @*<th class="formTitle">是否住院：</th>
+        <td class="formValue">
+            <select id="iszy" class="form-control">
+                <option value="0">否</option>
+                <option value="1">是</option>
+            </select>
+        </td>*@
+                <th class="formTitle"></th>
+                <td class="formValue">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <input type="text" id="zxys" hidden="hidden" />
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+
+
+    var OrganizeId = '@(ViewBag.OrganizeId)';
+
+    $(function () {
+        initControl();
+    });
+
+    function initControl() {
+        //药品分类
+        $('#ypflMc').newtouchFloatingSelector({
+            width: 300,
+            height: 300,
+            caption: "药品分类",
+            url: '/ypfy/GetMedicineClassification',
+            clickautotrigger: true,
+            ajaxparameters: function () {
+                return "keyword=" + $.trim($('#ypflMc').val());
+            },
+            itemdbclickhandler: function ($thistr) {
+                $('#ypflCode').val($thistr.attr('data-ypflCode'));
+                $('#ypflMc').val($thistr.attr('data-ypflmc'));
+            },
+            colModel: [{ label: '编码', name: 'ypflCode', hidden: true },
+            { label: '名称', name: 'ypflmc', widthratio: 50 },
+            { label: '首拼', name: 'py', widthratio: 50 }
+            ]
+        });
+    }
+
+
+    function submit() {
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        var yfcode = "@Newtouch.Infrastructure.Constants.CurrentYfbm.yfbmCode";
+        var ypfl = $("#ypflMc").val()==""?"": $("#ypflCode").val();
+        var uri = '@reportUrl' + "?tempCode=1257" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + OrganizeId;
+        uri += "&yfbmCode=" + yfcode + "&kssj=" + $('#kssj').val() + "&jssj=" + $('#jssj').val() + "&yplx=" + ypfl + "&tjfs=" + $("#tjfs").val() + "&ismz=1" + "&iszy=0" ;
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', uri);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+    });
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+</script>

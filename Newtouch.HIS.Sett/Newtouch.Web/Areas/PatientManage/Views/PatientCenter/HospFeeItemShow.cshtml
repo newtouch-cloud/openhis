@@ -1,0 +1,99 @@
+﻿@{
+
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form>
+    <div class="topPanel" style="border-bottom:1px solid rgb(221, 221, 221);margin-bottom: -1%;">
+        <table class="form">
+            <tr>
+                <td style="width:2%">
+                    <div class="toolbar" style="margin-top: 1%;">
+                        <div class="btn-group">
+                            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+                        </div>
+                    </div>
+                </td>
+                <th class="formTitle">项目搜索：</th>
+                <td class="formValue">
+                    <input id="dlCode" name="dlCode" type="text" class="form-control" placeholder="按照项目编码项目名称或简拼" />
+                </td>
+
+                <td style="padding-left:20px;" class="formValue">
+                    <input type="button" id="btn_search" style="margin-left:3%; width:35%; margin-top:-2%;" class="btn btn-primary" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel" style="margin-top:1%">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+
+<script>
+    var zyh = $.request("zyh");
+    var dlCode = $.request("dlCode");
+    $(function () {
+        gridInit();
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#dlCode").val() },
+            }).trigger('reloadGrid');
+        });
+    });
+
+    function gridInit() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { zyh: zyh, group: "2", sfdl: dlCode },
+            url: "/PatientManage/PatientCenter/GetFeeInfobySfdl",
+            height: $(window).height() - 120,
+            colModel: [
+                { label: '收费大类', name: 'dlmc', align: 'center', width: 100 },
+                { label: '属性', name: 'zfxz', align: 'center', width: 40 },
+                { label: '项目名称', name: 'sfxmmc', align: 'left', width: 150 },
+                { label: '规格', name: 'gg', align: 'center', width: 60 },
+                { label: '单位', name: 'jfdw', align: 'center', width: 60 },
+                {
+                    label: '单价', name: 'dj', align: 'center', width: 60, formatter: "number"
+                    , formatoptions: { decimalPlaces: 4, defaultValue: '0.0000' }
+                },
+                { label: '数量', name: 'sl', align: 'center', width: 30 },
+                { label: 'zyh', name: 'zyh', align: 'center', hidden: true, },
+                {
+                    label: '费用', name: 'je', align: 'center', width: 60, formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.0000' }
+                },
+                { label: '是否自费', name: 'zzfbz', align: 'center', width: 80 },
+                { label: 'sfxm', name: 'sfxm', align: 'center', hidden: true, },
+                //{ label: '计价日期', name: 'tdrq', align: 'center', width: 100 },
+
+            ],
+            //pager: "#gridPager",
+            //sortname: 'sfxmmc',
+            viewrecords: true,
+            //rowNum:100,
+            ondblClickRow: function (rowIndex, s) {
+                getItemsbySfxm(rowIndex);
+            }
+        });
+    }
+
+    function getItemsbySfxm(id) {
+        var rowData = $("#gridList").jqGrid('getRowData', id);
+        var smxm = rowData.sfxm + "|" + rowData.dj;
+        if (!!rowData) {
+            $.modalOpen({
+                id: "mxcx",
+                title: "项目明细",
+                url: "/PatientManage/PatientCenter/HospFeeItemDetailShow?sfxm=" + smxm + "&zyh=" + zyh,
+                width: "800px",
+                height: "600px",
+                btn: null,
+                callBack: function (iframeId) {
+                }
+            });
+        }
+    }
+</script>

@@ -1,0 +1,293 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "InventoryQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .i-showMore {
+        float: right;
+        margin-top: -8px;
+        font-size: 2.5rem;
+        margin-left: 10px;
+    }
+
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+
+    #btn_print {
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<input hidden id="yfbmcode" value="@ViewBag.bmCode">
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:5px;">
+        <div class="panel-heading">
+            查询条件
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">关键字：</th>
+                    <td class="formValue" style="width:150px;">
+                        <input id="txtINPUTCODE" type="text" class="form-control" placeholder="药品名称 代码 拼音" />
+                    </td>
+                    <th class="formTitle">库存状态：</th>
+                    <td class="formValue" style="width:80px;">
+                        @Html.DropDownList("ddlKCZT", EnumKCZT.Disabled.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <th class="formTitle">本部门状态：</th>
+                    <td class="formValue" style="width:80px;">
+                        @Html.DropDownList("ddlBBMZT", BenBuMenZT.Control.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <td class="formValue">
+                        <div class="ckbox ckmargin">
+                            <input id="chk_NoShow0KC" type="checkbox" /><label for="chk_NoShow0KC">不显示零库存</label>
+                        </div>
+                    </td>
+                    <td class="formTitle" style="width:150px;">
+                        <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                        <input type="button" id="btn_print" class="btn btn-md btn-primary" value="打印" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="panel panel-default" style="margin-bottom: 5px;">
+        <div class="panel-heading">
+            <span>药品总量&nbsp;&nbsp;&nbsp;当前页&nbsp;&nbsp;</span>
+            <span id='yeCon'>批价总额：" + "元；零价总额：" + "元</span>
+            <i class='fa fa-angle-down fa-2x i-showMore' onclick="mainShowMore()" aria-hidden='true'></i>
+        </div>
+        <div class="gridPanel" id="div-main">
+            <table id="gridYPZL"></table>
+            <div id="gridPager" rel="form1"></div>
+        </div>
+    </div>
+    <div class="panel panel-default" style="margin-bottom: 5px;">
+        <div class="panel-heading">
+            <span>药品明细</span>
+            <i class='fa fa-angle-up fa-2x i-showMore' onclick="detailShowMore()" aria-hidden='true'></i>
+        </div>
+        <div class="gridPanel" id="div-detail">
+            <table id="gridYPMXInfo"></table>
+        </div>
+    </div>
+</form>
+<script>
+    var $gridYpzlData = $("#gridYPZL");
+    var $gridkcmxData = $("#gridYPMXInfo");
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新加载jqGrid的宽
+            window.initLayout("MyTabGrid");
+        });
+        gridYPZLData();
+
+        //打印单按钮事件
+        $("#btn_print").click(function () {
+            var is0kc = $("#chk_NoShow0KC").is(":checked") ? "0" : "-1";
+            var kczt = $("#ddlKCZT").val() == '' ? "-1" : $("#ddlKCZT").val();
+            var bmzt = $("#ddlBBMZT").val() == '' ? "-1" : $("#ddlBBMZT").val();
+            window.open("/Report/PrintReport?type=StockQuery&param=bmcode=" + $("#yfbmcode").val() + "|OrganizeId=" + $("#OrganizeId").val() + "|key=" + $("#txtINPUTCODE").val() + "|kczt=" + kczt + "|bmzt=" + bmzt + "|Show0Kc=" + is0kc, "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
+        });
+    });
+
+    $(document).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //主记录拉伸
+    function mainShowMore() {
+        var nodeM = $("#div-main");
+        var nodeD = $("#div-detail");
+        if (nodeM.is(':hidden')) {
+            $("#gridYPZL").setGridHeight(150);
+            $("#gridYPMXInfo").setGridHeight($(window).height() - 400);
+            $("#div-main").show(500);
+            $("#div-detail").show(500);
+        } else if (nodeM.is(':visible') && nodeD.is(':visible')) {
+            $("#gridYPZL").setGridHeight($(window).height() - 220);
+            $("#div-main").show(500);
+            $("#div-detail").hide(500);
+        }
+    }
+
+    //明细记录拉伸
+    function detailShowMore() {
+        var nodeM = $("#div-main");
+        var nodeD = $("#div-detail");
+        if (nodeD.is(':hidden')) {
+            $("#gridYPZL").setGridHeight(150);
+            $("#gridYPMXInfo").setGridHeight($(window).height() - 400);
+            $("#div-main").show(500);
+            $("#div-detail").show(500);
+        } else if (nodeM.is(':visible') && nodeD.is(':visible')) {
+            $("#gridYPMXInfo").setGridHeight($(window).height() - 190);
+            $("#div-main").hide(500);
+            $("#div-detail").show(500);
+        }
+    }
+
+    //单据主记录
+    function gridYPZLData() {
+        $gridYpzlData.dataGrid({
+            postData: getSearchPostData(),
+            height: 150,
+            url: "/PharmacyDrugStorage/SelectStockTotal",
+            colModel: [
+                { label: 'ypbmCode', name: 'yfbmCode', hidden: true, align: 'left' },
+                { label: '科室名称', name: 'deptName', width: 65, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 150, align: 'left' },
+                { label: '药品代码', name: 'ypCode', width: 65, align: 'left' },
+                { label: '拼音', name: 'py', width: 100, align: 'left' },
+                { label: '库存数量', name: 'Kcslstr', width: 70, align: 'right' },
+                {
+                    label: '批发价', name: 'pfj', width: 60, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.00";
+                    }
+                },
+                {
+                    label: '零售价', name: 'lsj', width: 60, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.00";
+                    }
+                },
+                {
+                    label: '批价总额', name: 'pjze', width: 70, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                {
+                    label: '零价总额', name: 'ljze', width: 70, align: 'right',
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                { label: '规格', name: 'gg', width: 80, align: 'left' },
+                { label: '生产厂家名称', name: 'ycmc', width: 150, align: 'left' },
+                { label: '账册号', name: 'zcxh', hidden: true }
+
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'ypCode desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+                btn_selectrow();
+            },
+            loadComplete: function (data) {
+                //计算标题栏中的批价总额和零价总额
+                ComputePjzeAndLjze();
+            }
+
+        });
+
+        $("#btn_search").click(function () {
+            $("#yeCon").text("批价总额：__元;零价总额：__元");
+            //每次查询先清空Grid
+            $('#gridYPZL').jqGrid("clearGridData");
+            $('#gridYPMXInfo').jqGrid("clearGridData");
+
+            $gridYpzlData.jqGrid('setGridParam', {
+                postData: getSearchPostData(), url: '/PharmacyDrugStorage/SelectStockTotal'
+            }).trigger('reloadGrid');            
+            ComputePjzeAndLjze();//计算标题栏中的批价总额和零价总额
+        });
+    }
+    //查询条件
+    function getSearchPostData() {
+        var inputCode = $("#txtINPUTCODE").val();
+        var kczt = $("#ddlKCZT").val();
+        var bbmzt = $("#ddlBBMZT").val();
+        var noShow0Kc = $("#chk_NoShow0KC").is(":checked");
+        return { inputCode: inputCode, tybz: kczt, zt: bbmzt, noShow0KC: noShow0Kc };
+    };
+
+    //计算标题栏中的批价总额和零价总额
+    function ComputePjzeAndLjze() {
+        var titlePjze = 0;
+        var titleLjze = 0;
+        var count = $("#gridYPZL").getGridParam('records');
+        if (count > 0) {
+            var rowIds = $("#gridYPZL").getDataIDs();
+            for (var i = 0; i < rowIds.length; i++) {
+                var getRowPjze = $("#gridYPZL").getRowData(rowIds[i]).pjze;
+                var getRowLjze = $("#gridYPZL").getRowData(rowIds[i]).ljze;
+                titlePjze += parseFloat(getRowPjze);
+                titleLjze += parseFloat(getRowLjze);
+            }
+            $("#yeCon").text("批价总额：" + titlePjze.toFixed(2) + "元;零价总额：" + titleLjze.toFixed(2) + "元");
+        }
+    }
+
+    //单击事件
+    function btn_selectrow() {
+        //每次单击，先清空明细 再重新加载所有选中行明细
+        $gridkcmxData.jqGrid("clearGridData");
+        $gridkcmxData.jqGrid('setGridParam', {
+            postData: { ypCode: $("#gridYPZL").jqGridRowValue().ypCode, yfbmCode: $("#gridYPZL").jqGridRowValue().yfbmCode },
+            url: '/PharmacyDrugStorage/SelectStockDetail'
+        }).trigger('reloadGrid');            
+    }
+
+    //药品明细
+    $gridkcmxData.dataGrid({
+        height: $(window).height() - 400,
+        unwritten: false,
+        colModel: [
+            { label: '科室名称', name: 'deptName', width: 65, align: 'left' },
+            { label: '库存数量', name: 'kcslstr', width: 70, align: 'right' },
+            { label: '冻结数量', name: 'djslstr', width: 80, align: 'right' },
+            {
+                label: '进价', name: 'jj', width: 60, align: 'right',
+                formatter: function (cellvalue) {
+                    return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.00";
+                }
+            },
+            {
+                label: '批发价', name: 'pfj', width: 60, align: 'right',
+                formatter: function (cellvalue) {
+                    return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.00";
+                }
+            },
+            {
+                label: '零售价', name: 'lsj', width: 60, align: 'right',
+                formatter: function (cellvalue) {
+                    return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.00";
+                }
+            },
+            {
+                label: '零价总额', name: 'ljze', width: 70, align: 'right',
+                formatter: function (cellvalue) {
+                    return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                }
+            },
+            {
+                label: '批价总额', name: 'pjze', width: 70, align: 'right',
+                formatter: function (cellvalue) {
+                    return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                }
+            },
+            { label: '批号', name: 'ph', width: 110, align: 'center' },
+            { label: '批次', name: 'pc', width: 110, align: 'center' },
+            { label: '有效期', name: 'yxq', width: 70, align: 'center' },
+            { label: '转化因子', name: 'zhyz', width: 50, align: 'center' },
+            { label: '控制标志', name: 'kzbz', width: 60, align: 'center' },
+            { label: '冻结数量', name: 'djsl', hidden: true },
+            { label: '库位', name: 'ypkw', hidden: true }
+        ],
+        sortname: 'yxq asc',
+    });
+</script>
+
+
