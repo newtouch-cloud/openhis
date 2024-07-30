@@ -1,0 +1,83 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_LayoutIndex.cshtml";
+}
+@using Newtouch.Infrastructure;
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <div class="ui-layout-west">
+        <ul id="beveltabs">
+            <li><a href="#" name="#personal" data-type=@Html.Raw(((int)EnumCfMbLx.personal).ToString())>个人</a></li>
+            <li><a href="#" name="#department" data-type=@Html.Raw(((int)EnumCfMbLx.department).ToString())>科室</a></li>
+            <li><a href="#" name="#hospital" data-type=@Html.Raw(((int)EnumCfMbLx.hospital).ToString())>全院</a></li>
+        </ul>
+        <table class="form">
+            <tr>
+                <td class="formValue">
+                    <input id="mbKeyword" type="text" class="form-control" placeholder="输入模板名称/简拼按回车键盘" />
+                </td>
+            </tr>
+        </table>
+        <div id="treeContent">
+            <div id="personal">
+                <div id="personalTree"></div>
+            </div>
+            <div id="department">
+                <div id="departmentTree"></div>
+            </div>
+            <div id="hospital">
+                <div id="hospitalTree"></div>
+            </div>
+        </div>
+    </div>
+    <iframe class="ui-layout-center" id="iframerightiframerightiframeright" name="iframerightiframerightiframeright"></iframe>
+</div>
+
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/beveltabs.css", false)" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/Content/js/beveltabs.js", false)"></script>
+
+<script type="text/javascript">
+    $(function ($) {
+        $('#layout').layout();
+        $("#beveltabs a:first").trigger('click');
+    });
+    var lasttabName = "";
+    var expandCflx = null;
+
+    $("#beveltabs a").on("click", function (e) {
+        var tabname = $(this).attr('name') + "Tree";
+        lasttabName = tabname;
+        SetCurrentPageCfmb(tabname);
+    });
+    function SetCurrentPageCfmb(tabName) {
+        var tempExpandCflx = expandCflx;    //有效期为一次
+        expandCflx = null;
+        $(tabName).treeview({
+            height: $(window).height() - 100,
+            slimscroll: false,
+            url: "/PresTemplate/GetTreeList?mblx=" + $('#current').attr('data-type') + "&cflx=" + 0 + "&expandCflx=" + tempExpandCflx + "&mbKeyword=" + $("#mbKeyword").val(),
+            onnodeclick: function (item) {
+                if (!item.value) {
+                    return;
+                }
+                if (item.value == '@Html.Raw(((int)@EnumCflx.RehabPres).ToString())') {   //康复
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/PresTemplate/RehabForm?mbId=" + item.Ex1);  //item.Ex1为模板Id
+                }
+                if (item.value == '@Html.Raw(((int)@EnumCflx.RegularItemPres).ToString())') {   //常规项目
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/PresTemplate/RegularItemForm?mbId=" + item.Ex1);  //item.Ex1为模板Id
+                }
+                else if (item.value == '@Html.Raw(((int)@EnumCflx.WMPres).ToString())') {   //西药
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/PresTemplate/WMForm?mbId=" + item.Ex1);
+                }
+                else if (item.value == '@Html.Raw(((int)@EnumCflx.TCMPres).ToString())') {   //中药
+                    $("#iframerightiframerightiframeright").attr("src", "/TemplateManage/PresTemplate/TCMForm?mbId=" + item.Ex1);
+                }
+            }
+        });
+    }
+
+    $('#mbKeyword').keyupEnterEvent(function () {
+        SetCurrentPageCfmb(lasttabName);
+    });
+</script>

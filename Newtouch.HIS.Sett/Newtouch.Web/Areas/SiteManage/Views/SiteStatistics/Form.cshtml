@@ -1,0 +1,950 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "新增/修改";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var mediOrgList = ViewBag.MediOrgList as IList<FrameworkBase.MultiOrg.Domain.Entity.SysOrganizeVEntity>;
+
+}
+<link rel="stylesheet" type="text/css" href="~/Content/css/bootstrap-multiselect.css">
+<script type="text/javascript" src="~/Content/js/bootstrap-multiselect.js"></script>
+<script src="~/Content/js/jquery.form.js"></script>
+<script type="text/javascript" src="~/Content/js/jquery.formatCurrency.js"></script>
+<style>
+    #tab li {
+        padding: 2px 2px 0 2px;
+    }
+
+    #tab a {
+        padding: 8px;
+        width: 70px;
+        text-align: center;
+    }
+
+    .ui-th-ltr, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr {
+        border: 1px solid #ddd;
+    }
+
+    .form .formTitle {
+        width: 70px !important
+    }
+
+    .ui-jqgrid {
+        border: 1px solid #ddd
+    }
+
+    #gbox_CbGridList {
+        float: left
+    }
+
+    .money {
+        text-decoration: none !important
+    }
+
+    .file {
+        position: relative;
+        display: inline-block;
+        background: #D0EEFF;
+        border: 1px solid #99D3F5;
+        border-radius: 4px;
+        padding: 4px 12px;
+        overflow: hidden;
+        color: #1E88C7;
+        text-decoration: none;
+        text-indent: 0;
+        line-height: 20px;
+    }
+
+        .file input {
+            position: absolute;
+            font-size: 100px;
+            right: 0;
+            top: 0;
+            opacity: 0;
+        }
+
+        .file:hover {
+            background: #AADFFD;
+            border-color: #78C3F3;
+            color: #004974;
+            text-decoration: none;
+        }
+
+    #CRGridList input {
+        padding: 0;
+    }
+
+    .btn-bottom {
+        float: right;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        margin-right: 10px;
+        background-color: #00a0ea !important;
+        border-color: #00a0ea !important;
+    }
+</style>
+<form id="form1" enctype="multipart/form-data" method="post">
+    <div class="container" style="padding: 0;">
+        <ul class="nav nav-tabs" role="tablist" id="tab">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">收入信息</a></li>
+            <li role="presentation"><a href="#cb" role="tab" data-toggle="tab">成本</a></li>
+            <li role="presentation"><a href="#attachments" role="tab" data-toggle="tab">附件信息</a></li>
+        </ul>
+        <div class="tab-content" style="margin-top: 10px; padding-right: 10px;">
+            <div id="basicInfo" role="tabpanel" class="tab-pane fade in active">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><a class="btn btn-primary" onclick="reload()" style="margin:auto 5px"><span class="glyphicon glyphicon-refresh"></span></a><span class="required">*</span>站点：</th>
+                        <td class="formValue" style="width:180px">
+                            <select id="siteId" name="siteId" class="form-control"></select>
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>年份：</th>
+                        <td class="formValue" style="width:80px">
+                            <select id="year" name="year" class="form-control"></select>
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>月份：</th>
+                        <td class="formValue" style="width:80px">
+                            <select id="month" name="month" class="form-control" style="width:50px"></select>
+                        </td>
+                        <td class="formValue" colspan="4">@*<span id="sfspan" style="padding-left:10px;"></span>*@</td>
+                    </tr>
+                </table>
+                <div class="CRgridpane">
+                    <table id="CRGridList"></table>
+                </div>
+            </div>
+            <div id="cb" role="tabpanel" class="tab-pane fade in">
+                <table class="form" style="margin-bottom:10px;width:745px">
+                    <tr>
+                        <th class="formTitle"><span style="color:red">*</span>类别：</th>
+                        <td class="formValue">
+                            <input type="hidden" id="cbId" />
+                            <select id="cblb" name="cblb" class="form-control">
+                                <option value="" selected>==请选择==</option>
+                                <option value="ShareObj">共担科目</option>
+                                <option value="GRSbillObj">GRS负担科目</option>
+                            </select>
+                        </td>
+                        <th class="formTitle"><span style="color:red">*</span>科目：</th>
+                        <td class="formValue">
+                            <select id="kmmc" name="kmmc" class="form-control">
+                                <option value="" selected>==请选择==</option>
+                            </select>
+                        </td>
+                        <th class="formTitle"><span style="color:red">*</span>金额：</th>
+                        <td class="formValue">
+                            <input id="je" class="form-control" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" colspan="6">
+                            <a class="btn btn-default btn-md" style="margin-left:4px;" id="btn_bottombutton_add" onclick="btn_bottombutton_add()">添加</a>
+                            <a class="btn btn-default btn-md" style="margin-left:4px;" id="btn_bottombutton_edit" onclick="btn_bottombutton_edit()" disabled="disabled">修改</a>
+                            <a class="btn btn-default btn-md" style="margin-left:4px;" id="btn_bottombutton_delete" onclick="btn_bottombutton_delete()" disabled="disabled">删除</a>
+                            <a class="btn btn-default btn-md" style="margin-left:4px;display:none;" id="btn_bottombutton_canceldel" onclick="btn_bottombutton_canceldel()">取消修改</a>
+                        </th>
+                    </tr>
+                </table>
+                <div id="fj" role="tabpanel" class="tab-pane fade in" style="float: right;height: 337px;width: 200px;position: relative;top: -60px;border-left: 1px solid #ddd;">
+                    <div id="jgssfdbl" style="padding-left: 10px;">
+                        共担成本GRS分担比例:
+                        <div>
+                            <input id="input_fcbl" class="form-control" value="@ViewData["jgssfdbl"]" style="width: 55px;height:15px;float: left;line-height: 4px;" />%
+                        </div>
+                    </div>
+                </div>
+                <div class="gridPanel">
+                    <table id="CbGridList"></table>
+                </div>
+            </div>
+            <div id="attachments" role="tabpanel" class="tab-pane fade in" style="height:400px">
+                <a href="javascript:;" class="file">
+                    选择文件
+                    <input id="fileUpload" name="fileUpload" type="file" style="padding-left: 10px;padding-top: 10px;width: 200px;" multiple="multiple" />
+                </a>
+                <ul id='content'></ul>
+            </div>
+        </div>
+    </div>
+</form>
+<div style="position: absolute; right: 0; bottom: 0;">
+    <input type="button" id="btn_ytj" onclick="btnclick('@Html.Raw(((int)EnumOrgshzt.YTJ).ToString())')" class="btn btn-primary btn-md btn-bottom" value="预提交" />
+    <input type="button" id="btn_zc" onclick="btnclick('@Html.Raw(((int)EnumOrgshzt.WTJ).ToString())')" class="btn btn-primary btn-md btn-bottom" value="暂存" />
+    <input type="button" id="btn_tj" onclick="btnclick('@Html.Raw(((int)EnumOrgshzt.DS).ToString())')" class="btn btn-primary btn-md btn-bottom" value="提交" />
+</div>
+<a id="tips" style="color:red;float:right;position: relative;bottom: -15px;margin-right: 10px;text-decoration: none;display:none">*已提交的数据不能重复操作</a>
+<script lang="javascript">
+    var id = 0;
+    var keyValue = $.request("keyValue");
+    var $CbGridList = $("#CbGridList");
+    var cbjson = [];
+    var fjjson = [];
+    var mzsf = 0.00;
+    var zysf = 0.00;
+    var zsf = 0.00;
+    var SiteCostEarningVO = {};
+    var ContentType = "";//附件类型
+    var fjmc = "";//附件名称
+    var fjPath = "";//附件名称
+    var fileExt = "";
+    var files = [];
+
+    //年月下拉初始化
+    (function initYearMonthSelect() {
+        var date = new Date;
+        //默认选择上个月
+        var defaultSelYear = 1900 + date.getYear();
+        var defaultSelMonth = date.getMonth();
+        if (defaultSelMonth === 0) {
+            defaultSelYear--;
+            defaultSelMonth = 12;
+        }
+        //年份
+        $("#year").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.yearArr && top.clients.yearArr.length) {
+                    $.each(top.clients.yearArr, function () {
+                        resultObjArr.push({ id: this, text: this });
+                    });
+                }
+                return resultObjArr;
+            },
+            selectedValue: defaultSelYear,
+        });
+        //月份
+        $("#month").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.monthArr && top.clients.monthArr.length) {
+                    $.each(top.clients.monthArr, function () {
+                        resultObjArr.push({ id: this, text: parseInt(this) < 10 ? "0" + this : this });
+                    });
+                }
+                return resultObjArr;
+            },
+            selectedValue: defaultSelMonth,
+        });
+
+    })();
+
+
+    $(function () {
+        $('#tab a:first').tab('show');
+        $("#siteId").bindSelect({
+            url: "@Url.Action("getCurrentTreeOrgIds")",
+        });
+
+        CbGridList(null);
+
+        if (!!keyValue) {
+            $.loading(true, "正在请求数据...");
+            $.najax({
+                url: "/SiteManage/SiteStatistics/GetFormJson?keyWord=" + keyValue,
+                dataType: "json",
+                success: function (data) {
+                    rtndata = JSON.parse(data.message);
+                    $('#siteId').val(rtndata.srxx.siteId).trigger("change");
+                    //$('#siteId')
+                    //收入信息
+                    $('#year').val(rtndata.srxx.year).trigger("change");
+                    $('#month').val(rtndata.srxx.month).trigger("change");
+                    //if (rtndata.srxx.fjPath !== "") {
+                    //    $('#loadedfile').attr("href", "/SiteManage/SiteStatistics/download?id=" + keyValue).html(rtndata.srxx.fjmc);
+                    //    fjmc = rtndata.srxx.fjmc;
+                    //    fjPath = rtndata.srxx.fjPath;
+                    //    ContentType = rtndata.srxx.ContentType;
+                    //}
+                    if (rtndata.fjxx != null && rtndata.fjxx.length > 0) {
+                        files = rtndata.fjxx;
+                    }
+                    renderFiles();
+                    //收入详情
+                    $.each(rtndata.srxxList, function () {
+                        mzsf += this.mzsfje;
+                        zysf += this.zysfje;
+                    });
+                    CRGridList(rtndata.srxxList);
+                    //成本详情
+                    cbjson = rtndata.cbxxList;
+                    CbGridList(cbjson);
+                },
+                complete: function () {
+                    $.loading(false);
+                }
+            });
+            //禁用站点，成本信息，附件
+            $('#siteId').attr("disabled", "disabled").css("background-color", "rgb(238, 238, 238)");
+            $('#year').attr("disabled", "disabled").css("background-color", "rgb(238, 238, 238)");
+            $('#month').attr("disabled", "disabled").css("background-color", "rgb(238, 238, 238)");
+        }
+        else {
+            CRGridList();//声明收入信息
+            ajaxCR();//请求收入数据
+            loadlastmonthcbxx();//请求上个月的成本信息
+        }
+        $('#siteId,#year,#month').change(function () {
+            if (keyValue == "") {
+                ajaxCR();
+            }
+        });
+
+        $('#cblb').change(function () {
+            bindkm($(this).val());
+        });
+        $('#kmmc,#cblb').change(function () {
+            $('#je').val("");
+        });
+
+        $("#fileUpload").change(function (e) {
+            //   var file = e.delegateTarget.files[0];
+            //window.uploadfile = file;
+            //var str = '';
+            var t_files = this.files;
+            for (var i = 0, len = t_files.length; i < len; i++) {
+                if (t_files[i].name === "") { }
+                else {
+                    //$('#loadedfile').removeAttr("href").html('');
+                    var n1 = t_files[i].name.lastIndexOf('.') + 1;
+                    fileExt = t_files[i].name.substring(n1, n1 + 3).toLowerCase();
+                    fjmc = t_files[i].name;
+                    if (fileExt !== "jpg" && fileExt !== "rar" && fileExt !== "png" && fileExt !== "zip"
+                        && fileExt !== "xlsx" && fileExt !== "doc" && fileExt !== "docx" && fileExt !== "pdf" && fileExt !== "xls") {
+                        $.modalAlert("目前系统仅支持jpg、rar、png、zip、doc、xlsx、docx、pdf、xls后缀文件上传!", 'warning');
+                        $("#fileUrl").val("");
+                        return false;
+                    }
+
+                    if (t_files[i].size / 1024 / 2014 > @ViewData["maxSize"]) {
+                        $.modalAlert("文件大小不能超过" +@ViewData["maxSize"]+"M!", 'warning');
+                        $("#fileUrl").val("");
+                        return false;
+                    }
+                    files.push(t_files[i]);
+                    //str += '<li>名称：' + t_files[i].name + '大小' + t_files[i].size / 1024 / 2014 + 'M<i class="fa fa-times" aria-hidden="true" hidden="" style="display: inline;"></i></li> ';
+                }
+            }
+            renderFiles();
+        });
+
+        //清空icon事件
+        $('#form1').on('click', '.fa.fa-times', function () {
+            $(this).hide();
+        });
+    });
+
+    // 渲染附件信息到页面上
+    function renderFiles() {
+        var htmlstring = '';
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            htmlstring += '<li style="list-style-type: none;height:20px;">名称：';
+            if (file.Id != null && file.Id != undefined) {
+                htmlstring += "<a id='file" + i + "' href='/SiteManage/SiteStatistics/download?id=" + rtndata.fjxx[i].Id + "'>" + rtndata.fjxx[i].fjmc + "</a>";
+            } else {
+                htmlstring += file.name;
+            }
+            htmlstring +='<i class="fa fa-times" aria-hidden="true" hidden="" style="display: inline;" onclick="removeFile(' + i + ')"></i></li> ';
+        }
+        $('#content').html(htmlstring);
+    }
+
+    function removeFile(idx) {
+        files.splice(idx, 1);
+        renderFiles();
+    }
+
+
+
+    //初始化 浮层
+    function initInlineFunc(rowid) {
+        $('#' + rowid + "_ce").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $('#' + rowid + "_zsr").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $('#' + rowid + "_mzsfje").formatCurrency();
+        $('#' + rowid + "_zysfje").formatCurrency();
+    }
+    //清空成本信息
+    function clearcbInfo() {
+        $('#cblb').val("").trigger("change");
+        $('#kmmc').val("").trigger("change");
+        $('#je').val("");
+        $('#cbId').val("");
+    }
+    function getSearchPostData() {
+        var site = $('#siteId').val();
+        var year = $('#year').val();
+        var month = $('#month').val();
+        return { site: site, year: year, month: month };
+    }
+
+    function bindkm(cblb) {
+        $("#kmmc").bindSelect({
+            url: "/Com/GetSelectItemsDetailListByItemCode?code=" + cblb,
+        });
+    };
+    //get data
+    function CbGridList(data) {
+        $CbGridList.newtouchLocalDataGrid({
+            height: window.$(window).height() - 250,
+            width: 580,
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '类别', name: 'lbmc', width: 220, align: 'left' },
+                { label: 'cblb', name: 'cblb', hidden: true },
+                { label: '科目', name: 'kmmc', width: 250, align: 'left' },
+                { label: '金额', name: 'je', width: 200, align: 'left', formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 } },
+                { label: 'kmcode', name: 'kmcode', hidden: true }
+            ], ondblClickRow: function (rowid) {
+                gridEditRow(rowid);
+            },
+            onSelectRow: function (rowid) {
+                $('#btn_bottombutton_edit').removeAttr('disabled');
+                $('#btn_bottombutton_delete').removeAttr('disabled');
+            },
+            unwritten: false
+        }, data);
+    }
+
+    //收入信息
+    function CRGridList(data) {
+            $('#CRGridList').newtouchLocalDataGrid({
+                height: window.$(window).height() - 230,
+                editurl: "clientArray",
+                colModel: [
+                    { label: 'Id', name: 'Id', hidden: true },
+                    { label: 'fcbl', name: 'fcbl',hidden: true },
+                    { label: 'dlCode', name: 'dlCode', width: 80, hidden: true },
+                    { label: 'intype', name: 'intype', hidden: true },
+                    { label: '科目', name: 'dlmc', width: 80, align: 'center' },
+                    {
+                        label: '收费金额', name: 'mzsfje', width: 60, align: 'center',
+                        formatter: function (cellvalue, options, rowObject) {
+                            if (rowObject.dlmc === "合计(元)") {
+                                return cellvalue;
+                            }
+                            var t = rowObject.intype === "fzlxm" ? "fzlxm" : "outpatient";
+                            return "<a class=\"moneyunderline\" style=\"text-decoration:underline;cursor:pointer\"  color:blue onclick=\"btn_detail('" + rowObject.dlCode + "','" + t + "')\">" + cellvalue + "</a>";
+                            //return "<a class=\"moneyunderline\" style=\"text-decoration:underline;cursor:pointer\"  color:blue onclick=\"btn_detail('" + rowObject.dlCode + "','" +rowObject.intype+ "')\">" + cellvalue + "</a>";
+                        }
+                    },
+                    { label: '治疗执行金额', name: 'mzzxje', width: 80, formatter: 'number', formatoptions: { thousandsSeparator: ",",decimalPlaces: 2 }, align: 'center' },
+                    {
+                        label: '收费金额', name: 'zysfje', width: 60, align: 'center', formatter: function (cellvalue, options, rowObject) {
+                            if (rowObject.dlmc === "合计(元)") {
+                                return cellvalue;
+                            }
+                            return "<a class=\"moneyunderline\" style=\"text-decoration:underline;cursor:pointer\" color:blue onclick=\"btn_detail('" + rowObject.dlCode + "','inpatient')\">" + cellvalue + "</a>";
+                        }
+                    }   ,
+                    { label: '治疗执行金额', name: 'zyzxje', width: 80, formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }, align: 'center' },
+                    { label: '总收入', name: 'zsr', width: 100, formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }, editable: true, align: 'center', editwidth: "98%" },
+                    {
+                        label: '核实收入', name: 'hssr', width: 100, editwidth: "98%", align: 'center', formatter: 'currency', formatoptions: { decimalPlaces: 2 }, editable: true, editrules: { required: true }, editoptions: {
+                            dataEvents: [
+                                {
+                                    type: 'change',
+                                    fn: function (e) {
+                                        var cellval = $(this).val();
+                                        if (cellval.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                                            $.modalAlert("核实收入，请确认。", 'warning');
+                                            return;
+                                        }
+                                        if (isNaN(cellval)) {
+                                            $.modalAlert("核实收入：请填写数字", 'warning');
+                                            $(this).val('');
+                                            return;
+                                        }
+                                        var row = $(e.target).closest('tr.jqgrow');
+                                        var rowid = row.attr('id');
+                                        CalculateEachLinece(rowid);   //计算差额
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    { label: '差额调整', name: 'ce', width: 80, editable: true, editwidth: "98%", align: 'center' },
+                    { label: '调整说明', name: 'tzsm', width: 80, align: 'center', editwidth: "98%", editable: true }
+
+                ],
+                unwritten: false,
+                footerrow: true,
+                rownumbers: false,
+                gridComplete: function () {
+                    //启用行内编辑框
+                    EnableInlineEditBox();
+                    var sum_mzzxje = $("#CRGridList").getCol('mzzxje', false, 'sum');
+                    var sum_zyzxje = $("#CRGridList").getCol('zyzxje', false, 'sum');
+                    //var sum_zsr = $("#CRGridList").getCol('zsr', false, 'sum');
+                    //var sum_hssr = $("#CRGridList").getCol('hssr', false, 'sum');
+                    //var sum_ce = $("#CRGridList").getCol('ce', false, 'sum');
+                    zsf = $.addNum(mzsf, zysf);
+                    $("#CRGridList").footerData('set', { "dlmc": '合计(元)', mzsfje: '<a class="money">' + mzsf + '</a>', mzzxje: sum_mzzxje, zysfje: '<a class="money">' + zysf + '</a>', zyzxje: sum_zyzxje, zsr: zsf });
+                    //$('#sfspan').html('<a class="money">' + mzsf + '</a>' + "（门诊）+" + '<a class="money">' + zysf + '</a>'+ "（住院）=" + '<a class="money">' +zsf+'</a>');
+                    $('.money').formatCurrency();
+                    $('.moneyunderline').formatCurrency();
+
+                }
+            }, data);
+            //二级菜单
+            $('#CRGridList').jqGrid('setGroupHeaders', {
+                useColSpanStyle: true,
+                groupHeaders: [
+                    {
+                        startColumnName: 'zysfje',
+                        numberOfColumns: 2,
+                        titleText: '住院收入(元)'
+                    }, {
+                        startColumnName: 'mzsfje',
+                        numberOfColumns: 2,
+                        titleText: '门诊收入(元)'
+                    }]
+            });
+    }
+    //请求收入数据
+    function ajaxCR() {
+        //新增已收集时，限制按钮
+        if (keyValue == null || keyValue==="") {
+            $.najax({
+                url: "/SiteManage/SiteStatistics/isAlreadyCollect",
+                dataType: "json",
+                type: "POST",
+                data: getSearchPostData(),
+                loadingtext: "收支统计数据请求中，请稍后...",
+                success: function (resp) {
+                    if (resp) {
+                        //禁用按钮
+                        $('#btn_zc').attr('disabled', 'disabled');
+                        $('#btn_ytj').attr('disabled', 'disabled');
+                        $('#btn_tj').attr('disabled', 'disabled');
+                        $('#tips').css('display','block');
+                    } else {
+                        $('#btn_zc').removeAttr('disabled', 'disabled');
+                        $('#btn_tj').removeAttr('disabled', 'disabled');
+                        $('#btn_ytj').removeAttr('disabled', 'disabled');
+                        $('#tips').css('display','none');
+                    }
+                }
+            });
+        }
+        mzsf = 0.00;
+        zysf = 0.00;
+        $.najax({
+            url: "/SiteManage/SiteStatistics/GetGridJson",
+            dataType: "json",
+            type: "POST",
+            data: getSearchPostData(),
+            loading: true,
+            loadingtext: "收支统计数据请求中，请稍后...",
+            success: function (resp) {
+                $("#CRGridList").clearGridData();
+                $.each(resp, function () {
+                    mzsf += this.mzsfje;
+                    zysf += this.zysfje;
+                });
+                $('#CRGridList').newtouchLocalDataGrid(null, resp);
+            }
+        });
+    }
+
+    function loadlastmonthcbxx() {
+        $.najax({
+            url: "/SiteManage/SiteStatistics/loadLastMonthcbxx",
+            dataType: "json",
+            type: "POST",
+            data: getSearchPostData(),
+            success: function (resp) {
+                cbjson = resp;
+                fillDataToGrid();
+            }
+        });
+    }
+
+    function CalculateEachLinece(rowid) {
+        var currRowzsr = $('#' + rowid + '_zsr').val();
+        var currRowhssr = $('#' + rowid + '_hssr').val();
+        var ce = $.accSub(currRowzsr, currRowhssr);
+        if (ce) {
+            $('#' + rowid + '_ce').val(ce);
+        }
+    }
+
+    function btnclick(shzt) {
+        validatesave();
+        if (formatSiteCostEarningVO(shzt)) {
+            var formData = new FormData();
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].Id == undefined || files[i].Id==="") {
+                    formData.append('file' + i, files[i]);
+                }
+            }
+            formData.append('srxx', JSON.stringify(SiteCostEarningVO.srxx));
+            formData.append('srxxList', JSON.stringify(SiteCostEarningVO.srxxList));
+            formData.append('cbxxList', JSON.stringify(cbjson));
+            formData.append('fjxx', JSON.stringify(SiteCostEarningVO.fjxx));
+            formData.append('keyvalue', keyValue);
+            var options = {
+                url: '/SiteManage/SiteStatistics/savefile',
+                data: formData,
+                type: 'post',
+                cache: false,
+                processData: false,
+                contentType:false,
+                beforeSubmit: function () {
+                    if (!DataValidate()) {
+                        return false;
+                    }
+                    return true;
+                },
+                success: function (resp) {
+                    resp = JSON.parse(resp);
+                    if (resp.state == "success") {
+                        $.modalMsg("操作成功", "success");
+                        $.currentWindow().$('#gridList').jqGrid("clearGridData"); //清除明细的grid
+                        $.currentWindow().$("#btn_search").trigger("click");
+                        $.modalClose();
+                    } else {
+                        //开启编辑模式
+                        EnableInlineEditBox();
+                        $.modalAlert(resp.message, "warning");
+                    }
+
+                }
+            }
+            $.ajax(options);
+        }
+    }
+
+    //提交
+    function AcceptClick(callback, shzt) {
+        var form = $("#form1");
+        var options = {
+            url: '/SiteManage/SiteStatistics/savefile',
+            type: 'post',
+            beforeSubmit: function () {
+                if (!DataValidate()) {
+                    return false;
+                }
+                validatesave();
+                return true;
+            },
+            success: function (resp) {
+                rtndata = JSON.parse(JSON.parse(resp).data);
+                if (rtndata.result !== "false") {
+                    fjPath = rtndata.path;
+                    $.ajax({
+                        url: "/SiteManage/SiteStatistics/savedata",
+                        dataType: "json",
+                        type: "POST",
+                        data: formatSiteCostEarningVO(shzt),
+                        loadingtext: "收支统计数据保存中，请稍后...",
+                        success: function () {
+                            $.modalClose();
+                            callback();
+                        }, error: function (resp) {
+                        }
+                    });
+                }
+
+            }
+        }
+        form.ajaxSubmit(options);
+    }
+
+    function validatesave() {
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#CRGridList").jqGrid('getDataIDs');
+        if (rowIds.length < 1) {
+            $.modalAlert("当前没有保存的收入内容", 'warning');
+            return false;
+        }
+        for (var i = 0; i < rowIds.length; i++) {
+            var saveResult = $("#CRGridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+        }
+        //
+        if (!saveResult) {
+            EnableInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+            return false;   //保存失败，则return
+        }
+    }
+
+    //数据效验
+    function DataValidate() {
+        if ($("#siteId").val() === "") {
+            $.modalAlert("请选择站点", 'warning');
+            return false;
+        }
+        if ($("#kssj").val() === "") {
+            $.modalAlert("开始时间不能为空", 'warning');
+            return false;
+        }
+        if ($("#jssj").val() === "") {
+            $.modalAlert("结束时间不能为空", 'warning');
+            return false;
+        }
+        var input_fcbl = $('#input_fcbl').val();
+        if (!((/^(\+|-)?\d+$/).test(input_fcbl)) || input_fcbl < 0 || input_fcbl > 100) {
+            $.modalAlert("共担成本分担比例为小于100的整数", 'warning');
+            return false;
+        }
+        return true;
+    }
+    function formatSiteCostEarningVO(shzt) {
+        var griddata = $("#CRGridList").jqGrid('getRowData_AllLine', null, true);
+        if (griddata.length < 1) {
+            $.modalAlert("当前没有保存的收入内容", 'warning');
+            return false;
+        }
+        $.each(griddata, function () {    //去掉action
+            for (var i = 0; i < $(this).length; i++) {
+                $(this)[i].mzsfje = $($(this)[i].mzsfje).toNumber().text();
+                $(this)[i].zysfje = $($(this)[i].zysfje).toNumber().text();
+            }
+        });
+        SiteCostEarningVO.srxxList = griddata;
+        SiteCostEarningVO.fjxx = [];
+        var srxx = {};
+        srxx.siteId = $('#siteId').val();
+        srxx.year = $('#year').val();
+        srxx.month = $('#month').val();
+        srxx.zsr = zsf;
+        srxx.mzsfzje = mzsf;
+        srxx.zysfzje = zysf;
+        srxx.shzt = shzt;
+        srxx.jgssfdbl = $('#input_fcbl').val();
+        SiteCostEarningVO.srxx = srxx;
+        SiteCostEarningVO.cbxxList = cbjson;
+        if (files && files.length>0) {
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].Id !== null && files[i].Id !== undefined) {
+                    var fjxx = {};
+                    fjxx.ContentType = files[i].ContentType;
+                    fjxx.fjmc = files[i].fjmc;
+                    fjxx.fjPath = files[i].fjPath;
+                    SiteCostEarningVO.fjxx.push(fjxx);
+                }
+            }
+
+        }
+        return SiteCostEarningVO;//{ srxx: SiteCostEarningVO.srxx, srxxList: SiteCostEarningVO.srxxList, cbxxList: cbjson, keyValue: keyValue };
+    }
+
+    var editingNewid = null;    //正在修改的行
+    var editingId = null;    //正在修改的行
+
+    //添加成本
+    function btn_bottombutton_add() {
+        if (editingNewid || editingId) {
+            return; //正在处于修改状态，是不能点击添加按钮的   要disable处理
+        }
+        if (validatecbinfo()) {
+            var item = {
+                lbmc: $("#cblb").find("option:selected").text(),
+                cblb: $('#cblb').val(),
+                kmcode: $('#kmmc').val(),
+                kmmc: $("#kmmc").find("option:selected").text(),
+                je: $("#je").val(),
+                Id: Math.random().toString() + new Date().getMilliseconds()
+            };
+            if (typeof (cbjson) == 'undefined') {
+                cbjson = [];
+            }
+            cbjson.push(item)
+            fillDataToGrid();
+            clearcbInfo();//清空成本信息
+        }
+    }
+
+    //验证成本信息
+    function validatecbinfo() {
+        var cblb = $('#cblb').val();
+        if (!cblb) {
+            $.modalAlert("缺少成本类别", 'warning');
+            return false;
+        }
+        var kmmc = $('#kmmc').val();
+        if (!kmmc) {
+            $.modalAlert("缺少科目", 'warning');
+            return false;
+        }
+        var je = $('#je').val();
+        if (!je) {
+            $.modalAlert("缺少金额", 'warning');
+            return false;
+        }
+        return true;
+
+    };
+
+    //请求 编辑 行
+    function gridEditRow(rowid) {
+        if (rowid) {
+            var rowData = $("#CbGridList").jqGrid('getRowData', rowid);
+            if (rowData) {
+                rowDataArr = $.jsonWhere(cbjson, function (v) {
+                    return v && v.Id == rowData.Id;
+                });
+                if (!rowDataArr || rowDataArr.length == 0) {
+                    return; //为什么没找到
+                }
+                rowData = rowDataArr[0];  //通过rowData.newid从对象数组中取出该行数据
+                editingNewid = rowData.Id;    //正在修改的行
+                //序列化至编辑域中
+                $('#cblb').val(rowData.cblb).trigger("change");
+                $('#kmmc').val(rowData.kmcode).trigger("change");
+                $('#je').val(rowData.je);
+                $('#cbId').val(rowData.Id);
+
+                $('#btn_bottombutton_delete').attr('disabled', 'disabled');
+                $('#btn_bottombutton_canceldel').show();
+                $('#btn_bottombutton_add').attr('disabled', 'disabled');
+            }
+        }
+    }
+
+    //修改成本
+    function btn_bottombutton_edit() {
+        if (editingNewid) {
+            //提交修改
+            var data = getEditRowData();
+            if (!(validatecbinfo())) {
+                //数据是否完善，检查必填项
+                return;
+            }
+            data.Id = editingNewid;
+            //检查重复项
+
+            //先在xm数组中找到之
+            var matchedIndex = -1;
+            for (var ii = 0; ii < cbjson.length; ii++) {
+                if (cbjson[ii].Id == data.Id) {
+                    matchedIndex = ii;
+                    break;
+                }
+            }
+            if (matchedIndex == -1) {
+                return; //应该是异常
+            }
+            cbjson.remove(matchedIndex);   //移除该项
+            cbjson.unshift(data);   //作为新项添加    //”数组最前端“
+
+            //重新将xm数组呈现至grid
+            fillDataToGrid();
+
+            clearcbInfo();
+
+            editingNewid = null;    //正在修改的行
+
+            bottomButtonsReset();
+
+        }
+        else {
+            //申请修改 获取grid当前选中的那一行
+            var seleId = $('#CbGridList').jqGrid('getGridParam', 'selrow');
+            if (seleId) {
+                //请求修改该行
+                gridEditRow(seleId);
+            }
+        }
+    };
+
+    //按钮重置
+    function bottomButtonsReset() {
+        $('#btn_bottombutton_add').removeAttr('disabled');
+        $('#btn_bottombutton_edit').attr('disabled', 'disabled');
+        $('#btn_bottombutton_delete').attr('disabled', 'disabled');
+        $('#btn_bottombutton_canceldel').hide();
+    }
+
+    function getEditRowData() {
+        var item = {
+            lbmc: $("#cblb").find("option:selected").text(),
+            kmmc: $("#kmmc").find("option:selected").text(),
+            cblb: $('#cblb').val(),
+            kmcode: $('#kmmc').val(),
+            je: $("#je").val(),
+            Id: $('#cbId').val()
+        };
+        return item;
+    }
+
+    //删除成本
+    function btn_bottombutton_delete() {
+        //获取grid当前选中的那一行
+        var rowid = $('#CbGridList').jqGrid('getGridParam', 'selrow');
+        //请求删除该行
+        if (rowid) {
+            var rowData = $("#CbGridList").jqGrid('getRowData', rowid);
+            if (rowData) {
+                if (rowData.Id == editingNewid) {
+                    $.modalAlert("该行正在处于编辑状态，不能删除", 'warning');
+                    return; //该行正在处于编辑状态，不能删除
+                }
+                var matchedIndex = -1;
+
+                if (cbjson.length > 0) {
+                    for (var ii = 0; ii < cbjson.length; ii++) {
+                        if (cbjson[ii].Id === rowData.Id) {
+                            matchedIndex = ii;
+                        }
+                    }
+                }
+                cbjson.remove(matchedIndex);   //移除
+
+                //重新将xm数组呈现至grid
+                fillDataToGrid();
+            }
+        }
+    };
+
+    //向CbGridList grid里填充数据
+    function fillDataToGrid() {
+        $("#CbGridList").resetSelection();
+        $("#CbGridList").clearGridData();
+        $("#CbGridList").newtouchLocalDataGrid({ posttofirst: false }, cbjson);
+    }
+
+    //取消修改
+    function btn_bottombutton_canceldel() {
+        clearcbInfo();
+        editingNewid = null;    //正在修改的行
+        bottomButtonsReset();
+        $("#CbGridList").resetSelection();
+    };
+
+    //启用行内编辑框
+    function EnableInlineEditBox() {
+        //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        var rowIds = $("#CRGridList").jqGrid('getDataIDs');
+        $.each(rowIds, function () {
+            //打开编辑模式
+            $("#CRGridList").jqGrid('editRow', this, false, initInlineFunc);
+        });
+    }
+
+    function reload() {
+        $.modalConfirm("此操作将清空暂存的机构收入详情，并重新统计，确认操作吗？", function (flag) {
+            if (!flag) {
+                return;
+            }
+            else {
+                mzsf = 0.0;
+                zysf = 0.0;
+                ajaxCR();
+            }
+        });
+    }
+
+    //查看收费金额详情
+    function btn_detail(dlcode, type) {
+        var year = $('#year').val();
+        var siteId = $('#siteId').val();
+        var month = $('#month').val();
+        $.modalOpen({
+            id: "ViewChargeMoneyDetail",
+            title: "查看收费详情",
+            url: "/SiteManage/SiteStatistics/ViewChargeMoneyDetail?year=" + year + "&siteId=" + siteId + "&month=" + month + "&dlcode=" + dlcode + "&type=" + type,
+            width: "1000px",
+            height: "580px",
+            btn: null,
+        });
+    }
+</script>

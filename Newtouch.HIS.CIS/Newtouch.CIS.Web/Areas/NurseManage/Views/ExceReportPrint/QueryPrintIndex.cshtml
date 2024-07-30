@@ -1,0 +1,525 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var ypbjyfpz = SysConfigReader.String("ypbjyfpz");
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+
+<style>
+    .dv-left {
+        width: 200px;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+
+    .dv-grid {
+        width: 100%;
+    }
+</style>
+<div class="dv-body">
+    <div class="dv-left">
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                筛选条件
+            </div>
+            <table class="form" style="width:95%">
+                <tbody>
+                    <tr>
+                        <th class="formTitle">姓名/住院号：</th>
+                        <td class="formValue">
+                            <input id="keyword" type="text" class="form-control">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">在院状态：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select class="form-control" id="zyzt">
+                                <option value="">全部</option>
+                                <option value="zy" selected>在院</option>
+                                <option value="cy">出院</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="dv-left-title">
+            患者列表
+        </div>
+        <div class="dv-left-tree" id="PatTreeList"></div>
+    </div>
+    <div class="dv-right">
+        <table class="form" style="background-color:white">
+            @*<tr>
+                <td class="formTitle">姓名：</td>
+                <td class="formValue"><label id="hzxm"></label></td>
+                <td class="formTitle">性别：</td>
+                <td class="formValue" style="width:170px"><label id="sex"></label></td>
+                <td class="formTitle">年龄：</td>
+                <td class="formValue"><label id="nl"></label></td>
+            </tr>*@
+            <tr>
+                <td class="formTitle"> 执行日期：</td>
+                <td class="formValue">
+                    <input id="txt_zxrq" type="text" class="form-control input-wdatepicker" style="width:100%;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" />
+
+                </td>
+                <td class="formTitle" style="width:10px"> -</td>
+                    <td class="formValue">
+                        <input id="txt_zxrqend" type="text" class="form-control input-wdatepicker" style="width:100%;"
+                               onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })"
+                               onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd 23:59:59")" />
+                    </td>
+                <td class="formTitle">
+                    执行类别：
+                </td>
+                <td class="formValue">
+                    <select class="form-control" id="zxdlb">
+                        <option value="">请选择</option>
+                        <option value="ypbj">药品标签</option>
+                        <option value="jyztdy">检验组套标签</option>
+                    </select>
+
+                </td>
+                <td class="formValue" style="width:165px">
+
+                    <div class="btn-group">
+                        <a id="btn_search" class="btn btn-primary">
+                            查询
+                        </a>
+                    </div>
+                    <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" checked value="qb" />全部</label>
+                    <label><input type="radio" name="optionsRadios" class="optionsRadios formClearIgnore" value="2" />长期</label>
+                    <label><input type="radio" id="radioTreating" name="optionsRadios" class="optionsRadios formClearIgnore" value="1" />临时</label>
+                </td>
+
+                <td class="formTitle">
+                    
+                    <div class="btn-group">
+                        <a id="ExecutionChecked" class="btn btn-primary" onclick="ExecutionChecked()">
+                            <i class="fa fa-pencil-square-o"></i>打印
+                        </a>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <br />
+        <div class="gridPanel">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 35;
+    $(".dv-right").width(rightWidth);
+    $(".dv-left-tree").height($(window).height() - 70);
+    var zyh = "";
+
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body").width($(window).width());
+        });
+        $('#gridList').jqGrid("clearGridData");
+
+        getPatTreeList();
+        gridList("");
+
+        //搜索病人信息
+        $('#keyword').keyup(function () {
+            getPatTreeList();
+        });
+        $('#zyzt').change(function () {
+            getPatTreeList();
+        });
+    });
+
+    function getPatTreeList() {
+        $("#PatTreeList").treeview({
+            height: $(window).height() - 175,
+            slimscroll: false,
+            showcheck: true,
+            url: "/NurseManage/ExceReportPrint/GetPatWardTree?zyzt=" + $('#zyzt').val() + "&keyword=" + $('#keyword').val(),
+            //onnodeclick: function (item) {
+            //    if (item.value && item.Ex1 == "c") {
+            //        zyh = item.value;
+            //        $('#hzxm').html(item.Ex4);
+            //        $('#sex').html($.getGender(item.Ex2));
+            //        $('#nl').html(item.Ex3+"岁");
+            //        $('#gridList').jqGrid('setGridParam', {
+            //            postData: { zyh: zyh, zxsj: $('#txt_zxrq').val(), zxdlb: $('#zxdlb').val()  }
+            //        }).trigger("reloadGrid");
+            //    }
+            //}
+            oncheckboxclick: function (item, s) {
+                getOrderExecutionList(item, s);
+            }
+        });
+        $("#btn_search").click(function () {
+            //var patcheck = $("#PatTreeList").getCurrentNode();
+            //if (patcheck.Ex1 === "c") {
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { zyh: zyh, zxsj: $('#txt_zxrq').val(), zxsjend: $('#txt_zxrqend').val(), zxdlb: $('#zxdlb').val(), yzxz: $('input[name="optionsRadios"]:checked').val() },
+                }).trigger('reloadGrid');
+            //}
+
+        });
+
+        $("#zxdlb").change(function () {
+            //var patcheck = $("#PatTreeList").getCurrentNode();
+            //if (patcheck.Ex1 == "c") {
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { zyh: zyh, zxsj: $('#txt_zxrq').val(), zxsjend: $('#txt_zxrqend').val(),zxdlb: $('#zxdlb').val(), yzxz: $('input[name="optionsRadios"]:checked').val() },
+                }).trigger('reloadGrid');
+           // }
+
+        });
+
+        $("input[name='optionsRadios']").click(function () {
+
+            //var patcheck = $("#PatTreeList").getCurrentNode();
+            //if (patcheck.Ex1 == "c") {
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { zyh: zyh, zxsj: $('#txt_zxrq').val(), zxsjend: $('#txt_zxrqend').val(), zxdlb: $('#zxdlb').val(), yzxz: $('input[name="optionsRadios"]:checked').val() },
+                }).trigger('reloadGrid');
+            //}
+        });
+    }
+
+
+
+    function getOrderExecutionList(item, s) {
+        var patlist = $("#PatTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+
+        var patzyh = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 == "c") {
+                patzyh += patlist[i].value + ",";
+            }
+        }
+
+        if (s == 1) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c") {
+                        patzyh += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh += patlistFath.value;
+            }
+        }
+        else if (s == 0) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c" && patlistFath[j].checkstate == 1) {
+                        patzyh = patzyh.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh = patzyh.replace(patlistFath.value + ",", "");
+            }
+
+        }
+        zyh = patzyh;
+        //$('#gridList').jqGrid("clearGridData");
+        $('#gridList').jqGrid('setGridParam', {
+            postData: {
+                //patList: patzyh, zxsj: $('#txt_zxrq').val(), zxdlb: $('#zxdlb').val(), yzxz: $('input[name="optionsRadios"]:checked').val()
+                zyh: patzyh, zxsj: $('#txt_zxrq').val(), zxsjend: $('#txt_zxrqend').val(), zxdlb: $('#zxdlb').val(), yzxz: $('input[name="optionsRadios"]:checked').val()
+            }
+        }).trigger("reloadGrid");
+    }
+
+
+    function getOrderListByPatId(patid) {
+        $('#gridList').jqGrid("clearGridData");
+        $('#gridList').newtouchLocalDataGrid(null, orderList);
+    }
+
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+    var checkTrigger = false;
+    var list = new Array();
+    var liststu = false;
+    var j = 0;
+    function gridList(patzyh) {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            multiselect: true,
+            postData: { zyh: zyh, zxsj: $('#txt_zxrq').val(), zxsjend: $('#txt_zxrqend').val(), zxdlb: $('#zxdlb').val(), yzxz: $('input[name="optionsRadios"]:checked').val() },
+            url: "@Url.Action("QueryExecDetailGridJson")",
+            height: $(window).height() - 125,
+            colModel: [
+                { label: '医嘱ID', name: 'yzId', align: 'center', width: 50, key: true, hidden: true },
+                { label: '姓名', name: 'hzxm', align: 'center', width: 50 },
+                { label: '长临', name: 'clbz', align: 'center', width: 30},
+                { label: '医嘱号', name: 'yzh', align: 'center', width: 120 },
+	            { label: '领药序号', name: 'lyxh', align: 'center',width: 60  },
+                { label: '分组号', name: 'zh', align: 'center', width: 50 },
+                {
+                    label: '是否计费', name: 'isjf', align: 'center', width: 50, formatter: function (val) {
+                        if (val == "0") {
+                            return "否";
+                        }
+                        else {
+                            return "是";
+                        }
+                    }
+                },
+                { label: '医嘱', name: 'yznr', align: 'center', width: 250 },
+                { label: '最后执行时间', name: 'zxsj', align: 'center', width: 120, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '审核者', name: 'shz', align: 'center', width: 55 },
+                { label: '执行者', name: 'zxz', align: 'center', width: 55 },
+
+                { label: 'yzlx', name: 'yzlx', align: 'center', hidden: true },
+                { label: 'ypyfdm', name: 'ypyfdm', align: 'center', hidden: true }
+            ],
+            pager: "#gridPager",
+            //rowNum: 100,
+            sortname: 'zh asc,zxsj asc',
+            viewrecords: true,
+            multiselect: true,
+            onSelectRow: function (rowIndex, s) {
+                if (!checkTrigger) {
+                    var len = 0;
+                    var rowData = $("#gridList").jqGrid('getRowData', rowIndex);
+                    var ids = $("#gridList").jqGrid('getRowData_AllLine');
+
+                    liststu = s; //同步状态
+                    for (var i = 0; i < ids.length; i++) {
+                    	if ("zld" == $('#zxdlb').val()) {
+		                    if (ids[i].lyxh == rowData.lyxh && ids[i].lyxh != "") {
+			                    if (s == true) {
+				                    if (rowIndex != ids[i].yzId) {
+					                    list[len] = ids[i].yzId;
+					                    len += 1;
+				                    }
+			                    }
+			                    else {
+				                    if (rowIndex != ids[i].yzId) {
+					                    list[len] = ids[i].yzId;
+					                    len += 1;
+				                    }
+			                    }
+		                    }
+                    	} else {
+                    		if (ids[i].yzh == rowData.yzh && ids[i].yzh != "") {
+			                    if (s == true) {
+				                    if (rowIndex != ids[i].yzId) {
+					                    list[len] = ids[i].yzId;
+					                    len += 1;
+				                    }
+			                    }
+			                    else {
+				                    if (rowIndex != ids[i].yzId) {
+					                    list[len] = ids[i].yzId;
+					                    len += 1;
+				                    }
+			                    }
+		                    }
+	                    }
+
+                    }
+                    checkTrigger = true;
+                }
+
+                if (list.length > 0) {
+
+                    for (j = j; j < list.length; j++) {
+                        if (liststu) //同组选中
+                        {
+                            j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j - 1], true);
+
+                        }
+                        else { //同组取消选中
+                            //j = j + 1;
+                            $("#gridList").jqGrid("setSelection", list[j], false);      //取消不触发onselectrow
+                        }
+
+                    }
+                }
+
+                j = 0;
+                checkTrigger = false;
+                list = new Array();
+                liststu = false;
+            },
+        });
+    }
+    //刷新医嘱
+    function RefreshOrder() {
+        $('#gridList').jqGrid("clearGridData");
+        getOrderExecutionList(null, null);
+    }
+
+    //执行当前
+    function ExecutionChecked() {
+        //选中的id
+        var selRowIds = jQuery("#gridList").jqGrid("getGridParam", "selarrrow");
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请先选中需打印的医嘱", 'warning');
+            return;
+        }
+        var zxdlb = $('#zxdlb').val();
+        if (!zxdlb) {
+            $.modalAlert("请先选择执行单类别", 'warning');
+            return;
+        }
+        var printed = [];
+        var yzArr = "";
+        var strlyxh = "";
+        var yzhstr = "";
+        var zhstr = "";
+        var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+        var orgId = '@(ViewBag.OrgId)';
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+                if ($.inArray(rowData.yzh, printed) < 0) {//同一批已打印过，则不再弹出
+                    if (zxdlb === "jyd" || zxdlb === "jcd") {
+                        var rpturl = zxdlb === "jyd" ? reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%E8%B4%B5%E5%AE%89%E4%BD%8F%E9%99%A2%E6%A3%80%E9%AA%8C%E7%94%B3%E8%AF%B7%E5%8D%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&yzdh=" + rowData.yzh + "&zyh=" + zyh + "&orgId=" + orgId + "&yzzt=2" : reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%E4%BD%8F%E9%99%A2%E6%A3%80%E6%9F%A5%E7%94%B3%E8%AF%B7%E5%8D%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&yzdh=" + rowData.yzh + "&zyh=" + zyh + "&orgId=" + orgId;
+                        $.ajax({
+                            url: '/MedicalRecord/GetBarCodeBycfh',
+                            data: { cfh: rowData.yzh },
+                            success: function (r) {
+                                var aaa = r.replace(/\+/g, '%2B');
+                                @*var uri = '@reportUrl' + "?tempCode=28" + "&zyh=" + zyh + "&orgId=" + '@curOpr.OrganizeId' + "&isSign=" + isSign;
+                                window.open(uri);*@
+                                rpturl = rpturl + "&barcode=" + aaa;
+                                window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                            }
+                        });
+                        //window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%E8%B4%B5%E5%AE%89%E4%BD%8F%E9%99%A2%E6%A3%80%E9%AA%8C%E7%94%B3%E8%AF%B7%E5%8D%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&yzdh=" + rowData.yzh + "&zyh=" + zyh + "&orgId=" + orgId + "&yzzt=2", "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                    }  else if (zxdlb === "zsz") {//注射证
+                        window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%E8%B4%B5%E5%AE%89%E4%BD%8F%E9%99%A2%E6%B3%A8%E5%B0%84%E5%8D%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&yzdh=" + rowData.yzh + "&zyh=" + zyh + "&orgId=" + orgId, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                    } else if (zxdlb === "whd") {//雾化单
+                        window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%E8%B4%B5%E5%AE%89%E4%BD%8F%E9%99%A2%E9%9B%BE%E5%8C%96%E5%8D%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&yzdh=" + rowData.yzh + "&zyh=" + zyh + "&orgId=" + orgId, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                    } else if (rowData.yzlx == '@((int)EnumYzlx.Yp)' || rowData.yzlx == '@((int)EnumYzlx.Cydy)' || rowData.yzlx=='@((int)EnumYzlx.zcy)') {
+                        //window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%E9%95%BF%E4%B8%B4%E5%8C%BB%E5%98%B1%E8%8D%AF%E5%93%81%E7%94%B3%E8%AF%B7%E5%8D%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&lyxh=0&zxrq=" + $('#txt_zxrq').val() + "&yzh=" + rowData.yzh + "&orgId=" + orgId, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                    }
+                	printed.push(rowData.yzh);
+                }
+	        if (strlyxh.indexOf(rowData.lyxh) < 0) {
+		        strlyxh = strlyxh + "," + rowData.lyxh;
+            }
+            if (yzhstr.indexOf(rowData.yzh) < 0) {
+                yzhstr = yzhstr + "," + rowData.yzh;
+            }
+            if (zhstr.indexOf(rowData.zh) < 0) {
+                zhstr = zhstr + "," + rowData.zh;
+            }
+	        yzArr = yzArr+','+(rowData.yzh);
+	        if (zxdlb === "jyztdy1")
+	        {
+	            $.ajax({
+	                url: '/MedicalRecord/SaveBarCodeByYzh',
+	                data: { cfh: rowData.yzh },
+	                success: function (r) {
+	                    //var aaa = r.replace(/\+/g, '%2B');
+	                }
+	            });
+	        }
+        }
+    	if (zxdlb === "zld") {
+		    strlyxh = strlyxh.substr(1);
+            window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%e8%b4%b5%e5%ae%89%e4%bd%8f%e9%99%a2%e9%a2%86%e8%8d%af%e5%8d%95&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&zxrq=" + $('#txt_zxrq').val() + "&lyxh=" + strlyxh + "&orgId=" + orgId + "&zyh=" + zyh, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        }
+
+    	if (zxdlb === "ypbj")
+    	{
+    	    var yzxz = '';
+    	    if ($('input[name="optionsRadios"]:checked').val()!="qb")
+    	    {
+    	        yzxz = $('input[name="optionsRadios"]:checked').val();
+    	    }
+
+    	    var uri = '@reportUrl' + "?tempCode=70" + "&systemCode=" + '@reportSystemCode' + "&orgId=" + '@curOpr.OrganizeId' + "&zxrqks=" + $('#txt_zxrq').val() + "&zxrqjs=" + $('#txt_zxrqend').val() + "&yzxz=" + yzxz + "&lyxh=" + strlyxh + "&zyh=" + zyh + "&fybh=" + "@ypbjyfpz" + "&orgId=" + orgId + "&yzh=" + yzhstr + "&zh=" + zhstr;
+    	    window.open(uri);
+            //window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%e6%8a%a4%e5%a3%ab%e7%ab%99%e6%a0%87%e7%ad%be%e6%89%93%e5%8d%b0&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&zxrqks=" + $('#txt_zxrq').val() + "&zxrqjs=" + $('#txt_zxrqend').val() + "&yzxz=" + yzxz + "&lyxh=" + strlyxh + "&zyh=" + zyh + "&fybh=" + "@ypbjyfpz" + "&orgId=" + orgId + "&yzh=" + yzhstr + "&zh=" + zhstr, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+    	}
+        if (zxdlb === "jyztdy")
+        {
+            $.ajax({
+                url: '/MedicalRecord/SaveBarCodeByYzh',
+                data: { yzlist: yzArr },
+                success: function (r) {
+                    var uri = '@reportUrl' + "?tempCode=32" + "&systemCode=" + '@reportSystemCode' + "&orgId=" + '@curOpr.OrganizeId' + "&zxrqks=" + $('#txt_zxrq').val() + "&zxrqjs=" + $('#txt_zxrqend').val() + "&lyxh=" + strlyxh + "&zyh=" + zyh + "&orgId=" + orgId + "&yzh=" + yzhstr;
+                    window.open(uri);
+                    //var aaa = r.replace(/\+/g, '%2B');
+                    //window.open(reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fNewtouch.Report.1%2f%e6%8a%a4%e5%a3%ab%e7%ab%99%e6%a3%80%e9%aa%8c%e7%bb%84%e5%a5%97%e6%a0%87%e7%ad%be&rs:Command=Render&rc:Stylesheet=MyStyleSheetBlankPage&zxrqks=" + $('#txt_zxrq').val() + "&zxrqjs=" + $('#txt_zxrqend').val() + "&lyxh=" + strlyxh + "&zyh=" + zyh + "&orgId=" + orgId + "&yzh=" +yzhstr, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                }
+            });
+        }
+    }
+
+
+</script>

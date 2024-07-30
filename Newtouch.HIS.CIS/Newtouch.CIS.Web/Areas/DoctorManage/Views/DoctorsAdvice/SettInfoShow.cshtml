@@ -1,0 +1,169 @@
+﻿
+@{
+    ViewBag.Title = "SettInfoShow";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .form .formTitle {
+        width: 133px;
+        padding-right:0px;
+    }
+</style>
+@*<div>
+    <table class="form">
+        <tr>
+            <td class="formValue">
+                <span style="float:left;width:40%;padding-top:5px;">结算类型：</span>
+                <div style="width:55%;float:right;">
+                    <select class="form-control" id="sel_jsxz">
+                        <option value="">不限</option>
+                        <option value="1">出院结算</option>
+                        <option value="2">中途结算</option>
+                    </select>
+                </div>
+            </td>
+            <td class="formValue">
+                <input type="button" id="btn_settsubmit" class="btn btn-primary" value=" 查 询 " />
+            </td>
+            <th class="formTitle"></th>
+            <td class="formValue"></td>
+            <th class="formTitle"></th>
+            <td class="formValue"></td>
+        </tr>
+    </table>
+    <table id="gridListsett"></table>
+</div>*@
+<div >
+    <table class="form" style="margin:5px 5px;">
+        @*<tr style="border-bottom:1px solid #ddd0d0;border-bottom-left-radius:5px;border-bottom-right-radius:5px;color:#ff0000;font-weight:bold;">
+            <th class="formTitle">结算时间：</th>
+            <td class="formValue" colspan="2"><label id="lb_setl_time"></label></td>
+            <th class="formTitle"></th>
+            <td class="formValue"></td>
+            <th class="formTitle"></th>
+            <td class="formValue"></td>
+        </tr>*@
+        <tr>
+            <th class="formTitle">账户余额：</th>
+            <td class="formValue">￥<label id="zhye">0.00</label></td>
+            <th class="formTitle">总费用：</th>
+            <td class="formValue">￥<label id="zfy">0.00</label></td>
+            <th class="formTitle">剩余额：</th>
+            <td class="formValue">￥<label id="sye">0.00</label></td>
+        </tr>
+        <tr>
+            <th class="formTitle">实时医保上传费用总额：</th>
+            <td class="formValue">￥<label id="lbpre_medfee_sumamt">0.00</label></td>
+            <th class="formTitle">现金支付合计：</th>
+            <td class="formValue">￥<label id="lbpre_xjzf">0.00</label></td>
+            <th class="formTitle">非医保现金计费：</th>
+            <td class="formValue">￥<label id="lbpre_fybxjzf">0.00</label></td>
+
+        </tr>
+        <tr>
+            <th class="formTitle">医保现金计费：</th>
+            <td class="formValue">￥<label id="lbpre_psn_cash_pay">0.00</label></td>
+            <th class="formTitle">统筹支付：</th>
+            <td class="formValue">￥<label id="lbpre_hifp_pay">0.00</label></td>
+            <th class="formTitle">公务员补助：</th>
+            <td class="formValue">￥<label id="lbpre_cvlserv_pay">0.00</label></td>
+        </tr>
+        <tr>
+            <th class="formTitle">账户支付：</th>
+            <td class="formValue">￥<label id="lbpre_acct_pay">0.00</label></td>
+            <th class="formTitle">单病种医疗垫支：</th>
+            <td class="formValue">￥<label id="lbpre_hosp_part_amt">0.00</label></td>
+
+            <th class="formTitle">大额理赔支付：</th>
+            <td class="formValue">￥<label id="lbpre_hifob_pay">0.00</label></td>
+        </tr>
+        <tr>
+            <th class="formTitle">企业医疗保险支出：</th>
+            <td class="formValue">￥<label id="lbpre_hifes_pay">0.00</label></td>
+            <th class="formTitle">居民大病支出：</th>
+            <td class="formValue">￥<label id="lbpre_hifmi_pay">0.00</label></td>
+            <th class="formTitle">医疗救助基金支出：</th>
+            <td class="formValue">￥<label id="lbpre_maf_pay">0.00</label></td>
+        </tr>
+        <tr>
+            <th class="formTitle">账户共济支付：</th>
+            <td class="formValue">￥<label id="lbpre_acct_mulaid_pay">0.00</label></td>
+            <th class="formTitle">其他：</th>
+            <td class="formValue">￥<label id="lbpre_oth_pay">0.00</label></td>
+            <th class="formTitle">符合政策范围金额：</th>
+            <td class="formValue">￥<label id="lbpre_inscp_scp_amt">0.00</label></td>
+        </tr>
+        <tr>
+            <th class="formTitle">实际支付起付线：</th>
+            <td class="formValue">￥<label id="lbpre_act_pay_dedc">0.00</label></td>
+        </tr>
+    </table>
+</div>
+<script>
+    $(function () {
+        getSettInfo($.request("zyh"));
+        var ycqbr = $.request("ycqbr");
+        if (ycqbr == 1) {
+            $("#sye").html("0.00");
+            $("#zhye").html("0.00");
+        }
+        else {
+            $("#sye").html(($("#zhye").html() - $("#lbpre_xjzf").html()).toFixed(2));
+        }
+    });
+    function getSettInfo(zyh) {
+
+        $.najax({
+            url: "/PatientList/inpatientBedUsedInfo",
+            data: { zyh: zyh },
+            dataType: "json",
+            type: "POST",
+            async: false,
+            success: function (data) {
+                $("#zhye").html(data.rows.zhye);
+                $("#zfy").html(data.rows.zje == null ? "0.00" : data.rows.zje);
+                //$("#sye").html((data.rows.zhye - data.rows.zje).toFixed(2));
+            }
+        });
+        
+        $.najax({
+            url: "/PatientList/PatZySettInfobyJsnm",
+            data: { zyh:zyh },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+
+                if (data != null) {
+                    for (var e in data) {
+                        if (!!$("#lbpre_" + e) && data[e] != null) {
+                            if (data[e] === 0) {
+                                $("#lbpre_" + e).html("0.00");
+                            }
+                            //else if (e == "czrq") {
+                            //    var text = $.getTime({ date: data[e] });
+                            //    $("#lbpre_" + e).html(text);
+                            //}
+                            else if (!!parseFloat(data[e])) {
+                                $("#lbpre_" + e).html(parseFloat(data[e]).toFixed(2) == null ? "0.00" : parseFloat(data[e]).toFixed(2));
+                            }
+                            else {
+                                $("#lbpre_" + e).html(data[e] == null ? "0.00" : data[e]);
+                            }
+                        }
+                    }
+                }
+                if (data.medfee_sumamt == null || data.psn_cash_pay == null) {
+                    $("#lbpre_xjzf").html("0.00"); $("#lbpre_fybxjzf").html("0.00");
+                }
+                else {
+                    $("#lbpre_xjzf").html((parseFloat(data.psn_cash_pay) + parseFloat(data.medfee_sumamt) - parseFloat(data.medfee_sumamt)).toFixed(2));
+                    $("#lbpre_fybxjzf").html((parseFloat(data.medfee_sumamt) - parseFloat(data.medfee_sumamt)).toFixed(2));
+                    
+                }
+                
+            }
+        });
+        
+    }
+
+</script>

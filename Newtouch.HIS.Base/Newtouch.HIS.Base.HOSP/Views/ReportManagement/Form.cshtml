@@ -1,0 +1,132 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="widget-body">
+        <div class="step-content" id="wizard-steps" style="border-left: none; border-bottom: none; border-right: none;">
+            <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">表单信息</h3>
+                    </div>
+                    <div class="panel-body" style="width: 98%; margin-left: -34px;">
+                        <table class="form">
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>组织机构：</th>
+                                <td class="formValue formDdlSelectorTd">
+                                    <select id="HospitalCode" name="HospitalCode" class="form-control required">
+                                        <option value="">==请选择==</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">报表：</th>
+                                <td class="formValue">
+                                    <input id="ReportName" name="ReportName" type="text" class="form-control required" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle"><span class="required">*</span>名称：</th>
+                                <td class="formValue">
+                                    <input id="Name" name="Name" type="text" class="form-control required" placeholder="请输入名称" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="formTitle">编码：</th>
+                                <td class="formValue">
+                                    <input id="ReportCode" name="ReportCode" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                            <tr hidden="hidden">
+                                <td class="formValue">
+                                    <input id="SystemCode" name="SystemCode" type="text" class="form-control" />
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var ReportId = $.request("ReportId");
+    var Type= $.request("Type");
+    $(function () {
+        initControl();
+        if (Type == "update") {
+            $.najax({
+                url: "/ReportManagement/GetReportMXData",
+                data: { ReportId: ReportId },
+                dataType: "json",
+                asyns:false,
+                success: function (data) {
+                    $("#ReportCode").val(data.ReportCode);
+                    $("#Name").val(data.ReportName);
+                    $("#SystemCode").val(data.SystemCode);
+                    $("#HospitalCode").val(data.HospitalCode);
+                    //$("#HospitalCode").find("option:selected").val(data.HospitalCode);
+                    $("#ReportName").val(data.mc);
+                    $("#ReportName").prop("disabled", true);
+                    $("#ReportCode").prop("disabled", true);
+                }
+            });
+        } else {
+        $.najax({
+            url: "/ReportManagement/GetReportMXTree",
+            data: { ReportId: ReportId },
+            dataType: "json",
+            success: function (data) {
+                $("#ReportCode").val(data.ReportCode);
+                $("#ReportName").val(data.ReportName);
+                $("#SystemCode").val(data.SystemCode);
+                $("#ReportName").prop("disabled", true);
+                $("#ReportCode").prop("disabled", true);
+            }
+            });
+        }
+    })
+    function initControl() {
+        //组织机构下拉框
+        $("#HospitalCode").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+    }
+    function submitForm() {
+        var postData = $("#form1").formSerialize();
+        if ($("#HospitalCode").val()=="") {
+            $.modalAlert("请选择医院", 'warning');
+            return;
+        }
+        postData["ReportName"] = $("#Name").val();
+        postData["ReportID"] = ReportId;
+        $.submitForm({
+            url: "/ReportManagement/SubmitForm?Type=" + Type,
+            param: postData,
+            success: function (res) {
+                
+                if (res.message != "") {
+                    if (Type == "update") {
+                        $.modalAlert("报表修改失败：" + res.message, 'warning');
+                    }
+                    else {
+                        $.modalAlert("报表新建失败：" + res.message, 'warning');
+                    }
+                }
+                else {
+                    if (Type == "update") {
+                        $.modalAlert("报表修改成功", 'success');
+                    }
+                    else {
+                        $.modalAlert("报表新建成功", 'success');
+                    }
+                }
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

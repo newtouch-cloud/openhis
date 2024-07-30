@@ -1,0 +1,329 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    /**/
+
+    ViewBag.Title = "DeptMedicineApplySend";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //是否开启标签打印
+    var Inpatient_IsLablePrint = SysConfigReader.Bool("Inpatient_IsLablePrint");
+
+}
+<link href="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.css")" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.js")"></script>
+
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<style>
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+</style>
+<div style="float:left;width:20%; display: block;">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form" style="width:95%">
+            <tbody>
+                <tr>
+                    <th class="formTitle" style="width:50px">科室：</th>
+                    <td class="formValue">
+                        <select id="sel_inpatientArea" class="form-control">
+                            <option value="">==请选择==</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="dv-left-tree" id="BqTreeList"></div>
+</div>
+
+<div style="float:left;width:79.5%;margin-left:0.5%;">
+    <div class="gridPanel">
+        <table id="dispenseMedicinGridList"></table>
+    </div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] {3,6},
+    F3Text = "发药",
+    F6Text = "退回"
+})
+<div class="ckbox" style="margin-top: 10px;">
+    <input id="ksbyfydPrint" name="ksbyfydPrint" type="checkbox" @ViewBag.dispensingDrugAutoPrint><label for="ksbyfydPrint">发药单</label>
+</div>
+
+<script type="text/javascript">
+    var IsLablePrint = '@Inpatient_IsLablePrint';
+    var ThisbrCode = "";//初始化病人Code
+    $(".toolbar").css("width", 500);
+    var $gridBRXXDrugsList = $("#dispenseMedicinGridList");
+    $(function () {
+        //绑定申请单树
+        bqGridList();
+        //绑定病人发药详细信息
+        dispenseMedicinGridList(null);
+        $("#autoRefresh").click(function() {
+            if ($("#autoRefresh").is(":checked")) {
+                //启动
+                startRefresh();
+            }
+        });
+        startRefresh();
+        $("#sel_inpatientArea").bindSelect({
+            url: "/SystemManage/BaseData/GetAuthedWardSelectJson",
+        });
+        $('#ksbyfydPrint').attr('checked',true);
+        $("#sel_inpatientArea").change(function(){
+            bqGridList();
+            ThisbrCode="";
+            $gridBRXXDrugsList.jqGrid("clearGridData");
+        });
+    });
+
+    // 开启定时任务，时间间隔为3000 ms。
+    function startRefresh() {
+        var sp =@ViewBag.refreshInterval;
+        if (sp > 0) {
+            var t = setInterval(function () {
+                bqGridList(t);
+            }, sp);
+        }
+    }
+
+    //停止刷新
+    function stopRefresh(t) {
+        clearInterval(t);
+    }
+
+    //绑定申请单树
+    function bqGridList(t) {
+
+        if (!$("#autoRefresh").is(":checked")) {
+            //停止
+            stopRefresh(t);
+        }
+        $("#BqTreeList").treeview({
+            height: $(window).height() - 95,
+            slimscroll: false,
+            showcheck: true,
+            url: "/HospitalizationPharmacy/DispenseApplySendInfoQuery?keyword=" + $('#sel_inpatientArea').val()+"&bylx="+"fy",
+            param: {},
+            oncheckboxclick: function (item, s) {
+                getOrderExecutionList(item, s);
+            }
+        });
+    }
+
+    function getOrderExecutionList(item, s) {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+        var bysqd = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 === "c") {
+                bysqd += patlist[i].value + ",";
+            }
+        }
+
+        if (s === 1) {
+            if (single === 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 === "c") {
+                        bysqd += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 === "c") {
+                bysqd += patlistFath.value;
+            }
+        }
+        else if (s === 0) {
+            if (single === 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 === "c" && patlistFath[j].checkstate === 1) {
+                        bysqd = bysqd.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 === "c") {
+                bysqd = bysqd.replace(patlistFath.value + ",", "");
+            }
+        }
+
+        ThisbrCode = bysqd;//存储选择的病人code
+        //重新加载病人发药详细信息
+        search("ckb");
+    }
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    //备药申请单详细信息
+    function dispenseMedicinGridList(Sqd) {
+        $gridBRXXDrugsList.dataGrid({
+            url: '/HospitalizationPharmacy/GetDeptApplySendList',
+            height: $(window).height() - document.getElementById('dispenseMedicinGridList').offsetTop - 120,
+            postData: { SqdArr: Sqd, },
+            colModel: [
+                { label: '科室', name: 'ksName', width: 80, align: 'center' },
+                { label: '病区', name: 'bqmc', width: 100, align: 'center' },
+                { label: '药品代码', name: 'ypdm', width: 80, align: 'center' },
+                { label: '药品名称', name: 'ypmc', width: 100, align: 'center' },
+                { label: '药品规格', name: 'ypgg', width: 100, align: 'center' },
+                { label: "kykc", name: 'kykc', hidden: true },
+                { label: '药品库存', name: 'kyslStr', width: 80, align: 'center' },
+                { label: 'sl', name: 'sl', hidden: true },
+                { label: '申请数量', name: 'sqslStr', width: 80, align: 'center' },
+                { label: '批次', name: 'pc', width: 60, align: 'center' },
+                { label: '批号', name: 'ph', width: 60, align: 'center' },
+                { label: '有效期', name: 'yxq', width: 90, align: 'center',  formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '生成厂家', name: 'ycmc', width: 120, align: 'center' },
+                { label: "ksbm", name: 'ksbm', hidden: true },
+                { label: "bqbm", name: 'bqbm', hidden: true },
+                { label: "yfbmCode", name: 'yfbmCode', hidden: true },
+                { label: "bmdw", name: 'bmdw', hidden: true },
+                { label: "zhyz", name: 'zhyz', hidden: true },
+                { label: "bzdw", name: 'bzdw', hidden: true },
+                { label: "zxdw", name: 'zxdw', hidden: true },
+                { label: "pfj", name: 'pfj', hidden: true },
+                { label: "lsj", name: 'lsj', hidden: true },
+            ],
+            caption: "申请列表",
+            viewrecords: true
+        });
+        //查询
+        $("#btn_search").click(function () {
+            search();
+        });
+    }
+
+    //搜索
+    function search(t) {
+        $gridBRXXDrugsList.jqGrid("clearGridData");
+        if (ThisbrCode == null || ThisbrCode === "") {
+            $.modalMsg("请选择申请单", "warning", 2000);
+            return false;
+        }
+        $gridBRXXDrugsList.jqGrid('setGridParam', {
+            postData: {
+                SqdArr: ThisbrCode
+            }
+        }).trigger('reloadGrid');
+    }
+
+    //发药
+    function newtouch_event_f3() {
+        $.modalConfirm("确定发送申请列表全部药品吗？", function (flag) {
+            if (flag) {
+                var rowIds = $gridBRXXDrugsList.getDataIDs();
+                if (rowIds == null || rowIds.length === 0) {
+                    $.modalMsg('请勾选需要发药申请单', 'warning', 1500);
+                    return false;
+                }
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/ApplyNoSendDrugs",
+                    data: { SqdArr: ThisbrCode },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state === "success") {
+                            if ($("#ksbyfydPrint").is(":checked"))
+                            {
+                                printksbyfyd(ThisbrCode);
+                            }
+                            ThisbrCode="";
+                            $.modalMsg('发药成功', 'success', 1000);
+                            bqGridList();
+                            $gridBRXXDrugsList.jqGrid("clearGridData");
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            } else
+                return false;
+        }, false);
+    }
+    //申请单退回
+    function newtouch_event_f6() {
+        var rowIds = $gridBRXXDrugsList.getDataIDs();
+        if (rowIds == null || rowIds.length === 0) {
+            $.modalMsg('请勾选申请单', 'warning', 1500);
+            return false;
+        }
+        $.modalConfirm("确定退回选中申请单？", function (flag) {
+            if(flag)
+            {
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/ApplyNoReturnDrugs",
+                    data: { SqdArr: ThisbrCode },
+                    dataType: "json",
+                    success: function (res) {
+                        debugger;
+                        if (res.state === "success") {
+                            ThisbrCode="";
+                            $.modalMsg('退回成功', 'success', 1000);
+                            bqGridList();
+                            $gridBRXXDrugsList.jqGrid("clearGridData");
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            }
+            else
+                return false;
+        }, false);
+    }
+
+    function printksbyfyd(ThisbrCode)
+    {
+        if (ThisbrCode == null || ThisbrCode =='') {
+            return false;
+        }
+        window.open("/Report/PrintReport?type=科室备药申请发药单&param=OrganizeId=@ViewBag.OrganizeId|yfbmCode=@ViewBag.yfbmCode|Sqds=" + ThisbrCode , "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
+    }
+</script>

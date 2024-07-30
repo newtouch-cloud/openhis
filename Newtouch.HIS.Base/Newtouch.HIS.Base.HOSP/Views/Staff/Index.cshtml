@@ -1,0 +1,344 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" authorize="yes" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="Excelbuttion()"><i class="fa fa-pencil-square-o"></i>导出</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-Dutys" class="btn btn-primary" onclick="btn_dutys()"><i class="fa fa-pencil-square-o"></i>人员岗位</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-Wards" class="btn btn-primary" onclick="btn_wards()"><i class="fa fa-pencil-square-o"></i>病区信息</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-Consult" class="btn btn-primary" onclick="btn_consult()"><i class="fa fa-pencil-square-o"></i>诊室信息</a>
+        </div>
+    </div>
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="姓名/工号/手机" style="width: 180px;">
+
+                            <span class="input-group-btn">
+                                <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+       $gridList.dataGrid(gridOptins);
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    var gridOptins={
+            url: "/Staff/GetGridJson",
+            height: $(window).height() - 128,
+            postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() },
+            colModel: [
+                { label: '主键', name: 'Id', hidden: true },
+                //{ label: '组织机构Id', name: 'OrganizeId', hidden: true },
+                { label: '工号', name: 'gh', width: 80, align: 'left' },
+                { label: '姓名', name: 'Name', width: 60, align: 'left' },
+                {
+                    label: '性别', name: 'Gender', width: 40, align: 'left',
+                    formatter: function (cellvalue, options, rowObject) {
+                        if (cellvalue === true) {
+                            return '男';
+                        }
+                        else if (cellvalue === false) {
+                            return '女';
+                        }
+                        else {
+                            return '';
+                        }
+                    }
+                },
+                { label: '国家医保代码', name: 'gjybdm', width: 150, align: 'left' },
+                {
+                    label: "职称", name: "zc", width: 50, align: "left",
+                    formatter: function (cellvalue, options, rowObject) {
+                        return top.clients.dataItems['DoctorTitle'][cellvalue] == null ? "" : top.clients.dataItems['DoctorTitle'][cellvalue];
+                    }
+                },
+                {
+                    label: '康复类别', name: 'kflb', width: 60, align: 'left',
+                    formatter: function (cellvalue, options, rowObject) {
+                        if (cellvalue === 'RTM_OT') {
+                            return '作业治疗';
+                        }
+                        else if (cellvalue === 'RTM_PT') {
+                            return '物理治疗';
+                        }
+                        else if (cellvalue === 'RTM_ST') {
+                            return '语言治疗';
+                        }
+                        else {
+                            return '';
+                        }
+                    }
+                },
+                { label: '手机', name: 'MobilePhone', width: 80, align: 'left' },
+                { label: '人员岗位', name: 'staffNames', width: 100, align: 'left' },
+                { label: '机构名称', name: 'OrganizeName', width: 150, align: 'left' },
+                { label: '科室名称', name: 'DepartmentName', width: 150, align: 'left' },
+                { label: '科室编码', name: 'DepartmentCode', width: 150, align: 'left', hidden: true },
+                { label: '备注', name: 'Description', width: 200, align: 'left' },
+               { label: "有效", name: "zt", width: 60, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '排序', name: 'px', width: 40, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: 'DepartmentCode asc,CreateTime desc',
+            viewrecords: true
+    }
+
+	var gridop = null;
+	function gridDrugsInfoData() {
+		gridop = {
+			postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() } ,
+			colModel: [
+				{ label: '工号', name: 'gh', width: 80, align: 'left' },
+				{ label: '姓名', name: 'Name', width: 60, align: 'left' },
+				{
+					label: '性别', name: 'Gender', width: 40, align: 'left',
+					formatter: function (cellvalue, options, rowObject) {
+						if (cellvalue === true) {
+							return '男';
+						}
+						else if (cellvalue === false) {
+							return '女';
+						}
+						else {
+							return '';
+						}
+					}
+				},
+				{
+					label: "职称", name: "zc", width: 50, align: "left",
+					formatter: function (cellvalue, options, rowObject) {
+						return top.clients.dataItems['DoctorTitle'][cellvalue] == null ? "" : top.clients.dataItems['DoctorTitle'][cellvalue];
+					}
+				},
+				{
+					label: '康复类别', name: 'kflb', width: 60, align: 'left',
+					formatter: function (cellvalue, options, rowObject) {
+						if (cellvalue === 'RTM_OT') {
+							return '作业治疗';
+						}
+						else if (cellvalue === 'RTM_PT') {
+							return '物理治疗';
+						}
+						else if (cellvalue === 'RTM_ST') {
+							return '语言治疗';
+						}
+						else {
+							return '';
+						}
+					}
+				},
+				{ label: '手机', name: 'MobilePhone', width: 80, align: 'left' },
+				{ label: '医师国家码', name: 'gjybdm', width: 150, align: 'left' },
+				{ label: '人员岗位', name: 'staffNames', width: 100, align: 'left' },
+				{ label: '机构名称', name: 'OrganizeName', width: 150, align: 'left' },
+				{ label: '科室名称', name: 'DepartmentName', width: 150, align: 'left' },
+				{ label: '备注', name: 'Description', width: 200, align: 'left' },
+				{ label: "有效", name: "zt", width: 60, align: "left" },
+				{ label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+				{ label: '创建时间', name: 'sj1', width: 80, align: 'left', align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+				{ label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+				{ label: '最后修改时间', name: 'sj2', width: 80, align: 'left', align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } }
+			]
+		};
+	}
+
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function initControl() {
+
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增人员",
+            url: "/Staff/Form?orgId=" + $('#OrganizeId').val(),
+            width: "950px",
+            height: "900px",
+            btn: null,
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "修改人员",
+            url: "/Staff/Form?keyValue=" + keyValue,
+            width: "950px",
+            height: "900px",
+            btn: null,
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_dutys() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "人员岗位",
+            url: "/Staff/Duties?keyValue=" + keyValue,
+            width: "950px",
+            height: "700px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_wards() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "病区信息",
+            url: "/Staff/WardInfo?keyValue=" + keyValue ,
+            width: "950px",
+            height: "700px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_consult() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        var ksCode = $("#gridList").jqGridRowValue().DepartmentCode;
+        $.modalOpen({
+            id: "Form",
+            title: "诊室信息",
+            url: "/Staff/ConsultInfo?keyValue=" + keyValue+"&ksCode="+ksCode,
+            width: "950px",
+            height: "700px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    var exportCols = null;
+	function Excelbuttion() {
+    debugger
+		exportCols = new Array();
+		var colsChooseSourceArr = new Array();
+		gridDrugsInfoData();
+		$.each(gridop.colModel, function () {
+			exportCols.push({ Heading: this.label, Name: this.name, Width: this.width });
+			colsChooseSourceArr.push({ Heading: this.label, Name: this.name });
+		});
+		var url = "/Staff/ExcelExportChooseColumns";
+		var cols = JSON.stringify(colsChooseSourceArr);
+		cols = encodeURIComponent(cols);
+		url += "?cols=" + cols;
+		$.modalOpen({
+			id: "ExcelExportChooseColumns",
+			title: "导出Excel",
+			url: url,
+			width: "600px",
+			height: "350px",
+			callBack: function (iframeId) {
+				//结果
+				var restArr = top.frames[iframeId].GetChoosedCols();
+				if (!!!restArr || !!!restArr.length || restArr.length == 0) {
+					$.modalAlert("请选择导出列", 'error');
+					return false;
+				}
+				var isContainFilter = top.frames[iframeId].GetIsContainFilter();
+				//关闭选择窗口
+				$.modalClose("ExcelExportChooseColumns");
+				//
+				exportCols = $.jsonWhere(exportCols, function (v) {
+					var matched = false;
+					for (var iIndex = 0; iIndex < restArr.length; iIndex++) {
+						if (restArr[iIndex] == v.Name) {
+							matched = true;
+						}
+					}
+					return matched;
+				});
+				//导出
+				Export(isContainFilter);
+			}
+		});
+    }
+	function Export(isContainFilter) {
+		var url = "/Staff/OutpatientExport?r=" + Math.random() ;
+		url += "&keyword=" + $('#txt_keyword').val();
+		url += "&isContainFilter=" + isContainFilter;
+		url += "&colStanWidth=" + "70";  //列宽度标准列
+		var cols = JSON.stringify(exportCols);
+		top.$.cookie('ExportExcelCols', cols, { path: "/" });
+		window.open(url);
+	}
+
+</script>

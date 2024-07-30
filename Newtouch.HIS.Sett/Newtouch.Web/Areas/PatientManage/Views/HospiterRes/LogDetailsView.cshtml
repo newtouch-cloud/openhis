@@ -1,0 +1,70 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+
+<script>
+    $(function () {
+        var Id = $.request("Id");
+        pageInit();
+        GetData(Id);
+    });
+    function pageInit() {
+        $("#gridList").dataGrid(
+            {
+                //url: "/PatientManage/HospiterRes/GetModifyLog",
+                colModel: [
+                    { label: '名称', name: 'data_name', width: 100, align: 'left' },
+                    { label: '修改前内容', name: 'datavalue_old', width: 150, align: 'left' },
+                    { label: '修改后内容', name: 'datavalue_new', width: 120, align: 'left' },
+                ],
+                viewrecords: false,
+                width: "100%",
+                autowidth: true,
+                height: $(window).height()-55,
+            });
+    }
+
+    function GetData(Id) {
+        $.ajax({
+            url: "/PatientManage/HospiterRes/GetDetailsData",
+            dataType: "json",
+            async: false,
+            data: { "Id": Id },
+            type: "POST",
+            success: function (req) {
+                if (req.length>0) {
+                    var datanames = (req[0].datanames).split(',');
+                var datavalue_old = (req[0].datavalue_old).split(',');
+                var datavalue_new = (req[0].datavalue_new).split(',');
+                for (var i = 0; i < datanames.length; i++) {
+                    for (var j = i; j < datavalue_old.length; j++) {
+                        for (var k = i; k < datavalue_new.length; k++) {
+
+                            $("#gridList").jqGrid("addRowData", i+1, {
+                                'data_name': datanames[i],
+                                'datavalue_old': datavalue_old[j] == "NULL" ? "" : datavalue_old[j],
+                                'datavalue_new': datavalue_new[k] == "NULL" ? "" : datavalue_new[k]
+                            });
+                            //$("#gridList").jqGrid("editRow", i + 1);
+                            break;
+                        }
+                        break;
+                    }
+                }
+                }
+                
+            },
+            error: function () {
+            }
+        });
+
+    }
+</script>
+

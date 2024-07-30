@@ -1,0 +1,159 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding: 20px 35px 0 2px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">首字母：</th>
+                <td class="formValue">
+                    <input name="szm" type="text" class="form-control" id="szm" />
+                </td>
+
+                <th class="formTitle"><span class="required">*</span>起始发票号：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="qsfph" name="qsfph" required />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>结束发票号：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="jsfph" name="jsfph" required />
+                </td>
+
+                <th class="formTitle"><span class="required">*</span>当前发票号：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="dqfph" name="dqfph" required />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>领用人员：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="lyry" name="lyry" required style="width:100px;float:left;margin-right:10px;" />
+                    <label id="lb_name" style="line-height:25px;padding-top:1px;"></label>
+                </td>
+
+                <th class="formTitle">领用日期：</th>
+                <td class="formValue">
+                    <input id="lyrq" type="text" class="form-control input-wdatepicker" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">启用</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                    </div>
+                </td>
+                <th class="formTitle">作废</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="is_del" type="checkbox"><label for="is_del"></label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var fpdm = $.request("fpdm");
+    var oldzt = "";
+    $(function () {
+        if (!!fpdm) {
+            $.ajax({
+                url: "/SystemManage/FinancialInvoice/GetFormJson?r=" + Math.random(),
+                data: { fpdm: fpdm },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    //格式化UTC日期
+                    //$("#lyrq").val(new Date(data.CreateTime).format("yyyy-MM-dd hh:mm:ss"));
+                    //$("#CreateTime").val(new Date(data.CreateTime).format("yyyy-MM-dd hh:mm:ss"));
+                    $("#szm").prop("readonly", true);
+                    $("#qsfph").prop("readonly", true);
+                    $("#jsfph").prop("readonly", true);
+                    $("#dqfph").prop("readonly", true);
+                    $("#lyry").prop("readonly", true);
+                    $("#lyrq").prop("readonly", true);
+                    $("#CreateTime").prop("readonly", true);
+                    oldzt = data.zt;
+                    if (data.is_del == 1) {
+                        $('#zt').prop('disabled', true); // 禁用 #zt 复选框
+                        $('#zt').prop('checked', false); // 取消选中 #zt 复选框
+                        $('#is_del').prop('disabled', true); // 不允许 #is_del 复选框被修改
+                    } else {
+                        $('#zt').prop('disabled', false);
+                        $('#is_del').prop('checked', false); // 不允许 #is_del 复选框被修改
+                    }
+                    if (data.zt == "0") {
+                        $('#zt').prop('checked', false);
+                    } else {
+                        $('#zt').prop('checked', true);
+                    }
+                }
+            });
+        } else {
+            initControl();
+        }
+        $('#is_del').on('change', function () {
+            if ($(this).prop('checked')) {
+                // #is_del 复选框取消选中
+                $('#zt').prop('checked', false); // 取消选中 #zt 复选框
+                $('#zt').prop('disabled', true); // 不允许 #zt 复选框被选中
+            } else {
+                //// #is_del 复选框被选中
+                $('#zt').prop('disabled', false); 
+            }
+        });
+    })
+    function initControl() {
+        //领用人员
+        $("#lyry").click(function () {
+            $.modalOpen({
+                id: "FormSysFPPZUsers",
+                title: "选择操作员",
+                url: "/SystemManage/SysUser/Selector?isContansChildOrg=false&organizeId=" + '@(Newtouch.Common.Operator.OperatorProvider.GetCurrent().OrganizeId)' + "&isExpand=true&callbackType=json&single=true&fromDialog=FormFIEdit",
+                width: "650px",
+                height: "570px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].AcceptClick(function (data) {
+                        userStaffTreeCallback(data);
+                    });
+                }
+            });
+        });
+        // 动态绑定onfocus事件
+        $("#lyrq").on("focus", function () {
+            // 在输入框获得焦点时触发WdatePicker
+           var inputStr= WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' });
+        });
+        $("#lyrq").val("@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")");
+    }
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        params.is_del = $('#is_del').is(':checked') ? 1 : 0;
+        $.submitForm({
+            url: "/SystemManage/FinancialInvoice/SubmitForm?fpdm=" + fpdm,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+    //用户人员树回调方法
+    function userStaffTreeCallback(data) {
+        $("#lyry").val(data[0].Code);
+        $("#lb_name").html(data[0].text);
+    }
+
+</script>

@@ -1,0 +1,189 @@
+﻿
+@{
+    ViewBag.Title = "MonthReportIndex";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    div[id$='_oReportDiv'] {
+        background: red;
+    }
+</style>
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                </td>
+                <th class="formTitle">治疗师：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="zls" name="zls" class="form-control form-an">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+                <th class="formTitle">项目类型：</th>
+                <td class="formValue">
+                    <select id="xmtype" name="xmtype" class="form-control form-an">
+                        <option value="">==请选择==</option>
+                        <option value="zlxm" selected>治疗项目</option>
+                        <option value="fzlxm">非治疗项目</option>
+                    </select>
+                </td>
+                <th class="formTitle">类型：</th>
+                <td class="formValue">
+                    <select id="type" name="type" class="form-control form-an">
+                        <option value="">==请选择==</option>
+                        <option value="outpatient">门诊</option>
+                        <option value="inpatient">住院</option>
+                    </select>
+                </td>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+<script type="text/javascript">
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    var thisorgId = '@(ViewBag.OrgId)';
+    var isHospAdministrator = '@(ViewBag.IsHospAdministrator)';
+    var curUserCode = '@(ViewBag.CurUserCode)';
+    var curUsergh = '@(ViewBag.curUsergh)';
+    var uri = 'ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f%E9%80%90%E5%8D%95%E6%94%B6%E5%85%A5%E6%8A%A5%E8%A1%A82.0&rs:Command=Render';
+    function submit() {
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        var url = getUrl();
+
+        url += "&kssj=" + $('#kssj').val();
+        url += "&jssj=" + $('#jssj').val();
+        url += "&zlsgh=" + $('#zls').val();
+        url += "&type=" + ($('#type').val() == null ? "" : $('#type').val());
+        url += "&xmtype=" + ($('#xmtype').val() == null ? "" : $('#xmtype').val());
+
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55;
+        $('#layout iframe').css('height', h);
+    }
+    );
+
+    function getUrl() {
+        if (uri.StartWith('/')) {
+            uri = uri.substr(1);
+        }
+        var srcUrl = uri;
+        srcUrl = reportServerHOST + srcUrl;
+
+        //GRS非管理查看下级机构所有治疗师数据
+        if (isHospAdministrator == "false" && orgId != thisorgId) {
+            isHospAdministrator = "true";
+            curUserCode = " ";
+            $("#zls").removeAttr("disabled").css("background-color", "white");
+        }
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "orgId=";
+            srcUrl += orgId;
+        }
+
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "curUserCode=";
+            srcUrl += curUserCode;
+        }
+
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "isHospAdministrator=";
+            srcUrl += isHospAdministrator;
+        }
+
+        return srcUrl;
+    }
+
+    $('#xmtype').change(function () {
+        if ($(this).val() == "fzlxm") {//非治疗项目不区分门诊住院
+            $("#type").val("").trigger("change").attr("disabled", "disabled").css("background-color", "rgb(238, 238, 238)");
+        } else if ($(this).val() == "zlxm") {
+            $('#type').val("").trigger("change").removeAttr('disabled').css("background-color", "");
+        }
+        $('#btn_search').trigger("click");
+    });
+    $('#zls').change(function () {
+        $('#btn_search').trigger("click");
+    });
+    $('#type').change(function () {
+        $('#btn_search').trigger("click");
+    });
+</script>
+<script type="text/javascript">
+    function funcOrganizeIdChange() {
+        orgId = $("#OrganizeId").val();
+        //治疗师绑定下拉框
+        $("#zls").bindSelect({
+            id: "StaffGh",
+            text: "StaffName",
+            url: "/ReportManage/Report/GetStaffByDutyCode?orgId=" + orgId
+        });
+
+
+        //机构非管理人员只能查看自己的治疗师数据
+        if (isHospAdministrator == "false" && orgId == thisorgId) {
+            $("#zls").val(curUsergh).trigger("change").attr("disabled", "disabled").css("background-color", "rgb(241, 244, 246)");
+        }
+        submit();
+    }
+</script>
+@Html.Partial("_ReportOrganizeIdDDLSearchView")

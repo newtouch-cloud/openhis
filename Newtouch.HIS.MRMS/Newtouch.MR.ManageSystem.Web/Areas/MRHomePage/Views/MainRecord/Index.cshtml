@@ -1,0 +1,394 @@
+﻿@using Newtouch.MR.ManageSystem.Infrastructure
+@{
+    ViewBag.Title = "病案首页列表";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #btn_addnew {
+        display: inline-block;
+        border-radius: 4px;
+        background-color: #f4511e;
+        border: none;
+        color: #FFFFFF;
+        text-align: center;
+        font-size: 14px;
+        padding: 10px;
+        width: 100px;
+        transition: all 0.5s;
+        cursor: pointer;
+        margin: 5px;
+    }
+
+        #btn_addnew span {
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            transition: 0.5s;
+        }
+
+            #btn_addnew span:after {
+                content: '»';
+                position: absolute;
+                opacity: 0;
+                top: 0;
+                right: -20px;
+                transition: 0.5s;
+            }
+
+        #btn_addnew:hover span {
+            padding-right: 25px;
+        }
+
+            #btn_addnew:hover span:after {
+                opacity: 1;
+                right: 0;
+            }
+</style>
+<div class="panel">
+    <div style="padding-left:10px;">
+        <table class="form">
+			<tr>
+				<th class="formTitle">出院时间</th>
+				<td class="formValue" colspan="2">
+					<input id="txt_ksrq" type="text" class="form-control input-wdatepicker" style="float:left;width:45%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-01")">
+					<span style="float:left;">_</span>
+					<input id="txt_jsrq" type="text" class="form-control input-wdatepicker" style="float:left;width:45%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
+				</td>
+				@*<td class="formTitle">病案状态：</td>
+		<td class="formValue formDdlSelectorTd">
+			<select class="form-control" id="bazt" data-enumtype="Enumbazt">
+				<option value="">===全部===</option>
+			</select>
+		</td>*@
+				@*<td class="formTitle">病区：</td>
+		<td class="formValue formDdlSelectorTd">
+			<select id="bqlist" name="bqlist" class="form-control " style="float:left;">
+				<option value=""> ==请选择== </option>
+			</select>
+		</td>*@
+				@*<th class="formTitle">出院天数 >=</th>
+				<td class="formValue">
+					<input id="txt_cyts" name="txt_keyword" class="form-control" style="width:50%;float:left;" />
+				</td>*@
+				<th class="formTitle">身份证号</th>
+				<td class="formValue">
+					<input id="txt_sfzh" name="txt_keyword" class="form-control" style="width:100%;float:left;" />
+				</td>
+
+				<th class="formTitle">出院科室</th>
+				<td class="formValue">
+					<input id="txt_cykb" name="txt_keyword" class="form-control" style="width:50%;float:left;" />
+				</td>
+
+				@*<th class="formTitle"></th>
+				<td class="formValue"></td>*@
+				<td class="formTitle"></td>
+				<td class="formValue" rowspan="2">
+					<button id="btn_addnew" type="button" class="btn" onclick="btn_cycx()"><span>新建病案</span></button>
+				</td>
+			</tr>
+            <tr>
+                <th class="formTitle">姓名/住院号/病案号</th>
+                <td class="formValue" colspan="2">
+                    <input id="txt_keyword" name="txt_keyword" class="form-control" />
+                </td>
+
+                <th class="formTitle"></th>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" style="padding:3px 20px 3px 20px;float:left;" id="btn_search" value="病案查询" />
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" style="padding:3px 20px 3px 20px;float:left;" onclick="btn_excel()" id="btn_excel" value="导出" />
+                </td>
+            </tr>
+        </table>
+        <div>
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+</div>
+<script>
+
+      var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgIds = '@(ViewBag.OrgId)';
+
+
+    $(function(){
+       GridInit();
+    });
+
+    function GridInit() {
+        var $gridList = $("#gridList");
+        var queryJson = {
+            keyword: $("#txt_keyword").val(),
+            ksrq: $("#txt_ksrq").val(),
+            jsrq: $("#txt_jsrq").val(),
+            bazt: $("#bazt option:selected").val(),
+			sfzh: $("#txt_sfzh").val(),
+			cykb: $("#txt_cykb").val()
+        }
+        $gridList.dataGrid({
+            postData: queryJson,
+            url: "/MRHomePage/MainRecord/GetGridList",
+            autowidth: true,
+            height: $(window).height() - 185,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "病案号", name: "BAH", width: 60, align: 'left' },
+                { label: "患者姓名", name: "XM", width: 50, align: 'left' },
+                {
+                    label: "性别", name: "XB", width: 30, align: 'left', formatter: function (val) {
+                        if (val == '@((int)EnumSex.M)') {
+                            return "男";
+                        }
+                        else if (val == '@((int)EnumSex.F)') {
+                            return "女";
+                        }
+                        else {
+							return "未知";
+                        }
+                    }
+                },
+                { label: "年龄", name: "NL", width: 30, align: 'left' },
+                { label: "住院号", name: "ZYH", width: 40, align: 'left' },
+                { label: "病区", name: "RYKB", width: 80, align: 'left' },
+                { label: "出院科室", name: "CYKB", width: 80, align: 'left' },
+                { label: "出院床号", name: "CYCH", width: 50, align: 'left' },
+                { label: "诊断", name: "MZZD", width: 100, align: 'left' },
+                { label: "出院时间", name: "CYSJ", width: 120, align: 'left' },
+                {
+                    label: "签收时间", name: "CommitTime", width: 100, align: 'left', formatter: function (val) {
+                        return val.replace("T", " ");
+                    } },
+                { label: "归档时间", name: "GDRQ", width: 110 , align: 'left' },
+                //{ label: "出院天数", name: "cyts", width: 100, align: 'left' },
+                @*{ label: "签收状态", name: "RecordStu", width: 60, align: 'left', formatter: function (val) {
+                        if (val == '@((int)EnumRecordStu.yqs)') {
+                            return "已签收";
+                        }
+                        else if (val == '@((int)EnumRecordStu.wtj)') {
+                            return "未提交";
+                        }
+                        else if (val == '@((int)EnumRecordStu.ytj)') {
+                            return "已提交";
+                        }
+                        else if (val == '@((int)EnumRecordStu.th)') {
+                            return "退回";
+                        }
+                        else return ""
+
+                    } },*@
+                {
+                    label: "病案状态", name: "bazt", width: 60, align: 'left', formatter: function (val) {
+                        if (val == '@((int)Enumbazt.dlr)') {
+                            return "待录入";
+                        }
+                        else if (val == '@((int)Enumbazt.lrz)') {
+                            return "待归档";
+                        }
+                        else if (val == '@((int)Enumbazt.gd)') {
+                            return "已归档";
+                        }
+                        else return ""
+
+                    }
+                },
+                {
+                    label: "详情", name: "", width: 160, align: 'center', formatter(val, option, row) {
+                        var gd = "";
+                        if (row.bazt == '@((int)Enumbazt.gd)') {
+                            
+                            gd = "<a class='btn btn-default' id='" + option.rowId+"_gd' style='width:30px;font-weight:bold;textalign:center;margin-left:5px' onclick='guidang(" + option.rowId + ")'>撤销</a>";
+                            
+                        }
+                        else {
+                            gd = "<a class='btn btn-default'  id='" + option.rowId +"_gd' style='width:30px;font-weight:bold;textalign:center;margin-left:5px' onclick='guidang(" + option.rowId + ")'>归档</a>";
+                        }
+                        return "<a class='btn btn-default' style='width:50px;font-weight:bold;textalign:center;' onclick='basyShow(" + option.rowId + ")'>查看详细</a>" + gd + "<a class='btn btn-default' style='width:70px;font-weight:bold;textalign:center;margin-left:5px' onclick='CXguidang(" + option.rowId + ")'>撤销并退回</a>";
+
+                    }
+                }
+            ],
+            loadComplete: function () {
+            },
+            caption: "病案列表",
+            sortname: "Id desc",
+            rowNum: 10,
+            pager: "#gridPager",
+            viewrecords: false
+
+        });
+
+        $('#btn_search').click(function () {
+            var postData = {
+                keyword: $("#txt_keyword").val(),
+                ksrq: $("#txt_ksrq").val(),
+                jsrq: $("#txt_jsrq").val(),
+                bazt: $("#bazt option:selected").val(),
+                sfzh: $("#txt_sfzh").val(),
+                cykb: $("#txt_cykb").val()
+            }
+            $gridList.jqGrid('setGridParam', {
+                postData: postData,
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function btn_cycx() {
+        $.modalOpen({
+            id: "Form",
+            title: "签收病历患者查询",
+            url: "/MRHomePage/MainRecord/OutHosPatQuery",
+            width: "750px",
+            height: "450px",
+            btn: null
+
+        });
+    }
+
+    function basyShow(rowid) {
+        var rowdata = $('#gridList').jqGrid('getRowData', rowid);
+        var menuname = "病案首页" + "【" + rowdata.XM +"-"+ rowdata.ZYH + "】"
+        top.top.$.Newtouchtab.addTabWithOutMenu({ name: menuname, enName: "", url: "/MRHomePage/MainRecord/Main?keyValue=" + rowdata.Id + "&zyh=" + rowdata.ZYH });
+    }
+
+    function guidang(rowid) {
+        var gdzt = "#" + rowid + "_gd";
+        if ($(gdzt).text() == "归档") {
+            var rowdata = $('#gridList').jqGrid('getRowData', rowid);
+            //console.info("rowdata:" + rowdata.Id, rowdata.ZYH,rowdata.XM);
+            $.modalConfirm("确认归档？",
+                function (flag) {
+                    if (flag) {
+                        $.ajax({
+                            url: "/MRHomePage/MainRecord/guidang",
+                            dataType: "json",
+                            async: true,
+                            data: { "dataId": rowdata.Id, "ZYH": rowdata.ZYH, "XM": rowdata.XM },
+                            type: "POST",
+                            success: function (d) {
+                                if (d == 1) {
+                                    //GridInit();
+                                    
+                                    $.modalAlert("归档成功", 'success');
+                                    GridInit();
+                                    $("#gridList").resetSelection();
+                                    $("#gridList").trigger("reloadGrid");
+                                    $(gdzt).text("撤销");
+                                }
+                            },
+                            error: function () {
+                                $.modalAlert("归档失败", "error");
+                            }
+                        });
+                    }
+                    else {
+                        rowdata = "";
+                    }
+                });
+        }
+        else {
+            var rowdata = $('#gridList').jqGrid('getRowData', rowid);
+            //console.info("rowdata:" + rowdata.Id, rowdata.ZYH,rowdata.XM);
+            $.modalConfirm("确认撤销归档吗？",
+                function (flag) {
+                    if (flag) {
+                        $.ajax({
+                            url: "/MRHomePage/MainRecord/CXGDZT",
+                            dataType: "json",
+                            async: true,
+                            data: { "dataId": rowdata.Id, "ZYH": rowdata.ZYH, "XM": rowdata.XM },
+                            type: "POST",
+                            success: function (d) {
+                                if (d == 1) {
+                                    //GridInit();
+                                    
+                                    $.modalAlert("撤销成功", 'success');
+                                    GridInit();
+                                    $("#gridList").resetSelection();
+                                    $("#gridList").trigger("reloadGrid");
+                                    $(gdzt).text("归档");
+                                }
+                            },
+                            error: function () {
+                                $.modalAlert("撤销失败", "error");
+                            }
+                        });
+                    }
+                    else {
+                        rowdata = "";
+                    }
+                });
+        }
+        
+        
+       // $("#gridList").trigger("reloadGrid");
+
+    }
+
+
+    function CXguidang(rowid){
+        var rowdata = $('#gridList').jqGrid('getRowData', rowid);
+        if (rowdata.bazt != "已归档") {
+            $.modalAlert("并未归档！", 'warning');
+            return false;
+        }
+        else {
+            var Id = "";
+            $.ajax({
+                url: "/MRHomePage/MainRecord/CXguidang",
+                dataType: "json",
+                data: { "dataId": rowdata.Id, "ZYH": rowdata.ZYH, "XM": rowdata.XM },
+                async: false,
+                success: function (data) {
+                    if (data == 1) {
+                        $.modalAlert("撤销并退回成功", 'success');
+                        $("#gridList").resetSelection();
+                        $("#gridList").trigger("reloadGrid");
+
+                    }
+
+                }
+            });
+
+        }
+        
+
+    }
+
+
+
+
+
+    function btn_excel() {
+        var ksrq = $("#txt_ksrq").val();
+        var jsrq = $("#txt_jsrq").val();
+        $.ajax({
+            url: "/MRHomePage/MainRecord/MedicalRecordExportQuery",
+            dataType: "json",
+            data:{ kssj: ksrq, jssj: jsrq },
+            async: false,
+            success: function (data) {
+                $.modalAlert(data.message, 'success');
+            }
+        });
+
+
+    }
+
+
+
+
+
+
+</script>
+
+
+
+   
+    
+
+
+

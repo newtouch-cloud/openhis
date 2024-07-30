@@ -1,0 +1,275 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+    .dv-left {
+        width: 200px;
+        float: left;
+    }
+
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+    }
+
+    .dv-right-order {
+        width: 100%;
+    }
+
+    .dv-grid {
+        width: 100%;
+    }
+</style>
+<div class="dv-body">
+    <div class="dv-left">
+        <div class="dv-left-title">患者列表</div>
+        <div class="dv-left-tree" id="BqTreeList"></div>
+    </div>
+    <div class="dv-right">
+        <div class="dv-right-order">
+            <div class="panel panel-default">
+                <div class="panel-heading navb-bg">
+                    筛选条件
+                </div>
+                <table class="form">
+                    <tr>
+                        <td class="formTitle"> 开始日期：</td>
+                        <td class="formValue">
+                            <input id="txt_ksrq" type="text" class="form-control input-wdatepicker" 
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                                   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-01 ")" />
+                        </td>
+                        <td class="formTitle"> 结束日期：</td>
+                        <td class="formValue">
+                            <input id="txt_jsrq" type="text" class="form-control input-wdatepicker"
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                                   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd ")" />
+                        </td>
+                        <td class="formTitle"> 长临医嘱：</td>
+                        <td class="formValue">
+                            @Html.DropDownList("clyz", EnumYzxz.Cq.ToDescSelectList(), "全部", new { @class = "form-control required" })
+                        </td>
+                        <td class="formValue">
+                            <input type="button" id="btn_print" class="btn btn-primary" value="打印" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+                <div class="gridPanel">
+                    <table id="gridList"></table>
+                    <div id="gridPager"></div>
+                </div>
+            </div>
+        </div>
+</div>
+
+<script type="text/javascript">
+    
+    $(".dv-body").height($(window).height());
+    $(".dv-body").width($(window).width());
+    var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 25;
+    $(".dv-right").width(rightWidth);
+    $(".dv-left-tree").height($(window).height() - 70);
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新计算宽高
+            $(".dv-body").height($(window).height());
+            $(".dv-body").width($(window).width());
+        });
+        $('#gridList').jqGrid("clearGridData");
+        getBqTreeList();
+        gridList("");
+
+        $('#clyz').change(
+            function () {
+                RefreshOrder();
+            }
+        );
+    });
+
+    function getBqTreeList() {
+        $("#BqTreeList").treeview({
+            height: $(".dv-body").height() - 40,
+            slimscroll: false,
+            showcheck: true,
+            url: "@Url.Action("GetPatWardTree")",
+            oncheckboxclick: function (item, s) {
+                getOrderExecutionList(item, s);
+            }
+        });
+
+    }
+
+    function getOrderExecutionList(item, s) {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+
+        var patzyh = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 == "c") {
+                patzyh += patlist[i].value + ",";
+            }
+        }
+
+        if (s == 1) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c") {
+                        patzyh += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh += patlistFath.value;
+            }
+        }
+        else if (s == 0) {
+            if (single == 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 == "c" && patlistFath[j].checkstate == 1) {
+                        patzyh = patzyh.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 == "c") {
+                patzyh = patzyh.replace(patlistFath.value + ",", "");
+            }
+
+        }
+
+        //$('#gridList').jqGrid("clearGridData");
+        $('#gridList').jqGrid('setGridParam', {
+            postData: {
+                zyh: patzyh, kssj: $('#txt_ksrq').val(), jssj: $('#txt_jsrq').val(), zyxz: $('#clyz').val() - 1
+            }
+        }).trigger("reloadGrid");
+    }
+
+
+    function getOrderListByPatId(patid) {
+        $('#gridList').jqGrid("clearGridData");
+        $('#gridList').newtouchLocalDataGrid(null, orderList);
+    }
+
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    function gridList(patzyh) {
+        var last = "";//上一个组号
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { zyh: patzyh,kssj: $('#txt_ksrq').val(), jssj: $('#txt_jsrq').val(), zyxz: $('#clyz').val()-1 },
+            url: "@Url.Action("GetGridJson")",
+            height: $(window).height() - 155,
+            colModel: [
+                { label: '住院号', name: 'zyh', align: 'center', width: 50},
+                { label: '床号', name: 'bedcode', align: 'center', width: 50 },
+                { label: '患者姓名', name: 'hzxm', align: 'center', width: 70 },
+                { label: ' ', name: 'clbz', align: 'center', width: 40, formatter: function (val) { if (val != null) return val; else return ""; } },
+                { label: '执行日期', name: 'zxrq', align: 'center', width: 70, formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '创建时间', name: 'createtime', align: 'center', width: 120, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '医嘱', name: 'yznr', align: 'center', width: 200 },
+                { label: '成组', name: 'fzxh', align: 'center', width: 50 },
+                {
+                    label: '数量', name: 'mcsl', align: 'center', width: 60, formatter: function (val, o, b) {
+                        if (val != null) return val+b.dw; else return "";
+                    }
+                },
+                { label: '状态', name: 'zt', align: 'center', width: 100, hidden: true },
+                { label: '录入者', name: 'lrz', align: 'center', width: 70 }
+            ],
+            pager: "#gridPager",
+            sortname: 'fzxh,zyh asc,createtime asc',
+            viewrecords: true,
+            gridComplete: function () {
+                var ids = $gridList.jqGrid('getDataIDs');
+                for (i = 0; i < ids.length; i++) {
+                    var rowData = $gridList.jqGrid('getRowData', ids[i]);
+                    //组号生成特殊符号
+                    var returnval = "";
+                    if (rowData.fzxh != typeof (undefined) && rowData.fzxh !== "" && rowData.fzxh !== null) {
+                        if (last == rowData.fzxh) {
+                            returnval = "中间";
+                            if (i == (ids.length - 1)) {//最后一个
+                                returnval = "结束";
+                                last = "";
+                            }
+                        } else if (last !== rowData.fzxh) {
+                            if (last !== "" && last!= typeof (undefined)) {
+                                setlastrowzuhao(ids[i]);
+                            }
+                            returnval = "开始";
+                        }
+                        $("#gridList").setCell(ids[i], "fzxh", '<img src="../../../../Content/img/' + returnval + '.png" />');//setCell 设置单元格样式 值 或属性
+                    } else if (last !== rowData.fzxh && last !== "") {
+                        setlastrowzuhao(ids[i]);
+                    }
+                    last = rowData.fzxh;
+                }
+            }
+        });
+    }
+
+    //设置上一行组号
+    function setlastrowzuhao(rowid) {
+        var lastrow = parseInt(rowid) - 1;
+        $("#gridList").setCell(lastrow, "fzxh", '<img src="../../../../Content/img/结束.png" />');//setCell 设置单元格样式 值 或属性
+    }
+    //刷新医嘱
+    function RefreshOrder() {
+        getBqTreeList();
+        $('#gridList').jqGrid("clearGridData");
+        getOrderExecutionList(null, null);
+    }
+</script>
+

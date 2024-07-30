@@ -1,0 +1,288 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_IndexV.cshtml";
+    var medicaldrglink = SysConfigReader.String("medicaldrglink");
+}
+<body style="background-color:white;">
+    <H2 align="center">住院病人病案信息</H2>
+    <hr />
+    <div class="container-fluid">
+        <div id="toolbar">
+            <form class="form-inline" role="form" style="margin-left: 10px">
+                <div class="form-group">
+                    <label for="phone">开始时间：</label>
+                    <input id="kssj" type="text" name="kssj" style="height:20px;" class="form-control input-wdatepicker formClearIgnore
+form-an" value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" />
+                </div>
+                <div class="form-group">
+                    <label for="phone">结束时间：</label>
+                    <input id="jssj" type="text" name="jssj" style="height:20px;" class="form-control input-wdatepicker formClearIgnore
+form-an" value="@DateTime.Now.ToString("yyyy-MM-dd")" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" />
+                </div>
+                <div class="form-group">
+                    <label for="name">住院号：</label>
+                    <input id="zyh" type="text" style="height:20px;" class="form-control" placeholder="住院号">
+                </div>
+                <button type="button" onclick="query()" class="btn btn-default" style="background-color: rgb(88, 148, 255);color: #ffffff"><span class="glyphicon glyphicon-search"></span>&nbsp;&nbsp;查询</button>
+                <button type="button" onclick="exportData()" class='btn btn-mini btn-info'>导出</button>
+                <button type="button" onclick="drgtzlink()" class='btn btn-mini btn-info'>病案信息文件分组测算上传跳转</button>
+            </form>
+            
+        </div>
+        <div>
+            <table id="tabxx" ></table>
+        </div>
+    </div>
+</body>
+<script>
+    var medicaldrglink = '@medicaldrglink';//病案首页导出内容跳转页面链接
+    $(function () {
+//$(".container-fluid").height(window.innerHeight);
+        initTableZd();
+        query();
+    });
+    function query() {
+        $.najax({
+            url: "/DRGManage/DRGGroup/PatMedicalRecordList",
+            data: {zyh: $("#zyh").val(),kssj: $("#kssj").val(),jssj: $("#jssj").val()},
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                $('#tabxx').bootstrapTable('load', data);
+            }
+        });
+    }
+    function initTableZd() {
+        $('#tabxx').bootstrapTable('destroy');
+        $('#tabxx').bootstrapTable({
+            //请求后台的URL（*）
+            url: '/DRGManage/DRGGroup/PatMedicalRecordList',
+            //请求方式（*）
+            method: 'Post',
+            //请求数据的格式
+            dataType: "json",
+            //工具按钮用哪个容器
+            toolbar: '#toolbar',
+            //是否显示行间隔色
+            striped: true,
+            //当数据为 undefined 时显示的字符
+            undefinedText: "无",
+            //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+            cache: false,
+            //是否显示分页（*）
+            pagination: false,
+            //是否启用排序
+            sortable: true,
+            //排序方式（desc，asc）
+            sortOrder: "asc",
+            //分页方式：client客户端分页，server服务端分页（*）
+            // sidePagination: "server",
+            sidePagination: "client",
+            //初始化加载第一页，默认第一页,并记录
+            pageNumber: 1,
+            //每页的记录行数（*）
+            pageSize: 20,
+            //可供选择的每页的行数（*） 当记录条数大于最小可选择条数时才会出现
+            pageList: [10, 20, 50, 100],
+            paginationPreText: '上一页',
+            paginationNextText: '下一页',
+            //是否显示表格搜索,bootstrap-table服务器分页不能使用搜索功能，可以自定义搜索框
+            search: false,
+            // search: true,
+            strictSearch: true,
+            //是否显示所有的列（选择显示的列）
+            showColumns: true,
+            //是否显示刷新按钮
+            showRefresh: true,
+            //最少允许的列数
+            minimumCountColumns: 2,
+            //单击选中列表
+            clickToSelect: true,
+            //行高，如果没有设置height属性，表格自动根据记录条数觉得表格高度
+            //height: 500,
+            //每一行的唯一标识，一般为主键列
+            uniqueId: "id",
+            //是否显示 切换试图（table/card）按钮
+            showToggle: true,
+            //是否显示详细视图
+            cardView: false,
+            //是否显示父子表
+            detailView: false,
+            reorderableRows: true, //设置拖动排序
+            useRowAttrFunc: true, //设置拖动排序
+            showExport: true,                     //是否显示导出
+            exportDataType: "all",              //basic', 'all', 'selected'.
+            //得到查询的参数
+            queryParams: function (params) {
+                debugger;
+                //这里的键的名字和控制器的变量名必须一直，这边改动，控制器也需要改成一样的
+                var temp = {
+                    zyh: $("#zyh").val(),
+                    kssj: $("#kssj").val(),
+                    jssj: $("#jssj").val(),
+                };
+                return temp;
+            },
+            columns: [{
+                checkbox: false,
+                visible: false  //是否显示复选框
+                // visible: $(this).val() === 'selected'
+            }, {
+                    field: 'bah',
+                title: '病案号',
+                sortable: true
+            }, {
+                    field: 'xb',
+                title: '性别',
+                    sortable: true
+                }, {
+                    field: 'nl',
+                    title: '年龄',
+                    sortable: true
+                }, {
+                    field: 'nlt',
+                    title: '新生儿年龄天',
+                    sortable: true
+                }, {
+                    field: 'cstz',
+                    title: '新生儿出生体重',
+                    sortable: true
+                }, {
+                    field: 'cykb',
+                    title: '出院科室',
+                    sortable: true
+                }, {
+                    field: 'zyts',
+                    title: '住院天数',
+                    sortable: true
+                }, {
+                    field: 'lyfs',
+                    title: '离院方式',
+                    sortable: true
+                }, {
+                    field: 'zfy',
+                    title: '总费用',
+                    sortable: true
+                }, {
+                    field: 'zdlist',
+                    title: '诊断编码',
+                    sortable: true
+                }, {
+                    field: 'sslist',
+                    title: '手术操作编码',
+                    sortable: true
+                }, {
+                    field: 'brxzmc',
+                    title: '医保类型',
+                    sortable: true
+                }
+            ,],
+            onLoadSuccess: function () {
+            },
+            onLoadError: function () {
+                alert("数据加载失败！");
+            },
+            //双击行数据的事件
+            onDblClickRow: function (row, $element) {
+                // var id = row.ID;
+                // EditViewById(id, 'view');
+            },
+            //当选中行，拖拽时的哪行数据，并且可以获取这行数据的上一行数据和下一行数据
+            onReorderRowsDrag: function (table, row) {
+
+            },
+            //拖拽完成后的这条数据，并且可以获取这行数据的上一行数据和下一行数据
+            onReorderRowsDrop: function (table, row) {
+
+            },
+            //当拖拽结束后，整个表格的数据
+            onReorderRow: function (newData) {
+                //这里的newData是整个表格数据，数组形式。如需转json字符串用JSON.stringify();
+                if (newData != null) {
+                    //var zdIds = "";
+                    //for (var i in newData) {
+                    //    zdIds += newData[i].zdId + ",";
+                    //}
+                    //$.ajax({
+                    //    type: "post",
+                    //    url: "/DRGManage/DRGGroup/UpdatePatDiagnosisOrder",
+                    //    data: {
+                    //        "zdIds": zdIds
+                    //    },
+                    //    dataType: "json",
+                    //    success: function (data) {
+                    //        if (data.message == null || data.message == "") {
+                    //            //$.modalAlert("顺序调整成功", "success");
+                    //            $("#tabzd").bootstrapTable("refresh");
+                    //        }
+                    //    },
+                    //    error: function () {
+                    //        $.modalAlert("顺序调整失败",  "error");
+                    //    }
+                    //});
+                }
+            }
+        });
+    }
+    // 自定义按钮导出数据
+    function exportData() {
+        // debugger;
+         $('#tabxx').tableExport({
+             type: 'excel',
+             // One of 'head', 'data', 'all'
+             jsonScope: 'all',
+             //忽略某一列的索引
+             //ignoreColumn: [0,11],
+             //表格工作区名称
+             worksheetName: 'sheet1',
+             //下载文件名称
+             fileName: '病案信息导出',
+             //处理导出内容,自定义某一行、某一列、某个单元格的内容
+             onCellHtmlData: function (cell, row, col, data){
+                 // console.info(data);
+                 return data;
+             },
+        });
+    }
+    function drgtzlink(){
+        if (medicaldrglink != null && medicaldrglink != "") {
+            window.open(medicaldrglink);
+        }
+    }
+    $('#zyh').newtouchBatchFloatingSelector({
+        width: 500,
+        height: 200,
+        caption: "选择患者",
+        clickautotrigger: true,
+        url: "/ReportManage/Report/GetInpatientcryrq",
+        ajaxparameters: function ($thisinput) {
+            var keyword = $thisinput.val().trim();
+            var zyh = $("#zyh").val();
+            return "zyh=" + zyh;
+        },
+        itemdbclickhandler: function ($thistr, $thisinput) {
+            if (!!$thistr.attr('data-zyh')) {
+                $('#zyh').val($thistr.attr('data-zyh'));
+            }
+        },
+        colModel: [
+            { label: '住院号', name: 'zyh', width: 100 },
+            { label: 'cyrq', name: 'cyrq', hidden: true },
+            { label: 'ryrq', name: 'ryrq', hidden: true },
+            { label: '在院标志', name: 'zybz', width: 100, align: 'left' },
+            { label: '姓名', name: 'xm', width: 120, align: 'left' },
+            { label: '出生年月', name: 'csny', hidden: true, width: 100, align: 'left' },
+            {
+                label: '性别', name: 'xb', width: 50, align: 'left', formatter: function (cellvalue) {
+                    return $.getGender(cellvalue);
+                }
+            },
+            {
+                label: '年龄', name: 'nlshow', width: 50, align: 'left', formatter: function (cellvalue, a, b) {
+                    return getAgeFromBirthTime({ begin: b.csny }).text;
+                }
+            }
+        ]
+    });
+</script>

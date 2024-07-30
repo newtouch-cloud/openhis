@@ -1,0 +1,146 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@using Newtouch.Infrastructure.Model
+@{
+    ViewBag.Title = "台账";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var lt = (ViewBag.yfbmList as List<LoginUserCurrentYfbmModel>) ?? new List<LoginUserCurrentYfbmModel>();
+}
+<style>
+    .trSelected {
+        background-color: #87CEEB !important;
+    }
+
+    #btn_search {
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            药品筛选信息
+        </div>
+        <div>
+            <table class="form">
+                <tr>
+                    <td class="formTitle">药房名称：</td>
+                    <td class="formValue formDdlSelectorTd">
+                        <select class="form-control" id="yfbmCode" name="yfbmCode">
+                            @foreach (LoginUserCurrentYfbmModel t in lt)
+                            {
+                                <option value="@t.yfbmCode" data-leve=@t.yfbmjb data-mzzy=@t.mzzybz>@t.yfbmmc</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="formTitle">开始日期：</td>
+                    <td class="formValue">
+                        <input type="text" id="startTime" style="width: 140px;" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd 00:00:00' })" />
+                    </td>
+                    <td class="formTitle">结束日期： </td>
+                    <td class="formValue">
+                        <input type="text" id="endTime" style="width: 140px;" class="form-control input-wdatepicker" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd HH:mm'})" />
+                    </td>
+                    <td class="formTitle">药品：</td>
+                    <td class="formValue">
+                        <input type="text" id="ypdm" class="form-control" placeholder="请输入药品代码 拼音 名称" />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div id="dv_right" style="float: left; margin-left: 505px;">
+        <table id="kcGridList"></table>
+    </div>
+    <div id="dv_left" class="panel panel-default" style="float: left; width:500px; margin-left:-100%;">
+        <table id="ypGridList"></table>
+    </div>
+</form>
+<script>
+    var fymx = $(window).width() - $("#dv_left").width() - 5;
+    var $gridList = $("#ypGridList");
+    var $gridmx = $("#kcGridList");
+    $(function () {
+        initLayout();
+        $(window).resize(function () {
+            initLayout();
+        });
+        ypGridList();
+        gridmx();
+    });
+
+    //自适应
+    function initLayout() {
+        $("#dv_right").width(fymx);
+    }
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    function ypGridList() {
+        $gridList.dataGrid({
+            url: "/StandingBook/GetypGridJson",
+            postData: {
+                "keyword": $("#ypdm").val(), "yfbmCode": $("#yfbmCode").val()
+            },
+            height: $(window).height() - 125,
+            colModel: [
+                { label: "药品代码", name: "ypCode", width: 60, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 80, align: 'left' },
+                { label: '单位', name: 'deptdw', width: 45, align: 'center' },
+                { label: '零售价', name: 'lsj', width: 50, align: 'left' },
+                { label: '批发价', name: 'pfj', width: 50, align: 'left' },
+                { label: '拼音', name: 'py', width: 65, align: 'left' }
+            ],
+            sortname: 'ypmc asc',
+            viewrecords: true,
+            onSelectRow_page: function (rowid, status) {
+                var ypCode = $gridList.jqGrid('getRowData', rowid).ypCode
+                $gridmx.jqGrid("clearGridData");
+                $gridmx.jqGrid('setGridParam', {
+                    url: "/StandingBook/StandingBookInventoryDetailQuery?t=" + Math.random(),
+                    postData: {
+                        "ypCode": ypCode,
+                        "kssj": $("#startTime").val(),
+                        "jssj": $("#endTime").val(),
+                        "yfbmCode": $("#yfbmCode").val()
+                    }
+                }).trigger('reloadGrid');
+            },
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                url: "/StandingBook/GetypGridJson?r=" + Math.random(),
+                postData: {
+                    "keyword": $("#ypdm").val(), "yfbmCode": $("#yfbmCode").val()
+                }
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function gridmx() {
+        $gridmx.dataGrid({
+            height: $(window).height() - 160,
+            caption: "台账明细",
+            url: "",
+            colModel: [
+                { label: '出库说明', name: 'crksm', width: 80, align: 'left' },
+                { label: '入库数量', name: 'rkslanddw', width: 70, align: 'right' },
+                { label: '出库数量', name: 'ckslanddw', width: 70, align: 'left' },
+                { label: '结转数量', name: 'jzslanddw', width: 70, align: 'center' },
+                { label: '票单号', name: 'pdh', width: 80, align: 'center' },
+                { label: '科室名称', name: 'ks', width: 80, align: 'center' },
+                { label: '发生日期', name: 'fsrq', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ]
+        });
+    }
+</script>

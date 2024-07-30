@@ -1,0 +1,166 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-trash-o"></i>删除</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_users()"><i class="fa fa-pencil-square-o"></i>角色用户</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码" style="width: 150px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div style="float: right;margin-right:10px;">
+        请为医疗机构维护一个<span style="color:red;">医院管理员</span>角色，编码<span style="color:red;">HospAdministrator</span>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        gridList();
+    });
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/SystemManage/SysRole/GetGridJson",
+            height: $(window).height() - 120,
+            postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() },
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: "有效", name: "zt", width: 80, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '名称', name: 'Name', width: 150, align: 'left' },
+                { label: '编码', name: 'Code', width: 100, align: 'left' },
+                { label: '备注', name: 'Description', width: 300, align: 'left' },
+                { label: '排序', name: 'px', width: 40, align: 'left' },
+                { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            rowNum: '10'
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), OrganizeId: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    });
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增角色",
+            url: "/SystemManage/SysRole/Form?orgId=" + $('#OrganizeId').val(),
+            width: "550px",
+            height: "530px",
+            btn: null
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改角色",
+            url: "/SystemManage/SysRole/Form?keyValue=" + keyValue,
+            width: "550px",
+            height: "530px",
+            btn: null
+        });
+    }
+
+    function btn_delete() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/SystemManage/SysRole/DeleteForm",
+            param: { keyValue: $("#gridList").jqGridRowValue().Id },
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+    function btn_users() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "FormRoleUsers",
+            title: "角色用户",
+            url: "/SystemManage/SysUser/Selector?from=rolerelatioinuser&callbackType=json&keyValue=" + keyValue + "&isContansChildOrg=false&organizeId=" + $('#OrganizeId').val(),
+            width: "650px",
+            height: "570px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function (data) {
+                    userStaffTreeCallback(data);
+                });
+            }
+        });
+    }
+
+    //用户人员树回调方法
+    function userStaffTreeCallback(data) {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            return;
+        }
+        var arr = new Array();
+        $.each(data, function () {
+            arr.push({ First: this.value, Second: this.Ex3 });  //First:UserId  Second:OrganizeId
+        });
+        if (keyValue) {
+            $.submitForm({
+                url: "/SystemManage/SysRole/SubmitRoleUser?roleId=" + keyValue,
+                param: { userList: arr },
+                success: function () {
+                    $("#gridList").trigger("reloadGrid");
+                }
+            });
+        }
+    }
+
+</script>

@@ -1,0 +1,89 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+@using Newtouch.HIS.Web.Core.Extensions;
+<form id="form1">
+    <div style="margin: 10px; margin-bottom: 0px;">
+        <div class="alert alert-danger" style="text-align: left; margin-bottom: 10px;">
+            <i class="fa fa-warning alert-dismissible" style="position: relative; top: 1px; font-size: 15px; padding-right: 5px;"></i>
+            请填写发药配置信息，用于创建或修改发药配置信息！
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">表单信息</h3>
+            </div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>药房</th>
+                    <td class="formValue">
+                        <select id="yfCode" name="yfCode" class="form-control required"></select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>科室</th>
+                    <td class="formValue">
+                        <select id="ksCode" name="ksCode" class="form-control required"></select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle" style="height: 35px;">选项：</th>
+                    <td class="formValue" style="padding-top: 1px;">
+                        <div class="ckbox">
+                            <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        $("#yfCode").bindSelect({
+            url: "/Dictionaries/GetCodeSelectJson",
+            param: { yjbmjb: "2" },
+            dataType: "json",
+        });
+        $("#ksCode").bindSelect({
+            url: "/Dictionaries/GetKsCodeSelectJson",
+            param: { yjbmjb: "2" },
+            dataType: "json",
+        });
+        if (!!keyValue) {
+            $.najax({
+                url: "/Dictionaries/GetKsFypzFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    $("#yfCode").val(data.yfCode).trigger('change');
+                    $("#ksCode").val(data.ksCode).trigger('change');
+                    if (data.zt == "1") {
+                        $("#zt").prop("checked", true);
+                    }
+                    else {
+                        $("#zt").prop("checked", false)
+                    }
+                }
+            });
+        }
+    });
+
+    function AcceptClick(callBack) {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/Dictionaries/SubmitKsFypzForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                callBack();
+                $.modalClose();
+            }
+        });
+    }
+</script>

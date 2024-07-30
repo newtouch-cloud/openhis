@@ -1,0 +1,138 @@
+﻿@{
+    ViewBag.Title = "输液历史查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading navb-bg">
+        筛选条件
+    </div>
+    <table class="form">
+        <tr>
+            <td class="formTitle">卡号：</td>
+            <td class="formValue">
+                <input type="text" class="form-control" id="txtkh" placeholder="卡号" />
+            </td>
+            <td class="formTitle">发票号：</td>
+            <td class="formValue">
+                <input type="text" class="form-control" id="txtfph" placeholder="发票号" />
+            </td>
+            <td class="formTitle"><span style="color:#ff0000;">*</span>收费时间：</td>
+            <td class="formValue">
+                <input id="txtsfkssj" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+            </td>
+            <td class="formTitle" style="width:10px">至</td>
+            <td class="formValue">
+                <input id="txtsfjssj" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")">
+            </td>
+            <td class="formValue">
+                <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+            </td>
+        </tr>
+    </table>
+</div>
+<div class="gridPanel" style="width: 28%;float:left;">
+    <table id="gridPatList"></table>
+    <div id="gridPatPager" rel="form1"></div>
+</div>
+<div class="gridPanel" style="margin-left:0.5%;width:71.5%;float:left;">
+    <table id="gridRpList"></table>
+    <div id="gridRpPager" rel="form1"></div>
+</div>
+<script>
+    var $gridList = $("#gridPatList");
+    var $gridMxList = $("#gridRpList");
+    var currentKh = "";
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+
+        });
+        Initial();
+        $("#btn_search").click(function () {
+            currentKh = "";
+            if ($("#txtsfkssj").val() === "" || $("#txtsfjssj").val() === "") {
+                $.modalMsg("收费时间不能为空", "warning");
+                return;
+            }
+            $gridMxList.jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam',
+            {
+                url: "/NurseManage/Infusion/PatientListQuery",
+                postData: getGridPatPar(),
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger("click");
+    });
+
+    //回车事件绑定
+    $(window).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //初始化
+    function Initial() {
+        gridList();
+    }
+
+    //组装患者信息查询条件
+    function getGridPatPar() {
+        return { kh: $("#txtkh").val(), fph: $("#txtfph").val(), kssj: $("#txtsfkssj").val(), jssj: $("#txtsfjssj").val() }
+    }
+
+    //主表信息
+    function gridList() {
+        //患者信息
+        $gridList.dataGrid({
+            url: "/NurseManage/Infusion/PatientHistoryListQuery",
+            postData: getGridPatPar(),
+            height: $(window).height() - document.getElementById('gridPatList').offsetTop - 70,
+            colModel: [
+                { label: '姓名', name: 'xm', width: 80, align: 'center' },
+                { label: '卡号', name: 'kh', width: 100, align: 'center' }
+            ],
+            pager: "#gridPatPager",
+            rowNum: '25',
+            sortname: 'xm',
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                var rowData = $gridList.jqGrid('getRowData', rowid);
+                currentKh = rowData.kh;
+                $gridMxList.jqGrid('setGridParam',
+                    {
+                        url:"@Url.Action("HistoryMzsyypxxQury")",
+                        postData: { kh: rowData.kh}
+                    }).trigger('reloadGrid');
+            }
+        });
+        //输液药品信息
+        $gridMxList.dataGrid({
+            url: "",
+            height: $(window).height() - document.getElementById('gridRpList').offsetTop - 70,
+            multiselect: true,
+            colModel: [
+                { label: 'Id', name: 'Id', key: true, hidden: true },
+                { label: '组', name: 'groupNo', width: 30, align: 'center' },
+                { label: '收费时间', name: 'sfsj', width: 115, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                { label: '处方号', name: 'cfh', width: 110, align: 'center' },
+                { label: '药品名称', name: 'ypmc', width: 100, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 50, align: 'left' },
+                { label: '用量', name: 'ylStr', width: 50, align: 'right' },
+                { label: '数量', name: 'slStr', width: 50, align: 'right' },
+                { label: '剂量', name: 'jlStr', width: 50, align: 'right' },
+                { label: '输液开始', name: 'sykssj', width: 115, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                { label: '输液结束', name: 'syjssj', width: 115, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+            ],
+            pager: "#gridRpPager",
+            rowNum: '25',
+            sortname: 'groupNo',
+            viewrecords: true
+        });
+    }
+</script>

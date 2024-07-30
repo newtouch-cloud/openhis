@@ -1,0 +1,81 @@
+﻿@{ 
+    var reportName = ViewBag.ReportName == null ? "" : ViewBag.ReportName;
+    var templateCode = ViewBag.TemplateCode == null ? 0 : ViewBag.TemplateCode;
+ }
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ActiveReports Web Designer</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <!-- No Virtual Directory -->
+    <base href="/">
+
+    <!-- For Virtual Directory -->
+    <!--<base href="/VirtualDirectoryName/">-->
+
+    <link rel="stylesheet" href="vendor/css/fonts-googleapis.css" type="text/css" />
+    <link rel="stylesheet" href="jsViewer.min.css" />
+    <link rel="stylesheet" href="web-designer.css" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png" />
+    <link rel="shortcut icon" href="icons/favicon.ico" />
+
+</head>
+<body>
+    <script src="jsViewer.min.js"></script>
+    <script src="web-designer.js"></script>
+
+    <div id="designer-id" style="width: 100%; height: 100%;"></div>
+
+    <script>
+        debugger;
+        var reportCode = @templateCode;
+
+		var designerOptions = GrapeCity.ActiveReports.WebDesigner.createDesignerOptions();
+		designerOptions.server.url = 'api';
+		designerOptions.reportInfo = '@reportName' ? { id: '@reportName' } : null;
+
+		designerOptions.openButton.visible = true;
+		designerOptions.saveButton.visible = true;
+		designerOptions.saveAsButton.visible = true;
+
+		// Used in About dialog and File View Help tab.
+		designerOptions.documentation.home = 'https://www.grapecity.com/activereports/docs/v15/online-webdesigner/overview.html';
+		// Used in notifications about report items transformation.
+		designerOptions.documentation.reportItemsTransformation = 'https://www.grapecity.com/activereports/docs/v15/online-webdesigner/supportedcontrols.html';
+
+		designerOptions.reportItemsFeatures.table.autoFillFooter = true;
+  
+		var viewer = null;
+        designerOptions.openViewer = function(options) {
+        	if (viewer) {
+				viewer.openReport(options.reportInfo.id);
+				return;
+        	}
+        	viewer = GrapeCity.ActiveReports.JSViewer.create({
+        		locale: options.locale,
+        		element: '#' + options.element,
+        		reportService: {
+        			url: 'api/reporting',
+        		},
+        		reportID: options.reportInfo.id,
+        		settings: {
+        			zoomType: 'FitPage'
+                },
+                parametersPanel: { location: 'top' }
+        	});
+		};
+
+		designerOptions.dataTab.dataSets.canModify = true;
+		designerOptions.dataTab.dataSources.canModify = true;
+
+		GrapeCity.ActiveReports.WebDesigner.renderApplication('designer-id', designerOptions);
+
+    </script>
+</body>
+</html>

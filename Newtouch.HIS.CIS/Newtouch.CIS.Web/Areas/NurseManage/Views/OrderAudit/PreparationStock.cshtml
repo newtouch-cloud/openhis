@@ -1,0 +1,160 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>PreparationStock</title>
+</head>
+<body>
+
+    <form>
+        <div class="panel panel-default">
+            <table class="form">
+                <tr>
+                    <th class="formTitle" style="width:70px;padding-right:12px;">药品：</th>
+                    <td class="formValue">
+                        <input type="text" id="ypmc" class="form-control" style="margin-left: 10%;" />
+                    </td>
+                    <th class="formTitle"></th>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="查询" />
+                    </td>
+                    <th class="formTitle"></th>
+                    <td class="formValue">
+                        
+                    </td>
+                    <th class="formTitle"></th>
+                    <td class="formValue">
+                        <input type="button" id="btn_newsqd" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="生成申请单" />
+                    </td>
+                    <td class="formValue title">
+                        <input type="button" id="btn_newtyd" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="生成退药单" />
+                    </td>
+
+                </tr>
+
+            </table>
+        </div>
+        <div class="gridPanel">
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </form>
+</body>
+</html>
+
+
+<script>
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    $(function () {
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/OrderAudit/PreparationStockGridJson",
+            height: $(window).height() - 200,
+            postData: { ypmc: $("#ypmc").val()},
+            colModel: [
+                { label: '药品名称', name: 'ypmc',width: 300, align: 'left' },
+                { label: '药品代码', name: 'ypcode', width: 80, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left' },
+                { label: '简拼', name: 'py', width: 80, align: 'left' },
+                { label: '库存数量', name: 'kcsl', width: 80, align: 'left' },
+                { label: '来源药房', name: 'yfmc', width: 120, align: 'left' },
+                { label: '有效期', name: 'yxq', width: 150, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 200, align: 'left' },
+                { label: 'yfbmCode', name: 'yfbmCode', hidden: true },
+            ],
+
+            multiselect: true,
+
+            pager: "#gridPager",
+            sortname: 'ypmc',
+            viewrecords: true,
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { ypmc: $("#ypmc").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+    
+    $("#btn_newsqd").click(function () {
+        var ypcodestr = "";
+        var yfbm = "";
+        var yfmc = "";
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请选择需要申请的药品", 'warning');
+            return;
+        }
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (i == 0) {
+                yfbm = rowData.yfbmCode;
+                yfmc = rowData.yfmc;
+            }
+            else {
+                if (yfbm != rowData.yfbmCode) {
+                    $.modalAlert("选择的药房不同，不能生成申请单", 'warning');
+                    return;
+                }
+            }
+            ypcodestr += rowData.ypcode + ",";
+        }
+        
+        $.modalOpen({
+            id: "OutAreaForm",
+            title: "科室备药申请",
+            url: "/NurseManage/OrderAudit/Ward_Application?ypcode=" + ypcodestr + "&yfbm=" + yfbm + "&yfmc=" + yfmc,
+            width: "95%",
+            height: "95%",
+            callBack: function (iframeId) {
+                $.modalClose("OutAreaForm");
+                $('#btn_search').trigger('click');
+            }
+        });
+    });
+    $("#btn_newtyd").click(function () {
+        var ypcodestr = "";
+        var yfbm = "";
+        var yfmc = "";
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds == null || selRowIds.length == 0) {
+            $.modalAlert("请选择需要退回的药品", 'warning');
+            return;
+        }
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (i == 0) {
+                yfbm = rowData.yfbmCode;
+                yfmc = rowData.yfmc;
+            }
+            else {
+                if (yfbm != rowData.yfbmCode) {
+                    $.modalAlert("选择的药房不同，不能生成退药申请单", 'warning');
+                    return;
+                }
+            }
+            ypcodestr += rowData.ypcode + ",";
+        }
+
+        $.modalOpen({
+            id: "OutAreaForm",
+            title: "科室备药退回申请",
+            url: "/NurseManage/PrepareMedicine/PrepareMedicineReturnAdd?ypcode=" + ypcodestr + "&yfbm=" + yfbm + "&yfmc=" + yfmc,
+            width: "95%",
+            height: "95%",
+            callBack: function (iframeId) {
+                $.modalClose("OutAreaForm");
+                $('#btn_search').trigger('click');
+            }
+        });
+    });
+</script>

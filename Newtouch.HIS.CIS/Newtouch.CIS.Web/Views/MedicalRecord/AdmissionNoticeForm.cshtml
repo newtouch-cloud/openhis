@@ -1,0 +1,159 @@
+﻿@{
+    ViewBag.Title = "AdmissionNoticeForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+@using Newtouch.Infrastructure;
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/validate/jquery.validate.min.js")"></script>
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 55px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">门诊号：</th>
+                <td class="formValue">
+                    <input id="mzh" type="text" disabled="disabled" class="form-control" />
+                </td>
+                <th class="formTitle">病人姓名：</th>
+                <td class="formValue">
+                    <input id="xm" type="text" class="form-control" />
+                </td>
+                <th class="formTitle">性别：</th>
+                <td class="formValue">
+                    <input id="xb" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+
+                <th class="formTitle">年龄：</th>
+                <td class="formValue">
+                    <input id="nl" type="text" class="form-control" />
+                </td>
+                <th class="formTitle">日期：</th>
+                <td class="formValue">
+                    <input id="rq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">初步诊断：</th>
+                <td class="formValue" colspan="5">
+                    <input id="cbzd" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">拟收住科室：</th>
+                <td class="formValue">
+                    <input id="ks" type="text" class="form-control" />
+                </td>
+                <th class="formTitle">拟收住床位：</th>
+                <td class="formValue">
+                    <input id="cw" type="text" class="form-control" />
+                </td>
+                <th class="formTitle">家庭住址：</th>
+                <td class="formValue">
+                    <input id="jtzz" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">工作单位：</th>
+                <td class="formValue" colspan="5">
+                    <input id="gzdw" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">预交押金：</th>
+                <td class="formValue" colspan="2">
+                    <input id="yjj" type="text" class="form-control" />
+                </td>
+                <th class="formTitle">签证医师：</th>
+                <td class="formValue" colspan="2">
+                    <input id="qzys" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"></th>
+                <td class="formValue" colspan="2"></td>
+                <th class="formTitle"></th>
+                <td class="formValue">
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"></th>
+                <td class="formValue" colspan="2"></td>
+                <th class="formTitle"></th>
+                <td class="formValue">
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"></th>
+                <td class="formValue" colspan="2"></td>
+                <th class="formTitle"></th>
+                <td class="formValue">
+                    <input type="button" class="form-control" value="保存" onclick="baocun()" />
+                </td>
+                <td class="formValue">
+                    <input type="button" class="form-control" value="打印住院通知单" onclick="dayin()" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    //valid的扩展样式
+    var valOptions = {
+        errorPlacement: function (error, element) {
+            element.parents('.formValue').addClass('has-error');
+        }
+    };
+    var mzh = $.request("mzh");
+    var xm = $.request("xm");
+    var xb = $.request("xb");
+    var brxz = $.request("brxz");
+    var nl = $.request("nl");
+    var zdmc = $.request("zdmc");
+    $(function () {
+        $("#mzh").val(mzh);
+        $("#xm").val(xm);
+        $("#xb").val(xb);
+        $("#nl").val(nl);
+        $("#cbzd").val(zdmc);
+        $.najax({
+            url: "/MedicalRecord/GetAdmissionNoticeData",
+            data: { mzh: mzh},
+            dataType: "json",
+            success: function (data) {
+                $("#form1").formSerialize(data);
+            }
+        });
+    });
+    function dayin() {
+        var uri = '@Html.Raw(reportUrl)' + "?tempCode=25&orgId=" + '@curOpr.OrganizeId' + "&mzh=" + mzh;
+        if (uri) {
+            window.open(uri);
+        }
+    }
+    function baocun() {
+        if (!$('#form1').formValid(valOptions)) {
+            $.modalAlert("必填信息未完善", 'warning');
+            return;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/MedicalRecord/SaveAdmissionNoticeData",
+            param: postData,
+            success: function () {
+            }
+        });
+        dayin();
+    }
+    function submitForm() {
+        baocun();
+    }
+</script>
+

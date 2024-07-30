@@ -1,0 +1,380 @@
+﻿@{
+    ViewBag.Title = "门诊费用分析";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<head>
+    <meta charset="utf-8">
+    <script src="~/Content/js/echarts.min.js"></script>
+    <style>
+
+        .content {
+            height: 49.5%;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .bk {
+            border-radius: 10px;
+            background-color: white;
+        }
+        .down_border {
+            border-bottom: 1px solid #e6e6e6;
+        }
+        .ui-jqgrid .ui-jqgrid-bdiv {
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+
+<div class="panel panel-default">
+    <input type="hidden" id="kssj" />
+    <input type="hidden" id="jssj" />
+    <table class="form">
+        <tr>
+            <th class="formTitle" id="xzsjtext">类型：</th>
+            <td class="formValue" style="width:150px">
+                <select id="dateType" class="form-control" onchange="updateSjType()">
+                    <option value="1">年</option>
+                    <option value="2">月</option>
+                    <option value="3">日</option>
+                </select>
+            </td>
+            <th class="formTitle" id="xzsjtext">时间：</th>
+            <td class="formValue" style="width:150px">
+                <input id="rSJ" type="text" class="form-control input-wdatepicker" @*onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"*@>
+            </td>
+            <th class="formTitle">药品类型：</th>
+            <td class="formValue" style="width:150px">
+                <select id="ypsx" class="form-control">
+                    <option value="全部">全部</option>
+                    <option value="西药费">西药</option>
+                    <option value="中药费">中药</option>
+                    <option value="中成药费">中成药</option>
+                </select>
+            </td>
+
+            <td class="formValue" style="padding-left:20px;">
+                <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+            </td>
+
+        </tr>
+    </table>
+
+</div>
+
+<div id="main_div" style="display:flex;flex-wrap:wrap;align-content:space-between;">
+
+    <div class="content">
+        <div style="width:49.8%" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>药品销量排名TOP50
+            </div>
+            <table id="gridJSListypxlpm"></table>
+        </div>
+        <div style="width:49.8%" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>医生开单量
+            </div>
+            <table id="gridJSListyskdl"></table>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="width:49.8%;margin-bottom:2px" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-table fa-lg" style="margin-right:5px;"></i>药品损益分析
+            </div>
+            <table id="gridJSListypsyfx"></table>
+        </div>
+        <div style="width:24.7%;" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-pie-chart fa-lg" style="margin-right:5px;"></i>药品报损分析
+            </div>
+            <div id="main" style="height:370px" class="bk"></div>
+        </div>
+        <div style="width:24.7%;" class="bk">
+            <div class="panel-heading down_border">
+                <i class="fa fa-pie-chart fa-lg" style="margin-right:5px;"></i>药品报溢分析
+            </div>
+            <div id="main1" style="height:370px" class="bk"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    var myDate = new Date();
+    $(function () {
+        $('#main_div').height($(window).height() - 60);
+        $('#main').height($(window).height() * 0.5 - 118);
+        $('#main1').height($(window).height() * 0.5 - 118);
+        init();
+        gridJSListData();
+        GetMonthNumChart();
+     
+       
+
+    });
+
+    function gridJSListData() {
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSListypxlpm");
+        var ypsx = $("#ypsx").val();
+        $gridJsList.dataGrid({
+            height: $(window).height() * 0.5 - 118,
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), type: ypsx},
+            url: "/DeanInquiryManage/DrugTracking/GetDrugTracking",
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            colModel: [
+                { label: 'ypdm', name: 'ypdm', align: 'left', hidden: true },
+                { label: '药品名称', name: 'ypmc',align: 'left' },
+                { label: '规格', name: 'ypgg',align: 'left' },
+                { label: '单位', name: 'zxdw',align: 'left' },
+                { label: '数量', name: 'sl',align: 'left' },
+                { label: '金额（元）', name: 'je',align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+            },
+            gridComplete: function (gridJszbList) {
+
+            },
+            onCellSelect: function (row) {
+                var rowObj = $gridJsList.jqGrid('getRowData', row);
+            
+                var $gridysList = $("#gridJSListyskdl");
+                $gridysList.jqGrid('setGridParam', {
+                    postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), Ypcode: rowObj.ypdm},
+                    page: 1,
+                    url:"/DeanInquiryManage/DrugTracking/DoctorBillingRanking",
+                }).trigger('reloadGrid');
+
+            }, loadComplete: function (data) {
+                if (data.length >0) {
+                    var firstRow = data[0];
+                    //var $gridysList = $("#gridJSListyskdl");
+                    //$gridysList.jqGrid('setGridParam', {
+                    //    postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), Ypcode: firstRow.ypdm },
+                    //    page: 1,
+                    //    url: "/DeanInquiryManage/DrugTracking/DoctorBillingRanking",
+                    //}).trigger('reloadGrid');
+
+                    var gridSort = 'CreateTime asc';
+                    var $gridysList = $("#gridJSListyskdl");
+                    $gridysList.dataGrid({
+                        height: $(window).height() * 0.5 - 118,
+                        autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+                        shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+                        url: "/DeanInquiryManage/DrugTracking/DoctorBillingRanking",
+                        postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), Ypcode: firstRow.ypdm },
+                        colModel: [
+                            { label: '医生', name: 'Name', align: 'left' },
+                            { label: '医嘱数/处方数', name: 'sl', align: 'left' },
+                            { label: '开单金额（元）', name: 'zje', align: 'left' }
+                        ],
+                        sortname: gridSort,
+                        viewrecords: true
+                    });
+                } else {
+                    $("#gridJSListyskdl").jqGrid("clearGridData", true);
+                }
+            }
+        });
+        
+        var gridSort = 'CreateTime asc';
+        var $ypsyfx = $("#gridJSListypsyfx");
+        $ypsyfx.dataGrid({
+            height: $(window).height() * 0.5 - 118,
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val() },
+            url: "/DeanInquiryManage/DrugTracking/Profitandlossranking",
+            autowidth: true,//如果shrinkToFit为true且设置了width值，则每列宽度会根据width成比例缩放；
+            shrinkToFit: true, //如果设为true，则Grid的宽度会根据父容器的宽度自动重算。**
+            colModel: [
+                { label: '损益原因', name: 'syyy',align: 'left' },
+                { label: '批发总额（元）', name: 'pfjze',align: 'left' },
+                { label: '零售总额（元）', name: 'lsjze',align: 'left' }
+            ],
+            sortname: gridSort,
+            viewrecords: true
+        });
+
+    }
+    function init() {
+        $("#dateType").val("2");
+        $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+        $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        getSearchData();
+    }
+    function initEcharts(bs,by) {
+        var myChart = echarts.init(document.getElementById('main'));
+        var myChart1 = echarts.init(document.getElementById('main1'));
+   
+        var option = {
+            tooltip: {
+                trigger: 'item'
+            },
+            legend: {
+                top: '5%',
+                left: 'center'
+            },
+            series: [
+                {
+                    name: '报损',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 40,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: bs,
+                }
+            ]
+        };
+
+        var option1 = {
+            tooltip: {
+                trigger: 'item'
+            },
+            legend: {
+                top: '5%',
+                left: 'center'
+            },
+            series: [
+                {
+                    name: '报溢',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 40,
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: by,
+                }
+            ]
+        };
+        myChart.setOption(option);
+        myChart1.setOption(option1);
+    };
+    
+    function GetMonthNumChart() {
+        var bs = [];
+        var by = [];
+        $.ajax({
+            type: "POST",
+            url: "/DeanInquiryManage/DrugTracking/Profitandlossranking",
+            data: { kssj: $('#kssj').val(), jssj: $('#jssj').val()},
+            dataType: "json",
+            async: false,
+            success: function (lastdata) {
+                if (lastdata != null) {
+                    for (var i = 0; i < lastdata.length; i++) {
+                        var obj = {};
+                        if (lastdata[i].lsjze < 0) {
+                            obj.name = lastdata[i].syyy;
+                            obj.value = lastdata[i].sl;
+                            bs[i] = obj;
+                             
+                        } else
+                        {
+                            obj.name = lastdata[i].syyy;
+                            obj.value = lastdata[i].sl;
+                            by[i] = obj;
+                        }
+                        
+                        
+                    }
+                    initEcharts(bs, by);
+                    
+                }
+            }
+        });
+    }
+    function submit() {
+        getSearchData();
+        GetMonthNumChart();
+        var $gridJsList = $("#gridJSListypxlpm");
+        $gridJsList.jqGrid('setGridParam', {
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), type: $('#ypsx').val() },
+        }).trigger('reloadGrid');
+
+        var $gridJsListsy = $("#gridJSListypsyfx");
+        $gridJsListsy.jqGrid('setGridParam', {
+            postData: { kssj: $('#kssj').val(), jssj: $('#jssj').val(), type: $('#ypsx').val() },
+        }).trigger('reloadGrid');
+    }
+
+    //改变时间类型
+    function updateSjType() {
+        $('#rSJ').val("");
+        let dateType = $("#dateType").val();
+        if (dateType == "1") {//年
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy' })");
+            $('#rSJ').val(myDate.getFullYear());
+        }
+        if (dateType == "2") {//月
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1));
+        }
+        if (dateType == "3") {//日
+            $('#rSJ').attr('onfocus', "WdatePicker({ dateFmt: 'yyyy-MM-dd' })");
+            $('#rSJ').val(myDate.getFullYear() + "-" + (parseInt(myDate.getMonth()) + 1) + "-" + myDate.getDate());
+        }
+        getSearchData();
+    }
+
+     //组装请求参数
+    function getSearchData() {
+        let ksrq = '';
+        let jsrq = '';
+        let dateType = $("#dateType").val();
+        let nowDate = $("#rSJ").val();
+        if (dateType == "1") {//年
+            ksrq = nowDate + "-" + "01-01 00:00:00";
+            jsrq = nowDate + "-" + "12-31 23:59:59";
+        }
+        if (dateType == "2") {//月
+            let array = nowDate.split("-");
+            ksrq = array[0] + "-" + array[1] + "-01 00:00:00";
+            let days = getDaysInMonth(array[0], array[1]);
+            jsrq = array[0] + "-" + array[1] + "-" + days + " 23:59:59";
+        }
+        if (dateType == "3") {//日
+            ksrq = nowDate + " 00:00:00";
+            jsrq = nowDate + " 23:59:59";
+        }
+
+        $('#kssj').val(ksrq);
+        $('#jssj').val(jsrq);
+    }
+
+    //根据年月获取月天数
+    function getDaysInMonth(year, month) {
+        return new Date(year, month, 0).getDate();
+    }
+</script>

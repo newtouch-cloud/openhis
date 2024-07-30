@@ -1,0 +1,121 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" authorize="yes" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="类型编码/大类编码" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/SysChargeCategoryTypeRelation/GetGridJson",
+            height: $(window).height() - 96,
+            postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+            colModel: [
+                { label: "Id", name: "Id", hidden: true, key: true },
+                { label: "类型", name: "Type", width: 100, align: 'left' },
+                {
+                    label: '类型名称', name: 'Type', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == "OutpatientReg") return '挂号项目';
+                        if (cellvalue == "Rehab") return '康复';
+                        if (cellvalue == "TCM") return '中药';
+                        if (cellvalue == "WM") return '西药';
+                        if (cellvalue == "Examination") return '检查';
+                        if (cellvalue == "Inspection") return '检验';
+                        if (cellvalue == "RegularItem") return '常规项目';
+                        if (cellvalue == "Diagnose") return '诊疗项目';
+                        if (cellvalue == "cl") return '材料';
+                        if (cellvalue == "JZ") return '记账项目';
+                    }
+                },
+                { label: "大类编码", name: "dlCode", width: 100, align: 'left' },
+                { label: "大类名称", name: "dlmc", width: 110, align: 'left' },
+                { label: "有效", name: "zt", width: 80, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '排序', name: 'px', width: 40, align: 'left' },
+            ],
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function initControl() {
+
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增大类",
+            url: "/SysChargeCategoryTypeRelation/Form?orgId=" + $('#OrganizeId').val(),
+            width: "550px",
+            height: "480px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "修改大类",
+            url: "/SysChargeCategoryTypeRelation/Form?keyValue=" + keyValue,
+            width: "550px",
+            height: "480px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+</script>

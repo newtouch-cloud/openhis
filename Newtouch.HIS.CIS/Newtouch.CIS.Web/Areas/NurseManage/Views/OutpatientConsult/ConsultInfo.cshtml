@@ -1,0 +1,117 @@
+﻿
+@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "诊室信息";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    //诊室信息自动刷新时间
+    var ConsultInfoRefreshTime = SysConfigReader.Bool("ConsultInfoRefreshTime", false).Value;
+}
+
+<style>
+    html, body {
+        height: 100%;
+    }
+
+    #dv_pretb {
+        font-size: 20px;
+        border: 2px solid rgba(26, 157, 251, 0.80);
+        border-radius: 5px;
+        background-color: azure;
+    }
+
+    #pretb th {
+        padding: 5px 10px;
+        border-right: 2px solid rgb(111, 216, 171);
+    }
+
+    #pretb td {
+        padding: 3px 5px;
+    }
+
+    .fontClass {
+        text-align: center;
+    }
+
+    .tbBorder {
+        border-top: 1px solid rgba(119,136,153,0.2);
+    }
+
+    #photo {
+    width:100%;
+    height:80%;
+    }
+</style>
+
+
+<div id="dv_pretb" style="width:98%;text-align:center;height:99%;">
+    <table id="pretb" style="width:100%;height:100%;">
+        <tr style="background-color:blue;height:15%;">
+            <td id="ksmc" colspan="2" class="fontClass" style="color:white;">
+                科室
+            </td>
+        </tr>
+        <tr>
+            <td rowspan="4" style="width:40%;"><img id="photo"/></td>
+        </tr>
+        <tr>
+            <td id="ysxm" style="text-align:left;font-size:16px;">医生（主任医师）</td>
+        </tr>
+        <tr>
+            <td id="zsmc" style="text-align:left;font-size:16px;">诊室1</td>
+        </tr>
+        <tr>
+            <td id="ysjs" style="text-align:left;font-size:16px;">医生介绍</td>
+        </tr>
+        <tr>
+            <td colspan="2" class="fontClass tbBorder" style="color:dodgerblue;font-size:18px;">
+                就诊中
+            </td>
+        </tr>
+        <tr>
+            <td id="jzz" colspan="2" class="fontClass  tbBorder">
+                无
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="fontClass  tbBorder" style="color:dodgerblue;font-size:18px;">
+                待就诊
+            </td>
+        </tr>
+        <tr>
+            <td id="djz" colspan="2" class="fontClass  tbBorder">
+                无
+            </td>
+        </tr>
+    </table>
+</div>
+
+
+
+<script>
+    var zsCode = $.request("zsCode");//接收诊室编号
+    GetConsultInfo();
+
+
+    function GetConsultInfo() {
+        console.log(new Date());
+        $.najax({
+            url: "/NurseManage/OutpatientConsult/GetConsultInfo",
+            dataType: "json",
+
+            data: { zsCode: zsCode,  ghrq: new Date().format('yyyy-MM-dd') },
+            type: "POST",
+            success: function (data) {
+                $("#ksmc").html(data.ksmc);
+                $("#ysxm").html(data.ysxm);
+                $("#zsmc").html(data.zsmc);
+                $("#ysjs").html(data.ysjs);
+                $("#jzz").html(data.jzz==null?"无":data.jzz+"（"+data.jzzxh+"）");
+                $("#djz").html(data.djz == null ? "无 " : data.djz + "（" + data.djzxh + "）");
+                document.getElementById("photo").src  ="../../Content/img/photo/"+ data.ysxm+".jpg";
+            }
+        });
+    }
+    //定时刷新
+    var intervalId = setInterval("GetConsultInfo()", 60 * 1000);
+</script>

@@ -1,0 +1,1315 @@
+﻿@using Newtouch.Common.Operator;
+@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+    var EnableLinkToMRMS = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("EnableLinkToMRMS");
+}
+<script src="~/Content/js/BootstrapMenu.min.js"></script>
+
+<style>
+    ul, li {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+
+        ul#allKindPat {
+            width: 25px;
+            float: left;
+        }
+
+            ul#allKindPat li.selectedli {
+                background-color: rgba(111, 243, 173, 0.5);
+                text-decoration-color: white;
+            }
+
+            ul#allKindPat li {
+                background-color: rgba(215, 242, 252, 0.86);
+                margin-bottom: 2px;
+                text-align: center;
+                vertical-align: middle;
+                touch-action: manipulation;
+                cursor: pointer;
+                user-select: none;
+                padding: 3px 6px;
+                border-width: 1px;
+                border-style: solid;
+                border-color: transparent;
+                border-image: initial;
+                border-radius: 4px;
+            }
+
+    .dv-left {
+        width: 40%;
+        float: left;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+        width: 58%;
+        /*background-color:*/
+    }
+
+    #patList {
+        float: left;
+        background-color: #FFF;
+    }
+
+    .clearboth {
+        clear: both;
+    }
+</style>
+<div id="patList" class="gridPanel dv-left">
+    <div class="topPanel">
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <select id="sel_inpatientArea" class="form-control" style="width:50px">
+                            <option value="">==请选择==</option>
+                        </select>
+                    </td>
+                    <td style="width:100%">
+                        <div id="dv_tool">
+                            <div class="input-group">
+                                <input id="txt_keyword" type="text" class="form-control" placeholder="患者姓名/住院号" style="width:180px;">
+                                <span class="input-group-btn" style="float:left;">
+                                    <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                                </span>
+                            </div>
+                        </div>
+                        <div id="dv_bl_tool" style="display:none;">
+                            <div style="float:left;width:30%;" id="dv_mr_RecordStu">
+                                <select id="sel_RecordStu" name="sel_RecordStu" data-enumtype="EnumRecordStu">
+                                    <option value="">病历状态(全部) </option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="width:70%;float:left;padding-top:10px;">
+                                <input id="txt_cyts" type="text" class="form-control" style="width:30%;float:left;" placeholder="出院天数" />
+                                <input id="txt_keyword1" type="text" class="form-control" placeholder="患者姓名/住院号" style="width:50%;float:left;">
+                                <span class="input-group-btn" style="float:left;">
+                                    <button id="btn_search1" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <ul id="allKindPat" role="tablist">
+            <li role="presentation">
+                <a role="tab" data-toggle="tab" onclick="init(0)">我的病人</a>
+            </li>
+            <li role="presentation" class="selectedli">
+                <a href="#div_inPatlist" role="tab" data-toggle="tab" onclick="init(1)">在院病人</a>
+            </li>
+            <li role="presentation">
+                <a href="#div_outPatlist" role="tab" data-toggle="tab" onclick="init(2)">出院病人</a>
+            </li>
+        </ul>
+        <div id="div_Patlist" style="margin-left: 25px;margin-right:10px;">
+            <table id="gridListPat"></table>
+            <div id="gridPagerPat"></div>
+        </div>
+    </div>
+</div>
+<div id="dv_Medlist" class="gridPanel dv-right">
+    <div class="topPanel">
+        <div class="toolbar" style="float:left;margin-right: 5px;">
+            <div id="divPatientBasicInfo" style="position: fixed;top: 10px;z-index: 100009;width: 29%;line-height: 40px;font-size: 18px;white-space: nowrap;text-overflow: ellipsis;left: 40%;text-align:left;padding-left: 18px;color:#07bbf1;">
+                <input type="hidden" id="inpzyh" name="inpzyh" />
+            </div>
+        </div>
+        <div class="toolbar" style="float:right;margin-right: 5px;">
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="Refresh()"><span class="fa fa-refresh"></span></a>
+            </div>
+            @*<div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>病历新建</a>
+        </div>*@
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_addnew()"><i class="fa fa-plus"></i>病历新建</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>病历修改</a>
+            </div>
+            <div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_mrqc()"><i class="fa fa-pencil-square-o"></i>病历质控</a>
+            </div>
+            @if (EnableLinkToMRMS == "true")
+            {
+                <div class="btn-group" id="dv_btn_commit">
+                    <a class="btn btn-primary" onclick="btn_commit()"><i class="glyphicon glyphicon-saved"></i>病历提交</a>
+                </div>
+                <div class="btn-group" id="dv_btn_return">
+                    <a class="btn btn-primary" onclick="btn_return()"><i class="glyphicon glyphicon-backward"></i>病历退回</a>
+                </div>
+            }
+
+        </div>
+    </div>
+    <table id="gridList"></table>
+</div>
+@*@Html.Partial("_UploadToYB")*@
+<script>
+    var currentobj = [];
+    var flag = 0; //初次加载患者树标志
+    var currentPatId = "";
+    var curPatinfo = [];
+    var zyh = "";
+    var thistype = 1;
+    var reportServerHOST = '@ViewBag.ReportServerHOST';
+    var orgId = '@ViewBag.OrgId';
+    var justshow = 0;
+
+    $(function () {
+        $(window).resize(function () {//浏览器窗口调整大小时重新加载jqGrid的宽
+            window.initLayout("div_Patlist");
+            window.initLayout("dv_Medlist");
+        });
+        $("#allKindPat").children().click(function () {
+            $("#allKindPat").children().removeClass("selectedli")
+
+            $(this).addClass("selectedli")
+        });
+        $("#sel_inpatientArea").bindSelect({
+            url: "/SystemManage/BaseData/GetAuthedWardSelectJson",
+        });
+        $('#sel_inpatientArea').change(function () {
+            $("#gridListPat").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), zyh: "", bq: $("#sel_inpatientArea option:selected").val() },
+                page:1
+            }).trigger('reloadGrid');
+        });
+        if (flag == 0) {
+            currentobj = JSON.parse(sessionStorage.getItem('currentobj'));
+
+            if (currentobj != null) {
+                GetPatList(currentobj);
+                gridList(currentobj);
+
+
+                $('#divPatientBasicInfo').html("患者信息：" + currentobj.xm
+                        + '&nbsp;/&nbsp;' + $.getGender(currentobj.sex)
+                        + '&nbsp;/&nbsp;' + currentobj.age + "岁"
+                        + '&nbsp;/&nbsp;' + currentobj.brxzmc
+                        + '&nbsp;/&nbsp;<span id="patzyh">' + currentobj.zyh + "</span>");
+                $('#inpzyh').val(currentobj.zyh);
+                curPatinfo = currentobj;
+                zyh = curPatinfo.zyh;
+                currentobj = null;
+                //JSON.parse(sessionStorage.removeItem('currentobj'));
+                sessionStorage.removeItem('currentobj');
+            }
+            else {
+                GetPatList();
+               gridList();
+            }
+
+            flag = 1;
+        }
+        else {
+            GetPatList();
+            gridList();
+        }
+
+    })
+
+    //患者病历列表树
+    function gridList(currentobj) {
+        var zyh = "";
+        if (currentobj != null) {
+            zyh = currentobj.zyh
+        }
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGrid: true,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Blzt",
+            url: "/MedicalRecordManage/PatInfo/GetMedRecordTree",
+            postData: { zyh: zyh },
+            height: $(window).height() - 96,
+            colModel: [
+                { label: "病历关系ID", name: "Id", hidden: true, key: true },
+                { label: "病历大类ID", name: "BllxId", hidden: true },
+                { label: "模板加载方式", name: "LoadWay", hidden: true },
+                { label: "模板路径", name: "mblj", hidden: true },
+                { label: "住院号", name: "zyh", hidden: true },
+                { label: "门诊号", name: "mzh", hidden: true },
+                { label: "病历ID", name: "BlId", hidden: true },
+                { label: "Ybbm", name: "Ybbm", hidden: true },
+                { label: "PlanStu", name: "PlanStu", hidden: true },
+                { label: "病历类型标识", name: "bllx", hidden: true },
+                { label: "文件读取编辑权限控制标志", name: "ctrlLevel", hidden: true },
+                { label: "Name", name: "Name", hidden: true },
+                {
+                    label: '病历名称', name: 'BLName', width: 200, align: 'left',
+                    formatter: function (cellvalue, options, rowobject) {
+                        if (rowobject.parentId == null) {
+                            return rowobject.Name + '<i id="addCircle" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="margin-left: 10px; color:#6ff3ad; font-size: small;"></i>';
+                        }
+                        else if (rowobject.PlanStu == '@((int)EnumPlanStu.tz)'.toString()) {
+                            return '<span class="glyphicon glyphicon-file" style="color:#6ff3ad; font-size: 13px;"></span><span style="color:red;"> ' + rowobject.Name+"</span>";
+                        }
+                        else
+                            return '<span class="glyphicon glyphicon-file" style="color:#6ff3ad; font-size: 13px;"></span> ' + rowobject.Name;
+                    }
+                },
+                {
+                    label: "病历状态", name: "Blzt", width: 80, align: "center",hidden:true, formatter: function (cellvalue) {
+                        if (cellvalue == "1")
+                            return "已签名";
+                        else if (cellvalue == "0")
+                            return "未签名";
+                        else
+                            return "";
+                    }
+                },
+                { label: '医生名称', name: 'Docname', width: 80, align: 'center' },
+                { label: "医生工号", name: "Doccode", hidden: true },
+                { label: '病历日期', name: 'Blrq', width: 130, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '更新日期', name: 'LastModifierTime', width: 130, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+
+            ],
+            onSelectRow: function (rowid, status) {
+                if (status == true) {
+
+                    var rowData = $("#gridList").jqGrid('getRowData', rowid);
+                    var patData = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+                    if (patData != null && patData != "undefied") {
+                        if (rowData.parent == null || rowData.parent == "") {//禁用条件
+                            btn_addnew();//btn_add();
+                        }
+                    }
+                    else {
+                        $.modalAlert("请选择患者", 'warning');
+                    }
+                }
+            },
+            onRightClickRow: function (rowid, irow, icol, e) {
+                var rowData = $("#gridList").jqGrid('getRowData', rowid);
+                if (rowData.zyh != "") {
+                    var patselRowId = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+                    var patData = $("#gridListPat").jqGrid('getRowData', patselRowId);
+                    if (patData.RecordStu == '@((int)EnumRecordStu.wtj)' || patData.RecordStu == '@((int)EnumRecordStu.th)') {
+                        //2020-3-16 chl 病案首页分离
+                        if ('@ViewBag.IsEnableEditor' == "true" && rowData.bllx == '@((int)EnumBllx.basy)') {
+                            initBasyrightMenu(rowData);
+                        }
+                        //病程记录增加合并打印菜单
+                        else if ('@ViewBag.IsEnableEditor' == "true" && (rowData.bllx == '2019' || rowData.bllx == '2')) {
+                            initBcjlrightMenu(rowData);
+                        }
+                        else {
+                            initrightMenu(rowData);
+                        }
+                    }
+                    else {
+                        if ('@ViewBag.IsEnableEditor' == "true" && rowData.bllx == '@((int)EnumBllx.basy)') {
+                            initBasyrightMenuJustShow(rowData);
+                        }
+                        else {
+                            initrightMenuJustShow(rowData);
+                        }
+
+                    }
+                }
+            }
+
+
+        });
+    }
+
+    //回车触发查询事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    $("#btn_search").click(function () {
+        $("#gridListPat").jqGrid('setGridParam', {
+            postData: { keyword: $("#txt_keyword").val(), zyh: "", bq: $("#sel_inpatientArea option:selected").val() },
+            page:1
+        }).trigger('reloadGrid');
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: "" },
+        }).trigger('reloadGrid');
+        $('#divPatientBasicInfo').html("");
+        $('#inpzyh').val("");
+    });
+
+    $("#btn_search1").click(function () {
+        if (isNaN($("#txt_keyword1").val())) {
+
+        }
+        $("#gridListPat").jqGrid('setGridParam', {
+            postData: {
+                keyword: $("#txt_keyword1").val(),
+                zyh: "",
+                cyts: $("#txt_cyts").val(),
+                blzt: $("#sel_RecordStu option:selected").val()
+            },
+            page:1
+        }).trigger('reloadGrid');
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: "" },
+        }).trigger('reloadGrid');
+        $('#divPatientBasicInfo').html("");
+        $('#inpzyh').val("");
+    });
+
+    function Refresh() {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: $('#inpzyh').val() },
+        }).trigger('reloadGrid');
+    }
+    //右键菜单
+    function initrightMenu(rowData) {
+        var p = '.gridPanel tr[id=' + rowData.Id + ']';
+        var menu = new BootstrapMenu(p, {
+            //fetchElementData获取元数据
+            fetchElementData: function ($rowElem) {
+                var data = rowData;
+                return data;    //return的目的是给下面的onClick传递参数
+            },
+            actions: [{
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 浏览病历',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.LoadWay == '@((int)EnummbqxTempLoadWay.View)' && !!obj.mblj) {
+                        var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: obj.mblj + "?zyh=" + obj.zyh + "&blId=" + obj.BlId, AppId: "EMR" });
+                       
+                    }
+                    else {
+                        var menuurl = "/MedicalRecordManage/MedicalRecord/PreView?blid=" + obj.BlId + "&bllx=" + obj.bllx + "&zyh=" + obj.zyh + "&mzh=" + obj.mzh;
+                        var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: menuurl, AppId: "EMR" });
+                    }
+                }
+            },
+            {
+                name: '<span class="glyphicon glyphicon-remove" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 删除病历',
+                width: 300,
+                onClick: function (obj) {
+                    
+                    if (obj.Doccode == '@opeator.rygh') {
+
+                        $.modalConfirm("确定删除该病历？", function (flag) {
+                            if (flag) {
+                                $.ajax({
+                                    type: "POST",
+                                    url: "/MedicalRecordManage/PatInfo/UpdatePatMedRecordRel",
+                                    dataType: "json",
+                                    data: { blId: obj.BlId, blgxId: obj.Id , blName:obj.Name},
+                                    async: false,
+                                    success: function (ajaxresp) {
+                                        if (ajaxresp.state == "error" || ajaxresp.state == "") {
+                                            setTimeout(function () {
+                                                $.modalMsg(ajaxresp.message, 'error');
+                                            }, 1000);
+                                        }
+                                        else {
+                                            setTimeout(function () {
+                                                $.modalMsg('删除成功', 'success');
+                                            }, 1000);
+                                        }
+                                        $("#gridList").jqGrid('setGridParam', {
+                                            postData: { zyh: obj.zyh },
+                                        }).trigger('reloadGrid');
+                                    }
+                                });
+                            }
+                        });
+
+                    }
+                    else {
+                        $.modalMsg("抱歉，权限不足", 'error');
+                    }
+
+                }
+                }, {
+                name: '<span class="glyphicon glyphicon-ok-sign" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 停止/取消',
+                    width: 300,
+                    onClick: function (obj) {
+                        $.ajax({
+                            type: "POST",
+                            url: "/MedicalRecordManage/PatInfo/UpdatePlanStu",
+                            dataType: "json",
+                            data: { blid: obj.BlId, stu: obj.PlanStu },
+                            async: false,
+                            success: function (ajaxresp) {
+                                $.modalMsg(ajaxresp.message, ajaxresp.state);
+                                $("#gridList").jqGrid('setGridParam', {
+                                    postData: { zyh: obj.zyh },
+                                }).trigger('reloadGrid');
+                            }
+                        });
+
+
+                    }
+                }, {
+                name: '<span class="glyphicon glyphicon-ok-sign" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 解锁病历',
+                width: 300,
+                onClick: function (obj) {
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/MedicalRecord/LockRecord",
+                        dataType: "json",
+                        data: { blid: obj.BlId, bllx: obj.bllx, isToLock: 2 },
+                        async: false,
+                        success: function (ajaxresp) {
+                            $.modalMsg(ajaxresp.message, ajaxresp.state);
+                        }
+                    });
+
+
+                }
+                },
+                //{
+                //    name: '<span class="glyphicon glyphicon-cloud-upload" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 上传医保',
+                //    width: 300,
+                //    onClick: function (obj) {
+                //        setTimeout(function () {
+                //            $.modalMsg("正在请求上传，请稍候...");
+                //            if (!!obj.Ybbm && obj.bllx == 5) {
+                //                GetbasyData(obj.zyh, obj.Ybbm);
+                //            }
+                //            else if (!!obj.Ybbm) {
+                //                var ret = GetblData(obj.Ybbm, obj.BlId);
+                //                if (obj.Ybbm == "7100" && ret == 1) {
+                //                    GetblData("7110", obj.BlId);
+                //                }
+                //                else if (obj.Ybbm == "7500" && ret == 1) {
+                //                    GetblData("7510", obj.BlId);
+                //                }
+                //            }
+                //            else {
+                //                $.modalAlert("该病历无需上传医保", "warning");
+                //            }
+                //        }, 1000);
+                //    }
+                //},
+                {
+                name: '<span class="glyphicon glyphicon-send" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 保存为个人模板',
+                width: 300,
+                    onClick: function (obj) {
+                        if (obj.LoadWay == '@((int)EnummbqxTempLoadWay.View)') {
+                            $.modalMsg("该病历不支持转换", 'warning');
+                        }
+                        else {
+                            $.modalOpen({
+                                id: "Form",
+                                title: "新建病历模板",
+                                url: "/MedicalRecordManage/MedRecordTemplate/Form?blId=" + obj.BlId + "&bllx=" + obj.bllx + "&mbly=0",
+                                width: "700px",
+                                height: "600px",
+                                btn: null,
+                                callBack: function (iframeId, a) {
+                                    top.frames[iframeId].submitForm();
+                                }
+                            });
+                        }
+                }
+                }
+            
+           ]
+        });
+    }
+
+    //右键菜单展示版
+    function initrightMenuJustShow(rowData) {
+        var p = '.gridPanel tr[id=' + rowData.Id + ']';
+        var menu = new BootstrapMenu(p, {
+            //fetchElementData获取元数据
+            fetchElementData: function ($rowElem) {
+                var data = rowData;
+                return data;    //return的目的是给下面的onClick传递参数
+            },
+            actions: [{
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 浏览病历',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.LoadWay == '@((int)EnummbqxTempLoadWay.View)' && !!obj.mblj) {
+                        var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: obj.mblj + "?zyh=" + obj.zyh + "&blId=" + obj.BlId, AppId: "EMR" });
+
+                    }
+                    else {
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : obj.zyh + "-" + obj.Name, enName: "", url: "/MedicalRecordManage/MedicalRecord/PreView?justshow=true&blid=" + obj.BlId + "&bllx=" + obj.bllx + "&zyh=" + obj.zyh, AppId: "EMR" });
+                    }
+                }
+            }
+           ]
+        });
+    }
+
+    //2020-3-16 chl 病案首页分离
+    function initBasyrightMenu(rowData) {
+        var p = '.gridPanel tr[id=' + rowData.Id + ']';
+        var menu = new BootstrapMenu(p, {
+            //fetchElementData获取元数据
+            fetchElementData: function ($rowElem) {
+                var data = rowData;
+                return data;    //return的目的是给下面的onClick传递参数
+            },
+            actions: [{
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 浏览病历',
+                width: 300,
+                onClick: function (obj) {
+                    //报表管理器
+                    //window.open("/MRHomePage/Report/BasyReport?zyh=" + obj.zyh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                    window.open(reportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%e8%a5%bf%e5%8c%bb%e7%97%85%e6%a1%88%e9%a6%96%e9%a1%b5part1&rs:Command=Render&orgId=" + orgId + "&zyh=" + obj.zyh);
+                    window.open(reportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%e8%a5%bf%e5%8c%bb%e7%97%85%e6%a1%88%e9%a6%96%e9%a1%b5part2&rs:Command=Render&orgId=" + orgId + "&zyh=" + obj.zyh);
+                    
+                   // top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病案首页", enName: "", url: "/MRHomePage/MRHomePage/Main?keyValue=" + obj.BlId + "&zyh=" + obj.zyh, AppId: "EMR" });//测试
+                }
+            },{
+                name: '<span class="glyphicon glyphicon-edit" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 修改病历',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.ctrlLevel == '@((int)EnummbqxFp.edit)') {
+                        $.ajax({
+                            type: "POST",
+                            url: "/MedicalRecord/LockRecord",
+                            dataType: "json",
+                            data: { blid: obj.BlId, bllx: obj.bllx, isToLock: 1 },
+                            async: false,
+                            success: function (ajaxresp) {
+                                top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病案首页", enName: "", url: "/MRHomePage/MRHomePage/Main?keyValue=" + obj.BlId + "&zyh=" + obj.zyh, AppId: "EMR" });
+
+                            }
+                        });
+                    }
+                    else {
+                        $.modalMsg("抱歉，权限不足", 'error');
+                    }
+                }
+            },
+            {
+                name: '<span class="glyphicon glyphicon-remove" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 删除病历',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.Doccode == '@opeator.rygh') {
+                        $.modalConfirm("确定删除该病历？", function (flag) {
+                            if (flag) {
+                                $.ajax({
+                                    type: "POST",
+                                    url: "/MedicalRecordManage/PatInfo/UpdatePatMedRecordRel",
+                                    dataType: "json",
+                                    data: { blId: obj.BlId, blgxId: obj.Id , blName:obj.Name},
+                                    async: false,
+                                    success: function (ajaxresp) {
+                                        if (ajaxresp.state == "error" || ajaxresp.state == "") {
+                                            setTimeout(function () {
+                                                $.modalMsg(ajaxresp.message, 'error');
+                                            }, 1000);
+                                        }
+                                        else {
+                                            setTimeout(function () {
+                                                $.modalMsg('删除成功', 'success');
+                                            }, 1000);
+                                        }
+                                        $("#gridList").jqGrid('setGridParam', {
+                                            postData: { zyh: obj.zyh },
+                                        }).trigger('reloadGrid');
+                                    }
+                                });
+                            }
+                        });
+
+                    }
+                    else {
+                        $.modalMsg("抱歉，权限不足", 'error');
+                    }
+
+                }
+                }, {
+                    name: '<span class="glyphicon glyphicon-ok-sign" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 解锁病历',
+                    width: 300,
+                    onClick: function (obj) {
+                        $.ajax({
+                            type: "POST",
+                            url: "/MedicalRecord/LockRecord",
+                            dataType: "json",
+                            data: { blid: obj.BlId, bllx: obj.bllx, isToLock: 2 },
+                            async: false,
+                            success: function (ajaxresp) {
+                                $.modalMsg(ajaxresp.message, ajaxresp.state);
+                            }
+                        });
+                    }
+                },
+                //{
+                //    name: '<span class="glyphicon glyphicon-cloud-upload" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 上传医保',
+                //    width: 300,
+                //    onClick: function (obj) {
+                //        setTimeout(function () {
+                //            $.modalMsg("正在请求上传，请稍候...");
+                //            if (!!obj.Ybbm) {
+                //                GetbasyData(obj.zyh, obj.Ybbm);
+                //            }                            
+                //            else {
+                //                $.modalAlert("该病历无需上传医保或缺少医保代码配置", "warning");
+                //            }
+                //        }, 1000);
+                //    }
+                //}
+           ]
+        });
+    }
+    function initBasyrightMenuJustShow(rowData) {
+        var p = '.gridPanel tr[id=' + rowData.Id + ']';
+        var menu = new BootstrapMenu(p, {
+            //fetchElementData获取元数据
+            fetchElementData: function ($rowElem) {
+                var data = rowData;
+                return data;    //return的目的是给下面的onClick传递参数
+            },
+            actions: [{
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 浏览病历',
+                width: 300,
+                onClick: function (obj) {
+                    //window.open("/MRHomePage/Report/BasyReport?zyh=" + obj.zyh, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                    window.open(reportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%e8%a5%bf%e5%8c%bb%e7%97%85%e6%a1%88%e9%a6%96%e9%a1%b5part1&rs:Command=Render&orgId=" + orgId + "&zyh=" + obj.zyh);
+                    window.open(reportServerHOST + "/Pages/ReportViewer.aspx?%2fNewtouch.EMR.Report%2f%e8%a5%bf%e5%8c%bb%e7%97%85%e6%a1%88%e9%a6%96%e9%a1%b5part2&rs:Command=Render&orgId=" + orgId + "&zyh=" + obj.zyh);
+
+                }
+            }
+            ]
+        });
+    }
+
+    //右键菜单(病程记录，合并打印)
+    function initBcjlrightMenu(rowData) {
+        var p = '.gridPanel tr[id=' + rowData.Id + ']';
+        var menu = new BootstrapMenu(p, {
+            //fetchElementData获取元数据
+            fetchElementData: function ($rowElem) {
+                var data = rowData;
+                return data;    //return的目的是给下面的onClick传递参数
+            },
+            actions: [{
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 浏览病历',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.LoadWay == '@((int)EnummbqxTempLoadWay.View)' && !!obj.mblj) {
+                        var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: obj.mblj + "?zyh=" + obj.zyh + "&blId=" + obj.BlId, AppId: "EMR" });
+                       
+                    }
+                    else {
+                        var menuurl = "/MedicalRecordManage/MedicalRecord/PreView?blid=" + obj.BlId + "&bllx=" + obj.bllx + "&zyh=" + obj.zyh + "&mzh=" + obj.mzh;
+                        var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: menuurl, AppId: "EMR" });
+                    }
+                }
+            },
+            {
+                name: '<span class="glyphicon glyphicon-remove" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 删除病历',
+                width: 300,
+                onClick: function (obj) {
+
+                    if (obj.Doccode == '@opeator.rygh') {
+                        $.modalConfirm("确定删除该病历？", function (flag) {
+                            if (flag) {
+                                $.ajax({
+                                    type: "POST",
+                                    url: "/MedicalRecordManage/PatInfo/UpdatePatMedRecordRel",
+                                    dataType: "json",
+                                    data: { blId: obj.BlId, blgxId: obj.Id, blName:obj.Name },
+                                    async: false,
+                                    success: function (ajaxresp) {
+                                        if (ajaxresp.state == "error" || ajaxresp.state == "") {
+                                            setTimeout(function () {
+                                                $.modalMsg(ajaxresp.message, 'error');
+                                            }, 1000);
+                                        }
+                                        else {
+                                            setTimeout(function () {
+                                                $.modalMsg('删除成功', 'success');
+                                            }, 1000);
+                                        }
+                                        $("#gridList").jqGrid('setGridParam', {
+                                            postData: { zyh: obj.zyh },
+                                        }).trigger('reloadGrid');
+                                    }
+                                });
+                            }
+                        });
+
+                    }
+                    else {
+                        $.modalMsg("抱歉，权限不足", 'error');
+                    }
+
+                }
+                }, {
+                name: '<span class="glyphicon glyphicon-ok-sign" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 停止/取消',
+                    width: 300,
+                    onClick: function (obj) {
+                        $.ajax({
+                            type: "POST",
+                            url: "/MedicalRecordManage/PatInfo/UpdatePlanStu",
+                            dataType: "json",
+                            data: { blid: obj.BlId, stu: obj.PlanStu },
+                            async: false,
+                            success: function (ajaxresp) {
+                                $.modalMsg(ajaxresp.message, ajaxresp.state);
+                                $("#gridList").jqGrid('setGridParam', {
+                                    postData: { zyh: obj.zyh },
+                                }).trigger('reloadGrid');
+                            }
+                        });
+
+
+                    }
+                }, {
+                name: '<span class="glyphicon glyphicon-ok-sign" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 解锁病历',
+                width: 300,
+                onClick: function (obj) {
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/MedicalRecord/LockRecord",
+                        dataType: "json",
+                        data: { blid: obj.BlId, bllx: obj.bllx, isToLock: 2 },
+                        async: false,
+                        success: function (ajaxresp) {
+                            $.modalMsg(ajaxresp.message, ajaxresp.state);
+                        }
+                    });
+
+
+                }
+                },
+                //{
+                //    name: '<span class="glyphicon glyphicon-cloud-upload" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 上传医保',
+                //    width: 300,
+                //    onClick: function (obj) {
+                //        setTimeout(function () {
+                //            $.modalMsg("正在请求上传，请稍候...");
+                //            if (!!obj.Ybbm && obj.bllx == 5) {
+                //                GetbasyData(obj.zyh, obj.Ybbm);
+                //            }
+                //            else if (!!obj.Ybbm) {
+                //                var ret = GetblData(obj.Ybbm, obj.BlId);
+                //                if (obj.Ybbm == "7100" && ret == 1) {
+                //                    GetblData("7110", obj.BlId);
+                //                }
+                //                else if (obj.Ybbm == "7500" && ret == 1) {
+                //                    GetblData("7510", obj.BlId);
+                //                }
+                //            }
+                //            else {
+                //                $.modalAlert("该病历无需上传医保", "warning");
+                //            }
+                //        }, 1000);
+                //    }
+                //},
+                @*{
+                name: '<span class="glyphicon glyphicon-send" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 保存为个人模板',
+                width: 300,
+                    onClick: function (obj) {
+                        if (obj.LoadWay == '@((int)EnummbqxTempLoadWay.View)') {
+                            $.modalMsg("该病历不支持转换", 'warning');
+                        }
+                        else {
+                            $.modalOpen({
+                                id: "Form",
+                                title: "新建病历模板",
+                                url: "/MedicalRecordManage/MedRecordTemplate/Form?blId=" + obj.BlId + "&bllx=" + obj.bllx + "&mbly=0",
+                                width: "700px",
+                                height: "600px",
+                                btn: null,
+                                callBack: function (iframeId, a) {
+                                    top.frames[iframeId].submitForm();
+                                }
+                            });
+                        }
+                }
+                }
+                ,*@
+                {
+                name: '<span class="glyphicon glyphicon-open" style="color: rgb(28, 179, 173); font-size: 13px;"></span> 合并打印',
+                width: 300,
+                onClick: function (obj) {
+                    if (obj.LoadWay == '@((int)EnummbqxTempLoadWay.View)' && !!obj.mblj) {
+                        //var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        var menuname = obj.zyh + "-" + "病程合并预览" + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: obj.mblj + "?zyh=" + obj.zyh + "&blId=" + obj.BlId, AppId: "EMR" });
+                       
+                    }
+                    else {
+                        var menuurl = "/MedicalRecordManage/MedicalRecord/MergeView?blid=" + obj.BlId + "&bllx=" + obj.bllx + "&zyh=" + obj.zyh + "&mzh=" + obj.mzh;
+                        var menuname = obj.zyh + "-" + "病程合并预览" + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        //var menuname = obj.zyh + "-" + obj.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                        top.top.$.Newtouchtab.addTabWithOutMenu({ name: obj.Name == null ? "病历操作" : menuname, enName: "", url: menuurl, AppId: "EMR" });
+                        //top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病历操作", enName: "", url: "/MedicalRecordManage/MedicalRecord/MedicalRecordEdiForAdd?mbbh=" + mbRowId + "&zyh=" + $("#zyh").val() + "&mzh=" + $("#mzh").val(), AppId: "EMR" });
+
+                    }
+                }
+            }
+           ]
+        });
+    }
+
+    function init(type) {
+        thistype = type;
+        //在院患者不提交病案
+        if (type == 2 && @EnableLinkToMRMS) {
+            $("#dv_btn_commit").show();
+            $("#dv_btn_return").show();
+            $("#dv_bl_tool").show();
+            $("#dv_tool").hide();
+        }
+        else {
+            $("#dv_btn_commit").hide();
+            $("#dv_btn_return").hide();
+            $("#dv_bl_tool").hide();
+            $("#dv_tool").show();
+        }
+        $("#gridListPat").jqGrid('setGridParam', {
+            postData: { type: type },
+            page:1
+        }).trigger('reloadGrid');
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: "" },
+        }).trigger('reloadGrid');
+        $('#divPatientBasicInfo').html("");
+        $('#inpzyh').val("");
+    }
+
+
+    //患者列表
+    function GetPatList(currentobj) {
+        var zyh = "";
+        if (currentobj != null) {
+            zyh = currentobj.zyh
+        }
+        var $gridListPat = $("#gridListPat");
+        $gridListPat.dataGrid({
+            url: "/MedicalRecordManage/PatInfo/PatList",
+            postData: { zyh: zyh, type: 1 },
+            height: $(window).height() - 150,
+            colModel: [
+                { label: 'ID', name: 'Id', hidden: true, key: true },
+                { label: 'zybz', name: 'zybz', hidden: true},
+                {
+                    label: "提交病案", name: "RecordStusm", width: 50, align: "center", formatter: function (cellvalue, option, row) {
+                        if (row.RecordStu == '@((int)EnumRecordStu.wtj)')
+                            return "否";
+                        else if (row.RecordStu == '@((int)EnumRecordStu.ytj)')
+                            return "是";
+                        else if (row.RecordStu == '@((int)EnumRecordStu.th)')
+                            return "<span style='color:red;font-weight:bold;'>退</span>";
+                        else if (row.RecordStu == '@((int)EnumRecordStu.yqs)')
+                            return "<span style='color:blue;font-weight:bold;'>签</span>";
+                        @*else if (row.RecordStu == '@((int)EnumRecordStu.ytj)' || row.RecordStu == '@((int)EnumRecordStu.yqs)' )
+                            return '<img src="../../Content/img/tj_ytj.png"/>';
+                        else if (row.RecordStu == '@((int)EnumRecordStu.th)')
+                            return '<img src="../../Content/img/tj_th.png"/>';*@
+                        else
+                            return '';
+                    }
+                },
+                {
+                    label: '状态', name: 'zybzmc', width: 40, align: 'left', formatter: function (val,option,row) {
+                        if (row.zybz == '@((int)EnumZYBZ.Djz)' || row.zybz == '@((int)EnumZYBZ.Ycy)') {
+                            return "出院";
+                        }
+                        else if (row.zybz == '@((int)EnumZYBZ.Bqz)') {
+                            return "在院";
+                        }
+                        else if (row.zybz == '@((int)EnumZYBZ.Zq)') {
+                            return "转区";
+                        }
+                        else if (row.zybz == '@((int)EnumZYBZ.Wry)')
+                        {
+                            return "取消入院";
+                        }
+                        else{ return "其他"; }
+                    }
+                },
+                { label: '住院号', name: 'zyh', width: 50, align: 'left' },
+                { label: '床号', name: 'cwmc', width: 50, align: 'left' },
+                @*{
+                    label: '护理级别', name: 'hljb', width:20, align: 'left', formatter: function (val) {
+                        if (val == '@((int)EnumHljb.I)') {
+                            return '@(EnumHljb.I)';
+                        }
+                        else if (val == '@((int)EnumHljb.II)') {
+                            return '@(EnumHljb.II)';
+                        }
+                        else if (val == '@((int)EnumHljb.III)') {
+                            return '@(EnumHljb.III)';
+                        }
+                        else if (val == '@((int)EnumHljb.T)') {
+                            return '@(EnumHljb.T)';
+                        }
+                        else
+                            return "";
+                    }
+                },*@
+                { label: '姓名', name: 'xm', width: 80, align: 'left' },
+                {
+                    label: '性别', name: 'sex', width: 40, align: 'left', formatter: function (val) {
+                        if (val == '@((int)EnumSex.F)') {
+                            return "女";
+                        }
+                        else if (val == '@((int)EnumSex.M)') {
+                            return "男";
+                        }
+                        else { return "其他"; }
+                    }
+                },
+                { label: '卡号', name: 'cardno', hidden: true },
+                { label: '入院诊断', name: 'zdmc', width: 120, align: 'left' },
+                { label: '出院诊断', name: 'cyzdmc', width: 120, align: 'left' },
+                { label: '出院天数', name: 'cyts', width: 60, align: 'left' },
+                { label: 'RecordStu', name: 'RecordStu', hidden: true },
+                { label: '出区日期', name: 'cqrq', width: 130, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '提交日期', name: 'CommitTime', width: 130, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '是否当前', name: 'isCheck', hidden: true }
+            ],
+            pager: "#gridPagerPat",
+            sortname: 'isCheck desc,RecordStu,cyts desc',
+            viewrecords: true,
+            onSelectRow: function (row) {
+                var rowData = $('#gridListPat').jqGrid('getRowData', row);
+                if (rowData != currentPatId && currentPatId != "" && flag == 0) {
+                    $("#gridListPat tr[id=" + currentPatId + "]").find("td").css("background-color", "");
+                }
+
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: { zyh: rowData.zyh }
+                }).trigger('reloadGrid');
+
+
+                //出院患者添加可提交按钮 2019-11-15 chl
+                if (rowData.zybz == '@((int)EnumZYBZ.Djz)' || rowData.zybz == '@((int)EnumZYBZ.Ycy)') {
+                    if (rowData.RecordStu != '@((int)EnumRecordStu.ytj)' && $("#dv_btn_commit").is(":hidden")) {
+                        $("#dv_btn_commit").show();
+                    }
+                    if (rowData.RecordStu != '@((int)EnumRecordStu.ytj)' && $("#dv_btn_return").is(":hidden")) {
+                        $("#dv_btn_return").show();
+                    }
+                }
+                else {
+                    if (!$("#dv_btn_commit").is(":hidden")) {
+                        $("#dv_btn_commit").hide();
+                    }
+                    if (!$("#dv_btn_return").is(":hidden")) {
+                        $("#dv_btn_return").hide();
+                    }
+                }
+
+                $('#divPatientBasicInfo').html("患者信息："
+                    + rowData.xm
+                    + '&nbsp;/&nbsp;' + $.getGender(rowData.sex)
+                    //+ '&nbsp;/&nbsp;' + window.currentobj.age + "岁"
+                    //+ '&nbsp;/&nbsp;' + window.currentobj.brxzmc
+                    + '&nbsp;/&nbsp;' + rowData.zyh
+                    //+ '&nbsp;/&nbsp;' + rowData.RecordStusm
+                    + '<span id="sp_RecordStu" style="display:none;">' + rowData.RecordStu+'</span>'
+                );
+                $('#inpzyh').val("");
+
+            },
+            gridComplete: function () {
+
+                var ids = $("#gridListPat").getDataIDs();
+                $("#gridListPat").jqGrid('setSelection', ids[0]);
+                for (i = 0; i < ids.length; i++) {
+                    var rowData = $("#gridListPat").getRowData(ids[i]);
+                    if (rowData.isCheck == 1) {
+                        currentPatId = ids[i];
+                    }
+                    break;
+                }
+                if (currentPatId != "" && flag == 0) {
+                    $("#gridListPat tr[id=" + currentPatId + "]").find("td").css("background-color", "#fff6e5");
+                }
+                else if (currentPatId != "") {
+                    $("#gridListPat tr[id=" + currentPatId + "]").find("td").css("background-color", "");
+                }
+            }
+
+        });
+    }
+
+    /****************************************************************************************
+     病历操作
+     ****************************************************************************************/
+    //新增病历文书
+    function btn_add() {
+        var blRowIds = $("#gridList").jqGrid('getGridParam', 'selrow');
+        var MRData = $("#gridList").jqGrid('getRowData', blRowIds);
+        var bllx = MRData.bllx;
+        var patselRowId = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+        var patData = $("#gridListPat").jqGrid('getRowData', patselRowId);
+
+        if (patData.zyh != undefined && patData.zyh != null) {
+            if (patData.RecordStu == '@((int)EnumRecordStu.wtj)'||patData.RecordStu == '@((int)EnumRecordStu.th)') {
+                $.modalOpen({
+                    id: "Form",
+                    title: "添加病历记录",
+                    url: "/MedicalRecordManage/PatInfo/MedRecordTreeEdit?keyValue=" + blRowIds + "&bllx=" + bllx + "&zyh=" + patData.zyh,
+                    width: "900px",
+                    height: "700px",
+                    callBack: function (iframeId) {
+                        $.currentWindow(iframeId).AcceptClick(function () {
+                            $("#gridList").resetSelection();
+                            $("#gridList").trigger("reloadGrid");
+                        });
+                    }
+                });
+            }
+            else {
+                $.modalAlert("患者病历已提交病案，不可编辑。", 'warning');
+            }
+        }
+        else {
+            $.modalAlert("请选择患者", 'warning');
+        }
+
+    }
+    //2021-1-8
+    function btn_addnew() {
+        var blRowIds = $("#gridList").jqGrid('getGridParam', 'selrow');
+        var MRData = $("#gridList").jqGrid('getRowData', blRowIds);
+        var bllx = MRData.bllx;
+        var patselRowId = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+        var patData = $("#gridListPat").jqGrid('getRowData', patselRowId);
+
+        if (patData.zyh != undefined && patData.zyh != null) {
+            if (patData.RecordStu == '@((int)EnumRecordStu.wtj)'||patData.RecordStu == '@((int)EnumRecordStu.th)') {
+                $.modalOpen({
+                    id: "Form",
+                    title: "添加病历记录",
+                    url: "/MedicalRecordManage/PatInfo/MedRecordTreeEditV2?keyValue=" + blRowIds + "&bllx=" + bllx + "&zyh=" + patData.zyh,
+                    width: "900px",
+                    height: "750px",
+                    callBack: function (iframeId) {
+                        $.currentWindow(iframeId).AcceptClick(function () {
+                            $("#gridList").resetSelection();
+                            $("#gridList").trigger("reloadGrid");
+                        });
+                    }
+                });
+            }
+            else {
+                $.modalAlert("患者病历已提交病案，不可编辑。", 'warning');
+            }
+        }
+        else {
+            $.modalAlert("请选择患者", 'warning');
+        }
+
+    }
+    function btn_edit() {
+        var patselRowId = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+        var patData = $("#gridListPat").jqGrid('getRowData', patselRowId);
+        if (patData.zyh != undefined && patData.zyh != null) {
+            @*if (patData.RecordStu == '@((int)EnumRecordStu.wtj)'||patData.RecordStu == '@((int)EnumRecordStu.th)') {*@
+                var keyValue = $("#gridList").jqGridRowValue().Id;
+                var blData = $("#gridList").jqGrid('getRowData', keyValue);
+                if (!!!keyValue) {
+                    $.modalAlert("请选择病历文书", 'warning');
+                    return;
+                }
+                if (!!!blData.BlId) {
+                    // $.modalAlert("不可编辑", 'warning');
+                    return;
+                }
+
+                /*编辑权限查询*/
+                $.ajax({
+                    type: "POST",
+                    url: "/MedicalRecordManage/PatInfo/selectBJQX",
+                    dataType: "json",
+                    data: { blid: blData.BlId, bllx: blData.bllx },
+                    async: false,
+                    success: function (ajaxresp) {
+                        if (ajaxresp == "1") {
+                            justshow = ""
+                        } else {
+                            justshow = "true"
+                        }
+                    }
+                });
+
+                if (patData.RecordStu != '@((int)EnumRecordStu.wtj)' && patData.RecordStu != '@((int)EnumRecordStu.th)') {
+                    justshow = "true"
+                }
+
+                //2020-3-16 chl将病案首页从文档编辑器中分离
+                if ('@ViewBag.IsEnableEditor' == "true" && blData.bllx == '@((int)EnumBllx.basy)') {
+                    $.ajax({
+                        type: "POST",
+                        url: "/MedicalRecord/LockRecord",
+                        dataType: "json",
+                        data: { blid: blData.BlId, bllx: blData.bllx, isToLock: 1 },
+                        async: false,
+                        success: function (ajaxresp) {
+                            top.top.$.Newtouchtab.addTabWithOutMenu({ name: "病案首页", enName: "", url: "/MRHomePage/MRHomePage/Main?keyValue=" + blData.BlId + "&zyh=" + blData.zyh + "&justshow=" + justshow, AppId: "EMR" });
+                        }
+                    });
+                }
+                else if (blData.LoadWay == '@((int)EnummbqxTempLoadWay.View)' && !!blData.mblj) {
+                    var menuname = blData.zyh + "-" + blData.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                    top.top.$.Newtouchtab.addTabWithOutMenu({
+                        name: blData.Name == null ? "病历操作" : menuname, enName: "", url: blData.mblj + "?zyh=" + blData.zyh + "&blId=" + blData.BlId + "&justshow=" + justshow 
+                        , AppId: "EMR"
+                    });
+
+                }
+                else {
+                    var menuurl = "/MedicalRecordManage/MedicalRecord/PreView?blid=" + blData.BlId + "&bllx=" + blData.bllx + "&zyh=" + blData.zyh + "&mzh=" + blData.mzh + "&justshow=" + justshow;
+                    var menuname = blData.zyh + "-" + blData.Name + "<span class='fa fa-times-circle quit' style='display: none;padding-left:2px;' ></span>"
+                    top.top.$.Newtouchtab.addTabWithOutMenu({ name: blData.Name == null ? "病历操作" : menuname, enName: "", url: menuurl , AppId: "EMR" });
+
+                    //top.top.$.Newtouchtab.addTabWithOutMenu({ name: blData.Name == null ? "病历操作" : blData.zyh + "-" +blData.Name, enName: "", url: "/MedicalRecordManage/MedicalRecord/PreView?blid=" + blData.BlId + "&bllx=" + blData.bllx + "&zyh=" + blData.zyh, AppId: "EMR" });
+                }
+            //}
+            //else {
+            //    $.modalAlert("患者病历已提交病案，不可编辑。", 'warning');
+            //}
+        }
+        else {
+            $.modalAlert("请确认患者信息", 'warning');
+        }
+    }
+
+    //病历提交到病案系统 2019-11-14 chl
+    function btn_commit(rowid) {
+        var patselRowIds = "";
+        if (rowid == undefined && rowid == null) {
+            patselRowIds = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+        }
+        else {
+            patselRowIds = $("#gridListPat").jqGrid('getGridParam', patselRowIds);
+        }
+        var patData = $("#gridListPat").jqGrid('getRowData', patselRowIds);
+        if (patData.zyh != undefined && patData.zyh != null) {
+            if (patData.RecordStu == '@((int)EnumRecordStu.wtj)'||patData.RecordStu == '@((int)EnumRecordStu.th)') {
+                $.ajax({
+                    type: "POST",
+                    url: "/MedicalRecordManage/PatInfo/CommitPatMedRecord",
+                    dataType: "json",
+                    data: { zyh: patData.zyh },
+                    async: false,
+                    success: function (ajaxresp) {
+                        if (ajaxresp.state == "error" || ajaxresp.state == "") {
+                            setTimeout(function () {
+                                $.modalMsg(ajaxresp.message, 'error');
+                            }, 1000);
+                        }
+                        else {
+                            setTimeout(function () {
+                                $.modalMsg('病历已提交', 'success');
+                            }, 1000);
+                        }
+                        $("#gridListPat").jqGrid('setGridParam', {
+                            postData: { zyh: patData.zyh, type: thistype },
+                            page:1
+                        }).trigger('reloadGrid');
+                    }
+                });
+            }
+            else {
+                $.modalAlert("患者病历已提交病案，不可重复提交。", 'warning');
+            }
+        }
+        else {
+            $.modalAlert("请确认患者信息", 'warning');
+        }
+    }
+
+    //病历退回
+    function btn_return(rowid) {
+        var patselRowIds = "";
+        if (rowid == undefined && rowid == null) {
+            patselRowIds = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+        }
+        else {
+            patselRowIds = $("#gridListPat").jqGrid('getGridParam', patselRowIds);
+        }
+        var patData = $("#gridListPat").jqGrid('getRowData', patselRowIds);
+        if (patData.zyh != undefined && patData.zyh != null) {
+            if (patData.RecordStu == '@((int)EnumRecordStu.ytj)' || patData.RecordStu == '@((int)EnumRecordStu.yqs)') {
+                $.ajax({
+                    type: "POST",
+                    url: "/MedicalRecordManage/PatInfo/BackPatMedRecord",
+                    dataType: "json",
+                    data: { zyh: patData.zyh },
+                    async: false,
+                    success: function (ajaxresp) {
+                        if (ajaxresp.state == "error" || ajaxresp.state == "") {
+                            setTimeout(function () {
+                                $.modalMsg(ajaxresp.message, 'error');
+                            }, 1000);
+                        }
+                        else {
+                            setTimeout(function () {
+                                $.modalMsg('病历已退回', 'success');
+                            }, 1000);
+                        }
+                        $("#gridListPat").jqGrid('setGridParam', {
+                            postData: { zyh: patData.zyh, type: thistype },
+                            page: 1
+                        }).trigger('reloadGrid');
+                    }
+                });
+            }
+            else {
+                $.modalAlert("患者病历未提交或已退回，不可退回。", 'warning');
+            }
+        }
+        else {
+            $.modalAlert("请确认患者信息", 'warning');
+        }
+    }
+    
+    //病历质控
+    function btn_mrqc() {
+        var patselRowId = $("#gridListPat").jqGrid('getGridParam', 'selrow');
+        var patData = $("#gridListPat").jqGrid('getRowData', patselRowId);
+        if (patData.zyh != undefined && patData.zyh != null) {
+                var keyValue = $("#gridList").jqGridRowValue().Id;
+                var blData = $("#gridList").jqGrid('getRowData', keyValue);
+                if (!!!keyValue) {
+                    $.modalAlert("请选择病历文书", 'warning');
+                    return;
+                }
+                if (!!!blData.bllx) {
+                    // $.modalAlert("不可编辑", 'warning');
+                    return;
+                }
+            console.log("zyh:" + patData.zyh+" bllx:" + blData.bllx);
+                //病历质控
+            $.modalOpen({
+                id: "Form",
+                title: "病历质控",
+                url: "/MedicalRecordManage/PatInfo/MrqcAdd?zyh=" + patData.zyh + "&bllxId=" + blData.bllx ,
+                width: "900px",
+                height: "750px",
+                callBack: function (iframeId) {
+                    $.currentWindow(iframeId).AcceptClick(function () {
+                        $("#gridList").resetSelection();
+                        $("#gridList").trigger("reloadGrid");
+                    });
+                }
+            });
+
+        }
+        else {
+            $.modalAlert("请选择患者信息", 'warning');
+        }
+    }
+</script>

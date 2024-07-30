@@ -1,0 +1,510 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    /**/
+
+    ViewBag.Title = "DispenseIndex";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    //是否开启标签打印
+    var Inpatient_IsLablePrint = SysConfigReader.Bool("Inpatient_IsLablePrint");
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+
+}
+<link href="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.css")" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("js/wdtree/tree.js")"></script>
+
+<input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
+<style>
+    .dv-left-tree {
+        overflow-y: auto;
+        border-radius: 4px;
+        background: white;
+    }
+
+    .dv-left-title {
+        padding: 6px 10px;
+        border-bottom: 1px solid transparent;
+        border-top-left-radius: 3px;
+        border-top-right-radius: 3px;
+        border-color: #ddd;
+        background-color: white;
+    }
+</style>
+<div style="float:left;width:20%; display: block;">
+    <div class="dv-left-title">患者列表</div>
+    <div class="dv-left-tree" id="BqTreeList"></div>
+</div>
+
+<div style="float:left;width:79.5%;margin-left:0.5%;">
+    <form id="form1">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                查询条件
+            </div>
+            <div style="padding: 2px;padding-right:20px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">医嘱性质：</th>
+                        <td class="formValue">
+                            @Html.DropDownList("yzxz", Yzxz.None.ToDescSelectList(), null, new { @class = "form-control" })
+                        </td>
+                        <th class="formTitle">药品：</th>
+                        <td class="formValue">
+                            <input type="text" id="ypmc" class="form-control" placeholder="药品" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>开始时间：</th>
+                        <td class="formValue">
+                            <input id="Kssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-01 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>结束时间：</th>
+                        <td class="formValue">
+                            <input id="Jssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                        </td>
+                        <td td class="formTitle">
+                            <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </form>
+    <div class="gridPanel">
+        <table id="dispenseMedicinGridList"></table>
+    </div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] {3,  6, 7},
+    F3Text = "发药",
+    F6Text = "取消排药",
+    F7Text = "删除医嘱"
+})
+<div class="ckbox" style="margin-left: 0.5%;margin-top: 10px;">
+    <input id="autoRefresh" name="autoRefresh" type="checkbox" checked="checked"><label for="autoRefresh">刷新患者</label>
+</div>
+@if (Inpatient_IsLablePrint != true)
+{
+    <div class="ckbox" style="margin-left: 0.1%;margin-top: 10px;">
+        <input id="autofydPrint" name="autofydPrint" type="checkbox"><label for="autofydPrint">明细打印</label>
+    </div>
+    <div class="ckbox" style="margin-top: 10px;">
+        <input id="autoPrintSum" name="autoPrintSum" type="checkbox" @ViewBag.dispensingDrugAutoPrint><label for="autoPrintSum">汇总打印</label>
+    </div>
+}
+else
+{
+    <div class="ckbox" style="margin-left: 0.5%;margin-top: 10px;">
+        <input id="autoLablePrint" name="autoLablePrint" type="checkbox" @ViewBag.dispensingDrugAutoPrint><label for="autoLablePrint">打印发票标签</label>
+    </div>
+}
+
+
+    <script type="text/javascript">
+    var IsLablePrint = '@Inpatient_IsLablePrint';
+    var ThisbrCode = "";//初始化病人Code
+    $(".toolbar").css("width", 500);
+    var $gridBRXXDrugsList = $("#dispenseMedicinGridList");
+    $(function () {
+        //绑定病区
+        bqGridList();
+        //绑定病人发药详细信息
+        dispenseMedicinGridList(null);
+        $("#autoRefresh").click(function() {
+            if ($("#autoRefresh").is(":checked")) {
+                //启动
+                startRefresh();
+            }
+        });
+        startRefresh();
+        $("#autoPrintSum").change(function (e) {
+            if ($('#autoPrintSum').is(':checked')) {
+                $('#autofydPrint').attr('checked',false);
+            }
+        });
+        $("#autofydPrint").change(function (e) {
+            if ($('#autofydPrint').is(':checked')) {
+                $('#autoPrintSum').attr('checked', false);
+            }
+        });
+
+    });
+
+    // 开启定时任务，时间间隔为3000 ms。
+    function startRefresh() {
+        var sp =@ViewBag.refreshInterval;
+        if (sp > 0) {
+            var t = setInterval(function () {
+                bqGridList(t);
+            }, sp);
+        }
+    }
+
+    //停止刷新
+    function stopRefresh(t) {
+        clearInterval(t);
+    }
+
+    //绑定病区和病人
+    function bqGridList(t) {
+        if (!$("#autoRefresh").is(":checked")) {
+            //停止
+            stopRefresh(t);
+        }
+        $("#BqTreeList").treeview({
+            height: $(window).height() - 35,
+            slimscroll: false,
+            showcheck: true,
+            url: "/HospitalizationPharmacy/DispensePatientInfoQuery",
+            param: {},
+            oncheckboxclick: function (item, s) {
+                getOrderExecutionList(item, s);
+            }
+        });
+    }
+
+    function getOrderExecutionList(item, s) {
+        var patlist = $("#BqTreeList").getCheckedNodeObjArray();
+        var patlistFath = "";
+        var patzyh = "";
+
+        //当前选中父节点
+        var len = 0;
+        var single = 0; //是否单个子节点
+
+        if (item != null && item.Ex1 == "p") {
+            patlistFath = item.ChildNodes;
+            len = patlistFath.length;
+        }
+        else if (item != null && item.Ex1 == "c") {
+            patlistFath = item;
+            len = 1;
+            single = 1;
+        }
+
+        //选中节点
+        for (var i = 0; i < patlist.length; i++) {
+            if (patlist[i].Ex1 === "c") {
+                patzyh += patlist[i].value + ",";
+            }
+        }
+
+        if (s === 1) {
+            if (single === 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 === "c") {
+                        patzyh += patlistFath[j].value + ",";
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 === "c") {
+                patzyh += patlistFath.value;
+            }
+        }
+        else if (s === 0) {
+            if (single === 0) {
+                for (var j = 0; j < len; j++) {
+                    if (patlistFath[j].Ex1 === "c" && patlistFath[j].checkstate === 1) {
+                        patzyh = patzyh.replace(patlistFath[j].value + ",", "");
+                    }
+                }
+            }
+            else if (patlistFath.Ex1 === "c") {
+                patzyh = patzyh.replace(patlistFath.value + ",", "");
+            }
+        }
+
+        ThisbrCode = patzyh;//存储选择的病人code
+        //重新加载病人发药详细信息
+        search("ckb");
+    }
+    //级联选中所有子节点
+    function checkAllSon(node) {
+        $('#BqTreeList').treeview('checkNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                checkAllSon(node.nodes[i]);
+            }
+        }
+    }
+    //级联取消所有子节点
+    function uncheckAllSon(node) {
+        $('#BqTreeList').treeview('uncheckNode', node.nodeId, { silent: true });
+        if (node.nodes != null && node.nodes.length > 0) {
+            for (var i in node.nodes) {
+                uncheckAllSon(node.nodes[i]);
+            }
+        }
+    }
+
+    //用户发药详细信息
+    function dispenseMedicinGridList(BR) {
+        if ($("#Kssj").val() === "") {
+            $.modalMsg("医嘱执行开始时间不能为空", "warning", 2000);
+            return false;
+        }
+        if ($("#Jssj").val() === "") {
+            $.modalMsg("医嘱执行结束时间不能为空", "warning", 2000);
+            return false;
+        }
+        $gridBRXXDrugsList.dataGrid({
+            url: '/HospitalizationPharmacy/GetDispenseDrugDetail',
+            height: $(window).height() - document.getElementById('dispenseMedicinGridList').offsetTop - 120,
+            postData: {
+                Zyh: BR,
+                ypmc: $("#ypmc").val(),
+                Kssj: $("#Kssj").val(),
+                Jssj: $("#Jssj").val(),
+                yzxz: $("#yzxz").val(),
+            },
+            colModel: [
+                { label: 'zyh', name: 'zyh', hidden:true },
+                { label: '姓名', name: 'patientName', width: 60, align: 'left' },
+                { label: '床位号', name: 'cw', width: 60, align: 'center' },
+                {
+                    label: '药品', name: 'ypmc', width: 100, align: 'left', formatter: function (val) {
+                        if (val != null) {
+                            if (val.indexOf("[停]") != -1) {
+                                return "<span style='color:red'>[停]</span>" + val.replace("[停]", "")
+                            }
+                            else
+                                return val;
+                        }
+
+                        else return "";
+                    } },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left' },
+                { label: '发药数量', name: 'slStr', width: 60, align: 'right' },
+                { label: '批号', name: 'ph', width: 110, align: 'center' },
+                { label: '批次', name: 'pc', width: 110, align: 'center' },
+                { label: '频次', name: 'pcmc', width: 50, align: 'center' },
+                {
+                    label: '贴数', name: 'ts', width: 60, align: 'right', formatter: function(cellValue, options, rowObject){
+                        if (cellValue == 0) {
+                            return "";
+                        } else {
+                            return cellValue;
+                        }
+                    }
+                },
+                { label: '使用数量', name: 'yl', width: 60, align: 'right' },
+                { label: '使用单位', name: 'yldw', width: 60, align: 'center' },
+                { label: '医嘱性质', name: 'yzxzmc', width: 80, align: 'center' },
+                { label: '生产厂家', name: 'ycmc', width: 100, align: 'left' },
+                { label: '用法', name: 'zlff', width: 60, align: 'left' },
+                { label: '组号', name: 'zh', width: 50, align: 'center' },
+                { label: '排药人员', name: 'pyry', width: 70, align: 'center' },
+                { label: '排药时间', name: 'pyrq', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: "zxId", name: 'zxId', hidden: true },
+                { label: "yzId", name: 'yzId', hidden: true },
+                { label: "zyh", name: 'zyh', hidden: true },
+                { label: "ypCode", name: 'ypCode', hidden: true }
+            ],
+            caption: "发药列表",
+            viewrecords: true
+        });
+        //查询
+        $("#btn_search").click(function () {
+            search();
+        });
+    }
+
+    //搜索
+    function search(t) {
+        $gridBRXXDrugsList.jqGrid("clearGridData");
+        if (ThisbrCode == null || ThisbrCode === "") {
+            $.modalMsg("请选择患者", "warning", 2000);
+            return false;
+        }
+        var kssj = "";
+        var jssj = "";
+        if (t == null || t === "") {
+            if ($("#Kssj").val() === "") {
+                $.modalMsg("医嘱执行开始时间不能为空", "warning", 2000);
+                return false;
+            }
+            if ($("#Jssj").val() === "") {
+                $.modalMsg("医嘱执行结束时间不能为空", "warning", 2000);
+                return false;
+            }
+            kssj = $("#Kssj").val();
+            jssj = $("#Jssj").val();
+        }
+        $gridBRXXDrugsList.jqGrid('setGridParam', {
+            postData: {
+                Zyh: ThisbrCode,
+                ypmc: $("#ypmc").val(),
+                Kssj: kssj,
+                Jssj: jssj,
+                yzxz: $("#yzxz").val(),
+            }
+        }).trigger('reloadGrid');
+    }
+
+    //删除医嘱
+    function newtouch_event_f7() {
+        $.modalConfirm("确定执行删除医嘱吗？", function (flag) {
+            if (flag) {
+                var id = $gridBRXXDrugsList.jqGrid('getGridParam', 'selrow');
+                if (!id) {
+                    $.modalMsg("请选择要删除的医嘱", "warning", 1000);
+                    return false;
+                }
+                var data = $gridBRXXDrugsList.getRowData(id);
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/DeleteYzxx",
+                    data: { yzId: data.yzId, zxId: data.zxId },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state === "success") {
+                            //重新加载病人发药详细信息
+                            bqGridList();
+                            $gridBRXXDrugsList.trigger("reloadGrid");
+                            $.modalMsg('删除医嘱成功', 'success', 1000);
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            } else
+                return false;
+        }, false);
+    }
+
+    //取消排药
+    function newtouch_event_f6() {
+        $.modalConfirm("确定执行取消排药吗？", function (flag) {
+            if (flag) {
+                var id = $gridBRXXDrugsList.jqGrid('getGridParam', 'selrow');
+                if (!id) {
+                    $.modalMsg("请选择要取消排药的医嘱", "warning", 1500);
+                    return false;
+                }
+                var data = $gridBRXXDrugsList.getRowData(id);
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/CancelArrangement",
+                    data: { pc: data.pc, ph: data.ph, ypCode: data.ypCode, zxId: data.zxId, yzId: data.yzId },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state === "success") {
+                            //重新加载病人发药详细信息
+                            $("#btn_search").click();
+                            $.modalMsg('取消排药成功', 'success', 1000);
+                            bqGridList();
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    //发药
+    function newtouch_event_f3() {
+        $.modalConfirm("确定发送发药列表全部药品吗？", function (flag) {
+            if (flag) {
+                var rowIds = $gridBRXXDrugsList.getDataIDs();
+                if (rowIds == null || rowIds.length === 0) {
+                    $.modalMsg('请搜索需要发药医嘱', 'warning', 1500);
+                    return false;
+                }
+                var medicineList = [];
+                for (var i = 0; i < rowIds.length; i++) {
+                    var rowData = $gridBRXXDrugsList.jqGrid('getRowData', rowIds[i]);
+                    var obj = new Object();
+                    obj["yzId"] = rowData.yzId;
+                    obj["zxId"] = rowData.zxId;
+                    obj["ypCode"] = rowData.ypCode;
+                    obj["ph"] = rowData.ph;
+                    obj["pc"] = rowData.pc;
+                    medicineList.push(obj);
+                }
+                $.najax({
+                    type: "POST",
+                    url: "/HospitalizationPharmacy/DispensingDrugs",
+                    data: { fyls: medicineList },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state === "success") {
+                            if('@(Inpatient_IsLablePrint)'=='True')
+                            {
+                                if ($("#autoLablePrint").is(":checked")) {
+                                    printRpDetail(true, res.data);
+                                }
+                            }else
+                            {
+                                if ($("#autofydPrint").is(":checked")) {
+                                    printRpDetail(false, res.data);
+                                }
+                                if ($("#autoPrintSum").is(":checked")) {
+                                    printRptSumary(res.data);
+                                }
+                            }
+
+                            //重新加载病人发药详细信息
+                            $("#btn_search").click();
+                            $.modalMsg('发药成功', 'success', 1000);
+                            bqGridList();
+                        } else {
+                            $.modalAlert(res.message, 'error');
+                        }
+                    }
+                });
+            } else
+                return false;
+        }, false);
+    }
+
+    function CancelDispensing(msg)
+    {
+
+    }
+
+    //打印明细
+    function printRpDetail(boleal,fyid) {
+        var yzIds = "";
+        var zxIds = "";
+        var rowIds = $gridBRXXDrugsList.getDataIDs();
+        if (rowIds == null || rowIds.length === 0) {
+            return false;
+        }
+        var zyhs=[];
+        for(var i=1;i<rowIds.length;i++)
+        {
+            var zyh = $gridBRXXDrugsList.jqGrid('getRowData', rowIds[i]).zyh;
+            var d=zyhs.indexOf(zyh);
+            if(zyhs.indexOf(zyh)!=-1)
+                continue;
+            zyhs.push(zyh);
+        }
+        var systemCode="PDS";//报表所属系统编码
+        for(var i=0;i<zyhs.length;i++)
+        {
+            var uri = '@reportUrl' + "?tempCode=64" + "&systemCode=" + '@reportSystemCode'+ "&orgId=" + '@ViewBag.OrganizeId' +"&systemCode="+systemCode+ "&yfbmCode=" + '@ViewBag.yfbmCode' + "&zyfyapplyno=" + fyid+"&zyh="+ zyhs[i]+"&operateType=1"+"&czIds=";
+            window.open(uri);
+        }
+        @*if (boleal == true) {//药品标签打印
+            window.open("/Report/PrintReport?type=ZYFYLable_Detail&param=OrganizeId=@ViewBag.OrganizeId|yfbmCode=@ViewBag.yfbmCode|zyfyapplyno=" + fyid + "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
+        }
+        else {
+            window.open("/Report/PrintReport?type=ZYFY_CFD&param=OrganizeId=@ViewBag.OrganizeId|yfbmCode=@ViewBag.yfbmCode|zyfyapplyno=" + fyid + "|zyh=" + zyh +"|operateType=1|czIds=", "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
+        }*@
+
+    }
+
+    function printRptSumary(fyid) {
+        var yzIds = "";
+        var zxIds = "";
+        var rowIds = $gridBRXXDrugsList.getDataIDs();
+        if (rowIds == null || rowIds.length === 0) {
+            return false;
+        }
+        var systemCode="PDS";//报表所属系统编码
+        var uri = '@reportUrl' + "?tempCode=66" + "&systemCode=" + '@reportSystemCode'+ "&hospitalCode=" + '@ViewBag.OrganizeId' +"&systemCode="+systemCode+ "&yfbmCode=" + '@ViewBag.yfbmCode' + "&zyfyapplyno=" + fyid+ "&operateType=1&kssj=&jssj=&rdNo=&czIds=";
+        window.open(uri);
+        //window.open("/Report/PrintReport?type=ZYFYCX_Summary&param=OrganizeId=@ViewBag.OrganizeId|yfbmCode=@ViewBag.yfbmCode|zyfyapplyno=" + fyid + "|operateType=1|kssj=|jssj=|rdNo=|czIds=", "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
+
+    }
+    </script>

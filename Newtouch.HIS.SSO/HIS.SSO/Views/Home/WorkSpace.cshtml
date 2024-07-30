@@ -1,0 +1,708 @@
+﻿@using NewtouchHIS.Lib.Base.Utilities;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .ul-ConvenientMenu {
+        width: 100%;
+        height: 90px;
+        list-style: none;
+        padding: 0;
+        overflow-y: auto;
+    }
+
+        .ul-ConvenientMenu li {
+            margin: 10px;
+            display: inline;
+            float: left;
+            height: 20px;
+            width: 180px;
+            border: 0px solid #ccc;
+            border-radius: 5px 5px 0 0;
+            /*-webkit-box-shadow: #666 3px 4px 8px;
+                                                                                    -moz-box-shadow: #666 3px 4px 8px;
+                                                                                    box-shadow: #666 3px 4px 8px;*/
+        }
+
+    .app-blocktheme-blue {
+        width: 100%;
+        height: 140px;
+        border: solid 1px #abcdef;
+        background-color: #ADD8E6;
+        padding: 3rem 15% 1rem 15%;
+    }
+
+    .app-item {
+        display: block;
+        line-height: 100px;
+        width: 20%;
+        margin-left: 2rem;
+        cursor: pointer;
+        font-size: 20px;
+    }
+
+    .bootstrap-table {
+        height: 95%; /* 或者是百分比，比如 height: 100%; */
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .fixed-table-body {
+        height: 100%;
+    }
+
+    .bootstrap-table .fixed-table-container.fixed-height:not(.has-footer) {
+        border-bottom: none;
+    }
+</style>
+<script src="@MvcHelper.GetStaticResourceScriptUrl("~/js/highcharts/highcharts.js")"></script>
+
+<div class="panel panel-default">
+    <div id="myCarousel" class="carousel slide">
+        <!-- 轮播（Carousel）指标 -->
+        <ol class="carousel-indicators" style="margin-bottom:-1rem;">
+            <li data-target="#myCarousel" data-slide-to="0" class="active"></li>
+            <li data-target="#myCarousel" data-slide-to="1"></li>
+@*            <li data-target="#myCarousel" data-slide-to="2"></li>*@
+        </ol>
+        <!-- 轮播（Carousel）项目 -->
+        <div class="carousel-inner">
+            <div class="item active">
+                <div class="app-blocktheme-blue">
+                    <span class="col-xs-4 label label-success app-item" onclick="appdomain('SETT')">结算系统</span>
+                    <span class="col-xs-4 label label-primary app-item" onclick="appdomain('CIS')">医护协同系统</span>
+                    <span class="col-xs-4 label label-warning app-item" onclick="appdomain('PDS')">药房药库系统</span>
+                </div>
+                @*			<div class="carousel-caption">
+
+                </div>*@
+            </div>
+            <div class="item">
+                <div class="app-blocktheme-blue">
+                    <span class="col-xs-4 label label-success app-item app-item" onclick="appdomain('EMR')">电子病历系统</span>
+                    <span class="col-xs-4 label label-warning app-item" onclick="appdomain('MRQC')">病历质控系统</span>
+                    <span class="col-xs-5 label label-info app-item" onclick="appdomain('OR')">手术系统</span>
+                </div>
+            </div>
+@*            <div class="item">
+                <div class="app-blocktheme-blue">
+                    <span class="col-xs-4 label label-info app-item app-item" onclick="appdomain('MR')">病案管理系统</span>
+                    <span class="col-xs-4 label label-default app-item app-item" onclick="appdomain('BASE')">后台基础数据系统</span>
+                    <span class="col-xs-5 label label-info app-item" onclick="appdomain('HERP')">物资耗材系统</span>
+                    
+                </div>
+            </div>*@
+        </div>
+        <!-- 轮播（Carousel）导航 -->
+        <a class="left carousel-control" href="#myCarousel" role="button" data-slide="prev">
+            <span class="fa fa-chevron-left" style="margin-top:45%;" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="right carousel-control" href="#myCarousel" role="button" data-slide="next">
+            <span class="fa fa-chevron-right" style="margin-top:45%;" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+    <hr />
+    <div class="panel-heading navb-bg" style="font-size:16px">
+        <i class="fa fa-star icon-theme-highlight"></i> <strong class="icon-theme-info">快速访问</strong>
+        <div class="topPanel pull-right col-sm-2">
+            <div class="search">
+                <div class="input-group">
+                    <input id="txt_keyword" type="text" class="form-control" placeholder="功能名称">
+                    <span class="input-group-btn">
+                        <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <ul class="ul-ConvenientMenu">
+    </ul>
+    <hr />
+    <div class="panel-heading navb-bg" style="font-size:16px">
+        <i class="fa fa-line-chart icon-theme-warning"></i> <strong class="icon-theme-info">工作台 · 统计分析</strong>
+    </div>
+
+
+    <div id="dv_table">
+        <form class="form-inline" role="form" style="padding:0.5rem;">
+            <div class="form-group" id="dv_tjrq">
+                <label class="control-label text-title" for="tjrq">统计日期</label>
+                <input id="tjrq" type="text" class="forme-default input-wdatepicker" onclick="WdatePicker({dateFmt: 'yyyy-MM-dd'})"
+                       onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked:function(){ refreshTab();} })" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+            </div>
+            <div class="form-group pull-right">
+                <label class="control-label text-title" for="sel_Duty"><i class="fa fa-vcard-o icon-theme-warning"></i> 岗  位</label>
+                <select id="sel_Duty" class="forme-default">
+                </select>
+            </div>
+        </form>
+        <div class="col-sm-6" style="height:95%;z-index:1;background-color:#ffffff;">
+            <table id="table"></table>
+        </div>
+        <div id="leavechart" class="col-sm-6" style="height:95%;"></div>
+    </div>
+
+</div>
+
+<script type="text/javascript">
+    var currentmenu = [];
+    $(function () {
+        init();
+        GetLeaveChart([]);
+        $('.tabSaveMune').on('click', function () {
+
+            //$('.page-tabs-content').find('a.menuTab.active i').trigger("click");
+        });
+        $('.ul-ConvenientMenu').on("click", "li", function () {
+            currentmenu = { "MenuName": $(this).find(".dv-data").attr('data-MenuName'), "AppId": $(this).find(".dv-data").attr('data-appId'), "MenuUrl": $(this).find(".dv-data").attr('data-MenuUrl') };
+        });
+        $('.ul-ConvenientMenu').on("dblclick", "li", function () {
+            //top.top.$.Newtouchtab.tryCloseTab({ name: "", url: "/OutpatientManage/OutpatCharge/Index2018" });
+            top.top.$.Newtouchtab.addTabWithOutMenu({ name: currentmenu.MenuName, enName: "", url: currentmenu.MenuUrl, AppId: currentmenu.AppId });
+        });
+        $("#btn_search").on('click', function () {
+            tableRefresh();
+        });
+        $.ajax({
+            url: "/Home/GetUserDutyList",
+            data: {},
+            type: "post",
+            async: false,
+            dataType: "json",
+            success: function (data) {
+                $.each(data, function () {
+                    var option = "<option value='" + this.id + "'>" + this.text + "</option>";
+                    $("#sel_Duty").append(option);
+                });
+            }
+        });
+        DutyTabInit();
+        tabtol();
+    });
+    var columns = [];
+    var tabtypeName = "";
+    $('#sel_Duty').change(function () {
+        refreshTab();
+    })
+    function refreshTab() {
+        DutyTabInit();
+        $('#table').bootstrapTable('destroy');
+        tabtol();
+    }
+    function DutyTabInit() {
+        var $thisval = $("#sel_Duty").val();
+        switch ($thisval) {
+            case "tollman": //收费员
+                $("#dv_tjrq").show();
+                tabtypeName = "收费员";
+                columns = [
+                    {
+                        field: 'Id',
+                        visible: false
+                    },
+                    {
+                        field: 'brxz',
+                        title: '患者类型',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'ghrc',
+                        title: '挂号数',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'thrc',
+                        title: '退号数',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'jsje',
+                        title: '结算金额',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'tfje',
+                        title: '退费金额',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                ];
+                break;
+            case "Doctor":
+                $("#dv_tjrq").show();
+                tabtypeName = "医生";
+                columns = [
+                    {
+                        field: 'Id',
+                        visible: false
+                    }, {
+                        field: 'brxz',
+                        title: '患者类型',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'jzrc',
+                        title: '就诊人数',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'kfje',
+                        title: '开方金额',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'jsje',
+                        title: '结算金额',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    }
+                ];
+                break;
+            case "Nurse":
+                $("#dv_tjrq").hide();
+                tabtypeName = "护士";
+                columns = [
+                    {
+                        field: 'Id',
+                        visible: false
+                    }, {
+                        field: 'brxz',
+                        title: '患者类型',
+                        halign: 'center',
+                        align: 'center',
+                        width: '20',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'yrqrc',
+                        title: '今日入区',
+                        halign: 'center',
+                        align: 'center',
+                        width: '10',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'wrqrc',
+                        title: '今日待入区',
+                        halign: 'center',
+                        align: 'center',
+                        width: '10',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'jrcqrc',
+                        title: '今日出区',
+                        halign: 'center',
+                        align: 'center',
+                        width: '10',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'jrwcqrc',
+                        title: '在院人次',
+                        halign: 'center',
+                        align: 'center',
+                        width: '10',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'zcw',
+                        title: '总床位数',
+                        halign: 'center',
+                        align: 'center',
+                        width: '10',
+                        widthUnit: '%',
+                    },
+                    {
+                        field: 'sycw',
+                        title: '剩余床位数',
+                        halign: 'center',
+                        align: 'center',
+                        width: '10',
+                        widthUnit: '%',
+                    },
+
+
+                ];
+                break;
+        }
+    }
+    function tabtol() {
+        //$("#tabtype").val(tabtypeName);
+        var $table = $('#table');
+        $table.bootstrapTable({
+            url: "/Home/GetDutyTotalList", //服务器返回数据的网址
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+            height: '100%',
+            queryParams: {
+                dutycode: $("#sel_Duty").val(),
+                tjrq: $("#tjrq").val()
+            },
+            classes: "table table-bordered table-striped table-hover",
+            theadClasses: "table-light",//设置表头样式
+            idField: 'Id',
+            showColumns: false,
+            columns: columns,
+            uniqueId: 'Id',
+            rowStyle: function (row, index) {
+                if (row.brxz == "合计") {
+                    return {
+                        css: {
+                            "background-color": "#d5f4e6",
+                            "font-wight": "bold"
+                        }
+                    }
+                }
+                return {};
+            },
+            onLoadSuccess: function (data) {
+                GetLeaveChart(data);
+            },
+            formatLoadingMessage: function () {
+                return "<span class='table-loading-text'>正在加载中，请稍候</span>";
+            },
+            formatNoMatches: function () {
+                return "暂无数据";
+            }
+        });
+    }
+
+    function init() {
+        $.najax({
+            url: "/Home/GetShortcutMenuList",
+            dataType: "json",
+            data: { keyword: $("#txt_keyword").val() },
+            type: "POST",
+            success: function (respdata) {
+                var j = 12;
+                if (respdata.length > 0 && respdata.length < 12) {
+                    j = 12 - respdata.length;
+                }
+                else if (respdata.length > 12) {
+                    j = -1;
+                }
+                for (var i = 0; i < j; i++) {
+                    respdata.push({ Id: null });
+                }
+                createli(respdata);
+            }
+        })
+        $("#dv_table").height($(window).height() - 430);
+    }
+    function createli(respdata) {
+        $.jsonWhere(respdata, function (v) {
+            var labelcss = !v.AppId ? 'text-success' : '';
+            if (!!v && v.Id != null) {
+                var li = '  <li>'
+                    + ' <div class="dv-data" data-appId=' + v.AppId + ' data-MenuUrl=' + v.MenuUrl + ' data-MenuName=' + v.MenuName + ' title="功能名称:' + v.MenuName + '">'
+                    + ' </div>'
+                    + ' <span class="' + labelcss + '" title="" style="cursor:pointer;font-size:16px"><i class="fa fa-hand-o-right icon-theme-info"></i> ' + v.MenuName + '</span>'
+                    + ' </li >';
+                $('.ul-ConvenientMenu').append(li);
+            }
+            else {
+                var li = '  <li>'
+                    + ' <div class="dv-data" style="border:2px dotted #eb9316;border-radius:4px;text-align:center;"'
+                    + ' </div>'
+                    + ' <span title="" style="cursor:pointer;color:#ffffff;"><i class="fa fa-star-o"></i></span>'
+                    + ' </li >';
+                $('.ul-ConvenientMenu').append(li);
+            }
+        })
+    }
+
+    function tableRefresh() {
+        $(".ul-ConvenientMenu").children("li").remove();
+        init();
+    }
+
+    function appdomain(sysApp) {
+        $.ajax({
+            url: "/Login/GetUALoginAddres",
+            data: { appId: sysApp },
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if (data.state == "success") {
+                    var url = data.data + "&returnUrl=" + encodeURIComponent("/Home/Index");
+                    window.open(url);
+                }
+            },
+            error: function (request, error, ex) {
+                $.modalAlert("服务不可访问：[" + ex + "]", 'error');
+            }
+        });
+    }
+
+    /**********************************数据统计**********************************/
+    function GetSalaryChart(data) {
+        //var randomScalingFactor = function () { return Math.round(Math.random() * 100) };
+        var OutpatientList = [];
+        var InpatientList = [];
+        //折线图 获取就诊人数
+        if (data) {
+            OutpatientList = data.OutpatientList;
+            InpatientList = data.InpatientList
+        } else {
+            for (var i = 0; i < 12; i++) {
+                OutpatientList.push([0]);
+                InpatientList.push([0]);
+            }
+        }
+        $('#personcntchart').highcharts({
+            chart: {
+                zoomType: 'none'
+            },
+            title: {
+                text: '就诊人数/在院人数'
+            },
+            xAxis: {
+                categories: [
+                    '一月',
+                    '二月',
+                    '三月',
+                    '四月',
+                    '五月',
+                    '六月',
+                    '七月',
+                    '八月',
+                    '九月',
+                    '十月',
+                    '十一月',
+                    '十二月'
+                ]
+            },
+            yAxis: {
+                title: {
+                    text: '单位 (人)'
+                }
+            },
+            tooltip: {
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y}人</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: "门诊",
+                color: '#999EFF',
+                data: [
+                    2, 0, 10, 29, 50, 12, 79, 80, 98, 100, 23
+                    //OutpatientList[0].num, OutpatientList[1].num, OutpatientList[2].num, OutpatientList[3].num, OutpatientList[4].num, OutpatientList[5].num, OutpatientList[6].num, OutpatientList[7].num, OutpatientList[8].num, OutpatientList[9].num, OutpatientList[10].num, OutpatientList[11].num
+                ]
+            }, {
+                name: "住院",
+                color: '#FFBC75',
+                data: [
+                    102, 99, 110, 129, 150, 112, 179, 180, 198, 100, 123
+                    //InpatientList[0].num, InpatientList[1].num, InpatientList[2].num, InpatientList[3].num, InpatientList[4].num, InpatientList[5].num, InpatientList[6].num, InpatientList[7].num, InpatientList[8].num, InpatientList[9].num, InpatientList[10].num, InpatientList[11].num
+                ]
+            }]
+        });
+    }
+
+    function GetLeaveChart(data) {
+        //var randomScalingFactor = function () { return Math.round(Math.random() * 100) };
+        //饼状图 获取就诊人数
+        var array = [];
+        var title = "就诊类别统计";
+        var $thisval = $("#sel_Duty").val();
+        if ($thisval == "tollman") {
+            title = "就诊类别统计";
+            $.each(data, function (e) {
+                if (this.brxz != "合计") {
+                    array.push([this.brxz, this.ghrc]);
+                }
+            });
+        }
+        else if ($thisval == "Doctor") {
+            $.each(data, function (e) {
+                if (this.brxz != "合计") {
+                    array.push([this.brxz, this.jzrc]);
+                }
+            });
+        }
+        else if ($thisval == "Nurse") {
+            $.each(data, function (e) {
+                if (this.brxz != "合计") {
+                    array.push([this.brxz, this.jrwcqrc]);
+                }
+            });
+        }
+        if (array.length == 0) {
+            array.push(["人次", 0]);
+        }
+
+        $('#leavechart').highcharts({
+            chart: {
+                type: 'pie'
+            },
+            colors: ['#999EFF', '#FFBC75', '#80ced6', '#EE4B2B', '#AFE1AF', '#FFDB58', '#CCCCFF', '#40B5AD', '#F2D2BD'],
+            title: {
+                text: title
+            },
+            tooltip: {
+                headerFormat: '',
+                pointFormat: '{point.name}: <b>{point.y}人</b>'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}</b>: {point.y}人',
+                        style: {
+                            color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                        }
+                    }
+                }
+            },
+            series: [{
+                type: 'pie',
+                //data: [
+                //    ['自费', 100],
+                //    ['城镇职工', 109],
+                //    ['居民', 27]
+                //]
+                data: array
+            }]
+        });
+
+    }
+
+    function LoadMonthChart() {
+        $.ajax({
+            url: "/Home/GetWeekNum?r=" + Math.random(),
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                if (data != null && data.data != null
+                    && data.data.OutpatientList != null
+                    && data.data.InpatientList != null) {
+                    GetMonthNumChart(data.data);
+                }
+            }
+        });
+    }
+
+    function GetMonthNumChart(data) {
+        var rtnobj = {};
+        rtnobj.str = [];
+        rtnobj.dataoutpatient = [];
+        rtnobj.datainpatient = [];
+        $.ajax({
+            url: "/Home/GetLastWeek?r=" + Math.random(),
+            dataType: "json",
+            async: false,
+            success: function (lastdata) {
+                if (lastdata != null) {
+                    for (var i = 0; i < lastdata.length; i++) {
+                        rtnobj.str.push(lastdata[i].wbegin.substring(5, 10) + "至" + (lastdata[i].wend).substring(5, 10));
+                        var isOutpatientPush = false;
+                        $.each(data.OutpatientList, function (ii, v) {
+                            if (v.wbegin == lastdata[i].wbegin && v.wend == lastdata[i].wend) {
+                                rtnobj.dataoutpatient.push(v.num);
+                                isOutpatientPush = true;
+                            }
+                        });
+                        if (!isOutpatientPush) {
+                            rtnobj.dataoutpatient.push(0);
+                        }
+                    }
+                    $.each(data.InpatientList, function (i, v) {
+                        if (v.wbegin == lastdata[i].wbegin && v.wend == lastdata[i].wend) {
+                            rtnobj.datainpatient.push(v.num);
+                        }
+                    });
+                    loadmonthcharts(rtnobj);
+                }
+            }
+        });
+    }
+
+    function loadmonthcharts(rtnobj) {
+        $('#monthcntchart').highcharts({
+            chart: {
+                zoomType: 'none'
+            },
+            title: {
+                text: '就诊人数/在院人数'
+            },
+            subtitle: {
+                text: new Date().getFullYear() + "年最近10周人数统计",
+            },
+            xAxis: {
+                categories: rtnobj.str,
+                labels: {
+                    rotation: 10, //倾斜的角度
+                }
+            },
+            yAxis: {
+                title: {
+                    text: '单位 (人)'
+                }
+            },
+            tooltip: {
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y}人</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: "门诊",
+                color: '#999EFF',
+                data: rtnobj.dataoutpatient
+            }, {
+                name: "住院",
+                color: '#FFBC75',
+                data: rtnobj.datainpatient
+            }
+            ]
+        });
+    }
+</script>

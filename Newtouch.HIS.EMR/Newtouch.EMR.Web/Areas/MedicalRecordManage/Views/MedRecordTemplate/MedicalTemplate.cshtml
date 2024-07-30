@@ -1,0 +1,2151 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.Common.Operator;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<link href="~/Content/css/fui.css" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui/easyui.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui/icon.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui-ribbon/ribbon.css" />
+<link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui-ribbon/ribbon-icon.css" />
+<script type="text/javascript" src="~/Content/jquery-easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="~/Content/jquery-easyui-ribbon/jquery.ribbon.js"></script>
+<link href="~/Content/jquery-easyui-ribbon/MedicalRecordEdit.css" rel="stylesheet" />
+<link href="~/Content/css/WebDemo.css" rel="stylesheet" />
+<link href="~/Content/css/style.css" rel="stylesheet" />
+@*<script src="~/Scripts/dc_main.js"></script>
+    <script src="~/Scripts/jquery.min.js"></script>*@
+<script src="~/Scripts/jquery.min.js"></script>
+<script src="~/Content/js/domtool.js"></script>
+@*<div class="toolbar" style="float:left">
+        <div class="btn-group">
+            <a id="mb-add" authorize="yes" class="btn btn-primary" onclick="TemplateSave()"><i class="fa fa-plus"></i>保存</a>
+        </div>
+    </div>*@
+
+
+<div class="easyui-ribbon" id="sqcd"
+     style="width: 100%; height: 140px; border: 1px solid #afafaf;position:relative;">
+    <div title="文件">
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="新建" class="easyui-linkbutton" data-options="plain:true"
+                   onclick="btn_add()">新建</a><br />
+                <a href="#" title="打开窗口编辑" class="easyui-linkbutton" data-options="plain:true"
+                   onclick="openwindow()">打开窗口编辑</a><br />
+                <a href="#" title="保存" class="easyui-linkbutton" onclick="TemplateSave();"
+                   data-options="plain:true">保存</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" title="导出为xml文件" class="easyui-linkbutton"
+                   onclick="document.getElementById('myWriterControl').DownLoadFile('xml');"
+                   data-options="plain:true">导出为xml文件</a><br />
+                <a href="#" title="导出为PDF文件" class="easyui-linkbutton"
+                   onclick="document.getElementById('myWriterControl').DownLoadFile('PDF');"
+                   data-options="plain:true">导出为PDF文件</a><br />
+                <a href="#" title="导出为rtf文件" class="easyui-linkbutton"
+                   onclick="document.getElementById('myWriterControl').DownLoadFile('rtf');"
+                   data-options="plain:true">导出为rtf文件</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" title="导出为txt文件" class="easyui-linkbutton"
+                   onclick="document.getElementById('myWriterControl').DownLoadFile('txt');"
+                   data-options="plain:true">导出为txt文件</a><br />
+                <a href="#" title="导出为图片" class="easyui-linkbutton"
+                   onclick="document.getElementById('myWriterControl').DownLoadFile('longimg');"
+                   data-options="plain:true">导出为图片</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="直接打印" class="easyui-linkbutton" onclick="PrintDocument();"
+                   data-options="plain:true">直接打印</a><br />
+                <a href="#" title="打印预览" class="easyui-linkbutton" onclick="OpenPreview();"
+                   data-options="plain:true">打印预览</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="表单模式" class="easyui-linkbutton" onclick="changeview(this);"
+                   data-options="plain:true">表单模式</a><br />
+                <a href="MergeDocument.html" target="_blank" title="留痕模式" class="easyui-linkbutton"
+                   data-options="plain:true">留痕模式</a><br />
+                <a href="#" title="自动缩放模式" class="easyui-linkbutton" onclick="changeAutoZoom(this);"
+                   data-options="plain:true">自动缩放模式</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="获得被选中的文本" class="easyui-linkbutton"
+                   onclick="alert(document.getElementById('myWriterControl').SelectionText());"
+                   data-options="plain:true">获得被选中的文本</a><br />
+                <a href="#" title="获得被选中的HTML" class="easyui-linkbutton" onclick="setHtml();"
+                   data-options="plain:true">获得被选中的HTML</a><br />
+                <a href="#" title="获得被选中的XML" class="easyui-linkbutton" onclick="setXml();"
+                   data-options="plain:true">获得被选中的XML</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="设置当前输入域文本" class="easyui-linkbutton" onclick="MySetElementText();"
+                   data-options="plain:true">设置当前输入域文本</a><br />
+                <a href="#" class="easyui-linkbutton" title="删除当前输入域" data-options="plain:true"
+                   onclick="DeleteField()">删除当前输入域</a><br />
+                <a href="#" class="easyui-linkbutton" title="设置自定义下拉列表" data-options="plain:true"
+                   onclick="CustomDropdownList();">设置自定义下拉列表</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="设置快捷菜单" class="easyui-linkbutton"
+                   onclick="MySetContextMenu();" data-options="plain:true">设置快捷菜单</a><br />
+                <a href="#" title="页面设置" class="easyui-linkbutton" onclick="ChangeDocumentSettings();"
+                   style="margin-top: 26px;" data-options="plain:true">页面设置</a>
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="文档校验" style="margin-top: 13px;"
+                   data-options=" plain:true" onclick="MyValueValidate();">文档校验</a><br />
+                <a href="#" class="easyui-linkbutton" data-options=" plain:true">
+                    <select id="validateResult" style="width: 120px;"
+                            onchange="validateResult_Click();"></select>
+                </a><br />
+            </div>
+            <div class="ribbon-group-sep"></div>
+        </div>
+    </div>
+    <div title="编辑">
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="居左对齐"
+                   data-options=" iconCls:'icon-align-left',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('justifyleft', false, null);">居左</a><br />
+                <a href="#" class="easyui-linkbutton" title="居右对齐"
+                   data-options=" iconCls:'icon-align-right',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('justifyright', false, null);">居右</a><br />
+                <a href="#" class="easyui-linkbutton" title="居中对齐"
+                   data-options=" iconCls:'icon-align-center',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('justifycenter', false, null);">居中</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="图片居左对齐"
+                   data-options=" iconCls:'icon-imle',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('imagefloat', false, 'left');">图片居左</a><br />
+                <a href="#" class="easyui-linkbutton" title="图片居右对齐"
+                   data-options=" iconCls:'icon-imri',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('imagefloat', false, 'right');">图片居右</a><br />
+                <a href="#" class="easyui-linkbutton" title="图片居中对齐"
+                   data-options=" iconCls:'icon-imce',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('imagefloat', false, 'center');">图片居中</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="段前距" id="rowspacingup"
+                   data-options=" iconCls:'icon-dqj',plain:true">段前距</a><br />
+                <a href="#" class="easyui-linkbutton" title="段后距" id="rowspacingdown"
+                   data-options=" iconCls:'icon-dhj',plain:true">段后距</a><br />
+                <a href="#" class="easyui-linkbutton" title="行间距" id="lineheight"
+                   data-options=" iconCls:'icon-hjj',plain:true">行间距</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="有序列表"
+                   data-options=" iconCls:'icon-numbers',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('insertorderedlist', true, null);">有序列表</a><br />
+                <a href="#" class="easyui-linkbutton" title="无序列表"
+                   data-options=" iconCls:'icon-bullets',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('insertunorderedlist', true, null);">无序列表</a><br />
+                <a href="#" class="easyui-linkbutton" title="首行缩进"
+                   data-options=" iconCls:'icon-inde',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Indent', true, null);">首行缩进</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="上标"
+                   data-options=" iconCls:'icon-superscript',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Superscript', true, null);">上标</a><br />
+                <a href="#" class="easyui-linkbutton" title="下标"
+                   data-options=" iconCls:'icon-subscript',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Subscript', true, null);">下标</a><br />
+                <a href="#" class="easyui-linkbutton" title="加粗"
+                   data-options=" iconCls:'icon-bold',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('bold', true, null);">加粗</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="大写"
+                   data-options=" iconCls:'icon-uppercase-font',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('ToupperCase', false, null);">大写</a><br />
+                <a href="#" class="easyui-linkbutton" title="小写"
+                   data-options=" iconCls:'icon-lowercase-font',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('TolowerCase', false, null);">小写</a><br />
+                <a href="#" class="easyui-linkbutton" title="斜体"
+                   data-options=" iconCls:'icon-italic',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Italic', true, null);">斜体</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="删除线"
+                   data-options=" iconCls:'icon-strikethrough',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Strikethrough', false, null);">删除线</a><br />
+                <a href="#" class="easyui-linkbutton" title="下划线"
+                   data-options=" iconCls:'icon-underline',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Underline', false, null);">下划线</a><br />
+                <a href="#" class="easyui-linkbutton" title="字符边框"
+                   data-options=" iconCls:'icon-zfbk',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Fontborder', true, null);">字符边框</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton clickMenu" title="背景色"
+                   data-options=" iconCls:'icon-fontbg',plain:true" id="backcolor">背景色</a>
+                <br />
+                <a href="#" class="easyui-linkbutton clickMenu" title="字体颜色"
+                   data-options=" iconCls:'icon-fontf',plain:true" id="fontcolor">字体颜色</a>
+                <br />
+                <a href="#" class="easyui-linkbutton clickMenu" title="字体大小" id="fontsize"
+                   data-options=" iconCls:'icon-fontsize',plain:true">字体大小</a>
+                <br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton clickMenu" title="字体"
+                   data-options=" iconCls:'icon-fontfa',plain:true" id="fontfa">字体</a>
+                <br />
+                <a href="#" class="easyui-linkbutton" title="清除字号"
+                   data-options=" iconCls:'icon-eraser-font',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('removefontsize', true, 'inherit');">清除字号</a><br />
+                <a href="#" class="easyui-linkbutton" title="清除字体"
+                   data-options=" iconCls:'icon-eraser-font',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('removeformat', true, 'inherit');">清除字体</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+    </div>
+    <div title="插入">
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入图片"
+                   data-options=" iconCls:'icon-picture-large',iconAlign:'top',size:'large'"
+                   style="border: 0; padding-top: 15px;"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('DCInsertImage', false, null);">插入图片</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入时间"
+                   data-options=" iconCls:'icon-time-large',iconAlign:'top',size:'large'"
+                   style="border: 0; padding-top: 15px;"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Time', false, null);">插入时间</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入日期"
+                   data-options=" iconCls:'icon-data-large',iconAlign:'top',size:'large'"
+                   style="border: 0; padding-top: 15px;"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Date', false, null);">插入日期</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入分隔符"
+                   data-options=" iconCls:'icon-fyf-large',iconAlign:'top',size:'large'"
+                   style="border: 0; padding-top: 15px;"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('pagebreak', false, null);">插入分隔符</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入超链接"
+                   data-options=" iconCls:'icon-link',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('link', true, '超链接,http://dcwriter.cn');"
+                   id="inserlinka">超链接</a><br />
+                <a href="#" class="easyui-linkbutton" title="取消超链接"
+                   data-options=" iconCls:'icon-unlink',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('unlink', true, null);">取消超链接</a><br />
+                <a href="#" class="easyui-linkbutton" title="插入特殊字符"
+                   data-options=" iconCls:'icon-tszf',plain:true" id="insertszf">插入特殊字符</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入年龄输入域"
+                   data-options=" iconCls:'icon-age',plain:true" val="InsertAgeField"
+                   onclick="MyExecuteCommand(this);">插入年龄输入域</a><br />
+                <a href="#" class="easyui-linkbutton" title="插入性别输入域"
+                   data-options=" iconCls:'icon-sex',plain:true" val="InsertSexField"
+                   onclick="MyExecuteCommand(this);">插入性别输入域</a><br />
+                <a href="#" class="easyui-linkbutton" title="插入日期输入域"
+                   data-options=" iconCls:'icon-date',plain:true" val="InsertDateTime"
+                   onclick="MyExecuteCommand(this);">插入日期输入域</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入按钮"
+                   data-options=" iconCls:'icon-button',plain:true" val="InsertInputButton"
+                   onclick="MyExecuteCommand(this);">插入按钮</a><br />
+                <a href="#" class="easyui-linkbutton" title="插入复选框"
+                   data-options=" iconCls:'icon-fxk',plain:true" val="InsertInputCheckbox"
+                   onclick="MyExecuteCommand(this);">插入复选框</a><br />
+                <a href="#" class="easyui-linkbutton" title="插入单选框"
+                   data-options=" iconCls:'icon-dxk',plain:true" val="InsertInputRadio"
+                   onclick="MyExecuteCommand(this);">插入单选框</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入批注" data-options="plain:true"
+                   onclick="insertNewComment();">插入批注</a><br />
+                <a href="#" class="easyui-linkbutton" title="插入页码" data-options="plain:true"
+                   onclick="dcInsertPageInfo();">插入页码</a><br />
+                <!--<a href="#" class="easyui-linkbutton" title="插入自定义下拉菜单"
+    data-options="plain:true"
+    onclick="insertCustomDropdownList();">插入自定义下拉菜单</a><br />-->
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <select id="MedicalExpressionMenu">
+                    <option>选择插入的医学表达式</option>
+                </select>
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+    </div>
+    <div title="表格">
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="插入表格" id="insert_table"
+                   data-options=" iconCls:'icon-table-large',iconAlign:'top',size:'large'"
+                   style="border: 0; padding-top: 15px;">插入表格</a><br />
+            </div>
+            <div class="ribbon-toolbar">
+                <a href="#" class="easyui-linkbutton" title="删除表格"
+                   data-options=" iconCls:'icon-tabledel-large',iconAlign:'top',size:'large'"
+                   style="border: 0; padding-top: 15px;"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_deletetable', true, null);">删除表格</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <div class="ribbon-toolbar">
+                    <a href="#" class="easyui-linkbutton" title="表格前插入行"
+                       data-options=" iconCls:'icon-inserttext',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('insertparagraphbeforetable', true, null);">表格前插入行</a><br />
+                    <a href="#" class="easyui-linkbutton" title="插入行"
+                       data-options=" iconCls:'icon-inserth',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_insertrowup', true, null);">在上面插入行</a><br />
+                    <a href="#" class="easyui-linkbutton" title="插入行"
+                       data-options=" iconCls:'icon-inserth',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_InsertRowDown', true, null);">在下面插入行</a><br />
+                </div>
+                <div class="ribbon-toolbar">
+                    <a href="#" class="easyui-linkbutton" title="插入列"
+                       data-options=" iconCls:'icon-insertl',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_insertcolumnleft', true, null);">在左面插入列</a><br />
+                    <a href="#" class="easyui-linkbutton" title="插入列"
+                       data-options=" iconCls:'icon-insertl',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_insertcolumnRight', true, null);">在右面插入列</a><br />
+                    <!-- <a href="#" class="easyui-linkbutton" data-options="plain:true"
+                        onclick="document.getElementById('myWriterControl').LoadDocumentFromFile('DataSource', null);">数据源绑定</a> -->
+                </div>
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <div class="ribbon-toolbar">
+                    <a href="#" title="删除行" class="easyui-linkbutton"
+                       data-options=" iconCls:'icon-delh',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_deleterow', true, null);">删除行</a><br />
+                    <a href="#" title="删除列" class="easyui-linkbutton"
+                       data-options=" iconCls:'icon-dell',plain:true"
+                       onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_deletecolumn', true, null);">删除列</a><br />
+                </div>
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="拆分成行" class="easyui-linkbutton"
+                   data-options=" iconCls:'icon-chaifen',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('splittorows', true, null);">拆分成行</a><br />
+                <a href="#" title="拆分成列" class="easyui-linkbutton"
+                   data-options=" iconCls:'icon-chaifen',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('splittocols', true, null);">拆分成列</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+        <div class="ribbon-group">
+            <div class="ribbon-toolbar">
+                <a href="#" title="右合并单元格" class="easyui-linkbutton"
+                   data-options=" iconCls:'icon-hebing',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('mergeright', true, null);">右合并单元格</a><br />
+                <a href="#" title="下合并单元格" class="easyui-linkbutton"
+                   data-options=" iconCls:'icon-hebing',plain:true"
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('mergedown', true, null);">下合并单元格</a><br />
+            </div>
+        </div>
+        <div class="ribbon-group-sep"></div>
+    </div>
+    <span class="shouqi" style="display: none;">
+        <span class="shouqiUl">折叠列表</span>
+        <span class="shouqiMenu">折叠菜单</span>
+    </span>
+</div>
+<div class="xmlIfr">
+    <div class="mask" id="mask" style="display: none;"></div>
+    <!--插入表格-->
+    <div class="panel combo-p" id="table" style="display: none;">
+        <div class="combo-panel panel-body panel-body-noheader" title=""
+             style="width: 78px; border: 0;">
+            <input type="text" id="row"
+                   onkeyup="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}"
+                   onafterpaste="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'0')}else{this.value=this.value.replace(/\D/g,'')}"
+                   placeholder="行" autocomplete="off"
+                   style="float: left; width: 20px; margin-right: 10px;" />
+            *
+            <input type="text" id="column"
+                   onkeyup="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'')}else{this.value=this.value.replace(/\D/g,'')}"
+                   onafterpaste="if(this.value.length==1){this.value=this.value.replace(/[^1-9]/g,'0')}else{this.value=this.value.replace(/\D/g,'')}"
+                   placeholder="列" autocomplete="off" style="width: 20px; margin-left: 10px;" />
+            <input type="button" id="qd" style="width: 78px;" value="确定" />
+        </div>
+    </div>
+    <!--字体大小-->
+    <div class="panel combo-p" id="fontsizeli" style="display: none;">
+        <div class="combo-panel panel-body panel-body-noheader" title="" style="width: 114px;">
+            <div id="font10" class="combobox-item" style="font-size: 10px; cursor: pointer;">
+                10px
+            </div>
+            <div id="font12" class="combobox-item" style="font-size: 12px; cursor: pointer;">
+                12px
+            </div>
+            <div id="font14" class="combobox-item" style="font-size: 14px; cursor: pointer;">
+                14px
+            </div>
+            <div id="font16" class="combobox-item" style="font-size: 16px; cursor: pointer;">
+                16px
+            </div>
+            <div id="font24" class="combobox-item" style="font-size: 24px; cursor: pointer;">
+                24px
+            </div>
+            <div id="font32" class="combobox-item" style="font-size: 32px; cursor: pointer;">
+                32px
+            </div>
+        </div>
+    </div>
+    <!--字体-->
+    <div class="panel combo-p" id="fontf" style="display: none;">
+        <div class="combo-panel panel-body panel-body-noheader" title="" style="width: 114px;">
+            <div id="fontfh" class="combobox-item"
+                 style="font-size: 10px; cursor: pointer; font-family: 黑体;">黑体</div>
+            <div id="fontfs" class="combobox-item"
+                 style="font-size: 12px; cursor: pointer; font-family: 宋体;">宋体</div>
+            <div id="fontfw" class="combobox-item"
+                 style="font-size: 14px; cursor: pointer; font-family: 微软雅黑;">
+                微软雅黑
+            </div>
+            <div id="fontfk" class="combobox-item"
+                 style="font-size: 14px; cursor: pointer; font-family: 楷体;">楷体</div>
+        </div>
+    </div>
+    <!--段前距-->
+    <div class="panel combo-p" id="rowspacingup1" style="display: none;">
+        <div class="combo-panel panel-body panel-body-noheader" title="" style="width: 114px;">
+            <div id="up5" class="combobox-item" style="cursor: pointer;">5px</div>
+            <div id="up10" class="combobox-item" style="cursor: pointer;">10px</div>
+            <div id="up15" class="combobox-item" style="cursor: pointer;">15px</div>
+            <div id="up20" class="combobox-item" style="cursor: pointer;">20px</div>
+            <div id="up25" class="combobox-item" style="cursor: pointer;">25px</div>
+        </div>
+    </div>
+    <!--段后距-->
+    <div class="panel combo-p" id="rowspacingdown1" style="display: none;">
+        <div class="combo-panel panel-body panel-body-noheader" title="" style="width: 114px;">
+            <div id="down5" class="combobox-item" style="cursor: pointer;">5px</div>
+            <div id="down10" class="combobox-item" style="cursor: pointer;">
+                10px
+            </div>
+            <div id="down15" class="combobox-item" style="cursor: pointer;">
+                15px
+            </div>
+            <div id="down20" class="combobox-item" style="cursor: pointer;">
+                20px
+            </div>
+            <div id="down25" class="combobox-item" style="cursor: pointer;">
+                25px
+            </div>
+        </div>
+    </div>
+    <!--行间距-->
+    <div class="panel combo-p" id="lineheight1" style="display: none;">
+        <div class="combo-panel panel-body panel-body-noheader" title="" style="width: 114px;">
+            <div id="li1" class="combobox-item" style="cursor: pointer;">1</div>
+            <div id="li15" class="combobox-item" style="cursor: pointer;">1.5</div>
+            <div id="li175" class="combobox-item" style="cursor: pointer;">
+                1.75
+            </div>
+            <div id="li2" class="combobox-item" style="cursor: pointer;">2</div>
+            <div id="li3" class="combobox-item" style="cursor: pointer;">3</div>
+            <div id="li4" class="combobox-item" style="cursor: pointer;">4</div>
+            <div id="li5" class="combobox-item" style="cursor: pointer;">5</div>
+        </div>
+    </div>
+    <!--字体颜色-->
+    <div class="fui-panel fui-widget fui-container fui-ppanel fui-colorpicker fui-ppanel-position"
+         id="fcolor" rule="ColorPicker" style="display: none;">
+        <div class="fui-panel-content">
+            <div class="fui-colorpicker-container">
+                <div class="fui-colorpicker-toolbar">
+                    <div class="fui-colorpicker-preview"
+                         style="background-color: rgb(247, 150, 70); border-color: rgb(247, 150, 70);">
+                    </div>
+                </div>
+                <div class="fui-colorpicker-title">通用颜色</div>
+                <div class="fui-colorpicker-commoncolor fgclor">
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line0">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #ffffff; border-color: #eeeeee;"
+                              data-color="#ffffff"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #000000; border-color: #000000;"
+                              data-color="#000000"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #eeece1; border-color: #eeece1;"
+                              data-color="#eeece1"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #1f497d; border-color: #1f497d;"
+                              data-color="#1f497d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4f81bd; border-color: #4f81bd;"
+                              data-color="#4f81bd"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c0504d; border-color: #c0504d;"
+                              data-color="#c0504d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #9bbb59; border-color: #9bbb59;"
+                              data-color="#9bbb59"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #8064a2; border-color: #8064a2;"
+                              data-color="#8064a2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4bacc6; border-color: #4bacc6;"
+                              data-color="#4bacc6"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #f79646; border-color: #f79646;"
+                              data-color="#f79646"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line1">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #f2f2f2; border-color: #f2f2f2;"
+                              data-color="#f2f2f2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #808080; border-color: #808080;"
+                              data-color="#808080"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #ddd8c2; border-color: #ddd8c2;"
+                              data-color="#ddd8c2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c6d9f1; border-color: #c6d9f1;"
+                              data-color="#c6d9f1"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #dbe5f1; border-color: #dbe5f1;"
+                              data-color="#dbe5f1"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #f2dbdb; border-color: #f2dbdb;"
+                              data-color="#f2dbdb"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #eaf1dd; border-color: #eaf1dd;"
+                              data-color="#eaf1dd"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #e5dfec; border-color: #e5dfec;"
+                              data-color="#e5dfec"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #daeef3; border-color: #daeef3;"
+                              data-color="#daeef3"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #fde9d9; border-color: #fde9d9;"
+                              data-color="#fde9d9"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line2">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #d9d9d9; border-color: #d9d9d9;"
+                              data-color="#d9d9d9"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #595959; border-color: #595959;"
+                              data-color="#595959"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c4bc96; border-color: #c4bc96;"
+                              data-color="#c4bc96"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #8db3e2; border-color: #8db3e2;"
+                              data-color="#8db3e2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #b8cce4; border-color: #b8cce4;"
+                              data-color="#b8cce4"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #e5b8b7; border-color: #e5b8b7;"
+                              data-color="#e5b8b7"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #d6e3bc; border-color: #d6e3bc;"
+                              data-color="#d6e3bc"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #ccc0d9; border-color: #ccc0d9;"
+                              data-color="#ccc0d9"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #b6dde8; border-color: #b6dde8;"
+                              data-color="#b6dde8"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #fbd4b4; border-color: #fbd4b4;"
+                              data-color="#fbd4b4"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line3">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #bfbfbf; border-color: #bfbfbf;"
+                              data-color="#bfbfbf"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #404040; border-color: #404040;"
+                              data-color="#404040"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #938953; border-color: #938953;"
+                              data-color="#938953"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #548dd4; border-color: #548dd4;"
+                              data-color="#548dd4"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #95b3d7; border-color: #95b3d7;"
+                              data-color="#95b3d7"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #d99594; border-color: #d99594;"
+                              data-color="#d99594"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c2d69b; border-color: #c2d69b;"
+                              data-color="#c2d69b"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #b2a1c7; border-color: #b2a1c7;"
+                              data-color="#b2a1c7"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #92cddc; border-color: #92cddc;"
+                              data-color="#92cddc"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #fabf8f; border-color: #fabf8f;"
+                              data-color="#fabf8f"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line4">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #a6a6a6; border-color: #a6a6a6;"
+                              data-color="#a6a6a6"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #262626; border-color: #262626;"
+                              data-color="#262626"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4a442a; border-color: #4a442a;"
+                              data-color="#4a442a"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #17365d; border-color: #17365d;"
+                              data-color="#17365d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #365f91; border-color: #365f91;"
+                              data-color="#365f91"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #943634; border-color: #943634;"
+                              data-color="#943634"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #76923c; border-color: #76923c;"
+                              data-color="#76923c"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #5f497a; border-color: #5f497a;"
+                              data-color="#5f497a"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #31849b; border-color: #31849b;"
+                              data-color="#31849b"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #e36c0a; border-color: #e36c0a;"
+                              data-color="#e36c0a"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line5">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #7f7f7f; border-color: #7f7f7f;"
+                              data-color="#7f7f7f"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #0d0d0d; border-color: #0d0d0d;"
+                              data-color="#0d0d0d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #1c1a10; border-color: #1c1a10;"
+                              data-color="#1c1a10"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #0f243e; border-color: #0f243e;"
+                              data-color="#0f243e"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #243f60; border-color: #243f60;"
+                              data-color="#243f60"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #622423; border-color: #622423;"
+                              data-color="#622423"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4e6128; border-color: #4e6128;"
+                              data-color="#4e6128"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #3f3151; border-color: #3f3151;"
+                              data-color="#3f3151"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #205867; border-color: #205867;"
+                              data-color="#205867"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #974706; border-color: #974706;"
+                              data-color="#974706"></span>
+                    </div>
+                </div>
+                <div class="fui-colorpicker-title">标准颜色</div>
+                <div class="fui-colorpicker-standardcolor fui-colorpicker-colors  fgclor">
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #c00000; border-color: #c00000;"
+                          data-color="#c00000"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #ff0000; border-color: #ff0000;"
+                          data-color="#ff0000"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #ffc000; border-color: #ffc000;"
+                          data-color="#ffc000"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #ffff00; border-color: #ffff00;"
+                          data-color="#ffff00"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #92d050; border-color: #92d050;"
+                          data-color="#92d050"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #00b050; border-color: #00b050;"
+                          data-color="#00b050"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #00b0f0; border-color: #00b0f0;"
+                          data-color="#00b0f0"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #0070c0; border-color: #0070c0;"
+                          data-color="#0070c0"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #002060; border-color: #002060;"
+                          data-color="#002060"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #7030a0; border-color: #7030a0;"
+                          data-color="#7030a0"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--字体背景颜色-->
+    <div class="fui-panel fui-widget fui-container fui-ppanel fui-colorpicker fui-ppanel-position"
+         id="bcolor" rule="ColorPicker" style="display: none;">
+        <div class="fui-panel-content">
+            <div class="fui-colorpicker-container">
+                <div class="fui-colorpicker-toolbar">
+                    <div class="fui-colorpicker-preview"
+                         style="background-color: rgb(247, 150, 70); border-color: rgb(247, 150, 70);">
+                    </div>
+                </div>
+                <div class="fui-colorpicker-title">通用颜色</div>
+                <div class="fui-colorpicker-commoncolor bgclor">
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line0">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #ffffff; border-color: #eeeeee;"
+                              data-color="#ffffff"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #000000; border-color: #000000;"
+                              data-color="#000000"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #eeece1; border-color: #eeece1;"
+                              data-color="#eeece1"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #1f497d; border-color: #1f497d;"
+                              data-color="#1f497d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4f81bd; border-color: #4f81bd;"
+                              data-color="#4f81bd"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c0504d; border-color: #c0504d;"
+                              data-color="#c0504d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #9bbb59; border-color: #9bbb59;"
+                              data-color="#9bbb59"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #8064a2; border-color: #8064a2;"
+                              data-color="#8064a2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4bacc6; border-color: #4bacc6;"
+                              data-color="#4bacc6"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #f79646; border-color: #f79646;"
+                              data-color="#f79646"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line1">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #f2f2f2; border-color: #f2f2f2;"
+                              data-color="#f2f2f2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #808080; border-color: #808080;"
+                              data-color="#808080"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #ddd8c2; border-color: #ddd8c2;"
+                              data-color="#ddd8c2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c6d9f1; border-color: #c6d9f1;"
+                              data-color="#c6d9f1"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #dbe5f1; border-color: #dbe5f1;"
+                              data-color="#dbe5f1"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #f2dbdb; border-color: #f2dbdb;"
+                              data-color="#f2dbdb"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #eaf1dd; border-color: #eaf1dd;"
+                              data-color="#eaf1dd"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #e5dfec; border-color: #e5dfec;"
+                              data-color="#e5dfec"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #daeef3; border-color: #daeef3;"
+                              data-color="#daeef3"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #fde9d9; border-color: #fde9d9;"
+                              data-color="#fde9d9"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line2">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #d9d9d9; border-color: #d9d9d9;"
+                              data-color="#d9d9d9"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #595959; border-color: #595959;"
+                              data-color="#595959"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c4bc96; border-color: #c4bc96;"
+                              data-color="#c4bc96"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #8db3e2; border-color: #8db3e2;"
+                              data-color="#8db3e2"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #b8cce4; border-color: #b8cce4;"
+                              data-color="#b8cce4"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #e5b8b7; border-color: #e5b8b7;"
+                              data-color="#e5b8b7"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #d6e3bc; border-color: #d6e3bc;"
+                              data-color="#d6e3bc"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #ccc0d9; border-color: #ccc0d9;"
+                              data-color="#ccc0d9"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #b6dde8; border-color: #b6dde8;"
+                              data-color="#b6dde8"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #fbd4b4; border-color: #fbd4b4;"
+                              data-color="#fbd4b4"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line3">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #bfbfbf; border-color: #bfbfbf;"
+                              data-color="#bfbfbf"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #404040; border-color: #404040;"
+                              data-color="#404040"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #938953; border-color: #938953;"
+                              data-color="#938953"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #548dd4; border-color: #548dd4;"
+                              data-color="#548dd4"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #95b3d7; border-color: #95b3d7;"
+                              data-color="#95b3d7"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #d99594; border-color: #d99594;"
+                              data-color="#d99594"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #c2d69b; border-color: #c2d69b;"
+                              data-color="#c2d69b"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #b2a1c7; border-color: #b2a1c7;"
+                              data-color="#b2a1c7"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #92cddc; border-color: #92cddc;"
+                              data-color="#92cddc"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #fabf8f; border-color: #fabf8f;"
+                              data-color="#fabf8f"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line4">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #a6a6a6; border-color: #a6a6a6;"
+                              data-color="#a6a6a6"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #262626; border-color: #262626;"
+                              data-color="#262626"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4a442a; border-color: #4a442a;"
+                              data-color="#4a442a"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #17365d; border-color: #17365d;"
+                              data-color="#17365d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #365f91; border-color: #365f91;"
+                              data-color="#365f91"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #943634; border-color: #943634;"
+                              data-color="#943634"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #76923c; border-color: #76923c;"
+                              data-color="#76923c"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #5f497a; border-color: #5f497a;"
+                              data-color="#5f497a"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #31849b; border-color: #31849b;"
+                              data-color="#31849b"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #e36c0a; border-color: #e36c0a;"
+                              data-color="#e36c0a"></span>
+                    </div>
+                    <div class="fui-colorpicker-colors fui-colorpicker-colors-line5">
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #7f7f7f; border-color: #7f7f7f;"
+                              data-color="#7f7f7f"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #0d0d0d; border-color: #0d0d0d;"
+                              data-color="#0d0d0d"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #1c1a10; border-color: #1c1a10;"
+                              data-color="#1c1a10"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #0f243e; border-color: #0f243e;"
+                              data-color="#0f243e"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #243f60; border-color: #243f60;"
+                              data-color="#243f60"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #622423; border-color: #622423;"
+                              data-color="#622423"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #4e6128; border-color: #4e6128;"
+                              data-color="#4e6128"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #3f3151; border-color: #3f3151;"
+                              data-color="#3f3151"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #205867; border-color: #205867;"
+                              data-color="#205867"></span>
+                        <span class="fui-colorpicker-item"
+                              style="background-color: #974706; border-color: #974706;"
+                              data-color="#974706"></span>
+                    </div>
+                </div>
+                <div class="fui-colorpicker-title">标准颜色</div>
+                <div class="fui-colorpicker-standardcolor fui-colorpicker-colors  bgclor">
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #c00000; border-color: #c00000;"
+                          data-color="#c00000"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #ff0000; border-color: #ff0000;"
+                          data-color="#ff0000"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #ffc000; border-color: #ffc000;"
+                          data-color="#ffc000"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #ffff00; border-color: #ffff00;"
+                          data-color="#ffff00"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #92d050; border-color: #92d050;"
+                          data-color="#92d050"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #00b050; border-color: #00b050;"
+                          data-color="#00b050"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #00b0f0; border-color: #00b0f0;"
+                          data-color="#00b0f0"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #0070c0; border-color: #0070c0;"
+                          data-color="#0070c0"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #002060; border-color: #002060;"
+                          data-color="#002060"></span>
+                    <span class="fui-colorpicker-item"
+                          style="background-color: #7030a0; border-color: #7030a0;"
+                          data-color="#7030a0"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--插入特殊字符-->
+    <div id="tszfa" style="display: none;">
+        <div id="aaa" style="line-height: 32px; border-bottom: 1px solid #ddd; position: relative;">
+            <span style="font-size: 16px;">插入字符</span>
+            <img style="position: absolute; right: 0; top: 0; cursor: pointer;" id="closeimg"
+                 src="~/Content/img/close2.png" />
+        </div>
+        <div id="tabHeads" class="tabhead">
+            <span tabsrc="tsfh" class="focus">特殊字符</span>
+            <span tabsrc="lmsz" class="">罗马字符</span>
+            <span tabsrc="szfh" class="">数学字符</span>
+            <span tabsrc="rwfh" class="">医学字符</span>
+        </div>
+        <div id="tabBodys" class="tabbody" style="overflow:auto">
+            <div id="tsfh">
+                <span>、</span><span>。</span><span>·</span><span>ˉ</span><span>ˇ</span><span>¨</span><span>〃</span><span>々</span><span>—</span><span>～</span><span>‖</span><span>…</span><span>‘</span><span>’</span><span>“</span><span>”</span><span>〔</span><span>〕</span><span>〈</span><span>〉</span><span>《</span><span>》</span><span>「</span><span>」</span><span>『</span><span>』</span><span>〖</span><span>〗</span><span>【</span><span>】</span><span>±</span><span>×</span><span>÷</span><span>∶</span><span>∧</span><span>∨</span><span>∑</span><span>∏</span><span>∪</span><span>∩</span><span>∈</span><span>∷</span><span>√</span><span>⊥</span><span>∥</span><span>∠</span><span>⌒</span><span>⊙</span><span>∫</span><span>∮</span><span>≡</span><span>≌</span><span>≈</span><span>∽</span><span>∝</span><span>≠</span><span>≮</span><span>≯</span><span>≤</span><span>≥</span><span>∞</span><span>∵</span><span>∴</span><span>♂</span><span>♀</span><span>°</span><span>′</span><span>″</span><span>℃</span><span>＄</span><span>¤</span><span>￠</span><span>￡</span><span>‰</span><span>§</span><span>№</span><span>☆</span><span>★</span><span>○</span><span>●</span><span>◎</span><span>◇</span><span>◆</span><span>□</span><span>■</span><span>△</span><span>▲</span><span>※</span><span>→</span><span>←</span><span>↑</span><span>↓</span><span>〓</span><span>〡</span><span>〢</span><span>〣</span><span>〤</span><span>〥</span><span>〦</span><span>〧</span><span>〨</span><span>〩</span><span>㊣</span><span>㎎</span><span>㎏</span><span>㎜</span><span>㎝</span><span>㎞</span><span>㎡</span><span>㏄</span><span>㏎</span><span>㏑</span><span>㏒</span><span>㏕</span><span>︰</span>
+            </div>
+            <div id="lmsz" style="display: none;">
+                <span>ⅰ</span><span>ⅱ</span><span>ⅲ</span><span>ⅳ</span><span>ⅴ</span><span>ⅵ</span><span>ⅶ</span><span>ⅷ</span><span>ⅸ</span><span>ⅹ</span><span>Ⅰ</span><span>Ⅱ</span><span>Ⅲ</span><span>Ⅳ</span><span>Ⅴ</span><span>Ⅵ</span><span>Ⅶ</span><span>Ⅷ</span><span>Ⅸ</span><span>Ⅹ</span><span>Ⅺ</span><span>Ⅻ</span>
+            </div>
+            <div id="szfh" style="display: none;">
+                <span>⒈</span><span>⒉</span><span>⒊</span><span>⒋</span><span>⒌</span><span>⒍</span><span>⒎</span><span>⒏</span><span>⒐</span><span>⒑</span><span>⒒</span><span>⒓</span><span>⒔</span><span>⒕</span><span>⒖</span><span>⒗</span><span>⒘</span><span>⒙</span><span>⒚</span><span>⒛</span><span>⑴</span><span>⑵</span><span>⑶</span><span>⑷</span><span>⑸</span><span>⑹</span><span>⑺</span><span>⑻</span><span>⑼</span><span>⑽</span><span>⑾</span><span>⑿</span><span>⒀</span><span>⒁</span><span>⒂</span><span>⒃</span><span>⒄</span><span>⒅</span><span>⒆</span><span>⒇</span><span>①</span><span>②</span><span>③</span><span>④</span><span>⑤</span><span>⑥</span><span>⑦</span><span>⑧</span><span>⑨</span><span>⑩</span><span>㈠</span><span>㈡</span><span>㈢</span><span>㈣</span><span>㈤</span><span>㈥</span><span>㈦</span><span>㈧</span><span>㈨</span><span>㈩</span>
+            </div>
+            <div id="rwfh" style="display: none;">
+                <span>RP</span><span>P.O</span><span>INJ.</span><span>MIXT.</span><span>TAD.</span><span>SOL.</span><span>CO.</span><span>PR.</span><span>I.D</span><span>I.V</span><span>I.V.GTT.</span><span>IH</span><span>IM</span><span>O.M</span><span>O.N</span><span>HS.</span><span>AM.</span><span>PM.</span><span>A.C.</span><span>P.C.</span><span>SOS.</span><span>ST.</span><span>QD</span><span>BID</span><span>TID</span><span>QOD</span><span>QH</span><span>Q2H</span><span>Q3H</span><span>MCG</span><span>MG</span><span>G</span><span>ML</span><span>sig</span><span>qd</span><span>bid</span><span>tid</span><span>qid</span><span>qh</span><span>q2h</span><span>q4h</span><span>q6h</span><span>qn</span><span>qod</span><span>biw</span><span>hs</span><span>am</span><span>pm</span><span>St</span><span>DC</span><span>prn</span><span>sos</span><span>ac</span><span>pc</span><span>12n</span><span>12mn</span><span>gtt</span><span>ID</span><span>IH</span><span>IM</span><span>IV</span><span>aa</span><span>et</span><span>Rp.</span><span>sig./S.</span><span>St./Stat.</span><span>Cit.</span><span>s.o.s.</span><span>p.r.n</span><span>a.c.</span><span>p.c.</span><span>a.m.</span><span>p.m.</span><span>q.n.</span><span>h.s.</span><span>q.h.</span><span>q.d.</span><span>B.i.d.</span><span>T.i.d.</span><span>Q.i.d.</span><span>q.4h.</span><span>p.o.</span><span>
+                    ad
+                    us.int.
+                </span><span>
+                    ad
+                    us.ext.
+                </span><span>H.</span><span>im./M.</span><span>iv./V.</span><span>
+                    iv
+                    gtt.
+                </span><span>Inhal.</span><span>O.D.</span><span>O.L.</span><span>O.S.</span><span>O.U.</span><span>No./N.</span><span>s.s</span><span>ug.</span><span>mg.</span><span>g.</span><span>kg.</span><span>ml.</span><span>L.</span><span>q.s</span><span>Ad.</span><span>Aq.</span><span>Aq.dest.</span><span>Ft.</span><span>Dil</span><span>M.D.S.</span><span>Co./Comp.</span><span>Mist</span><span>Pulv.</span><span>Amp.</span><span>Emul.</span><span>Syr.</span><span>Tr.</span><span>Neb.</span><span>Garg.</span><span>rtt./gutt.</span><span>collyr.</span><span>Ocul.</span><span>Liq.</span><span>Sol.</span><span>Lot.</span><span>Linim.</span><span>Crem.</span><span>Ung.</span><span>Past.</span><span>Ol.</span><span>Enem.</span><span>Supp.</span><span>Tab.</span><span>Pil.</span><span>Caps.</span><span>Inj.</span><span>po</span><span>im</span><span>iv</span><span>ivgtt</span><span>qd</span><span>bid</span><span>tid</span><span>qid</span><span>q8h</span><span>qn</span><span>Rp</span><span>sig</span><span>prn</span>
+            </div>
+        </div>
+    </div>
+    <!--展示Html-->
+    <div id="zshtml" style="display: none;">
+        <div id="htmltop" style="line-height: 32px; border-bottom: 1px solid #ddd; position: relative;">
+            <span style="font-size: 16px;">Html文本</span>
+            <img style="position: absolute; right: 0; top: 0; cursor: pointer;" id="closeimga"
+                 src="~/Content/img/close2.png" />
+        </div>
+        <div class="tabbody">
+            <textarea id="htmlcon"></textarea>
+        </div>
+    </div>
+    <!--展示Xml-->
+    <div id="zsxml" style="display: none;">
+        <div id="xmltop" style="line-height: 32px; border-bottom: 1px solid #ddd; position: relative;">
+            <span style="font-size: 16px;">Xml文本</span>
+            <img style="position: absolute; right: 0; top: 0; cursor: pointer;" id="closeimgb"
+                 src="~/Content/img/close2.png" />
+        </div>
+        <div class="tabbody">
+            <textarea id="xmlcon"></textarea>
+        </div>
+    </div>
+    <!--插入超链接-->
+    <div class="maska" id="inserlink" style="display: none;">
+        <div>输入文本：<input type="text" id="inslinktext" style="width: 120px;" /></div>
+        <div>输入链接：<input type="text" id="inslink" style="width: 120px;" /></div>
+        <div class="linkqd">
+            <input type="button" style="margin-right: 20px;" id="inslinkb" value="确定" /><input id="inslinkc" type="button" value="取消" />
+        </div>
+    </div>
+    <!-- 插入批注 -->
+    <div id='NewComment_box'>
+        <div class="tit">
+            <img style="position: absolute; right: 20px; top: 20px; cursor: pointer;"
+                 src="~/Content/img/close2.png" />
+        </div>
+        <div class="cont">
+            <p>请输入批注内容：</p>
+            <input type="text" class="text" />
+            <p style="text-align: right;">批注人：李四主任医师<br />用户ID：lisi</p>
+            <input type="button" value="提交" class="sub" />
+            <input type="button" value="取消" class="quit" />
+        </div>
+    </div>
+    <!-- 页面设置 -->
+    <div class="newBox">
+        <div class="boxClose"></div>
+        <div class="boxNav">
+            <div class="boxHeader" style="padding-bottom: 24px;">
+                <span class="headerTitle">页面设置</span>
+            </div>
+            <div class="boxContent">
+                <div class="boxSetting">
+                    <div class="setting-section">
+                        <div class="setting-left">
+                            <span class="setting-name">页面方向</span>
+                        </div>
+                        <div class="setting-right">
+                            <div class="radioBtn broadwise">
+                                <div class="btnSelect"></div>
+                                <span>横向</span>
+                                <div class="selected select-left" style="display: none"></div>
+                            </div>
+                            <div class="radioBtn endwise" style="margin-left:23px;">
+                                <div class="btnSelect"></div><span>纵向</span>
+                                <div class="selected select-right" style="display: block"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting-section" style="margin-top: 29px;">
+                        <div class="setting-left">
+                            <span class="setting-name">页面大小</span>
+                        </div>
+                        <div class="setting-right">
+                            <select class="select-button"></select>
+                        </div>
+                    </div>
+                    <div class="setting-section" style="margin-top: 28px;">
+                        <div class="setting-left">
+                            <span class="setting-name">页面尺寸</span>
+                        </div>
+                        <div class="setting-right">
+                            <span style="display: inline-block;width: auto;height: 36px;line-height: 36px;margin-right: 8px;">高</span>
+                            <div class="number-input height-size" style="width: 66px;">
+                                <input type="number" class="pad-input broadwiseNumber" value=""
+                                       style="width: 100%;">
+                                <div class="height-top"
+                                     onclick="addNumber('.broadwiseNumber','.error-text')">
+                                    <div class="carrow-top"></div>
+                                </div>
+                                <div class="height-bottom"
+                                     onclick="jianNumber('.broadwiseNumber','.error-text')">
+                                    <div class="carrow-bottom"></div>
+                                </div>
+                                <span class="error-text">有效数值为100至500</span>
+                            </div>
+                            <span>mm</span>
+                            <span style="display: inline-block;width: auto;height: 36px;line-height: 36px;margin-right: 8px;margin-left: 38px;">宽</span>
+                            <div class="number-input width-size" style="width: 66px;">
+                                <input type="number" class="pad-input directionNumber" value=""
+                                       style="width: 100%;">
+                                <div class="width-top" onclick="addNumber('.directionNumber','.text2')">
+                                    <div class="carrow-top"></div>
+                                </div>
+                                <div class="width-bottom"
+                                     onclick="jianNumber('.directionNumber','.text2')">
+                                    <div class="carrow-bottom"></div>
+                                </div>
+                                <span class="text2">有效数值为100至500</span>
+                            </div>
+                            <span>mm</span>
+                        </div>
+                    </div>
+                    <div class="setting-section" style="margin-top: 28px;">
+                        <div class="setting-left">
+                            <span class="setting-name">页面边距</span>
+                        </div>
+                        <div class="setting-right">
+                            <span style="display: inline-block;width: auto;height: 36px;line-height: 36px;margin-right: 8px;">上边距</span>
+                            <div class="number-input height-size" style="width: 66px;">
+                                <input type="number" class="pad-input TopbroadwiseNumber" value="11.9"
+                                       style="width: 100%;">
+                                <div class="height-top"
+                                     onclick="addNumber('.TopbroadwiseNumber','.error-text')">
+                                    <div class="carrow-top"></div>
+                                </div>
+                                <div class="height-bottom"
+                                     onclick="jianNumber('.TopbroadwiseNumber','.error-text')">
+                                    <div class="carrow-bottom"></div>
+                                </div>
+                                <span class="error-text">有效数值为0至500</span>
+                            </div>
+                            <span>mm</span>
+                            <span style="display: inline-block;width: auto;height: 36px;line-height: 36px;margin-right: 8px;margin-left: 38px;">下边距</span>
+                            <div class="number-input width-size" style="width: 66px;">
+                                <input type="number" class="pad-input BottomdirectionNumber" value="9.9"
+                                       style="width: 100%;">
+                                <div class="width-top" onclick="addNumber('.BottomdirectionNumber','.text2')">
+                                    <div class="carrow-top"></div>
+                                </div>
+                                <div class="width-bottom"
+                                     onclick="jianNumber('.BottomdirectionNumber','.text2')">
+                                    <div class="carrow-bottom"></div>
+                                </div>
+                                <span class="text2">有效数值为0至500</span>
+                            </div>
+                            <span>mm</span>
+                        </div>
+                    </div>
+                    <div class="setting-section" style="margin-top: 28px;">
+                        <div class="setting-left">
+                            <span class="setting-name">页面边距</span>
+                        </div>
+                        <div class="setting-right">
+                            <span style="display: inline-block;width: auto;height: 36px;line-height: 36px;margin-right: 8px;">左边距</span>
+                            <div class="number-input height-size" style="width: 66px;">
+                                <input type="number" class="pad-input LeftbroadwiseNumber" value="24.9"
+                                       style="width: 100%;">
+                                <div class="height-top"
+                                     onclick="addNumber('.LeftbroadwiseNumber','.error-text')">
+                                    <div class="carrow-top"></div>
+                                </div>
+                                <div class="height-bottom"
+                                     onclick="jianNumber('.LeftbroadwiseNumber','.error-text')">
+                                    <div class="carrow-bottom"></div>
+                                </div>
+                                <span class="error-text">有效数值为0至500</span>
+                            </div>
+                            <span>mm</span>
+                            <span style="display: inline-block;width: auto;height: 36px;line-height: 36px;margin-right: 8px;margin-left: 38px;">右边距</span>
+                            <div class="number-input width-size" style="width: 66px;">
+                                <input type="number" class="pad-input RightdirectionNumber" value="24.9"
+                                       style="width: 100%;">
+                                <div class="width-top" onclick="addNumber('.RightdirectionNumber','.text2')">
+                                    <div class="carrow-top"></div>
+                                </div>
+                                <div class="width-bottom"
+                                     onclick="jianNumber('.RightdirectionNumber','.text2')">
+                                    <div class="carrow-bottom"></div>
+                                </div>
+                                <span class="text2">有效数值为0至500</span>
+                            </div>
+                            <span>mm</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="boxBottom">
+                    <div class="bottomBtn quxiao">取消</div>
+                    <div class="bottomBtn queding">确定</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<iframe id="mainIframeleft" style="width:15%;height:900px;float:left;" name="mainIframe" src="/MedicalRecordManage/MedRecordTemplate/LeftMedicalTemplate" frameborder="0" scrolling="auto"></iframe>
+<div class="blbj" style="width:70%; height:900px;float:left;overflow-y: auto;border-radius: 4px;background: white;">
+    @*<div id="myWriterControl" style="width:99%; border:2px solid black; height:99%; border-radius:5px" ContentRenderMode="NormalHtmlEditable" ServicePageURL="http://localhost:7027/EMR/MoreHandleDCWriterServicePage"></div>*@
+    @*@Html.Raw(ViewBag.WriterControlHtml)*@
+    <form method="post" action="#">
+        <div style="width:100%;height:900px">
+            @Html.Raw(ViewBag.WriterControlHtml)
+        </div>
+    </form>
+</div>
+<iframe id="mainIframeright" style="width:15%;height:900px;float:right;" name="mainIframe" src="/MedicalRecordManage/MedRecordTemplate/RightMedicalTemplate" frameborder="0" scrolling="auto"></iframe>
+<script>
+    var mburl = "";//"\\File\\Template\\出院病历\\测试出院病历模板1.xml";
+    window.addEventListener('message', function (e) {
+        debugger;
+        if (e.data.Turl != null && e.data.Turl != undefined) {
+            var d = e.data.Turl;
+            mburl = d.replace(/\\/g, "\\");
+            FileOpen();
+        }
+        if (e.data.ysdata != null && e.data.ysdata != undefined) {
+            if (e.data.mxlist != null && e.data.mxlist.length > 0) {
+                if ((e.data.ysdata.yslx == "2")) {
+                    InsertDropDowmListInputFieldCd(e.data.ysdata, e.data.mxlist);
+                } else { InsertDropDowmListInputField(e.data.ysdata, e.data.mxlist);}
+            } else { 
+            if (e.data.ysdata.yslx == "5") {
+                InsertDateTimeInputField(e.data.ysdata);
+            } else if (e.data.ysdata.yslx == "3") {
+                InsertDateTimeInputFieldDate(e.data.ysdata);
+            } else if (e.data.ysdata.yslx == "4") {
+                InsertDateTimeInputFieldTime(e.data.ysdata);
+            }
+            else if (e.data.ysdata.yslx == "6") {
+                InsertNumericInputField(e.data.ysdata);
+            } else {
+                console.log(e.data.ysdata);
+                if (e.data.ysdata.DataSource.includes("yzdy") || e.data.ysdata.DataSource.includes("hldy") || e.data.ysdata.DataSource.includes("hljl") )
+                {
+                    SetTableRowField(e.data.ysdata);InsertTableCellField(e.data.ysdata);
+                }
+                else{
+                    InsertInputField(e.data.ysdata);
+                }
+                }
+            }
+            //alert(e.data.ysdata.ysmc);
+            //InsertDropDowmListInputField(e.data.ysdata)
+            //InsertInputField(e.data.ysdata.ysmc, e.data.ysdata.BindingPath, e.data.ysdata.DataSource);
+        }
+    })
+    //数值绑定
+    function InsertNumericInputField(data) {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "UserEditable": true,
+            "ToolTip": "请输入数值",
+            "BackgroundText": data.ysmc,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "InnerEditStyle": "Numeric",
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "Deleteable": true,
+            "ContentReadonly": false,
+            "DataSource": data.DataSource,
+            "BindingPath":data.DataSource + "/" + data.BindingPath,
+        };
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field);
+        }
+    }
+    //日期时间绑定
+    function InsertDateTimeInputField(data) {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "UserEditable": true,
+            "ToolTip": "请输入时间",
+            "BackgroundText": data.ysmc,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "InnerEditStyle": "DateTime",
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "Deleteable": true,
+            "ContentReadonly": false,
+            "DataSource": data.DataSource,
+            "BindingPath": data.DataSource + "/" + data.BindingPath,
+        };
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field);
+        }
+    }
+    //日期绑定
+    function InsertDateTimeInputFieldDate(data) {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "UserEditable": true,
+            "ToolTip": "请输入时间",
+            "BackgroundText": data.ysmc,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "InnerEditStyle": "Date",
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "Deleteable": true,
+            "ContentReadonly": false,
+            "DataSource": data.DataSource,
+            "BindingPath":data.DataSource + "/" + data.BindingPath,
+        };
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field);
+        }
+    }
+    //时间绑定
+    function InsertDateTimeInputFieldTime(data) {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "UserEditable": true,
+            "ToolTip": "请输入时间",
+            "BackgroundText": data.ysmc,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "InnerEditStyle": "Time",
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "Deleteable": true,
+            "ContentReadonly": false,
+            "DataSource": data.DataSource,
+            "BindingPath": data.DataSource + "/" + data.BindingPath,
+        };
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field);
+        }
+    }
+    //下拉列表绑定
+    function InsertDropDowmListInputField(data, mxlist) {
+        debugger;
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "ContentReadonly": false,
+            "ToolTip": "请选择",
+            "BackgroundText": data.ysmc,
+            "EnableValueValidate": true,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "InnerEditStyle": "DropdownList",
+            "innermultiselect": "fasle",
+            "EditorActiveMode": "MouseClick",
+        };
+        var content = "";
+        if (mxlist!=null) {
+            for (var i = 0; i < mxlist.length; i++) {
+                if ((i + 1) == mxlist.length) {
+                    content += "{" + '"Text":"' + mxlist[i].YsmxName + '","Value":"' + mxlist[i].YsmxCode + '"' + "}";
+                }
+                else {
+                    content += "{" + '"Text":"' + mxlist[i].YsmxName + '","Value":"' + mxlist[i].YsmxCode + '"' + "},";
+                }
+            }
+        }
+        var tiemlist = "[" + content  + "]";
+        options["ListItems"] = $.parseJSON(tiemlist);
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field); //这里的第一个参数可以是beforeBegin,afterBegin,beforeEnd,afterEnd
+        }
+    }
+    //下拉列表绑定
+    function InsertDropDowmListInputFieldCd(data, mxlist) {
+        debugger;
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "ContentReadonly": false,
+            "ToolTip": "请选择",
+            "BackgroundText": data.ysmc,
+            "EnableValueValidate": true,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "InnerEditStyle": "DropdownList",
+            "innermultiselect": "true",
+            "EditorActiveMode": "MouseClick",
+        };
+        var content = "";
+        if (mxlist != null) {
+            for (var i = 0; i < mxlist.length; i++) {
+                if ((i + 1) == mxlist.length) {
+                    content += "{" + '"Text":"' + mxlist[i].YsmxName + '","Value":"' + mxlist[i].YsmxCode + '"' + "}";
+                }
+                else {
+                    content += "{" + '"Text":"' + mxlist[i].YsmxName + '","Value":"' + mxlist[i].YsmxCode + '"' + "},";
+                }
+            }
+        }
+        var tiemlist = "[" + content + "]";
+        options["ListItems"] = $.parseJSON(tiemlist);
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field); //这里的第一个参数可以是beforeBegin,afterBegin,beforeEnd,afterEnd
+        }
+    }
+    function InsertInputField(data) {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "UserEditable": true,
+            "ToolTip": "请输入" + data.ysmc,
+            "BackgroundText": data.ysmc,
+            "Name": data.BindingPath,
+            "ID": data.Id,
+            "InnerEditStyle": "Text",
+            "StartBorderText": "[",
+            "EndBorderText": "]",
+            "Deleteable": true,
+            "ContentReadonly": false,
+            "DataSource": data.DataSource,
+            "BindingPath": data.DataSource + "/" + data.BindingPath,
+        };
+        var field = ctl.DCExecuteCommand("InsertInputField", true, options);
+        if (field != null) {
+            ctl.FocusAdjacent("afterEnd", field);
+        }
+    }
+    function InsertTableCellField(data) {
+        debugger;
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            bindingpath: data.BindingPath, //数据源路径 
+        }
+        ctl.SetTableCellAttribute(null, options) //第一个参数为指定的元素，若为null则表示光标所在位置的单元格
+    }
+    function SetTableRowField(data)
+    {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            datasource: "peopledatasource",//data.DataSource, //数据源 
+        }
+        ctl.SetTableRowAttribute(null, options) //第一个参数为指定的元素，若为null则表示光标所在位置的表格行
+    }
+    function dcInsertPageInfo() {
+        var ctl = document.getElementById("myWriterControl");
+        var doc = ctl.GetContentDocument();
+        var footer = doc.querySelector("[dctype='XTextDocumentFooterElement']");
+        var p = footer.querySelector("p");
+        p.style.textAlign = "center";
+        p.setAttribute("align", "center");
+        ctl.FocusAdjacent("afterBegin", p);
+        var options = {
+            ID: "pageinfo1",
+            Height: "65",
+            Width: "400",
+            ValueType: "PageIndex",
+            FormatString: "第[%PageIndex%]页 共[%NumOfPages%]页",
+            Caption: "页码"
+        };
+        ctl.DCExecuteCommand('InsertPageInfoElement', false, options)
+    }
+
+    $(function () {
+        MySetContextMenu()
+        document.getElementById("myWriterControl").style.height = "800px";
+        MedicalExpressionMenu();
+        init();
+        ymsz();
+        //var ctl = document.getElementById("myWriterControl");
+    });
+    var selectList = [{
+        "name": "A3",
+        "widthmm": 297,
+        "heightmm": 420,
+        "Landscape": "false" //纵向
+    }, {
+        "name": "A4",
+        "widthmm": 210,
+        "heightmm": 297,
+        "Landscape": "false"
+    }, {
+        "name": "A5",
+        "widthmm": 148,
+        "heightmm": 210,
+        "Landscape": "false"
+    }, {
+        "name": "B4",
+        "widthmm": 250,
+        "heightmm": 353,
+        "Landscape": "false"
+    }, {
+        "name": "B5",
+        "widthmm": 176,
+        "heightmm": 250,
+        "Landscape": "false"
+    }, {
+        "name": "自定义",
+        "widthmm": 200,
+        "heightmm": 500,
+        "Landscape": "false"
+    }]
+    function ymsz() {
+        for (let i in selectList) {
+            let name = selectList[i].name;
+            let widthMm = selectList[i].widthmm;
+            let heightMm = selectList[i].heightmm;
+            let landScape = selectList[i].Landscape;
+            $(".select-button").append(
+                `<option value="${name}" Landscape="${landScape}" dataWidth="${widthMm}" dataHeight="${heightMm}">${name}</option>`
+            )
+        }
+    }
+    function MySetContextMenu() {
+        var ctl = document.getElementById("myWriterControl");
+        //编辑器右键菜单
+        var jsonMenu = [
+            {
+                cmdName: 'copy',
+            },
+            {
+                label: '剪切(Ctrl + x)',
+                cmdName: 'cut',
+                exec: function () {
+                    ctl.DCExecuteCommand('Cut', true, null)
+                },
+            },
+            {
+                label: '粘贴',
+                cmdName: 'paste',
+                exec: function () {
+                    ctl.DCExecuteCommand('Paste', true, null) //粘贴内部复制或者剪切的
+                },
+            },
+            '-',
+            {
+                label: '元素属性',
+                // icon: 'aligntd',
+                cmdName: 'aligntd',
+                exec: function () {
+                    ctl.DCExecuteCommand('elementproperties', true)
+                },
+            },
+            '-',
+            {
+                label: '单元格属性',
+                // icon: 'aligntd',
+                cmdName: 'aligntd',
+                exec: function () {
+                    var CurrentTable = ctl.CurrentTable()
+                    if (CurrentTable != null) {
+                        ctl.TableCellPopUpWindow();
+                    }
+                },
+            },
+            '-',
+            {
+                label: '表格属性',
+                cmdName: 'edittable',
+                exec: function () {
+                    var CurrentTable = ctl.CurrentTable()
+                    if (CurrentTable != null) {
+                        ctl.TablePopUpWindow()
+                    }
+                },
+            },
+            {
+                label: '表格行属性',
+                cmdName: 'edittd',
+                exec: function () {
+                    var CurrentTableRow = ctl.CurrentTableRow()
+                    if (CurrentTableRow != null) {
+                        ctl.TableRowPopUpWindow()
+                    }
+                },
+            },
+            {
+                label: '删除表格',
+                cmdName: 'deletetable',
+                exec: function () {
+                    var currenttable = ctl.CurrentTable()
+                    if (currenttable != null) {
+                        ctl.DCExecuteCommand('Table_DeleteTable', false, null)
+                    }
+                },
+            },
+            {
+                label: '删除表格行',
+                cmdName: 'deleterow',
+                exec: function () {
+                    var currentRow = ctl.CurrentTableRow()
+                    if (currentRow != null) {
+                        ctl.DCExecuteCommand('Table_DeleteRow', false, null)
+                    }
+                },
+            },
+            {
+                label: '在上方插入表格行',
+                cmdName: 'insertrow',
+                exec: function () {
+                    var currentRow = ctl.CurrentTableRow()
+                    if (currentRow != null) {
+                        ctl.DCExecuteCommand('Table_InsertRowUp', false, null)
+                    }
+                },
+            },
+            {
+                label: '在下方插入表格行',
+                cmdName: 'insertrownext', //edui-for-insertrownext
+                exec: function () {
+                    var currentRow = ctl.CurrentTableRow()
+                    if (currentRow != null) {
+                        ctl.DCExecuteCommand('Table_InsertRowDown', false, null)
+                    }
+                },
+            },
+            {
+                label: '在左方插入表格列',
+                cmdName: 'insertcol',
+                exec: function () {
+                    var currentRow = ctl.CurrentTableRow()
+                    if (currentRow != null) {
+                        ctl.DCExecuteCommand(
+                            'Table_InsertColumnLeft',
+                            false,
+                            null
+                        )
+                    }
+                },
+            },
+            {
+                label: '在右方插入表格列',
+                cmdName: 'insertcolnext',
+                exec: function () {
+                    var currentRow = ctl.CurrentTableRow()
+                    if (currentRow != null) {
+                        ctl.DCExecuteCommand(
+                            'Table_InsertColumnRight',
+                            false,
+                            null
+                        )
+                    }
+                },
+            },
+            {
+                label: '右合并单元格',
+                cmdName: 'mergeright',
+                exec: function () {
+                    var currentCell = ctl.CurrentTableCell()
+                    if (currentCell != null) {
+                        ctl.DCExecuteCommand('mergeright', false, null)
+                    }
+                },
+            },
+            {
+                label: '下合并单元格',
+                cmdName: 'mergedown',
+                exec: function () {
+                    var currentCell = ctl.CurrentTableCell()
+                    if (currentCell != null) {
+                        ctl.DCExecuteCommand('mergedown', false, null)
+                    }
+                },
+            },
+        ]
+        ctl.SetContextMenu(jsonMenu)
+    }
+    function FileOpen() {
+        var ctl = document.getElementById("myWriterControl");
+        ctl.ClearDocumentBody();
+        ctl.preserveScrollPosition = true;
+        var fileName = mburl;
+        //在服务器端响应控件的EventReadFileContenClearDocumentBodyt事件，即可使用AJAX模式加载文档。
+        ctl.LoadDocumentFromFile(fileName, null);
+    }
+    function TemplateSave() {
+        if (mburl == "") {
+            alert("请选择病历模板！");
+            return;
+        }
+        var ctl = document.getElementById("myWriterControl");
+
+        ctl.DCExecuteCommand('FileSave', true, mburl);
+
+        alert("保存成功");
+    }
+    function init() {
+
+        //var ctl = document.getElementById("myWriterControl");
+        //function Build() {
+        //    if (ctl) {
+        //        BindingDCWriterClientControl(ctl);
+        //        ctl.EventAfterPrintPreview = function (PrintPreviewDoc) {
+        //            var styleDom = document.createElement("style");
+        //             解决宋体打印问题
+        //            var cssStr = "@@font-face {font-family: 宋体;src: local('宋体');}";
+        //            styleDom.innerHTML = cssStr;
+        //            var page = PrintPreviewDoc.querySelector("div[pageindex]");
+        //            if (page) {
+        //                page.appendChild(styleDom);
+        //            }
+
+        //        }
+        //    }
+        //    FileOpen();
+        //}
+        //Build();
+
+
+        //var ctl = document.getElementById("myWriterControl");
+        //// 绑定控件
+        //BindingDCWriterClientControl(ctl);
+        //var data = "";
+        //// 创建编辑器框架
+        //ctl.BuildFrame(function () {
+        //    debugger;
+        //    $.ajax({
+        //        type: "POST",
+        //        url: "/MedRecordTemplate/GetTemplateXml",
+        //        data: { templateType: "0", templateName: "长期医嘱" },
+        //        dataType: "json",
+        //        async: false,
+        //        success: function (respdata) {
+        //            debugger;
+
+        //            var jsonData = JSON.stringify(respdata);
+        //            data = JSON.parse(jsonData);
+        //            ctl.LoadDocumentFromString(data.xmldata, "xml");
+        //            console.log(data.xmldata);
+        //        }
+        //    });
+        //});
+
+    }
+    // 插入表格操作
+    var insertTable = function (btn, opt) {
+        if (!btn) { return; }
+        this.btn = btn;
+        opt = opt || {};
+        this.box = null; //弹框
+        this.inBox = null;
+        this.pickUnLight = null;
+        this.pickLight = null;
+        this.status = null;
+        this.minSize = opt.min || [5, 5]; //最小列数和行数
+        this.maxSize = opt.max || [15, 15]; //最大列数和行数
+        this.insert = opt.insert; //回调
+        this.nowSize = []; //当前选择尺寸
+        this.isInit = { create: false, bind: false };
+        this.bind();
+    }
+    insertTable.prototype = {
+        init: function () {
+            if (this.isInit.create) { return; }
+            this.isInit.create = true;
+            var id = 'in_tab_box_' + String(Math.ceil(Math.random() * 100000) + String(new Date().getTime())),
+                html = '<div class="in_tab_box" id="' + id + '">';
+            html += '<div class="itb_con">';
+            html += '<div class="itb_picker_unlight"></div>';
+            html += '<div class="itb_picker_light"></div>';
+            html += '</div>';
+            html += '<div class="itb_picker_status"></div>';
+            html += '</div>';
+            $("body").append(html);
+            this.box = $("#" + id);
+            this.inBox = this.box.find(".itb_con");
+            this.pickAll = this.box.find(".itb_picker_all");
+            this.pickUnLight = this.box.find(".itb_picker_unlight");
+            this.pickLight = this.box.find(".itb_picker_light");
+            this.status = this.box.find(".itb_picker_status");
+            this.setBg(this.minSize[0], 0);
+            this.setBg(this.minSize[1], 1);
+            this.status.text(0 + '列 x ' + 0 + '行');
+        },
+        bind: function () {
+            var T = this,
+                pos, //弹框显示位置
+                m,
+                bPos, //弹框可选区域位置
+                mPos; //鼠标位置
+            this.btn.click(function () {
+                if (!T.isInit.create) { T.init(); } //初始化弹框
+                if (!T.isInit.bind) { B(); } //初始化事件
+                m = $(this);
+                if (T.box.is(":hidden")) {
+                    pos = {
+                        top: m.offset().top,
+                        left: m.offset().left + m.outerWidth() + 2
+                    }
+                    T.box.css({
+                        "top": pos.top,
+                        "left": pos.left,
+                        "z-index": 999999
+                    }).fadeIn(100);
+                    bPos = {
+                        top: T.inBox.offset().top,
+                        left: T.inBox.offset().left
+                    }
+                    $(document).bind("click", function () { T.hide(); });
+                } else {
+                    T.hide();
+                }
+                return false;
+            })
+            function B() {
+                T.isInit.bind = true;
+                T.inBox.mousemove(function (e) {
+                    mPos = {
+                        x: e.clientX,
+                        y: e.clientY
+                    }
+                    if (mPos.x < bPos.left || mPos.y < bPos.top) { return; }
+                    T.nowSize[0] = Math.ceil((mPos.x - bPos.left) / 18); //列数
+                    T.nowSize[1] = Math.ceil((mPos.y - bPos.top) / 18); //行数
+                    if (T.nowSize[0] >= T.minSize[0] && T.nowSize[0] < T.maxSize[0]) {
+                        T.setBg(T.nowSize[0] + 1, 0);
+                    } else if (T.nowSize[0] < T.minSize[0]) {
+                        T.setBg(T.minSize[0], 0);
+                    } else {
+                        T.nowSize[0] = T.maxSize[0];
+                    }
+                    if (T.nowSize[1] >= T.minSize[1] && T.nowSize[1] < T.maxSize[1]) {
+                        T.setBg(T.nowSize[1] + 1, 1);
+                    } else if (T.nowSize[1] < T.minSize[1]) {
+                        T.setBg(T.minSize[1], 1);
+                    } else {
+                        T.nowSize[1] = T.maxSize[1];
+                    }
+                    T.pickLight.css({
+                        "width": T.nowSize[0] + 'em',
+                        "height": T.nowSize[1] + 'em'
+                    })
+                    T.status.text(T.nowSize[0] + '列 x ' + T.nowSize[1] + '行');
+                })
+                //单击确认插入表格
+                T.box.click(function () {
+                    if (T.nowSize[0] > 0 && T.nowSize[0] <= T.maxSize[0] && T.nowSize[1] > 0 && T.nowSize[1] <= T.maxSize[1]) {
+                        var rows = T.nowSize[1],
+                            cols = T.nowSize[0];
+                        try { T.insert(rows, cols); } catch (e) { }
+                    }
+                })
+            }
+        },
+        //调整背景区域
+        setBg: function (size, t) {
+            if (t == 0) {
+                this.inBox.width(size + 'em');
+                this.pickUnLight.width(size + 'em');
+            } else {
+                this.inBox.height(size + 'em');
+                this.pickUnLight.height(size + 'em');
+            }
+        },
+        //隐藏弹框
+        hide: function () {
+            var T = this;
+            this.box.fadeOut(100, function () {
+                //重置
+                T.setBg(T.minSize[0], 0);
+                T.setBg(T.minSize[1], 1);
+                T.pickLight.css({
+                    "width": '0',
+                    "height": '0'
+                })
+            });
+        }
+    }
+    new insertTable($("#insert_table"), {
+        min: [4, 4],
+        max: [20, 20],
+        insert: function (rows, cols) {
+            //这里只返回所选行数rows和列数cols,插入后的效果和样式需自定义,以下只是做简单的示例
+            //alert('插入了一个'+rows+'行'+cols+'列的表格');
+
+            var ttt = rows + "," + cols;
+            document.getElementById('myWriterControl').DCExecuteCommand('inserttable', true, ttt);
+
+
+            //var html = '<table>';
+            //for (var i = 0; i < rows; i++) {
+            //    html += '<tr>';
+            //    for (var j = 0; j < cols; j++) {
+            //        html += '<td></td>';
+            //    }
+            //    html += '</tr>';
+            //}
+            //html += '</table>';
+            //this.btn.siblings("table").remove();
+            //this.btn.after(html);
+        }
+    });
+    // 关闭按钮
+    $("#closeimg").click(function () {
+        $("#tszfa").hide();
+        $("#mask").hide();
+    })
+    //插入批注
+    function insertNewComment() {
+        $("#mask").show();
+        var $NewComment = $("#NewComment_box");
+        $NewComment.show().find("input.text").focus().val("");
+    }
+    $("#NewComment_box input.sub").click(function () {
+        var text = $("#NewComment_box input.text").val();
+        if (text != "") {
+            NewComment(text);
+        }
+        $("#mask").hide();
+        $("#NewComment_box").hide();
+    })
+    $("#NewComment_box input.quit,#NewComment_box img").click(function () {
+        $("#mask").hide();
+        $("#NewComment_box").hide();
+    })
+    function NewComment(text) {
+        var opts = {
+            Text: text,
+            UserName: "李四主任医师",
+            UserID: "lisi"
+        }
+        document.getElementById("myWriterControl").NewComment(opts);
+    }
+    // 插入按钮
+    function MyInsertButtonInputField() {
+        var ctl = document.getElementById("myWriterControl");
+        var options = {
+            "ID": "123",
+            "ToolTip": "这是一个按钮",
+            "ContentReadonly": false,
+            "SpecifyWidth": 10,
+            "inputtype": "button",
+            "value": "按钮",
+            "EnableValueValidate": true,
+            "InnerEditStyle": "input",
+            "EditorActiveMode": "MouseClick"
+        };
+        ctl.DCExecuteCommand("InsertInput", true, options);
+    }
+    $("#MedicalExpressionMenu").change(function () {
+        var ctl = document.getElementById("myWriterControl");
+        var doc = ctl.GetContentDocument();
+        var MedicalExpressionElement = $(doc).find("[dctype='XTextNewMedicalExpressionElement']");
+        var index = MedicalExpressionElement.length;
+        //console.log($(this).val())
+        var ExpressionStyle = $(this).find("option:selected").attr("ExpressionStyle");
+        var Values = $(this).find("option:selected").attr("Values");
+        //console.log(ExpressionStyle)
+        MyInsertMedicalExpression(index, ExpressionStyle, Values);
+        $(this).find("option:eq(0)").attr("selected", "selected");
+        var img = $(doc).find("#expression" + index);
+        if (img.is(":visible") == false) {
+            img.parent().after(img);
+        }
+        //模拟dblclick事件
+        img.trigger("dblclick");
+    })
+    //设置自定义下拉列表
+    function CustomDropdownList() {
+        var ctl = document.getElementById('myWriterControl');
+        if (ctl.EventDropdownEditor == null) {
+            // 绑定控件的EventDropdownEditor事件。
+            // 提供自定义的下拉列表内容。
+            ctl.EventDropdownEditor = function (args) {
+                args.container.style.overflowY = 'auto';
+                var sel = document.createElement("input");
+                sel.type = "text";
+                sel.placeholder = "请输入过滤的关键字";
+                sel.style.width = "200px";
+                args.container.appendChild(sel);
+                sel.oninput = function () {
+                    var reg = new RegExp(this.value);
+                    console.log(reg);
+                    //console.log(this.value);
+                    var chil = this.parentNode.children;
+                    for (let i = 0; i < chil.length; i++) {
+                        if (chil[i].getAttribute("type") == "button") {
+                            chil[i].style.display = "block";
+                            console.log(!reg.test(chil[i].value));
+                            if (!(reg).test(chil[i].value)) {
+                                chil[i].style.display = "none";
+                            } else {
+                                chil[i].style.display = "block";
+                            }
+                        }
+                    }
+                }
+                //if (args.element.id == "123")// 在这里可以判断输入域元素编号
+                //{
+                for (var iCount = 0; iCount < 20; iCount++) {
+                    var btn = document.createElement("input");
+                    btn.type = "button";
+                    btn.style.display = "block";
+                    btn.value = "数值" + iCount;
+                    btn.style.width = "200px";
+                    btn.onclick = function () {
+                        args.setValue(
+                            this.value, // 输入域文本值
+                            this.value + "_value");// 输入域数值
+                        args.close();// 关闭下拉列表
+                    };
+                    // args.container是承载内容的一个DIV元素。
+                    args.container.appendChild(btn);
+                    //args.container.appendChild(document.createElement("br"));
+                }//for
+                args.container.style.width = "210px";
+                args.container.style.height = "300px";
+                //}
+            }
+        }
+        else {
+            ctl.EventDropdownEditor = null;
+        }
+    }
+    // 页面设置
+    function ChangeDocumentSettings() {
+        $(".newBox").show();
+        $("#mask").show();
+    }
+
+    $(".bottomBtn.queding").click(function () {
+        var broadWise = $(".broadwiseNumber").val();
+        var direction = $(".directionNumber").val();
+        var Topdirection = $(".TopbroadwiseNumber").val();
+        var Bottomdirection = $(".BottomdirectionNumber").val();
+        var Leftdirection = $(".LeftbroadwiseNumber").val();
+        var Rightdirection = $(".RightdirectionNumber").val();
+        var opts = {
+            "PaperKind": "Custom",//自定义
+            "PaperWidth": direction,//宽度
+            "PaperHeight": broadWise,//高度
+            "TopMargin": Topdirection,//上边距
+            "BottomMargin": Bottomdirection,//下边距
+            "LeftMargin": Leftdirection,//左边距
+            "RightMargin": Rightdirection,//右边距
+            "Landscape": "false"//横向，纵向
+        };
+        var ctl = document.getElementById("myWriterControl");
+        ctl.ChangeDocumentSettings(opts);
+        $(".newBox").hide();
+        $("#mask").hide();
+    })
+    $(".bottomBtn.quxiao,.boxClose").click(function () {
+        $(".newBox").hide();
+        $("#mask").hide();
+    })
+    $(".radioBtn").click(function () {
+        $(this).find(".selected").show();
+        $(this).siblings(".radioBtn").find(".selected").hide();
+        var flag = $(".select-right").is(":hidden");//true 横向 | false 纵向
+        var broadWise = $(".broadwiseNumber").val();
+        var direction = $(".directionNumber").val();
+        if (broadWise > direction) {
+            var small = direction;
+            var big = broadWise;
+        } else {
+            var small = broadWise;
+            var big = direction;
+        }
+        if (flag) {
+            $(".broadwiseNumber").val(small);
+            $(".directionNumber").val(big);
+        } else {
+            $(".broadwiseNumber").val(big);
+            $(".directionNumber").val(small);
+        }
+    })
+    $(".broadwiseNumber").val(selectList[0].heightmm);
+    $(".directionNumber").val(selectList[0].widthmm);
+    $(".select-button").change(function () {
+        var flag = $(".select-right").is(":hidden");//true 横向 | false 纵向
+        var index = $(this).find("option:selected").index();
+        if (flag) {
+            $(".broadwiseNumber").val(selectList[index].widthmm)
+            $(".directionNumber").val(selectList[index].heightmm)
+        } else {
+            $(".broadwiseNumber").val(selectList[index].heightmm)
+            $(".directionNumber").val(selectList[index].widthmm)
+        }
+    })
+    function compare() {
+        var broadWise = $(".broadwiseNumber").val();
+        var direction = $(".directionNumber").val();
+        if (broadWise < direction) {
+            $(".select-left").show();
+            $(".select-right").hide();
+        } else {
+            $(".select-left").hide();
+            $(".select-right").show();
+        }
+    }
+    function addNumber(name, name2) {
+        var nameVal = $(name).val()
+        var m = accAdd(nameVal, 0.1);
+        $(name).val(m);
+        if ($(name).val() >= 100 && $(name).val() <= 500) {
+            $(name2).css("display", "none");
+            $(name).css("border", "1px solid #d4d4d4")
+        } else {
+            $(name2).css("display", "block")
+            $(name).css("border", "1px solid #ef4e2f")
+        }
+        compare();
+        $(".select-button").val("自定义");
+    }
+    function jianNumber(name, name2) {
+        var nameVal = $(name).val()
+        var m = accSub(nameVal, 0.1);
+        $(name).val(m);
+        if ($(name).val() >= 100 && $(name).val() <= 500) {
+            $(name2).css("display", "none");
+            $(name).css("border", "1px solid #d4d4d4")
+        } else {
+            $(name2).css("display", "block");
+            $(name).css("border", "1px solid #ef4e2f")
+        }
+        compare();
+        $(".select-button").val("自定义");
+    }
+</script>
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/framework-ui.js")"></script>
+<script>
+
+    function btn_add() {
+        debugger;
+        $.modalOpen({
+            id: "Form",
+            title: "新建病历模板",
+            url: "/MedicalRecordManage/MedRecordTemplate/Form?ly="+"template",
+            width: "700px",
+            height: "650px",
+            btn: null,
+            callBack: function (iframeId) {
+                debugger;
+                top.frames[iframeId].submitForm();
+                TemplateSave();
+            }
+        });
+    }
+    function openwindow() {
+        var url = window.location.href;
+        window.open(url);
+    }
+</script>

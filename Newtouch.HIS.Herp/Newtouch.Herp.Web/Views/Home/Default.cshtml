@@ -1,0 +1,356 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>首页</title>
+    <link href="@SiteUrl.GetStaticResourceScriptUrl("~/css/framework-font.css")" rel="stylesheet" />
+    <link href="@SiteUrl.GetStaticResourceScriptUrl("~/css/framework-ui.css")" rel="stylesheet" />
+    <script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/jquery/jquery.choose.js")"></script>
+    <link href="@SiteUrl.GetStaticResourceScriptUrl("~/css/framework-theme.css")" rel="stylesheet" />
+    <link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/bootstrap/bootstrap.min.css")" rel="stylesheet" />
+    <link href="@SiteUrl.GetStaticResourceScriptUrl("~/css/framework-theme.css")" rel="stylesheet" />
+    <script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/charts/Chart.js")"></script>
+    <script src="~/Content/js/highcharts/highcharts.js"></script>
+    <style>
+        #copyrightcontent {
+            height: 30px;
+            line-height: 29px;
+            overflow: hidden;
+            position: absolute;
+            top: 100%;
+            margin-top: -30px;
+            width: 100%;
+            background-color: #fff;
+            border: 1px solid #e6e6e6;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        .dashboard-stats {
+            float: left;
+            width: 20%;
+        }
+
+        .dashboard-stats-item {
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            cursor: pointer;
+            height: 105px;
+            margin-right: 25px;
+            margin-bottom: 10px;
+            padding: 20px 20px;
+        }
+
+            .dashboard-stats-item .m-top-none {
+                margin-top: 2px;
+            }
+
+            .dashboard-stats-item h2 {
+                font-size: 35px;
+                font-family: inherit;
+                line-height: 1.1;
+                font-weight: 500;
+            }
+
+            .dashboard-stats-item h5 {
+                font-size: 14px;
+                font-family: inherit;
+                margin-top: 3px;
+                line-height: 1.1;
+            }
+
+
+            .dashboard-stats-item .stat-icon {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                font-size: 30px;
+                opacity: .3;
+            }
+
+        .dashboard-stats i.fa.stats-icon {
+            width: 50px;
+            padding: 20px;
+            font-size: 50px;
+            text-align: center;
+            color: #fff;
+            height: 50px;
+            border-radius: 10px;
+        }
+
+        .panel-default {
+            border: none;
+            border-radius: 0;
+            margin-bottom: 0;
+            box-shadow: none;
+            -webkit-box-shadow: none;
+        }
+
+            .panel-default > .panel-heading {
+                color: #777;
+                background-color: #fff;
+                border-color: #e6e6e6;
+                padding: 10px 10px;
+            }
+
+            .panel-default > .panel-body {
+                padding: 10px;
+                padding-bottom: 0;
+            }
+
+                .panel-default > .panel-body ul {
+                    overflow: hidden;
+                    padding: 0;
+                    margin: 0;
+                    margin-top: -5px;
+                }
+
+                    .panel-default > .panel-body ul li {
+                        line-height: 27px;
+                        list-style-type: none;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;
+                    }
+
+                        .panel-default > .panel-body ul li .time {
+                            color: #a1a1a1;
+                            float: right;
+                            padding-right: 5px;
+                        }
+    </style>
+</head>
+<body>
+    <div id="areascontent">
+        <div class="rows" style="margin-bottom: 1%; border: 1px solid #e6e6e6; overflow: hidden; padding-left: 1px;">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <i class="fa fa-line-chart fa-lg" style="padding-right: 5px;"></i>待处理数
+                </div>
+                <div class="panel-body" style="width:100%" id="dv_needDeal"></div>
+            </div>
+        </div>
+        <div class="rows" sstyle="overflow: hidden;">
+            <div style="float: left; width: 64%;">
+                <div style="height: 380px; border: 1px solid #e6e6e6; background-color: #fff;">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <i class="fa fa-area-chart fa-lg" style="margin-right:5px;"></i>进销统计
+                            <div style="float: right">
+                                <span style="font-weight: 500;"><i id="i_Item1" class="fa fa-square" style="font-size: 15px; padding:0 2px; vertical-align: middle;"></i></span>
+                                <span style="margin-left: 10px; font-weight: 500;"><i id="i_Item2" class="fa fa-square" style="font-size: 15px; padding:0 2px; vertical-align: middle; "></i></span>
+                                <span style="margin-left: 10px; font-weight: 500;"><i id="i_Item3" class="fa fa-square" style=" font-size: 15px; padding:0 2px; vertical-align: middle; "></i></span>
+                            </div>
+                        </div>
+                        <div class="panel-body" style="padding-bottom: 0;width:100%;">
+                            <canvas id="PSIStatistics" style="height: 285px; width: 100%; padding-right: 10px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="float: right; width: 35%;">
+                <div style="height: 380px; border: 1px solid #e6e6e6; background-color: #fff;">
+                    <div class="panel panel-default">
+                        <div class="panel-heading"><i style="margin-right:5px;" class="fa fa-pie-chart fa-lg"></i>今年入库统计</div>
+                        <div class="panel-body">
+                            <div id="container" style="min-width:350px;height:300px"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<script type="text/javascript">
+    $(function () {
+        GetNeedDealDiv();
+        GetPSIByKf();
+        GetRKCountByLx();
+        $("#dv_needDeal").on("click", "div", function () {
+            top.top.$.Newtouchtab.tryCloseTab({ name: $(this).attr("menuName"), url: $(this).attr("menuUrl") });
+            top.top.$.Newtouchtab.addTabWithOutMenu({ name: $(this).attr("menuName"), enName: "", url: $(this).attr("menuUrl") });
+        });
+    });
+
+    //获取待办
+    function GetNeedDealDiv() {
+        $.ajax({
+            type: "Get",
+            url: "/Home/GetNeedDealDiv?r=" + Math.random(),
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp != null && ajaxresp.state === "success") {
+                    $("#dv_needDeal").html(ajaxresp.data);
+                    GetPendingCount();
+                }
+            }
+        });
+    }
+
+    //获取按月
+    function GetPSIByKf() {
+        $.ajax({
+            type: "Get",
+            url: "/Home/GetPsiByKf?r=" + Math.random(),
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp != null && ajaxresp.length > 2) {
+                    GetPSIStatisticsChart(ajaxresp);
+                    $("#i_Item1").html(ajaxresp[0].ItemName);
+                    $("#i_Item1").css("color", "#7cb5ec");
+                    $("#i_Item2").html(ajaxresp[1].ItemName);
+                    $("#i_Item2").css("color", "#434348");
+                    $("#i_Item3").html(ajaxresp[2].ItemName);
+                    $("#i_Item3").css("color", "#90ed7d");
+                }
+            }
+        });
+    }
+
+    //highCharts 数据展示
+    function GetPSIStatisticsChart(monthlySummary) {
+        var lineChartData = {
+            labels: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "8月", "10月", "11月", "12月"],
+            datasets: [
+                {
+                    label: monthlySummary[0].ItemName,
+                    fillColor: "rgba(124, 181, 236,0.2)",
+                    strokeColor: "rgba(124, 181, 236,1)",
+                    pointColor: "rgba(124, 181, 236,1)",
+                    pointStrokeColor: "#fff",
+                    pointHighlightFill: "#fff",
+                    pointHighlightStroke: "rgba(124, 181, 236,1)",
+                    data: [monthlySummary[0].January,
+                    monthlySummary[0].February,
+                    monthlySummary[0].March,
+                    monthlySummary[0].April,
+                    monthlySummary[0].May,
+                    monthlySummary[0].June,
+                    monthlySummary[0].July,
+                    monthlySummary[0].August,
+                    monthlySummary[0].September,
+                    monthlySummary[0].October,
+                    monthlySummary[0].November,
+                    monthlySummary[0].December]
+                },
+                {
+                    label: monthlySummary[1].ItemName,
+                    fillColor: "rgba(60, 60, 60,0.2)",
+                    strokeColor: "rgba(60, 60, 60,1)",
+                    pointColor: "rgba(60, 60, 60,1)",
+                    pointStrokeColor: "#fff",
+                    pointHighlightFill: "#fff",
+                    pointHighlightStroke: "rgba(60, 60, 60,1)",
+                    data: [monthlySummary[1].January,
+                    monthlySummary[1].February,
+                    monthlySummary[1].March,
+                    monthlySummary[1].April,
+                    monthlySummary[1].May,
+                    monthlySummary[1].June,
+                    monthlySummary[1].July,
+                    monthlySummary[1].August,
+                    monthlySummary[1].September,
+                    monthlySummary[1].October,
+                    monthlySummary[1].November,
+                    monthlySummary[1].December]
+                },
+                {
+                    label: monthlySummary[2].ItemName,
+                    fillColor: "rgba(144, 237, 125,0.2)",
+                    strokeColor: "rgba(144, 237, 125,1)",
+                    pointColor: "rgba(144, 237, 125,1)",
+                    pointStrokeColor: "#fff",
+                    pointHighlightFill: "#fff",
+                    pointHighlightStroke: "rgba(144, 237, 125,1)",
+                    data: [monthlySummary[2].January,
+                    monthlySummary[2].February,
+                    monthlySummary[2].March,
+                    monthlySummary[2].April,
+                    monthlySummary[2].May,
+                    monthlySummary[2].June,
+                    monthlySummary[2].July,
+                    monthlySummary[2].August,
+                    monthlySummary[2].September,
+                    monthlySummary[2].October,
+                    monthlySummary[2].November,
+                    monthlySummary[2].December]
+                }
+            ]
+        }
+        var ctx = document.getElementById("PSIStatistics").getContext("2d");
+        window.myLine = new Chart(ctx).Line(lineChartData, {
+            responsive: false,
+            bezierCurve: false
+        });
+    }
+
+    //获取按月
+    function GetRKCountByLx() {
+        $.ajax({
+            type: "Get",
+            url: "/Home/GetRkCountByLx",
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp != null) {
+                    GetLeaveChart(ajaxresp);
+                }
+            }
+        });
+    }
+
+    //饼图 数据展示
+    function GetLeaveChart(pData) {
+        Highcharts.chart('container', {
+            chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
+            },
+            title: {
+                text: ''
+            },
+            tooltip: {
+                pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b><br/>总数：{point.y:,.0f}'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: false
+                    },
+                    showInLegend: true
+                }
+            },
+            series: [{
+                name: '占比',
+                colorByPoint: true,
+                data: pData
+            }]
+        });
+        $(".highcharts-credits").hide();
+    }
+
+    //获取待处理总数
+    function GetPendingCount() {
+        $.ajax({
+            type: "Get",
+            url: "/Home/GetPendingCount?r=" + Math.random(),
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp != null) {
+                    $("#h_tjshCount").html(ajaxresp.tjshCount);
+                    $("#h_tjwzCount").html(ajaxresp.tjwzCount);
+                    $("#h_ckdshCount").html(ajaxresp.ckdshCount);
+                    $("#h_wbrkCount").html(ajaxresp.wbrkCount);
+                    $("#h_nbthCount").html(ajaxresp.nbthCount);
+                    $("#h_rkdshCount").html(ajaxresp.rkdshCount);
+                    $("#h_expriedWzCount").html(ajaxresp.expriedWzCount);
+                }
+            }
+        });
+    }
+
+</script>

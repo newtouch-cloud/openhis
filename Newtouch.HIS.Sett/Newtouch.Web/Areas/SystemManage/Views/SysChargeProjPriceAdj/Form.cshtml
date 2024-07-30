@@ -1,0 +1,173 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/Shared/Form.css",false)" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/Content/js/SystemManage/SysChargeProjPriceAdj/Form.js",false)" type="text/javascript"></script>
+
+<form id="form1">
+    <div style="padding: 20px 35px 0 2px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">收费项目</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="sfxmmc" name="sfxmmc" required />
+                </td>
+                <th class="formTitle">单价</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="dj" name="dj" required />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">自负比例</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="zfbl" name="zfbl" required />
+                </td>
+                <th class="formTitle">自负性质</th>
+                <td class="formValue">
+                    @Html.DropDownList("zfxz", EnumZiFuXingZhi.KB.ToSomeDescSelectList("0,1,2"), new { @class = "form-control" })
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">生效标志</th>
+                <td class="formValue">
+                    @Html.DropDownList("sxbz", EnumSXBZ.Jssx.ToDescSelectList(), new { @class = "form-control" })
+                </td>
+                <th class="formTitle">有效</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">定点生效日期</th>
+                <td class="formValue">
+                    <input id="ddsxrq" type="text" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        if (!!keyValue) {
+            $.ajax({
+                url: "/SystemManage/SysChargeProjPriceAdj/GetFormJson?r=" + Math.random(),
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $('#sfxmmc').attr('data-sfxm', data.sfxm)
+                      .val(data.sfxmmc);
+                }
+            });
+        }
+    })
+
+
+
+    //收费项目
+    $('#sfxmmc').newtouchFloatingSelector({
+        width: 600,
+        height: 280,
+        caption: "收费项目",
+        url: '/SystemManage/SysChargeItem/GetChargeItemSelectData',
+        ajaxparameters: function () {
+            if ($.trim($('#sfxmmc').val()).length == 0) {
+                return;
+            }
+            return "keyword=" + $.trim($('#sfxmmc').val());
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#sfxmmc').attr('data-sfxm', $thistr.attr('data-sfxm'))
+                .val($thistr.attr('data-sfxmmc'));
+        },
+        colModel: [{ label: '收费项目', name: 'sfxm', widthratio: 10 },
+            { label: '收费项目名称', name: 'sfxmmc', widthratio: 15 },
+            { label: '拼音', name: 'py', widthratio: 10 },
+            { label: '单位', name: 'dw', widthratio: 7 },
+            { label: '单价', name: 'dj', widthratio: 8 },
+            { label: '大类', name: 'dl', widthratio: 10 },
+            { label: '门诊住院标志', name: 'mzzybz', widthratio: 13 }
+        ]
+    });
+
+
+    $("#btn_search").click(function () {
+        $gridList.jqGrid('setGridParam', {
+            postData: { keyword: $("#txt_keyword").val() }
+        }).trigger('reloadGrid');
+    })
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "系统收费项目调价维护",
+            url: "/SystemManage/SysChargeProjPriceAdj/Form",
+            width: "700px",
+            height: "520px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().brsfjmbh;
+        $.modalOpen({
+            id: "Form",
+            title: "修改信息",
+            url: "/SystemManage/SysChargeProjPriceAdj/Form?keyValue=" + keyValue,
+            width: "700px",
+            height: "520px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_delete() {
+        $.deleteForm({
+            url: "/SystemManage/SysChargeProjPriceAdj/DeleteForm",
+            param: { keyValue: $("#gridList").jqGridRowValue().brsfjmbh },
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+    function btn_details() {
+        var keyValue = $("#gridList").jqGridRowValue().brsfjmbh;
+        $.modalOpen({
+            id: "Details",
+            title: "查看机构",
+            url: "/SystemManage/SysChargeProjPriceAdj/Form?keyValue=" + keyValue,
+            width: "700px",
+            height: "520px",
+            btn: null,
+        });
+    }
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        params['sfxm'] = $('#sfxmmc').attr('data-sfxm');
+        $.submitForm({
+            url: "/SystemManage/SysChargeProjPriceAdj/SubmitForm?keyValue=" + keyValue,
+            param: params,
+            success: function () {
+                $.currentWindow().window.frames['iframeExpenseManage'].$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>
+
+
+
+

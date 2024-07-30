@@ -1,0 +1,57 @@
+﻿
+@{
+    ViewBag.Title = "新农合家庭参合列表";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 55px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>参合年度：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <input type="text" id="year" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>医疗证号：</th>
+                <td class="formValue">
+                    <input type="text" id="medicalNo" class="form-control required" placeholder="" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<script>
+    function submitForm(callback) {
+        var year = $('#year').val();
+        if (!year) {
+            $.modalAlert("参合年度必填", "warning");
+            return false;
+        }
+
+        var medicalNo = $('#medicalNo').val();
+        if (!medicalNo) {
+            $.modalAlert("医疗证号必填", "warning");
+            return false;
+        }
+        $.submitForm({
+            url: "@Url.Action("S03submit")",
+            param: { year: year, medicalNo: medicalNo },
+            success: function (resp) {
+                var jresp = JSON.parse(resp.data);
+                if (jresp.state) {
+                    if (!!jresp.data && jresp.data.length > 0) {
+                        callback(jresp.data);
+                        $.modalClose();
+                    } else {
+                        $.modalAlert("此家庭该年度无参合列表，请确认！", "warning");
+                    }
+                } else {
+                    $.modalAlert(jresp.message, "error");
+                }
+            }
+        });
+    }
+    </script>
+

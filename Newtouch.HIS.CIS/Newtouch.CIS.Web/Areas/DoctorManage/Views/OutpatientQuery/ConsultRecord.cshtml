@@ -1,0 +1,96 @@
+﻿
+@{
+    ViewBag.Title = "门诊就诊记录";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<form name="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">日期：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <td class="formValue" style="width:8px;float:left;">-</td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+                    <input type="button" id="btn_print" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="打印" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        //查询列表
+        gridList();
+    });
+    //门诊挂号结算查询
+    function gridList() {
+        var $gridJsList = $("#gridList");
+        $gridJsList.dataGrid({
+            postData: {kssj:$("#kssj").val(),jssj:$("#jssj").val()},
+            height: $(window).height() - 160,
+            url: "/DoctorManage/OutpatientQuery/GetConsultRecordGridJson",
+            colModel: [
+                { label: '门诊号码', name: 'mzh', width: 100, align: 'left' },
+                { label: '姓名', name: 'xm', align: 'left', width: 110 },
+                { label: '性别', name: 'xb', align: 'center', width: 80 },
+                { label: '年龄', name: 'nl', align: 'left', width: 50 },
+                { label: '诊断', name: 'zdmc', width: 150, align: 'left' },
+                { label: '开始时间', name: 'zlkssj', align: 'left', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
+                { label: '结束时间', name: 'zljssj', align: 'left', width: 120, formatter: function (val) { return val != "" && val != undefined ? $.getTime({ date: val }) : ""; } },
+                 { label: '科室', name: 'ks', width: 80, align: 'left' },
+                { label: '医生', name: 'ys', width: 80, align: 'left' },
+                { label: '家庭地址', name: 'dz', width: 80, align: 'left' },
+                { label: '转归', name: 'zg', width: 80, align: 'left', hidden: true }
+            ],
+            pager: "#gridPager",
+            sortname: " zlkssj asc",
+            rownumbers: true,  //是否显示序号
+            viewrecords: true
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val() },
+                url: "/DoctorManage/OutpatientQuery/GetConsultRecordGridJson",
+            }).trigger('reloadGrid');
+        });
+    }
+
+    
+    $("#btn_print").click(function () {
+        var uri = '@Html.Raw(reportUrl)' + "?tempCode=1243" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&kssj=" + $('#kssj').val() + "&jssj=" + $('#jssj').val() + "&jzys=" + '@curOpr.rygh';
+        if (uri) {
+            window.open(uri);
+        }
+    })
+
+
+
+</script>

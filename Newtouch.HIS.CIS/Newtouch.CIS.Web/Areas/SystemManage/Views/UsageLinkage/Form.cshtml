@@ -1,0 +1,114 @@
+﻿@{
+    ViewBag.Title = "用法联动维护";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <table class="form">
+        <tr>
+            <th class="formTitle"><span class="required">*</span>药品用法：</th>
+            <td class="formValue">
+                <input id="selyf" attr-yfCode="" class="form-control required" style="height: 30px;width:150px;" placeholder="请选择用法" />
+            </td>
+            <th class="formTitle"><span class="required">*</span>收费项目：</th>
+            <td class="formValue">
+                <input id="selitem" attr-xmCode="" class="form-control required" style="height: 30px;width:150px;" placeholder="请选择费用" />
+                <input id="sfdlCode" type="hidden" value="" />
+            </td>
+        </tr>
+        <tr>
+            <th class="formTitle"><span class="required">*</span>选项：</th>
+            <td class="formValue" style="padding-top: 1px;" colspan="3">
+                <div class="ckbox">
+                    <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt"> 有效</label>
+                </div>
+            </td>
+        </tr>
+    </table>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        if (!!keyValue) {
+            $.najax({
+                url: "/SystemManage/UsageLinkage/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    if (data != null) {
+                        $("#selyf").val(data.yfmc);
+                        $("#selyf").attr("attr-yfCode", data.yfCode);
+                        $("#selitem").val(data.sfxmmc);
+                        $("#selitem").attr("attr-xmCode", data.sfxmCode);
+                        $("#sfdlCode").val(data.dlCode);
+                        if (data.zt === "1") {
+                            $("#zt").attr("checked", "checked");
+                        }
+                        else {
+                            $("#zt").removeAttr("checked");
+                        }
+                    }
+                    else {
+                        $.modalAlert("获取信息失败", 'error');
+                    }
+                }
+            });
+        };
+    });
+
+    //用法 浮层
+    $("#selyf").yfFloatingSelector({
+        itemdbclickhandler: function ($this) {
+            $("#selyf").val($this.attr('data-yfmc'));
+            $("#selyf").attr("attr-yfCode", $this.attr('data-yfCode'));
+        }
+    });
+
+    //收费项目 浮层
+    $('#selitem').sfxmFloatingSelector({
+        leftshift: 100, //整体左偏移
+        width: 650,
+        ajaxparameters: function ($thisinput) {
+            return "keyword=" + $.trim($thisinput.val());
+        },
+        itemdbclickhandler: function ($thistr, $thisinput) {
+            $("#selitem").val($thistr.attr('data-sfxmmc'));
+            $("#selitem").attr("attr-xmCode", $thistr.attr('data-sfxmcode'));
+            $("#sfdlCode").val($thistr.attr('data-sfdlCode'));
+        }
+    });
+
+    //submit
+    function AcceptClick(callback) {
+        if (!$("#selyf").val()) {
+            $.modalMsg('请选择用法', 'error', 1000);
+            return;
+        }
+        if (!$("#selitem").val()) {
+            $.modalMsg('请选择收费项目', 'error', 1000);
+            return;
+        }
+        $.najax({
+            url: "/SystemManage/UsageLinkage/SubmitForm",
+            data: {
+                keyValue: keyValue,
+                yfCode: $("#selyf").attr("attr-yfCode"),
+                sfxmCode: $("#selitem").attr("attr-xmCode"),
+                sfdlCode: $("#sfdlCode").val(),
+                zt: $("#zt").is(':checked') ? "1" : "0"
+            },
+            dataType: "json",
+            type: "POST",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg("提交成功", 'success');
+                    callback();
+                } else {
+                    $.modalAlert(res.message, "error");
+                }
+            }
+        });
+    }
+
+</script>

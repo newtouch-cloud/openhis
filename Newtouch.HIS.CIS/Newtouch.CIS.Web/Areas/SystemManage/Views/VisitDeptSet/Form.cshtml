@@ -1,0 +1,96 @@
+﻿@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "编辑出诊科室";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form1">
+    <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+        <div class="panel panel-default">
+            <div class="panel-body" style="width: 98%; margin-left: -34px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">医生名称：</th>
+                        <td class="formValue">
+                            <input id="staffName" name="staffName" type="text" class="form-control" disabled="disabled" style="background-color: rgb(241, 244, 246);" />
+                            <input id="Id" name="Id" type="hidden" value="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">工号：</th>
+                        <td class="formValue">
+                            <input id="ysgh" name="ysgh" type="text" class="form-control" disabled="disabled" style="background-color: rgb(241, 244, 246);"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">所属科室：</th>
+                        <td class="formValue">
+                            <input id="subordinateDeptName" name="subordinateDeptName" type="text" class="form-control" disabled="disabled" style="background-color: rgb(241, 244, 246);"/>
+                            <input id="SubordinateDepartments" name="SubordinateDepartments" type="hidden" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">出诊科室：</th>
+                        <td class="formValue">
+                            <select id="visitksCode" name="visitksCode" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">门诊类型：</th>
+                        <td class="formValue">
+                            @Html.DropDownList("czlx", EnumOutPatientType.generalOutpat.ToDescSelectList(), new { @class = "form-control" })
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">选项：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    var ysgh = $.request("ysgh");
+    $(function () {
+        initControl();
+        $.najax({
+            url: "/SystemManage/VisitDeptSet/GetFormJson",
+            data: { keyValue: keyValue, ysgh: ysgh },
+            dataType: "json",
+            success: function (data) {
+                $("#form1").formSerialize(data);
+            }
+        });
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#visitksCode").bindSelect({
+            url: "/SystemManage/SysDepartment/GetSelectJson",
+            id: "Code",
+            text: "Name"
+        });
+    }
+
+    function AcceptClick() {
+        var postData = $("#form1").formSerialize();
+        postData["Id"] = keyValue;
+        $.submitForm({
+            url: "/SystemManage/VisitDeptSet/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridmxList").resetSelection();
+                $.currentWindow().$("#gridmxList").trigger("reloadGrid");
+                $.modalClose();
+            }
+        });
+    }
+</script>

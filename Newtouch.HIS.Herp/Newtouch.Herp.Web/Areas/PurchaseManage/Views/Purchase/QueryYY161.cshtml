@@ -1,0 +1,91 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "耗材配送单状态获取";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+<script src="~/Content/js/index.js"></script>
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">耗材配送单状态获取</div>
+        <table class="form">
+            <tr style="float:left">
+                <th class="formTitle">配送单编号：</th>
+                <td class="formValue">
+                    <input id="psdbh" class="form-control" placeholder="配送单编号" />
+                </td>
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                </th>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        //gridList();
+    });
+
+
+
+    function getPostData() {
+        return {
+            PSDBH: $("#psdbh").val(),
+            PSMXBHCXTJ :'',
+        };
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetGridJsonYY161",
+            height: $(window).height() - 200,
+            postData: getPostData(),
+            colModel: [
+                { label: '配送明细编号', name: 'PSMXBH', width: 180, align: 'left' },
+                {
+                    label: '配送明细状态', name: 'PSMXZT', width: 180, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumPSMXZT", val);
+                    }
+                },
+                { label: '已预验通过数', name: 'YYYTGS', width: 80, align: 'left' },
+                { label: '已预验不过数', name: 'YYYBGS', width: 80, align: 'left' },
+                { label: '已实验通过数', name: 'YSYTGS', width: 80, align: 'left' },
+                { label: '已实验不过数', name: 'YSYBGS', width: 80, align: 'left' },
+
+            ],
+            multiselect: false,
+            //pager: "#gridPager",
+            //sortname: '',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: getPostData(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //查询
+    $('#btn_search').click(function () {
+        if ($("#psdbh").val() == "" || $("#psdbh").val() == null) {
+            $.modalAlert("请填写配送单编号", 'warning');
+            return ;
+        }
+        gridList();
+    });
+</script>
+
+

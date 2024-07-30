@@ -1,0 +1,72 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<style>
+    /*#AuthorityList {
+        overflow: hidden !important;
+    }*/
+</style>
+
+
+<form id="form1">
+    <div class="topPanel">
+        <div class="search" style="margin-left:12px;margin-top:12px;">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="权限名称" style="width: 180px;">
+                            <span class="input-group-btn" style="float:left;">
+                                <button id="btn_search_bind" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade in" style="padding-top: 6px; margin-right: 30px;" id="staffDuty">
+                            <div id="AuthorityList" style="width:325px;"></div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+
+
+<script>
+    var gh = $.request("gh");
+    var organizeId = $.request("organizeId");
+    var keyword = $("#txt_keyword").val();
+
+    $(function () {
+        $('#myTab a:first').tab('show');
+        var authorithTree=getAuthorith(gh, organizeId, keyword);
+    });
+
+    function getAuthorith(gh, organizeId, keyword) {
+        $("#AuthorityList").treeview({
+            height: 400,
+            slimscroll: false,
+            showcheck: true,
+            url: "/SysMedicineAuthorityRelation/GetAuthorityList",
+            param: { gh: gh, organizeId: organizeId, keyword: keyword }
+        });
+    }
+
+    function submitForm() {
+        var postData = {};
+        postData["AuthorityList"] = String($("#AuthorityList").getCheckedNodes());
+        $.submitForm({
+            url: "/SysMedicineAuthorityRelation/UpdateAuthority?gh=" + gh + "&organizeId=" + organizeId,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridListQx").trigger("reloadGrid");
+            }
+        })
+    }
+
+    $("#btn_search_bind").click(function () {
+        keyword = $("#txt_keyword").val();
+        getAuthorith(gh, organizeId, keyword);
+    });
+</script>

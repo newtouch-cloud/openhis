@@ -1,0 +1,444 @@
+﻿
+@{
+    ViewBag.Title = "HandOutMedicineByRequest";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+    .txt-ffsl {
+        height: 18px;
+        line-height: 20px;
+        margin: 3px !important;
+        width: 80px;
+    }
+</style>
+
+<script>
+    var globalData = [];
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+
+        gridList();
+        medicineGridList([]);
+        //btn_loaddata([]);
+    })
+
+    function gridList() {
+        var $gridList = $("#parentgridList");
+        $gridList.dataGrid({
+            caption: "申领信息",
+            url: "/DrugStorage/RequestInfo",
+            height: $(window).height() - 400,
+            postData: $("#form1").formSerialize(),
+            subGrid: true,
+            colModel: [
+                { label: "主键", name: "sldId", hidden: true, key: true },
+                { label: "申领单号", name: "Sldh", width: 180, align: 'left' },
+                { label: '申领部门', name: 'Slbm', width: 100, align: 'left' },
+                { label: '申领时间', name: 'CreateTime', width: 150, align: 'left' },
+                { label: '药房部门名称', name: 'yfbmmc', width: 150, align: 'left' },
+                {
+                    label: '发药状态', name: 'ffzt', width: 50, align: 'left',
+                    formatter: function (cellvalue) {
+                        switch (cellvalue) {
+                            case 0: return "未发放";
+                            case 1: return "已发放部分";
+                            case 2: return "已发放全部";
+                            case 3: return "已终止";
+                        }
+                    }
+                }
+            ],
+            pager: "#gridPager1",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            multiselect: true,
+            subGridRowExpanded: function (subgridId, rowId) {
+                var sldId = $("#parentgridList").getRowData(rowId).sldId;
+                var subgridTableId = subgridId + "_t";
+                var pagerId = "p_" + subgridTableId;
+                $("#" + subgridId).html("<table id='" + subgridTableId + "' class='scroll'></table><div id='" + pagerId + "' class='scroll'></div>");
+                jQuery("#" + subgridTableId).dataGrid({
+                    autoScroll: true,
+                    url: "/DrugStorage/RequestMedicineInfo?sldId=" + sldId,
+                    height: 100,
+                    width: 100,
+                    colModel: [
+                        {
+                            label: '发放数量', name: 'ffsl',
+                            formatter: function (cellVal) {
+                                return '<input type="text" data-rowid="' + arguments[1].rowId + '" value="' + (cellVal || 0) + '" class="txt-ffsl form-control" />';
+                            }
+                        },
+                        { label: "主键", name: "sldmxId", hidden: true, key: true },
+                        {
+                            label: '药品名称', name: 'ypmc', width: 250, align: 'left'
+                        },
+                        { label: '发药数量', name: 'Sl', width: 50, align: 'left' },
+                        { label: '单位', name: 'bzdw', width: 50, align: 'left' },
+                        {
+                            label: '批发价', name: 'Pfj', width: 50, align: 'left',
+                            formatter: function (cellvalue) {
+                                return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                            }
+                        },
+                        {
+                            label: '零售价', name: 'lsj', width: 50, align: 'left',
+                            formatter: function (cellvalue) {
+                                return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                            }
+                        },
+                        { label: '生产厂家', name: 'ycmc', width: 250, align: 'left' },
+                        { label: '批号', name: 'Ph', width: 100, align: 'left' },
+                        { label: '有效日期', name: 'Yxrq', width: 120, align: 'left' },
+                        { label: '批号', name: 'pc', hidden: true, width: 50, align: 'left' },
+                        { label: '药品编码', name: 'ypCode', hidden: true, width: 50, align: 'left' },
+                        {
+                            label: '零售价', name: 'pfj', hidden: true, width: 50, align: 'left',
+                            formatter: function (cellvalue) {
+                                return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                            }
+                        },
+                        {
+                            label: '批发价', name: 'lsj', hidden: true, width: 50, align: 'left',
+                            formatter: function (cellvalue) {
+                                return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                            }
+                        },
+                        {
+                            label: '批发总额', name: 'Pjze', width: 50, align: 'left',
+                            formatter: function (cellvalue) {
+                                return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                            }
+                        },
+                        {
+                            label: '零价总额', name: 'Ljze', width: 50, align: 'left',
+                            formatter: function (cellvalue) {
+                                return cellvalue ? cellvalue.toFixed(2) : "0.00";
+                            }
+                        },
+                        { label: '申领单号', name: 'sldh', width: 50, align: 'left', hidden: true, },
+                        { label: '转换因子', name: 'Zhyz', align: 'left', hidden: true, }
+                    ],
+                    multiselect: true,
+                    onSelectRow_page: function (rowid, status) {
+                        var data = $("#" + subgridTableId).getRowData(rowid);
+                        var i = globalData.length;
+                        if (status) {
+                            while (i > 0 && i--) {
+                                for (var j = 0; j < globalData.length; j++) {
+                                    if (globalData[j].sldmxId == data.sldmxId) {
+                                        return;
+                                    }
+                                }
+
+                            }
+                            globalData.push(data);
+                        } else {
+                            //if (globalData && globalData.length > 0) {
+                            //    for (var i = 0; i < globalData.length; i++) {
+                            //        if (globalData[i].sldmxId == data.sldmxId) {
+                            //            globalData.splice(i, 1);
+                            //        }
+                            //    }
+                            //}
+                            while (i--) {
+                                for (var j = 0; j < globalData.length; j++) {
+                                    if (globalData[j].sldmxId == data.sldmxId) {
+                                        delpbj(globalData, redata);
+                                    }
+                                }
+
+                            };
+                        }
+                        medicineGridList(globalData);
+                        $("#MedicineGridList").trigger("reloadGrid");
+                    },
+                });
+            },
+            onSelectRow_page: function (rowid, status) {
+                var data = $("#parentgridList").jqGrid('getRowData', rowid);//.getRowData(rowid);
+                var sldId = data.sldId;
+                var redata = [];
+                $.ajax({
+                    type: "POST",
+                    url: "/DrugStorage/RequestMedicineInfo?sldId=" + sldId,
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.state === "success") {
+                            redata = res.data;
+                            if (redata !== []) {
+                                var i = globalData.length;
+                                if (status) {
+                                    while (i--) {
+                                        for (var j = 0; j < redata.length; j++) {
+                                            if (globalData[i].sldmxId == redata[j].sldmxId) {
+                                                return;
+                                            }
+                                        }
+
+                                    }
+                                    globalData.push(redata);
+                                } else {
+                                    while (i--) {
+                                        for (var j = 0; j < redata.length; j++) {
+                                            if (globalData[i].sldmxId == redata[j].sldmxId) {
+                                                delpbj(globalData, redata);
+                                            }
+                                        }
+
+                                    };
+                                    //if (contains(globalData, redata, "sldmxId")) {
+                                    //    delpbj(globalData, redata);
+                                    //}
+                                }
+                            }
+                            $('#MedicineGridList').jqGrid("clearGridData");
+                            medicineGridList(globalData);
+                            $("#MedicineGridList").trigger("reloadGrid");
+                        }
+                    }
+                });
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: $("#form1").formSerialize(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //function contains(arr, obj, val) {
+    //    var i = arr.length;
+    //    while (i--) {
+    //        if (arr[i][val] == obj[val]) {
+    //            return true;
+    //        }
+    //    }
+    //    return false;
+    //}
+
+    function delpbj(arr, obj) {
+        for (var i = 0; i < arr.length; i++) {
+            if (arr[i].sldmxId == obj.sldmxId) {
+                arr.splice(i, 1);
+            }
+        }
+    }
+
+    function medicineGridList(mydata) {
+        $("#MedicineGridList").dataNewGrid({
+            autoScroll: true,
+            caption: "选中信息",
+            height: 300,
+            colModel: [
+                { label: "主键", name: "sldmxId", hidden: true, key: true },
+                { label: '发放数量', name: 'ffsl', width: 50, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 250, align: 'left' },
+                { label: '发药数量', name: 'Sl', width: 50, align: 'left' },
+                { label: '单位', name: 'bzdw', width: 50, align: 'left' },
+                { label: '批发价', name: 'Pfj', width: 50, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 50, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 250, align: 'left' },
+                { label: '批号', name: 'Ph', width: 100, align: 'left' },
+                { label: '有效日期', name: 'Yxrq', width: 120, align: 'left' },
+                { label: '批号', name: 'pc', hidden: true, width: 50, align: 'left' },
+                { label: '药品编码', name: 'ypCode', hidden: true, width: 50, align: 'left' },
+                { label: '零售价', name: 'pfj', hidden: true, width: 50, align: 'left' },
+                { label: '批发价', name: 'lsj', hidden: true, width: 50, align: 'left' },
+                { label: '批发总额', name: 'Pjze', width: 50, align: 'left' },
+                { label: '零价总额', name: 'Ljze', width: 50, align: 'left' },
+                { label: '申领单号', name: 'sldh', width: 50, align: 'left', hidden: true, },
+                { label: '转换因子', name: 'Zhyz', align: 'left', hidden: true, }
+            ],
+            multiselect: true,
+            pager: "#gridPager2",
+            sortname: 'sldmxId desc',
+            viewrecords: true
+        }, mydata);
+        if (mydata.length > 0) {
+            $('.ui-jqgrid-bdiv').find(".unwritten").remove();
+        }
+    }
+    //function btn_loaddata(rowid) {
+    //    $('#ChildgridList').jqGrid("clearGridData");
+    //    var sldId = $("#parentgridList").jqGridRowValue().sldId
+    //    var SelectRowIndx;
+    //    $("#ChildgridList").dataGrid({
+    //        autoScroll: true,
+    //        url: "/DrugStorage/RequestMedicineInfo?sldId=" + sldId,
+    //        caption: "药品信息",
+    //        onSelectRow_page: function (rowid, status) {
+    //            var data = $("#ChildgridList").getRowData(rowid);
+    //            if (status) {
+    //                if (globalData.length > 0) {
+    //                    for (var i = 0; i < globalData.length; i++) {
+    //                        if (globalData[i].sldmxId != data.sldmxId) {
+    //                            globalData.push(data);
+    //                            return;
+    //                        }
+    //                    }
+    //                } else {
+    //                    globalData.push(data);
+    //                    return;
+    //                }
+    //            } else {
+    //                if (globalData && globalData.length > 0) {
+    //                    for (var i = 0; i < globalData.length; i++) {
+    //                        if (globalData[i].sldmxId == data.sldmxId) {
+    //                            globalData.splice(i, 1);
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //        },
+    //        height: $(window).height() - 410,
+    //        colModel: [
+    //            {
+    //                label: '发放数量', name: 'ffsl',
+    //                formatter: function (cellVal) {
+    //                    return '<input type="text" data-rowid="' + arguments[1].rowId + '" value="' + (cellVal || 0) + '" class="txt-ffsl form-control" />';
+    //                }
+    //            },
+    //            { label: "主键", name: "sldmxId", hidden: true, key: true },
+    //            {
+    //                label: '药品名称', name: 'ypmc', width: 250, align: 'left'
+    //            },
+    //            { label: '发药数量', name: 'Sl', width: 50, align: 'left' },
+    //            { label: '单位', name: 'bzdw', width: 50, align: 'left' },
+    //            {
+    //                label: '批发价', name: 'Pfj', width: 50, align: 'left',
+    //                formatter: function (cellvalue) {
+    //                    return cellvalue ? cellvalue.toFixed(2) : "0.00";
+    //                }
+    //            },
+    //            {
+    //                label: '零售价', name: 'lsj', width: 50, align: 'left',
+    //                formatter: function (cellvalue) {
+    //                    return cellvalue ? cellvalue.toFixed(2) : "0.00";
+    //                }
+    //            },
+    //            { label: '生产厂家', name: 'ycmc', width: 250, align: 'left' },
+    //            { label: '批号', name: 'Ph', width: 100, align: 'left' },
+    //            { label: '有效日期', name: 'Yxrq', width: 120, align: 'left' },
+    //             { label: '批号', name: 'pc', hidden: true, width: 50, align: 'left' },
+    //            { label: '药品编码', name: 'ypCode', hidden: true, width: 50, align: 'left' },
+    //            {
+    //                label: '零售价', name: 'pfj', hidden: true, width: 50, align: 'left',
+    //                formatter: function (cellvalue) {
+    //                    return cellvalue ? cellvalue.toFixed(2) : "0.00";
+    //                }
+    //            },
+    //            {
+    //                label: '批发价', name: 'lsj', hidden: true, width: 50, align: 'left',
+    //                formatter: function (cellvalue) {
+    //                    return cellvalue ? cellvalue.toFixed(2) : "0.00";
+    //                }
+    //            },
+    //            {
+    //                label: '批发总额', name: 'Pjze', width: 50, align: 'left',
+    //                formatter: function (cellvalue) {
+    //                    return cellvalue ? cellvalue.toFixed(2) : "0.00";
+    //                }
+    //            },
+    //            {
+    //                label: '零价总额', name: 'Ljze', width: 50, align: 'left',
+    //                formatter: function (cellvalue) {
+    //                    return cellvalue ? cellvalue.toFixed(2) : "0.00";
+    //                }
+    //            },
+    //            { label: '申领单号', name: 'sldh', width: 50, align: 'left', hidden: true, },
+    //            { label: '转换因子', name: 'Zhyz', align: 'left', hidden: true, }
+    //        ],
+    //        multiselect: true,
+    //        pager: "#gridPager2",
+    //        sortname: 'sldmxId desc',
+    //        viewrecords: true
+    //    });
+    //    var grid = $('#ChildgridList').jqGrid()[0].grid;
+    //    $('#ChildgridList').jqGrid().setGridParam({ url: '/DrugStorage/RequestMedicineInfo?sldId=' + sldId });
+    //    grid.populate();
+    //}
+
+    function newtouch_event_f6() {
+        var par = {};
+        var medicineList = [];
+        for (var i = 0; i < globalData.length; i++) {
+            var obj = new Object();
+            obj["Ypdm"] = globalData["0"][i].ypCode;
+            obj["Ph"] = globalData["0"][i].Ph;
+            obj["pc"] = globalData["0"][i].pc;
+            obj["Yxq"] = globalData["0"][i].Yxrq;
+            obj["Lsj"] = globalData["0"][i].lsj;
+            obj["Pfj"] = globalData["0"][i].pfj;
+            obj["lsje"] = globalData["0"][i].Ljze;
+            obj["fysl"] = globalData["0"][i].ffsl;//$(".txt-ffsl[data-rowid='" + (i + 1) + "']").val();
+            obj["zhyz"] = globalData["0"][i].Zhyz;
+            obj["sldmxId"] = globalData["0"][i].sldmxId;
+            medicineList.push(obj);
+        }
+        par["XT_YP_LS_NBFYMXK"] = medicineList;
+        par["type"] = 4;//申领单发药
+        par["fyfs"] = "11";//正常出库
+        $.ajax({
+            type: "POST",
+            url: "/DrugStorage/ExecHandOutMedicine",
+            data: par,
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalAlert("添加成功！", 'success');
+                }
+                $("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+    //删除
+    function newtouch_event_f7() {
+
+    }
+</script>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:0;">
+        <div class="panel-heading">
+            筛选信息
+        </div>
+        <table class="form" style="width:98%;border:0">
+            <tr>
+                <td class="formTitle">申领单号</td>
+                <td class="formValue"><input type="text" id="sldh" name="sldh" class="form-control" /></td>
+                <td class="formTitle">申领部门</td>
+                <td class="formValue"><input type="text" id="slbm" name="slbm" class="form-control" /></td>
+                <td class="formTitle">发药状态</td>
+                <td class="formValue">
+                    <select class="form-control" id="ffzt" name="ffzt">
+                        <option value="-1">==请选择==</option>
+                        <option value="0">未发放</option>
+                        <option value="1">已发放部分</option>
+                    </select>
+                </td>
+                <td class="formTitle"></td>
+                <td class="formValue"><input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" style="margin-left:3px;" /></td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div class="gridPanel">
+    <div style="margin-bottom:10px">
+        <table id="parentgridList"></table>
+        <div id="gridPager1" rel="form1"></div>
+    </div>
+    <table id="MedicineGridList"></table>
+    <div id="gridPager2" rel="form1"></div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 6, 7 },
+    F6Text = "发药",
+    F7Text = "删除"
+
+})
+

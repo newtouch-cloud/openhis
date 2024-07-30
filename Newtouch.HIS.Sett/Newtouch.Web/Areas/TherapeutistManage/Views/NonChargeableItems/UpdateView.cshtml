@@ -1,0 +1,155 @@
+﻿@{
+    ViewBag.Title = "UpdateView";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<script>
+    $(function () {
+        $(window).resize(function () {
+            initLayout("tabGrid");
+        });
+        var data = localStorage.getItem("needupdateData");
+        if (!data) {
+            return;
+        }
+        var keyValue = JSON.parse(data);
+        $("#ny").html(keyValue["syear"] + "-" + keyValue["smonth"]);
+        $("#ysgh").html(keyValue["ysgh"]);
+        $("#NAME").html(keyValue["NAME"]);
+        $.najax({
+            type: "POST",
+            url: "/TherapeutistManage/NonChargeableItems/GetFormJson",
+            data: keyValue,
+            cache: false,
+            dataType: "json",
+            success: function (ajaxresp) {
+                gridList(ajaxresp);
+            },
+            errorCallback: function (err) {
+            },
+            complete: function () {
+                $.loading(false);
+            }
+
+        });
+    });
+    //绑定grid
+    function gridList(mydata) {
+        var $gridList = $("#gridList");
+        var lastRowId;
+        $gridList.dataNewGrid({
+            height: $(window).height() - 185,
+            editurl: "clientArray",
+            footerrow: true,
+            colModel: [
+                { name: "Id", hidden: true, },
+                { name: "type", label: "type", hidden: true, },
+                { label: "日期", name: "jzsj", align: 'left' },
+                { label: '时长(Min)', name: 'sc', width: 100, align: 'left' },
+                {
+                    label: '调整时长(Min)', name: 'tzsc', width: 100, editable: true, align: "left", summaryType: 'sum'
+                },
+                {
+                    label: '调整理由', name: 'tzly', width: 260, editable: true, align: "left"
+                }
+            ],
+            onSelectRow_page: function (rowid, status) {
+                if (rowid && lastRowId && rowid !== lastRowId) {   //&&: 相当于true/fase(判断是否有值)
+                    $gridList.saveRow(lastRowId, function (result) {
+                        // return false;   //验证输入内容是否合法，取消保存返回false    //无效 等等修复
+                    }); //先保存处于编辑状态的那一行    //function checksave
+                }
+                lastRowId = rowid;
+                $gridList.jqGrid('editRow', rowid, true, null, function (result) {
+                    return false;   //验证输入内容是否合法，取消保存返回false    //无效 等等修复
+                }, null, null, function () {
+                });
+
+            },
+            gridComplete: function () {
+                //启用行内编辑框
+                //EnableInlineEditBox();
+                var rowNum = parseInt($(this).getGridParam('records'), 10);
+                if (rowNum > 0) {
+                    $(".ui-jqgrid-sdiv").show();
+                    var sc = jQuery(this).getCol('sc', false, 'sum');
+                    $(this).footerData("set", { "Source": "<font color='red'>当前页点击合计<font>", "sc": "<font color='red'>" + sc + "<font>分钟" });
+                } else {
+                    $(".ui-jqgrid-sdiv").hide();
+                }
+            },
+            userDataOnFooter: true,
+        }, mydata);
+    }
+
+    //启用行内编辑框
+    function EnableInlineEditBox() {
+        //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+
+            $("#gridList").jqGrid('editRow', rowIds[i], true, null, null, null, null, function (callbackRowId) {     //true: when set to true we can use [Enter] key to save the row and [Esc] to cancel editing.
+            });
+        }
+    }
+
+    function submitForm() {
+        var ysgh = $("#ysgh").html();
+        var par = {};
+        var dic = [];
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+        }
+        var data = JSON.parse($("#gridList").jqGrid('getRowData_AllLine'), true);
+        dic.push({ 'key': ysgh, 'value': data });
+        par["vo"] = dic;
+        $.submitForm({
+            url: "/TherapeutistManage/NonChargeableItems/submitUpdateTime",
+            param: par,
+            success: function () {
+                $.currentWindow().$("#HisgridList").resetSelection();
+                $.currentWindow().$("#HisgridList").trigger("reloadGrid");
+                $.loading(false);
+                $.modalClose();
+            }
+        });
+    }
+</script>
+<div class="rows" style="margin: 5px 10px">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            治疗师信息
+        </div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">
+                    工号：
+                </td>
+                <td class="formValue">
+                    <label id="ysgh"></label>
+                </td>
+                <td class="formTitle">
+                    姓名:
+                </td>
+                <td class="formValue">
+                    <label id="NAME"></label>
+                </td>
+                <td class="formTitle">
+                    年月：
+                </td>
+                <td class="formValue">
+                    <label id="ny"></label>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<form id="tabGrid" class="form">
+    <div class="gridPanel">
+        <table id="gridList" rel="tabGrid"></table>
+    </div>
+</form>
+
+

@@ -1,0 +1,199 @@
+﻿
+@{
+    ViewBag.Title = "HandOutMedicineInfo";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #btn_search {
+        height: 45px;
+        width: 45px;
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+     
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom: 5px;">
+        <div class="panel-heading">
+            筛选信息
+        </div>
+        <table class="form">
+            <tr>
+                <td class="formTitle"><span class="required">*</span>开始日期：</td>
+                <td class="formValue">
+                    <input type="text" id="begindate" name="begindate" value="@DateTime.Now.ToString("yyyy-MM-dd 00:00")" class="form-control input-wdatepicker" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })"/>
+                </td>
+                <td class="formTitle"><span class="required">*</span>结束日期：</td>
+                <td class="formValue">
+                    <input type="text" id="enddate" name="enddate" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm")" class="form-control input-wdatepicker" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })"/>
+                </td>
+                <td class="formTitle">药品剂型：</td>
+                <td class="formValue">
+                    <select class="form-control" id="jxbh">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle">属性：</td>
+                <td class="formValue">
+                    <select class="form-control" id="yptssx">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle" rowspan="2">
+                    <input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" />
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">单据号：</td>
+                <td class="formValue">
+                    <input type="text" id="Pdh" class="form-control" placeholder="请输入单据号" />
+                </td>
+                <td class="formTitle">收货部门：</td>
+                <td class="formValue">
+                    <select class="form-control" id="shbm">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle">药品类别：</td>
+                <td class="formValue">
+                    <select class="form-control" id="yplb">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle">出库类型：</td>
+                <td class="formValue">
+                    <select class="form-control" id="djlx">
+                        <option value="">全部</option>
+                        <option value="3">直接出库</option>
+                        <option value="4">申领出库</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initialddlJXList();
+        iniddlTSSXList();
+        iniddlSHBMist();
+        initialddlYPLBList();
+        gridList();
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/DrugStorage/QueryHandOutMeidicineList",
+            postData: $("#form1").formSerialize(),
+            height: $(window).height() - 190,
+            colModel: [
+                { label: "主键", name: "crkId", hidden: true, key: true },
+                {
+                    label: "单据类型", name: "djlx", width: 80, align: 'left',
+                    formatter: function (cellvalue) {
+                        switch (cellvalue) {
+                        case 1: return "药品入库";
+                        case 2: return "外部出库";
+                        case 3: return "直接出库";
+                        case 4: return "申领出库";
+                        case 5: return "内部发药退货";
+                        }
+                    }
+                },
+                { label: "出库部门", name: "ckbm", width: 80, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 100, align: 'left' },
+                { label: '数量', name: 'fysl', width: 50, align: 'left' },
+                { label: '剂型', name: 'jxmc', width: 50, align: 'left' },
+                //{ label: '属性', name: 'sx', width: 50, align: 'left' },
+                { label: '药品类别', name: 'Yplbmc', width: 60, align: 'left' },
+                { label: '出库日期', name: 'Cksj', width: 120, align: 'left', formatter: 'date', formatoptions: { srcformat: 'y-m-d H:i', newformat: 'y-m-d H:i' }},
+                { label: '单据号', name: 'Pdh', width: 120, align: 'left' },
+                { label: '收货部门', name: 'rkbm', width: 50, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 50, align: 'left' },
+                //{ label: '单位', name: 'Dw', width: 50, align: 'left' },
+                { label: '批号', name: 'Ph', width: 100, align: 'left' },
+                { label: '有效期', name: 'Yxq', width: 70, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 150, align: 'left' },
+                { label: '拼音', name: 'py', width: 50, align: 'left' },
+                { label: '批发价', name: 'Pfj', width: 50, align: 'left' },
+                { label: '零售价', name: 'Lsj', width: 50, align: 'left' },
+                { label: '进价', name: 'JJ', width: 50, align: 'left' },
+                { label: '总金额', name: 'Zje', width: 50, align: 'left' },
+                //{
+                //    label: '出库金额', name: 'ckje', width: 50, align: 'left',
+                //    formatter: function (val, opts, rowdata) {
+                //        return (rowdata.Lsj * rowdata.Sl).toFixed(2);
+                //    }
+                //},
+                { label: '出库人员', name: 'Ckczy', width: 50, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: 'cksj desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            if (validatelyInfo()) {
+                $gridList.jqGrid('setGridParam', {
+                    postData: $("#form1").formSerialize()
+                }).trigger('reloadGrid');
+            }
+        });
+    }
+
+    //验证日期
+    function validatelyInfo() {
+        //判断必填
+        var begindate = $("#begindate").val();
+        var enddate = $("#enddate").val();
+        var pdh = $("#Pdh").val();
+        if ((begindate && enddate) || pdh) {
+            return true;
+        }
+        $.modalAlert("单据号和日期必填一项！", 'warning');
+        return false;
+    }
+
+    //药品剂型
+    function initialddlJXList() {
+        $("#jxbh").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineFormulationList",
+            id: "jxCode",
+            text: "jxmc"
+        });
+    }
+
+    //药品属性
+    function iniddlTSSXList() {
+        $("#yptssx").bindSelect({
+            url: "/Medicine/GetMedicineTSSXList",
+            id: "Code",
+            text: "Name"
+        });
+    }
+
+    //收货部门
+    function iniddlSHBMist() {
+        $("#shbm").bindSelect({
+            url: "/Medicine/GetMeidicineSHBMList",
+            id: "Code",
+            text: "Name"
+        });
+    }
+
+
+    //药品类别
+    function initialddlYPLBList() {
+        $("#yplb").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineCategoryList"
+        });
+    }
+
+</script>

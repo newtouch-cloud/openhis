@@ -1,0 +1,57 @@
+﻿
+@{
+    ViewBag.Title = "TelxdReport";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="tabGrid">
+    <div>
+        <div class="gridPanel">
+            <table id="gridList" rel="tabGrid"></table>
+        </div>
+    </div>
+</form>
+<script>
+    var kh;
+    var JzId;
+    $(function () {
+         kh = sessionStorage.getItem('kh');
+         JzId = sessionStorage.getItem('JzId');
+        gridList();
+    });
+
+    function gridList() {
+         var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "@Url.Action("GetcfByJzId")",
+            postData: { JzId: JzId },
+            height: $(window).height()-60,
+            unwritten: false,
+            rownumbers: true,
+            colModel: [
+                { label: 'cfId', name: 'cfId', hidden: true },
+                { label: '处方号', name: 'cfh', width: 100, align: 'center' },
+                { label: '总金额', name: 'zje', width: 120, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 120, align: 'center',formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+
+            ],
+            viewrecords: true,
+            sortname: 'CreateTime desc',
+            ondblClickRow: function (row) {
+                var rowData = $("#gridList").jqGrid('getRowData', row);
+                $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("xindiandiaoyue")",
+                    data: { kh: kh, orderno: rowData.cfh },
+                    dataType: "xml",  //参数类型为xml
+                    contentType: "application/x-www-form-urlencoded",//使用的xml格式的
+                    error: function (error) {
+                        $.modalClose();
+                        if (JSON.parse(JSON.parse(error.responseText).data)[0].return === "1") {
+                            //window.open("http://www.baidu.com/", "_blank");
+                        }
+                    }
+                })
+            },
+        });
+    }
+</script>

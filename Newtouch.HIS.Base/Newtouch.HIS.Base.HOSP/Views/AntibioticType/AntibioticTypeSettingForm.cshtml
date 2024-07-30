@@ -1,0 +1,145 @@
+﻿
+@{
+    ViewBag.Title = "AntibioticTypeSettingForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .form .formTitle {
+        width: 80px;
+        padding-right: 5px;
+    }
+
+    .radio input[type=radio], .radio-inline input[type=radio] {
+        margin-left: -16px;
+    }
+
+    .radio-inline {
+        line-height: 22px;
+        margin-left: 30px;
+        width: 35px;
+    }
+</style>
+
+<form id="form1">
+    <div style="padding-top: 10px; margin-right: 20px;margin-left: 10px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle"></td>
+                <td class="formValue"></td>
+                <td class="formTitle"></td>
+                <td class="formValue"></td>
+            </tr>
+            <tr>
+                <td class="formTitle">分类级别：</td>
+                <td class="formValue">
+                    <label id="typelevel" name="typelevel">一级分类</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>分类名称：</td>
+                <td class="formValue">
+                    <input type="text" width="120" id="typeName" name="typeName"/>
+                    <input type="hidden" id="Id" />
+                    <input type="hidden" id="parentId" />
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">权限级别：</td>
+                <td class="formValue" >
+                    <select id="qxjb" name="qxjb" class="form-control" style="width:126px;">
+                        <option value="0">非限制使用药物</option>
+                        <option value="1">限制使用药物</option>
+                        <option value="2">特殊使用药物</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div style="padding-left: 10px;margin-top: 10px;">
+
+</div>
+<script type="text/javascript">
+    var keyValue = $.request("Id");
+    var pId = $.request("parentId");
+    var tlevel = $.request("level");
+    if (tlevel == "1")
+    {
+        $('#typelevel').html("一级分类");
+    }
+    else if (tlevel == "2") {
+        $('#typelevel').html("二级分类");
+    }
+
+    $(function () {
+        if (!!keyValue) {
+            $.ajax({
+                url: "@Url.Action("GetById")",
+                data: { Id: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $('#Id').html(data.Id);
+                    $('#typeName').val(data.typeName);
+                    switch (data.typelevel)
+                    {
+                        case "1":
+                            $('#typelevel').html("一级分类");
+                            break;
+                        case "2":
+                            $('#typelevel').html("二级分类");
+                            break;
+                        default:
+                            $('#typelevel').html("error");
+                            break;
+                    }
+                    $('#typelevel').val(data.typelevel);
+                    $("#qxjb").val(data.qxjb);
+                    $("#parentId").val(data.parentId);
+                }
+            });
+        }
+    });
+
+</script>
+<script type="text/javascript">
+    function AcceptClick(callback) {
+        if (!$("#form1").formValid()) {
+            return;
+        }
+        var data = new Object();// $("#form1").formSerialize();
+        data.Id = keyValue;
+        data.parentId = pId;
+        data.typeName = $('#typeName').val();
+        data.typelevel = tlevel;
+        data.qxjb = $('#qxjb').val();
+
+        data.qxjbmc = $('#qxjb').find("option:selected").text();
+        if (!data.typeName || $.trim(data.typeName) == "")
+        {
+            $.modalAlert("请填写分类名称", "warning");
+            return;
+        }
+        if (!data.typelevel || $.trim(data.typelevel) == "") {
+            $.modalAlert("分类等级获取失败，请退至查询界面重新操作！", "warning");
+            return;
+        }
+        if (!data.qxjb || $.trim(data.qxjb) == "") {
+            $.modalAlert("权限级别获取失败！", "warning");
+            return;
+        }
+
+        $.submitForm({
+            url: "/AntibioticType/submitForm_AntibioticType",
+            param: data,
+            close: false,
+            success: function () {
+                newtouch_globalevent_f4();
+                callback();
+            }
+        })
+
+    }
+
+</script>

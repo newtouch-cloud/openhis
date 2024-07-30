@@ -1,0 +1,309 @@
+﻿@model dynamic
+@using Newtouch.Herp.Infrastructure.Enum
+@using Newtouch.Tools
+@{
+    ViewBag.Title = "采购单审核";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .dv-remarks {
+        line-height: 25px;
+        margin-top: 10px;
+    }
+
+    #remarks {
+        width: 300px;
+        border: 0;
+        border-bottom: 1px solid #ccc;
+        background-color: transparent;
+        padding: 0 10px;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" id="dv-search">
+        <div class="panel-heading">筛选条件</div>
+        <div style="padding-right:10px;">
+            <table class="form">
+                <tr>
+                    <td class="formTitle" style="width: 80px;">采购单号：</td>
+                    <td class="formValue">
+                        <input type="text" id="orderNo" class="form-control" placeholder="采购单号" />
+                    </td>
+                    <th class="formTitle"><span class="required">*</span>提交时间：</th>
+                    <td class="formValue">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-01 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                    </td>
+                    <th class="formTitle" style="width: 50px;"><span class="required">*</span>至：</th>
+                    <td class="formValue">
+                        <input id="jssj" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(2).ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                    </td>
+                    <td class="formTitle" style="width: 70px;">
+                        <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+    <div id="dv_gridMxList">
+        <table id="gridMxList"></table>
+    </div>
+    <div id="dv_gridhzMxList">
+        <table id="gridhzMxList"></table>
+    </div>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+    {
+        ShowKeyList = new[] { 7, 8},
+        F7Text = "作废(不通过)",
+        F8Text = "审核通过"
+    })
+    <div class="dv-remarks"><span>批语：</span><input type="text" id="remarks" value="" /></div>
+</form>
+<script type="text/javascript">
+    var $gridList = $("#gridList");
+    var $gridMxList = $("#gridMxList");
+    var $gridhzMxList = $("#gridhzMxList");
+    var gridListhigh = ($(window).height() - 65) / 2 - 120;
+    var gridMxListhigh = ($(window).height() - 65) / 2 - 40;
+    $(".toolbar").width(250);
+    $(function () {
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        gridList();
+        gridMxList();
+        gridhzMxList();
+        $("#dv_gridhzMxList").hide();
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //主表信息
+    function gridList() {
+        $gridList.dataGrid({
+            url: "/BillManage/PurchasingOrder/TempPurchasingOrderInfoQuery",
+            postData: assembleParam(),
+            height: gridListhigh,
+            colModel: [
+                {
+                    label: '订单类型', name: 'orderType', width: 120, formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumOrderTypeHrp.TempOrder):
+                            return "@EnumOrderTypeHrp.TempOrder.GetDescription()";
+                        case @((int)EnumOrderTypeHrp.OfficialOrder):
+                            return "@EnumOrderTypeHrp.OfficialOrder.GetDescription()";
+                        case @((int)EnumOrderTypeHrp.BadOrder):
+                            return "@EnumOrderTypeHrp.BadOrder.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                {
+                    label: '处理状态', name: 'orderProcess', width: 120, formatter: function (val) {
+                        switch (val) {
+                        case @((int)EnumOrderProcess.Refusal):
+                            return "@EnumOrderProcess.Refusal.GetDescription()";
+                        case @((int)EnumOrderProcess.Waiting):
+                            return "@EnumOrderProcess.Waiting.GetDescription()";
+                        case @((int)EnumOrderProcess.PreparingGoods):
+                            return "@EnumOrderProcess.PreparingGoods.GetDescription()";
+                        case @((int)EnumOrderProcess.Delivering):
+                            return "@EnumOrderProcess.Delivering.GetDescription()";
+                        case @((int)EnumOrderProcess.SignFor):
+                            return "@EnumOrderProcess.SignFor.GetDescription()";
+                        case @((int)EnumOrderProcess.Complete):
+                            return "@EnumOrderProcess.Complete.GetDescription()";
+                        case @((int)EnumOrderProcess.RefusalSign):
+                            return "@EnumOrderProcess.RefusalSign.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                { label: '采购单号', name: 'orderNo', width: 180 },
+                { label: '备注', name: 'remark', width: 250 },
+                { label: '创建人', name: 'CreatorName', width: 130 },
+                { label: '创建时间', name: 'CreateTime', width: 130, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                $gridMxList.jqGrid('setGridParam',
+                    {
+                        url: "/BillManage/PurchasingOrder/CgOrderDetailGroupByCgdhQuery",
+                        postData: { orderNo: $gridList.getRowData(rowid).orderNo }
+                    }).trigger('reloadGrid');
+                $gridhzMxList.jqGrid('setGridParam',
+                    {
+                        url: "/BillManage/PurchasingOrder/CgOrderDetailNoCgdhQuery",
+                        postData: { orderNo: $gridList.getRowData(rowid).orderNo }
+                    }).trigger('reloadGrid');
+            },
+            gridComplete: function () {
+                $gridMxList.jqGrid("clearGridData");
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: assembleParam()
+                }).trigger('reloadGrid');
+        });
+        $("#gridPager_left").html("<span onclick='shrinkGridList(this)' style='cursor: pointer;margin-right: 250px;font-size: 1.3rem;padding: 0 20px;'><i class='fa fa-angle-up'></i></span>");
+        $("#gridPager_right").html("<span>采购单明细 | 汇总展示：</span><i id='i-noPc' onclick='accordingBatch(this)' class='fa fa-toggle-off' style='margin-left: 5px;font-size: 1.6rem;color: #ff9813;vertical-align: middle;'></i>");
+    }
+
+    //组装搜索条件
+    function assembleParam() {
+        var orderType = $("#orderType").val() === "" ? -1 : $("#orderType").val();
+        var orderProcess = $("#orderProcess").val() === "" ? -2 : $("#orderProcess").val();
+        return {
+            kssj: $("#kssj").val(),
+            jssj: $("#jssj").val(),
+            orderNo: $("#orderNo").val(),
+            orderType: orderType,
+            orderProcess: orderProcess
+        };
+    }
+
+    //是否按批次
+    function accordingBatch(obj) {
+        if ($(obj).hasClass("fa-toggle-off")) {
+            $(obj).removeClass("fa-toggle-off");
+            $(obj).addClass("fa-toggle-on");
+            $("#dv_gridhzMxList").show();
+            $("#dv_gridMxList").hide();
+        } else {
+            $(obj).removeClass("fa-toggle-on");
+            $(obj).addClass("fa-toggle-off");
+            $("#dv_gridhzMxList").hide();
+            $("#dv_gridMxList").show();
+        }
+    }
+
+    //收缩主信息
+    function shrinkGridList(obj) {
+        var t = $(".ui-jqgrid-bdiv")[0];
+        if ($(t).is(':hidden')) {
+            $(obj).html("<i class='fa fa-angle-up'></i>");
+            $(t).show(500);
+            $gridList.setGridHeight(gridListhigh);
+            $gridMxList.setGridHeight(gridMxListhigh);
+            $gridhzMxList.setGridHeight(gridMxListhigh);
+
+        } else {
+            $(obj).html("<i class='fa fa-angle-down'></i>");
+            $(t).hide(200);
+            $gridList.setGridHeight(0);
+            $gridMxList.setGridHeight(gridMxListhigh + gridListhigh);
+            $gridhzMxList.setGridHeight(gridMxListhigh + gridListhigh);
+        }
+    }
+
+    //明细信息
+    function gridMxList() {
+        $gridMxList.dataGrid({
+            height: gridMxListhigh,
+            colModel: [
+                { label: '子订单号', name: 'subOrderNo', width: 140 },
+                { label: '采购计划单', name: 'cgdh', width: 140 },
+                { label: '采购部门', name: 'deptName', width: 100 },
+                { label: '物资', name: 'wzmc', width: 120 },
+                { label: '采购数量', name: 'slStr', width: 80 },
+                { label: '规格', name: 'gg', width: 90 },
+                { label: '品牌', name: 'brand', width: 100 },
+                { label: '进价', name: 'jjStr', width: 100 },
+                { label: '生产厂家', name: 'sccj', width: 120 },
+                { label: '供应商', name: 'gysmc', width: 120 },
+                { label: '备注', name: 'remark', width: 120 },
+                { label: 'productId', name: 'productId', hidden: true }
+            ],
+            viewrecords: true
+        });
+    }
+
+    //明细信息
+    function gridhzMxList() {
+        $gridhzMxList.dataGrid({
+            height: gridMxListhigh,
+            colModel: [
+                { label: '物资', name: 'wzmc', width: 150 },
+                { label: '采购数量', name: 'slStr', width: 100 },
+                { label: '规格', name: 'gg', width: 120 },
+                { label: '品牌', name: 'brand', width: 100 },
+                { label: '进价', name: 'jjStr', width: 120 },
+                { label: '生产厂家', name: 'sccj', width: 150 },
+                { label: '供应商', name: 'gysmc', width: 150 },
+                { label: '备注', name: 'remark', width: 150 },
+                { label: 'productId', name: 'productId', hidden: true }
+            ],
+            viewrecords: true
+        });
+    }
+
+    //审核不通过
+    function newtouch_event_f7() {
+        var id = $gridList.jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalAlert("请选择采购单！", 'warning');
+            return false;
+        }
+        var rowData = $gridList.jqGrid('getRowData', id);
+        if (!rowData) {
+            $.modalAlert("选中的采购单信息不完整，请联系管理员！", 'warning');
+            return false;
+        }
+        if (rowData.orderProcess !== "@EnumOrderProcess.Waiting.GetDescription()" || rowData.orderType !== "@EnumOrderTypeHrp.TempOrder.GetDescription()") {
+            $.modalAlert("审核只针对待处理的暂存采购单！", 'warning');
+            return false;
+        }
+        SubmitAuditPurchasingOrder(rowData.orderNo, @((int)EnumOrderTypeHrp.BadOrder));
+    }
+
+    //审核通过
+    function newtouch_event_f8() {
+        var id = $gridList.jqGrid("getGridParam", "selrow");
+        if (!id) {
+            $.modalAlert("请选择采购单！", 'warning');
+            return false;
+        }
+        var rowData = $gridList.jqGrid('getRowData', id);
+        if (!rowData) {
+            $.modalAlert("选中的采购单信息不完整，请联系管理员！", 'warning');
+            return false;
+        }
+        if (rowData.orderProcess !== "@EnumOrderProcess.Waiting.GetDescription()" || rowData.orderType !== "@EnumOrderTypeHrp.TempOrder.GetDescription()") {
+            $.modalAlert("审核只针对待处理的暂存采购单！", 'warning');
+            return false;
+        }
+        SubmitAuditPurchasingOrder(rowData.orderNo, @((int)EnumOrderTypeHrp.OfficialOrder));
+    }
+
+    //提交审核
+    function SubmitAuditPurchasingOrder(orderNo, orderType) {
+        $.najax({
+            type: "POST",
+            url: "/BillManage/PurchasingOrder/SubmitAuditPurchasingOrder",
+            data: { orderNo: orderNo, orderType: orderType, remarks: $("#remarks").val()},
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $.modalMsg('操作成功', 'success', 2000);
+                    $("#btn_search").trigger("click");
+                    $("#remarks").val("");
+                }
+            }
+        });
+    }
+
+</script>

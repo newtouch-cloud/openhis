@@ -1,0 +1,248 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_xy()"><i class="fa fa-pencil-square-o"></i>限用</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td class="formTitle">有效状态：</td>
+                <td class="input-group" id="zttd" style="margin-top:13px;">
+                    <select id="zt" name="zt" class="form-control">
+                        <option value="" selected="selected">全部</option>
+                        <option value="0">无效</option>
+                        <option value="1">有效</option>
+                    </select>
+                </td>
+                <td></td>
+                <td class="formTitle" style="padding-left:20px;">药品分类：</td>
+                <td class="input-group">
+                    <input type="text" id="ypflMc" name="ypflMc" class="form-control" />
+                    <input type="text" style="display:none;" id="ypflCode" name="ypflCode" class="form-control" />
+                </td>
+                <td>
+                    <div class="input-group" style="padding-left:30px;margin-bottom:5px;">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码/首拼" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    var valkeyword = "";
+    $(function () {
+        initControl();
+        gridList();
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/SysMedicine/GetGridJson",
+            height: $(window).height() - 130,
+            postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val(), zt: $("#zt").val(), ypflCode: $("#ypflMc").val() == "" ? "" : $("#ypflCode").val()},
+            colModel: [
+                { label: "主键", name: "ypId", hidden: true, key: true },
+                {
+                    label: '同步', name: 'isSynch', width: 40, hidden: true, align: 'left',
+                    formatter: function (cellvalue, options, rowObject) {
+                        if (cellvalue === '0') {
+                            var $row = JSON.stringify(rowObject).replace(/\"/g, "'");
+                            return '<a class="btn btn-default btn-xs" onclick="YibaoUpload(' + $row + ')"><span class="glyphicon glyphicon-refresh"></span></a>';
+                        }
+                        else if (cellvalue === '1') {
+                            return '<a class="btn btn-default btn-xs disabled"><span class="glyphicon glyphicon-refresh"></span></a>';
+                        }
+                        else {
+                            return '';
+                        }
+                    }
+                },
+                { label: "药品编码", name: "ypCode", width: 100, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 150, align: 'left' },
+                { label: "医保代码", name: "ybdm", width: 100, align: 'left' },
+                { label: "国家医保名称", name: "gjybmc", width: 100, align: 'left' },
+                { label: "国家医保代码", name: "gjybdm", width: 100, align: 'left' },
+                { label: "新农合医保代码", name: "xnhybdm", width: 100, align: 'left', hidden: true },
+                { label: '药品规格', name: 'ypgg', width: 70, align: 'center' },
+                { label: '商品名', name: 'spm', width: 100, align: 'left', hidden: true },
+                { label: '首拼', name: 'py', width: 100, align: 'left', hidden: true },
+                {
+                    label: "自负性质", name: "zfxz", width: 60, align: 'left', formatter: function (cellVallue) {
+                        return cellVallue == 0 ? "可报" : (cellVallue == 1 ? "自费" : (cellVallue == 2 ? "分类自负" : (cellVallue == 3 ? "绝对自理" : (cellVallue == 4 ? "甲类" : (cellVallue == 5 ? "乙类" : (cellVallue == 6 ? "丙类" : ""))))));
+                    }
+                },
+                {
+                    label: "零售价", name: "lsj", width: 60, align: 'left', formatter: "number"
+                    , formatoptions: { decimalPlaces: 4, defaultValue: '0.0000' }
+                },
+                { label: '包装单位', name: 'bzdw', width: 80, align: 'left' },
+                { label: '门诊拆零数', name: 'mzcls', width: 70, align: 'left' },
+                { label: '门诊拆零单位', name: 'mzcldw', width: 70, align: 'left' },
+                { label: '住院拆零数', name: 'zycls', width: 70, align: 'left' },
+                { label: '住院拆零单位', name: 'zycldw', width: 80, align: 'left' },
+                { label: '定价单位', name: 'djdw', width: 50, align: 'left' },
+                { label: '自负比例', name: 'zfbl', width: 50, align: 'left' },
+                { label: '大类', name: 'sfdlMc', width: 50, align: 'left' },
+                { label: '药厂名称', name: 'ycmc', width: 80, align: 'left' },
+                { label: '药品包装代码', name: 'ypbzdm', width: 80, align: 'left' },
+                {
+                    label: '门诊住院标志', name: 'mzzybz', width: 80, align: 'left',
+                    formatter: function (cellvalue) {
+                        if (cellvalue == "0") {
+                            return "通用";
+                        } else if (cellvalue == "1") {
+                            return "门诊";
+                        } else if (cellvalue == "2") {
+                            return "住院";
+                        } else {
+                            return "其他";
+                        }
+                    }
+                },
+                {
+                    label: '医保限价', name: 'cxjje', width: 80, align: 'left',
+                    formatter: function (cxjje) {
+                        if (cxjje == 0 || cxjje == null) {
+                            return "0.00";
+                        } else {
+                            return cxjje;
+                        }
+                    }
+                },
+                { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'center' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '排序', name: 'px', width: 40, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val(), zt: $("#zt").val(), ypflCode: $("#ypflMc").val() == "" ? "" : $("#ypflCode").val() },
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    });
+
+    function initControl() {
+        //药品分类
+        $('#ypflMc').newtouchFloatingSelector({
+            width: 300,
+            height: 300,
+            caption: "药品分类",
+            url: '/SysMedicine/GetListSelectJson',
+            clickautotrigger: true,
+            ajaxparameters: function () {
+                return "keyword=" + $.trim($('#ypflMc').val());
+            },
+            itemdbclickhandler: function ($thistr) {
+                $('#ypflCode').val($thistr.attr('data-ypflCode'));
+                $('#ypflMc').val($thistr.attr('data-ypflmc'));
+            },
+            colModel: [{ label: '编码', name: 'ypflCode', hidden: true },
+            { label: '名称', name: 'ypflmc', widthratio: 50 },
+            { label: '首拼', name: 'py', widthratio: 50 }
+            ]
+        });
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "系统药品添加",
+            url: "/SysMedicine/SysMedicineAdd?orgId=" + $('#OrganizeId').val(),
+            width: "1300px",
+            height: "800px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().ypId;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "SysMedicineAdd",
+            title: "修改系统药品",
+            url: "/SysMedicine/SysMedicineAdd?keyValue=" + keyValue,
+            width: "1300px",
+            height: "800px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_xy() {
+        debugger;
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var xmdm = $("#gridList").jqGridRowValue().ypCode;
+        var xmmc = encodeURIComponent($("#gridList").jqGridRowValue().ypmc);
+        xmmc = xmmc.replace(/%/g, '%25');
+        var title = "【" + $("#gridList").jqGridRowValue().ypmc + "】" + "的限用";
+        $.modalOpen({
+            id: "Form",
+            title: title,
+            url: "/SysMedicine/YbbxblForm?xmdm=" + xmdm + "&xmmc=" + xmmc,
+            width: "600px",
+            height: "550px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+
+            }
+        });
+    }
+
+    //药品同步医保
+    function YibaoUpload(row) {
+        $.najax({
+            url: "/SysMedicine/YibaoUploadApi",
+            type: "POST",
+            data: { ypId: row.ypId, flag: row.zt },
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                $.modalAlert(data.message, data.state);
+                $('#btn_search').trigger('click');
+            }
+        });
+    }
+</script>

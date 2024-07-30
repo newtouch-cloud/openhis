@@ -1,0 +1,99 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Info";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script>
+    $(function () {
+        $('.wrapper').height($(window).height() - 11);
+    })
+</script>
+<div class="wrapper">
+    <ul class="nav nav-tabs">
+        <li class="active"><a href="#a1111" data-toggle="tab">修改密码</a></li>
+        @*<li class="active"><a href="#a" data-toggle="tab">基本信息</a></li>
+            <li><a href="#b" data-toggle="tab">注册信息</a></li>
+            <li><a href="#c" data-toggle="tab">安全验证</a></li>
+            <li><a href="#c" data-toggle="tab">系统日志</a></li>
+            <li><a href="#c" data-toggle="tab">个性化设置</a></li>*@
+    </ul>
+    <div class="tab-content" style="padding-top: 5px;">
+        <div id="a1111" class="tab-pane active" style="padding: 15px;">
+            <ul class="pop-list">
+                <li>
+                    <label>账户</label>
+                    <input type="text" class="form-control newtouch_Readonly" value="@(OperatorProvider.GetCurrent().UserCode)" />
+                </li>
+                <li>
+                    <label>新密码</label>
+                    <input type="password" id="newpwd" class="form-control" />
+                </li>
+                <li>
+                    <label>确认新密码</label>
+                    <input type="password" id="renewpwd" class="form-control" />
+                </li>
+                <li>
+                    <div style="padding-left: 115px;">
+                        <a class="btn btn-primary" onclick="btn_submitPwd()"><i class="fa" style="margin-right:5px;"></i>确认修改</a>
+                    </div>
+                </li>
+                <li>
+                    &nbsp;&nbsp;
+                    <span style="color:#999;">6-16位，必须包含字母数字</span>
+                </li>
+            </ul>
+        </div>
+        @*<div id="c" class="tab-pane" style="padding-right: 15px;">
+                3
+            </div>
+            <div id="d" class="tab-pane" style="padding-right: 15px;">
+                4
+            </div>*@
+    </div>
+</div>
+<script type="text/javascript">
+    $('#renewpwd').keyupEnterEvent(function () {
+        var newpwd = $.trim($('#newpwd').val());
+        var renewpwd = $.trim($('#renewpwd').val());
+        if (!!!newpwd || !!!renewpwd) {
+            return false;
+        }
+        if (newpwd != renewpwd) {
+            return false;
+        }
+        btn_submitPwd();
+    });
+	
+    function btn_submitPwd() {
+        var newpwd = $.trim($('#newpwd').val());
+        var renewpwd = $.trim($('#renewpwd').val());
+        if (!!!newpwd || !!!renewpwd) {
+            $.modalAlert("请填写密码", "error");
+            return false;
+        }
+        if (newpwd != renewpwd) {
+            $.modalAlert("两次输入的密码不一致", "error");//密码复杂度不够
+            return false;
+        }
+        var ret = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,16}$/;
+        if (newpwd && !ret.test(newpwd)) {
+            $.modalAlert("密码复杂度不够<br/>6-16位，必须包含字母数据", "error");//密码复杂度不够
+            return false;
+        }
+        $.ajax({
+            url: "/User/SubmitPersonalPassword",
+            data: { newpwd: newpwd, renewpwd: renewpwd },
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if (data.state == "success") {
+                    $.modalAlert("重置密码成功。", "success");
+                    location.href = location.href;
+                } else {
+                    $.modalAlert("重置密码失败。", "error");
+                    location.href = location.href;s
+                }
+            }
+        });
+    }
+</script>

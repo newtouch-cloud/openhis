@@ -1,0 +1,659 @@
+﻿@using Newtouch.Infrastructure
+@{
+    /**/
+
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    var isZFtoYB = SysConfigReader.Bool("Inpatient_Open_ZF_to_YB", false).Value;
+    var isYBtoZF = SysConfigReader.Bool("Inpatient_Open_YB_to_ZF", false).Value;
+
+    //是否和医保交易
+    var openYbSett = SysConfigReader.Bool("Inpatient_Sett_OpenYbSett");
+    //医保所属地，区分系统将执行何处医保逻辑
+    var medicalInsurance = SysConfigReader.String("Inpatient_MedicalInsurance");
+    //HIS厂商编号
+    var his_manufacturerID = SysConfigReader.String("HIS_ManufacturerID");
+
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+    //就诊凭证类型是否从医保端获取
+    var YB_Jzpzl = SysConfigReader.String("YB_Jzpzl");
+}
+
+@Html.Partial("_YibaoCommonView")
+<style type="text/css">
+    * {
+        font-size: 20px;
+    }
+
+    ol {
+        margin-top: 20px;
+    }
+
+    li i {
+        margin-left: 10px;
+    }
+
+        li i.passing {
+            color: #0FA74F;
+        }
+
+        li i.failed {
+            color: red;
+        }
+</style>
+
+<ol>
+    <li><span>住院患者信息初步判断</span></li>
+    @*<li><span>尚未开立非医保相关医嘱</span></li>*@
+    <li><span>医保环境检查</span></li>
+    <li><span>HIS唯一身份验证</span></li>
+    <li><span>医保交互.入院办理</span></li>
+    <li><span>更新HIS.自费转医保</span></li>
+    <li><span>医保交互.入院办理确认</span></li>
+    <li><span>同步数据至医生站</span></li>
+    <li><span>成功</span></li>
+</ol>
+
+<script type="text/javascript">
+    $(function () {
+        go();
+
+    });
+
+    //递归调用each step
+    function go(stepFuncName) {
+        if (!!!stepFuncName) {
+            stepFuncName = "funcStep" + 1;
+            //stepFuncName = "funcStep" + 8;
+        }
+        setTimeout(function () {
+            var func = window[stepFuncName];
+            if (!!!func) {
+                console.log('step function not found');
+                return;
+            }
+            var indx = parseInt(stepFuncName.substring("funcStep".length));
+            var $iTemp = $('<i>...executing...</i>');
+            $iTemp.appendTo($('ol li:eq(' + (indx - 1) + ')'));
+            var callback = function (isStepSuccess) {
+                $iTemp.remove();
+                if (isStepSuccess === true) {
+                    $('ol li:eq(' + (indx - 1) + ')').append('<i class="fa fa-check passing"></i>');
+                    //继续调用下一step function
+                    if ($('ol li').length > indx) {
+                        go("funcStep" + (indx + 1));
+                    }
+                }
+                else {
+                    $('ol li:eq(' + (indx - 1) + ')').append('<i class="fa fa-times failed"></i>');
+                }
+            };
+            var flag = func(callback);
+            if (flag === true || flag === false) {
+                //同步返回模式
+                callback(flag);
+            }
+            else {
+                //回调模式
+            }
+        }, 50);
+    }
+
+</script>
+<script type="text/javascript">
+
+    var openYbSett = '@openYbSett' === 'True'; //开关配置：医保患者是否使用医保交易流程
+    var medicalInsurance = '@medicalInsurance';
+    var ybkCardType = "@((int)EnumCardType.YBJYK)";
+    var zyh = $.request('zyh');
+    var ryfs = $.request('ryfs');
+    var ydsfz = $.request('ydsfz');
+    var newzyh = $.request('newzyh');
+    var zffs = $.request('zffs');
+    var khxx = $.request('khxx');
+    var jzh = "";
+    var _psn_cert_type = "";
+    var _mdtrt_cert_no = "";
+    if (newzyh == "1") {
+        jzh =parseInt(Math.random() * 100).toString();
+    }
+
+    //医保卡信息
+    var cardInfo;
+    //系统病人主键
+    var patid;
+    var accountInfo;
+    var cqcardInfo;
+    var patInfo;
+    var zybrxx;
+    var xtbrxx;
+    var ryzd1;
+    var rydjksmc;
+    var rygjysbmobj;
+    var cardInfo1;
+    var cardInfo2;
+    var cardInfo3;
+    var yibaoCardInfo;
+    var cqPatInfo = {};//患者读卡信息
+    //入院办理信息（医保接口返回）
+    var ryblInfo;
+
+    function funcStep1(nextStepCallback) {
+        //if (!!!zyh) {
+        //    $.modalAlert('缺少参数：zyh', 'error');
+        //    return false;
+        //}
+        //$.modalOpen({
+        //    id: "sbkhInput",
+        //    title: "卡号输入",
+        //    url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random() + "&medicalInsurance=" + medicalInsurance,
+        //    width: "300px",
+        //    height: "150px",
+        //    callBack: function (iframeId) {
+        //        top.frames[iframeId].PatSbkhData();
+        //    }
+        //});
+        $.najax({
+            url: "/PatientManage/Inpatient/ZFToYB_Step_1",
+            data: { zyh: zyh },
+            success: function (data) {
+                nextStepCallback(true);
+            },
+            errorCallback: function () {
+                nextStepCallback(false);
+            },
+            error: function () {
+                nextStepCallback(false);
+            }
+        });
+        $.modalClose("sbkhInput");
+        return;
+    }
+
+    //function funcStep2(nextStepCallback) {
+    //    $.najax({
+    //        url: "/PatientManage/Inpatient/ZFToYB_Step_2",
+    //        data: { zyh: zyh },
+    //        success: function (data) {
+    //            nextStepCallback(true);
+    //        },
+    //        errorCallback: function () {
+    //            nextStepCallback(false);
+    //        },
+    //        error: function () {
+    //            nextStepCallback(false);
+    //        }
+    //    });
+    //    return;
+    //}
+    //function klxchoose(jzpzlx) {
+    //    switch (jzpzlx) {
+    //        case "0":
+    //        case "3":
+    //        case "4":
+    //            GetPatSbkh();
+    //            break;
+    //    }
+    //}
+    ////手输社保卡号
+    //function GetPatSbkh() {
+    //    $.modalOpen({
+    //        id: "sbkhInput",
+    //        title: "卡号输入",
+    //        url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random() + "&medicalInsurance=" + medicalInsurance,
+    //        width: "300px",
+    //        height: "150px",
+    //        callBack: function (iframeId) {
+    //            top.frames[iframeId].PatSbkhData();
+    //        }
+    //    });
+    //}
+    function funcStep2(nextStepCallback) {
+        $.loading(true, '正在读卡...');
+        var dk;
+        if (medicalInsurance == "shanghai") {
+            dk = shanghaiyb();
+        }
+        else if (medicalInsurance == "tongyong") {
+            dk = gjyb();
+        }
+        if (dk.success) {
+            nextStepCallback(true);
+        }
+        else {
+            $.loading(false);
+            $.modalAlert(dk.msg, "error");
+            nextStepCallback(false);
+        }
+    }
+
+    function upxtbrxx(obj) {
+        $.ajax({
+            url: "/PatientManage/HospiterRes/Updatebrjbxx",
+            data: obj,
+            dataType: "json",
+            async: true,
+            success: function (resp) {
+            }
+        });
+    }
+    function funcStep3(nextStepCallback) {
+		$.najax({
+			url: "/PatientManage/Inpatient/ZFToYB_Step_4",
+			data: { zyh: zyh, sbbh: cqPatInfo.kh, xm: cqPatInfo.xm },
+			success: function (data) {
+				patid = data.data.patid;
+				zybrxx = data.data.zybrxx;
+				xtbrxx = data.data.xtbrxx;
+				ryzd1 = data.data.ryzd1;
+				rydjksmc = data.data.ksmc;
+				rygjysbmobj = data.data.rygjysbm
+				if (!ryzd1 || !ryzd1.zdmc || !ryzd1.icd10) {
+				    $.modalAlert("缺少入院诊断,请先在入院登记处填写！", "error");
+				    $.loading(false);
+					nextStepCallback(false);
+					return;
+				}
+				if (!rydjksmc) {
+				    $.modalAlert("确认入院科室信息", "error");
+				    $.loading(false);
+					nextStepCallback(false);
+					return;
+				}
+				nextStepCallback(true);
+			},
+			errorCallback: function () {
+			    $.loading(false);
+				nextStepCallback(false);
+			},
+			error: function () {
+			    $.loading(false);
+				nextStepCallback(false);
+			}
+		});
+        return;
+    }
+
+    function funcStep4(nextStepCallback) {
+	    $.loading(true, '正在医保入院办理...');
+        setTimeout(function () {
+            if(cqPatInfo.ybVer == "shanghaiV5") {
+                var payoptype = {
+                    cardtype: cqPatInfo.jzlx,
+                    carddata: cqPatInfo.jzlx == "3" ? cqPatInfo.ecToken : cqPatInfo.sbkh,
+                    operatorId: '@(opr.rygh)',
+                    operatorName: '@(opr.UserName)',
+                    insuplc_admdvs: cqPatInfo.xzqh,
+                    orgId: '@(opr.OrganizeId)',
+                    hisId: zyh//住院号
+                };
+                $.ajax({
+                    type: "POST",
+                    url: "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SJ11",
+                    dataType: "json",
+                    data: payoptype,
+                    async: false,
+                    success: function (data) {
+                        var medicalReg = eval('(' + data + ')');
+                        if (medicalReg) {
+                            if (medicalReg.xxfhm === "P001") {
+                                $.najax({
+                                    type: "POST",
+                                    data: {
+                                        patid: patid,
+                                        zymzh: zyh,
+                                        jylsh: medicalReg.xxnr.jzdyh,
+                                        jytype: "2",
+                                        medicalInList: null
+                                    },
+                                    url: "/OutpatientManage/OutpatientReg/SaveCqybMedicalReg",
+                                    dataType: "json",
+                                    loading: false,
+                                    success: function (ajaxresp) {
+                                    }
+                                });
+                                nextStepCallback(true);
+                            }
+                            else {
+                                $.modalAlert("医保入院登记失败：" + medicalReg.err_msg, 'error');
+                                $.loading(false);
+                                nextStepCallback(false);
+                                return false;;
+                            }
+                        }
+                    }
+                });
+            }else {
+		        var payoptype = {
+		            mdtrt_cert_type: yibaoCardInfo.readCardCardType,
+		            mdtrt_cert_no: yibaoCardInfo.kh,
+		            hisId: zyh,//住院号
+		            hisIdNum:jzh,
+                    med_type: ryfs,//21普通住院，9925转入住院
+		            operatorId: '@(opr.rygh)',
+		            operatorName: '@(opr.UserName)',
+		            insuplc_admdvs: cqPatInfo.xzqh,
+		            orgId: '@(opr.OrganizeId)',
+		            psn_no: cqPatInfo.grbh,
+		            dise_codg: "",
+		            dise_name: ""
+                };
+                debugger;
+		        $.ajax({
+		            type: "POST",
+		            url: "http://127.0.0.1:33333/api/YiBao/HospitaMdtrtinfo_2401",
+		            dataType: "json",
+		            data: payoptype,
+		            async: false,
+		            success: function (data) {
+		                var medicalReg = eval('(' + data + ')');
+		                if (medicalReg) {
+		                    if (medicalReg.infcode == "0" && medicalReg.output.result.mdtrt_id) {
+		                        ryblInfo = medicalReg.output.result;
+		                        ryblInfo.jylsh = medicalReg.output.result.mdtrt_id;
+		                        $.najax({
+		                            type: "POST",
+		                            data: {
+		                                patid: patid,
+		                                zymzh: zyh,
+		                                jylsh: medicalReg.output.result.mdtrt_id,
+		                                jytype: "2",
+		                                medicalInList: null
+		                            },
+		                            url: "/OutpatientManage/OutpatientReg/SaveCqybMedicalReg",
+		                            dataType: "json",
+                                    loading: false,
+                                    async: false,
+		                            success: function (ajaxresp) {
+		                            }
+		                        });
+		                        nextStepCallback(true);
+		                    }
+		                    else {
+		                        $.modalAlert("医保入院登记失败：" + medicalReg.err_msg, 'error');
+		                        $.loading(false);
+		                        nextStepCallback(false);
+		                        return false;;
+		                    }
+		                }
+		            }
+		        });
+            }
+
+		    }, 50);
+		    return;
+
+    }
+
+    function funcStep5(nextStepCallback) {
+		var cardInfo = {
+			sfzh: cqPatInfo.sfzh,
+			kh: cqPatInfo.kh,
+			cblb: cqPatInfo.cblb,
+			ryfs: ryfs,
+			jzh: jzh,
+			jzpzlx: cqPatInfo.jzlx,
+		};
+		$.najax({
+			type: "POST",
+			url: "/PatientManage/Inpatient/CQZFToYB_Step_6",
+			data: { zyh: zyh, patid: patid, patInfo: cardInfo, ryblInfo: ryblInfo },
+			success: function (data) {
+				nextStepCallback(true);
+			},
+			errorCallback: function () {
+				$.loading(false);
+				nextStepCallback(false);
+			},
+			error: function () {
+				$.loading(false);
+				nextStepCallback(false);
+			}
+		});
+		return;
+
+    }
+
+	function funcStep6(nextStepCallback) {
+			nextStepCallback(true);
+    }
+
+    function funcStep7(nextStepCallback) {
+        $.najax({
+            url: "/PatientManage/Inpatient/ZFToYB_Step_8",
+            data: { zyh: zyh },
+            success: function (data) {
+                nextStepCallback(true);
+            },
+            errorCallback: function () {
+                $.loading(false);
+                nextStepCallback(false);
+            },
+            error: function () {
+                $.loading(false);
+                nextStepCallback(false);
+            }
+        });
+        return;
+    }
+
+    function funcStep8(nextStepCallback) {
+        return true;
+    }
+
+    function shanghaiyb()
+    {
+        var res = { "success": "true", "msg": "" };
+        var yibaoCardInfo;
+        var sm01Info;
+        var jzpzlx = "2";//HIS:社保卡
+        if (zffs == "sm") { jzpzlx = "3" } //his:电子凭证
+        else if (zffs == "ck") {
+            jzpzlx = "0" //his:医保磁卡
+        }
+        else {
+            jzpzlx = "2"
+        }
+        var url = jzpzlx == "3" ? "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SE01" : "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_S000";
+        if (jzpzlx == "0") {
+            url = "http://127.0.0.1:33333/api/FifthPhaseYiBao/ybInterface_SM01";
+        }
+        var payoptype = { "cardtype": "1", "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
+        if (jzpzlx == "0") {//磁条卡
+            payoptype.cardtype = "0";
+            payoptype.carddata = khxx;
+        }
+        if (jzpzlx == "2") {//保障卡
+            payoptype.cardtype = "1";
+        }
+        if (jzpzlx == "3") {//电子凭证
+            payoptype.cardtype = "3";
+            payoptype.carddata = khxx;
+        }
+        if (jzpzlx == "4") {//身份证
+            payoptype.cardtype = "2";
+            payoptype.carddata = khxx;
+        }
+        if (jzpzlx == "1") {
+            $.loading(false);
+            $.modalAlert("院内卡读卡接口未开通", 'error');
+            return;
+        }
+        if (res.success) {
+            $.ajax({
+                type: "POST",
+                url: url,
+                dataType: "json",
+                data: payoptype,
+                async: false,
+                success: function (data) {
+                    yibaoCardInfo = eval('(' + data + ')');
+                },
+                error: function (request, error, ex) {
+                    res.success = false;
+                    res.msg = "医保服务读卡不可访问：[" + ex + "]";
+                }
+            });
+            if (yibaoCardInfo) {
+                if (yibaoCardInfo.xxfhm === "P001") {
+                    sm01Info = yibaoCardInfo.sm01;//账户信息(s000 、se01 、sm01)
+                    cqPatInfo.xm = sm01Info.xm;
+                    cqPatInfo.sfzh = sm01Info.sfzh;
+                    cqPatInfo.xzqh = sm01Info.xzqh;
+                    cqPatInfo.cblb = sm01Info.accountattr;
+                    cqPatInfo.ecToken = sm01Info.ecToken;
+                    cqPatInfo.sbkh = sm01Info.cardid;
+                    cqPatInfo.accountattr = sm01Info.accountattr;
+                    cqPatInfo.carddata = jzpzlx == "3" ? sm01Info.ecToken : sm01Info.cardid;
+                    //cqPatInfo.sfzh = sm01Info.sfzh;
+                    cqPatInfo.kh = sm01Info.cardid;
+                    //cqPatInfo.cblb = sm01Info.accountattr;
+                    var bkbz = sm01Info.accountattr.substr(11, 1);//帮困 G、A
+                    var gbbz = sm01Info.accountattr.substr(1, 1);//干保 1
+                    if (bkbz == "G" || bkbz == "A" || gbbz == "1") {
+                        cqPatInfo.ybVer = "shanghaiV5";
+                        cqPatInfo.cardtype = payoptype.cardtype;
+                        cqPatInfo.jzlx = jzpzlx;
+
+                        yibaoCardInfo.readCardCardType = jzpzlx;
+                        yibaoCardInfo.kh = sm01Info.cardid;
+                        yibaoCardInfo.qtjz = jzpzlx != "1" ? cqPatInfo.sfzh : null;
+                        yibaoCardInfo.ybVer = "shanghaiV5";
+                        yibaoCardInfo.jzlx = jzpzlx;
+                        upxtbrxx({ kh: yibaoCardInfo.kh, zjh: null, cbdbm: cqPatInfo.xzqh, cblb: cqPatInfo.cblb, grbh: "", xzlx: "" });
+                    }
+                    else {
+                        return gjyb();
+                    }
+                }
+                else {
+                    $.loading(false);
+                    res.success = false;
+                    res.msg = "医保服务(获取医保中心患者信息失败):" + yibaoCardInfo.fhxx;
+                }
+            } else {
+                $.loading(false);
+                res.success = false;
+                res.msg = "医保服务(获取医保中心未返回卡信息):";
+            }
+        }
+        return res;
+    }
+    function gjyb()
+    {
+        var res = { "success": "true", "msg": "" };
+        setTimeout(function () {
+            var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";;
+            var payoptype = { "mdtrt_cert_type": "03", "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
+            if ('@YB_Jzpzl' != 'ON') {
+                if (zffs === "sm") {
+                    url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
+                }
+                if (ydsfz.length > 0) {
+                    payoptype.mdtrt_cert_no = ydsfz;
+                    payoptype.mdtrt_cert_type = "02";
+                    url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
+                }
+                if (zffs === "ck") {
+                    payoptype.mdtrt_cert_type = "00";
+                    payoptype.mdtrt_cert_no = khxx;
+                    url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
+                }
+            }
+            $.ajax({
+                type: "POST",
+                url: url,
+                dataType: "json",
+                data: payoptype,
+                async: false,
+                success: function (data) {
+                    yibaoCardInfo = eval('(' + data + ')');
+                }
+            });
+            $.loading(false);
+            if (yibaoCardInfo) {
+                if (yibaoCardInfo.infcode == "0") {
+                    if ('@YB_Jzpzl' === 'ON') {
+                        var cardecinfo = yibaoCardInfo.output.cardecinfo;
+                        switch (cardecinfo.mdtrt_cert_type) {
+                            case "01"://电子凭证
+                                zffs = '3';
+                                payoptype.mdtrt_cert_type = "01";
+                                payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
+                                break;
+                            case "02"://身份证
+                                zffs = '4';
+                                break;
+                            case "03"://社保卡
+                                zffs = '2';
+                                /* sbkobj.sbkh = cardecinfo.mdtrt_cert_no;*/
+                                payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
+                                break;
+                        }
+                    }
+                    cardInfo1 = yibaoCardInfo.output.baseinfo; //医保基本信息
+                    cardInfo2 = yibaoCardInfo.output.insuinfo[0];//参保信息
+                    if (zffs !== "3") {
+                        cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
+                        cqPatInfo.sbkh = cardInfo3.cardno;
+                    }
+                    if (zffs == "3") {
+                        cqPatInfo.ecToken = cardInfo3.ecToken;
+                    }
+                    cqPatInfo.xm = cardInfo1.psn_name;
+                    cqPatInfo.sfzh = cardInfo1.certno;
+                    cqPatInfo.xzqh = cardInfo2.insuplc_admdvs;
+                    cqPatInfo.cblb = cardInfo2.psn_type;
+                    cqPatInfo.xzlx = cardInfo2.insutype;
+                    cqPatInfo.grbh = cardInfo1.psn_no;
+                    cqPatInfo.jzlx = zffs;
+                    cqPatInfo.ybVer = "gjyb";
+
+                    yibaoCardInfo.readCardCardType = payoptype.mdtrt_cert_type;
+                    yibaoCardInfo.kh = payoptype.mdtrt_cert_type == "01" ? cardInfo3.ecToken : (payoptype.mdtrt_cert_type == "02" ? cardInfo1.certno : cardInfo3.cardno);
+                    yibaoCardInfo.qtjz = zffs != "2" ? cardInfo1.certno : null;
+                    yibaoCardInfo.ybVer = "gjyb";
+                    yibaoCardInfo.jzlx = zffs;
+                    if (ydsfz.length < 0) {
+                        upxtbrxx({ kh: yibaoCardInfo.kh, zjh: null, cbdbm: cqPatInfo.xzqh, cblb: cqPatInfo.cblb, grbh: cqPatInfo.grbh, xzlx: cqPatInfo.xzlx });
+                    }
+                    //if (zffs == "sm") {
+                    //    var xzlx = cardInfo2.insutype;
+                    //    var grbh = cardInfo1.psn_no;
+                    //    var kh = cardInfo1.certno;
+                    //    var cbdbm = cardInfo2.insuplc_admdvs;
+                    //    /*提交第一道扫码医保获取信息*/
+                    //    $.najax({
+                    //        type: "POST",
+                    //        url: "/PatientManage/Inpatient/Up_hzybxx",
+                    //        data: { zyh, xzlx, grbh, kh, cbdbm},
+                    //        dataType: "json",
+                    //    });
+                    //} else {
+                    //    var xzlx = cardInfo2.insutype;
+                    //    var grbh = cardInfo1.psn_no;
+                    //    var kh = yibaoCardInfo.kh;
+                    //    var cbdbm = cardInfo2.insuplc_admdvs;
+                    //    /*提交第一道刷卡医保获取信息*/
+                    //    $.najax({
+                    //        type: "POST",
+                    //        url: "/PatientManage/Inpatient/Up_hzybxx",
+                    //        data: { zyh, xzlx, grbh, kh, cbdbm },
+                    //        dataType: "json",
+                    //    });
+                    //}
+
+                } else {
+                    res.success = false;
+                    res.msg = "刷卡失败:" + yibaoCardInfo.err_ms;
+                }
+            } else {
+                res.success = false;
+                res.msg = "刷卡获取医保信息失败！失败原因：医保中心无信息返回，请重试！";
+            }
+        }, 50);
+
+        return res;
+    }
+
+</script>

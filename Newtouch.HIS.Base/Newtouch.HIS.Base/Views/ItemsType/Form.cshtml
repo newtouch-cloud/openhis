@@ -1,0 +1,89 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">上级：</th>
+                <td class="formValue">
+                    <select class="form-control" id="ParentId" name="ParentId">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>名称：</th>
+                <td class="formValue">
+                    <input id="Name" name="Name" type="text" class="form-control required" placeholder="请输入名称" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>编码：</th>
+                <td class="formValue">
+                    <input id="Code" name="Code" type="text" class="form-control required" placeholder="请输入编码" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">排序：</th>
+                <td class="formValue">
+                    <input id="px" name="px" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">选项：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" valign="top" style="padding-top: 5px;">
+                    备注：
+                </th>
+                <td class="formValue">
+                    <textarea id="Description" name="Description" class="form-control" style="height: 60px;"></textarea>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/ItemsType/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+    function initControl() {
+        $("#ParentId").bindSelect({
+            url: "/ItemsType/GetTreeSelectJson"
+        });
+    }
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        $.submitForm({
+            url: "/ItemsType/SubmitForm?keyValue=" + keyValue,
+            param: $("#form1").formSerialize(),
+            success: function () {
+                top.ItemsType.$("#gridList").resetSelection();
+                top.ItemsType.$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

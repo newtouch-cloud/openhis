@@ -1,0 +1,185 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+
+    .dv-left {
+        width: 49%;
+        float: left;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 5px;
+        width: 49%;
+        /*background-color:*/
+    }
+
+    #userList {
+        float: left;
+        background-color: #FFF;
+    }
+
+</style>
+
+
+<div id="userList" class="gridPanel dv-left">
+    <div class="topPanel">
+            @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+        <div class="search" style="width:45%">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword_User" type="text" class="form-control" placeholder="工号/姓名/部门" style="width: 140px;">
+                            <span class="input-group-btn">
+                                <button id="btn_searchUser" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel" style="float:left;width:100%;">
+        <table id="gridListUser"></table>
+        <div id="gridPagerUser"></div>
+    </div>
+</div>
+
+    <div id="qxList" class="gridPanel dv-right">
+        <div class="topPanel">
+            <div class="toolbar">
+                <div class="btn-group">
+                    <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>绑定权限</a>
+                </div>
+            </div>
+            <div class="search">
+                <table>
+                    <tr>
+                        <td>
+                            <div class="input-group">
+                                <input id="txt_keyword_Qx" type="text" class="form-control" placeholder="权限编码/权限名称" style="width: 180px;">
+                                <span class="input-group-btn">
+                                    <button id="btn_searchQx" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="gridPanel">
+            <table id="gridListQx"></table>
+            <div id="gridPagerQx"></div>
+        </div>
+    </div>
+    <script>
+        var gh = "";
+
+        $(function () {
+            gridListUser();
+        })
+
+        //用户列表
+        function gridListUser() {
+            var $gridListUser = $("#gridListUser");
+            $gridListUser.dataGrid({
+                url: "/SysMedicineAuthorityRelation/GetGridJson",
+                height: $(window).height() - 128,
+                postData: { keyword: $("#txt_keyword").val(), organizeId: $("#OrganizeId").val() },
+                colModel: [
+                    { label: "id", name: "Id", hidden: true, key: true },
+                    { label: "工号", name: "gh", width: 100, align: 'left' },
+                    { label: "姓名", name: "Name", width: 100, align: 'left' },
+                    { label: "科室", name: "DepartmentName", width: 100, align: 'left' },
+                    //{ label: "有效", name: "zt", width: 80, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+
+                ],
+
+                pager: "#gridPagerUser",
+                sortname: 'gh asc',
+                viewrecords: true,
+
+                onSelectRow: function (row) {
+                    var rowData = $('#gridListUser').jqGrid('getRowData', row);
+                    gh = rowData.gh;
+                    gridListQx(gh);
+
+
+                    $("#gridListQx").jqGrid('setGridParam', {
+                        postData: { gh: gh, organizeId: $("#OrganizeId").val(), keyword: $("#txt_keyword_Qx").val() },
+                    }).trigger('reloadGrid');
+
+                }
+            });
+            $("#btn_searchUser").click(function () {
+                $gridListUser.jqGrid('setGridParam', {
+                    postData: { keyword: $("#txt_keyword_User").val(), organizeId: $("#OrganizeId").val() },
+                }).trigger('reloadGrid');
+            });
+        }
+
+        //权限列表
+        function gridListQx(gh) {
+            var $gridListQx = $("#gridListQx");
+            $gridListQx.dataGrid({
+                url: "/SysMedicineAuthorityRelation/GetGridQx",
+                height: $(window).height() - 128,
+                postData: { gh: gh, organizeId: $("#OrganizeId").val(),keyword: $("#txt_keyword").val()},
+                colModel: [
+                    { label: "id", name: "Id", hidden: true, key: true },
+                    { label: "姓名", name: "name", width: 100, align: 'left' },
+                    { label: "权限编码", name: "qxCode", width: 100, align: 'left' },
+                    { label: "权限", name: "qxmc", width: 100, align: 'left' },
+                    //{ label: "有效", name: "zt", width: 80, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+
+                ],
+
+                pager: "#gridPagerQx",
+                sortname: 'gh asc',
+                viewrecords: true,
+
+                onSelectRow: function (row) {
+                    var rowData = $('#gridListQx').jqGrid('getRowData', row);
+                }
+            });
+            $("#btn_searchQx").click(function () {
+                $gridListQx.jqGrid('setGridParam', {
+                    postData: { gh: gh, organizeId: $("#OrganizeId").val(), keyword: $("#txt_keyword_Qx").val() },
+                }).trigger('reloadGrid');
+            });
+        }
+
+        //回车事件
+        $('#txt_keyword_User').keydownEnterEvent(function () {
+            $('#btn_searchUser').trigger('click');
+        })
+
+        $('#txt_keyword_Qx').keydownEnterEvent(function () {
+            $('#btn_searchQx').trigger('click');
+        })
+
+        //绑定权限
+        function btn_edit() {
+            var seleRowid = jQuery("#gridListUser").jqGrid("getGridParam", "selrow");
+            if (!(seleRowid)) {
+                $.modalAlert("请选中一条信息", 'warning');
+                return;
+            }
+            var keyword = "";
+            $.modalOpen({
+                id: "Form",
+                title: "绑定权限",
+                url: "/SysMedicineAuthorityRelation/Form?gh=" + gh + "&organizeId=" + $("#OrganizeId").val() + "&keyword=" + keyword,
+                width: "350px",
+                height: "550px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].submitForm();
+                }
+            });
+        }
+
+    </script>

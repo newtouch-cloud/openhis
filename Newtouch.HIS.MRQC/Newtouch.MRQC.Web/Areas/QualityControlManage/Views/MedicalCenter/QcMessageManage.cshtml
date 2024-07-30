@@ -1,0 +1,279 @@
+﻿@using Newtouch.MRQC.Infrastructure;
+@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "质控消息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var opeator = OperatorProvider.GetCurrent();
+}
+<style type="text/css">
+    .dv-left {
+        width: 66%;
+        float: left;
+    }
+
+    .dv-right {
+        float: left;
+        margin-left: 1%;
+        width: 33%;
+    }
+</style>
+<ul class="nav nav-tabs navb-bg" role="tablist">
+    <li class="active">
+        <a href="#div_msgsend" role="tab" data-toggle="tab">环节质控消息发送</a>
+    </li>
+    <li>
+        <a href="#div_msgquery" role="tab" data-toggle="tab">未处理环节质控消息查询</a>
+    </li>
+</ul>
+<div class="tab-content" style="width:100%">
+    <div class="tab-pane fade in active" id="div_msgsend">
+        <div class="dv-left">
+            <form id="form1">
+                <table class="form" style="width:100%">
+                    <tbody>
+                        <tr>
+                            <th class="formTitle" style="width:40px;padding-right:0px">姓名：</th>
+                            <td class="formValue" style="width:80px">
+                                <input id="xm" type="text" class="form-control" readonly="readonly" />
+                            </td>
+                            <th class="formTitle" style="width:60px;padding-right:0px">住院号：</th>
+                            <td class="formValue" style="width:80px">
+                                <input id="jzh" type="text" class="form-control" readonly="readonly" />
+                            </td>
+                            <th class="formTitle" style="width:40px;padding-right:0px">床号：</th>
+                            <td class="formValue" style="width:80px">
+                                <input id="ch" type="text" class="form-control" readonly="readonly" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="formTitle">病人科室：</th>
+                            <td class="formValue">
+                                <input id="ks" type="text" class="form-control" readonly="readonly" />
+                            </td>
+                            <th class="formTitle"><span class="required">*</span>住院医生：</th>
+                            <td class="formValue">
+                                <input id="zyys" name="zyys" type="text" class="form-control required"  />
+                            </td>
+                            <th></th>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <th class="formTitle">质控类型：</th>
+                            <td class="formValue">
+                                <input id="zklx" type="text" class="form-control" readonly="readonly" />
+                            </td>
+                            <th class="formTitle">患者文档：</th>
+                            <td class="formValue">
+                                <input id="hzwd" type="text" class="form-control" readonly="readonly" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="formTitle"><span class="required">*</span>反馈内容：</th>
+                            <td class="formValue" colspan="3">
+                                <textarea id="fknr" class="form-control required" style="width:100%;height:60px"></textarea>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="formTitle">问题等级：</th>
+                            <td class="formValue">
+                                <select id="wtdj">
+                                    <option value="0">一般</option>
+                                    <option value="1">严重</option>
+                                    <option value="2">特别严重</option>
+                                    <option value="3">事故</option>
+                                </select>
+                            </td>
+                            <th class="formTitle">限期处理时间：</th>
+                            <td class="formValue" colspan="2">
+                                <input id="qxclsj" type="text" class="form-control input-wdatepicker" style="float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </form>
+            <div style="float:right;margin-top:130px">
+                <input type="button" class="btn btn-primary" onclick="btnMsgSent()" value="确定发送" />
+                <input type="button" class="btn btn-primary" onclick="btnClose()" value="关闭" />
+            </div>
+        </div>
+
+        <div class="dv-right">
+            <ul class="nav nav-tabs navb-bg" role="tablist">
+                <li class="active">
+                    <a href="#div_tyzkxm" role="tab" data-toggle="tab">通用质控项目</a>
+                </li>
+                <li>
+                    <a href="#div_mbzkxm" role="tab" data-toggle="tab">模板质控项目</a>
+                </li>
+            </ul>
+            <div class="tab-content" style="width:100%">
+                <div class="tab-pane fade in active" id="div_tyzkxm">
+                    <table class="form">
+                        <tr>
+                            <td class="formValue">
+                                <input id="tyxmKeyword" type="text" class="form-control" placeholder="输入质控名称/简拼按回车键盘" />
+                            </td>
+                        </tr>
+                    </table>
+                    <table id="gridtyzkxmList"></table>
+                </div>
+                <div class="tab-pane fade" id="div_mbzkxm">
+                    <table class="form">
+                        <tr>
+                            <td class="formValue">
+                                <input id="mbxmKeyword" type="text" class="form-control" placeholder="输入质控名称/简拼按回车键盘" />
+                            </td>
+                        </tr>
+                    </table>
+                    <table id="gridmbzkxmList"></table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    <div class="tab-pane fade" id="div_msgquery">
+        <table id="gridwqrxxList"></table>
+    </div>
+</div>
+<script>
+    var xm = $.request("xm");
+    var ks = $.request("ks");
+    var jzh = $.request("jzh");
+    var ch = $.request("ch");
+    var ys = $.request("ys");
+    var ryysGh = $.request("ryysGh");
+    var hzwd = $.request("Blmc");
+    var parentBllx = $.request("parentBllx");
+    var parentbllxmc = $.request("parentbllxmc");
+    var childrenBllx = $.request("childrenBllx");
+    $(function () {
+        $("#xm").val(xm);
+        $("#ks").val(ks);
+        $("#jzh").val(jzh);
+        $("#ch").val(ch);
+        $("#zyys").val(ys);
+        $("#hzwd").val(hzwd);
+        $("#zklx").val(parentbllxmc);
+        init();
+        if (ryysGh) {
+            $("#zyys").attr("data-label", ryysGh);
+        }
+
+    })
+    function init() {
+        var $gridList = $("#gridtyzkxmList");
+        $gridList.dataGrid({
+            url: "/QualityControlManage/MedicalCenter/GetTyzkxm",
+            postData: { bllx: parentBllx, keyword: $("#tyxmKeyword").val() },
+            rownumbers: false,
+            height: $(window).height() - 183,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true, key: true },
+                { label: "质控编码", name: "Code", width: 100, align: "center", hidden: true },
+                { label: "质控名称", name: "Name", width: 200, align: "center", },
+
+            ],
+            unwritten: false,
+            viewrecords: true,
+            ondblClickRow: function (rowid) {
+                var rowData = $gridList.jqGrid('getRowData', rowid);
+                var curfknr= $("#fknr").val();
+                curfknr += rowData.Name;
+                $("#fknr").val(curfknr);
+            },
+        });
+        var $gridmbzkxmList = $("#gridmbzkxmList");
+        $gridmbzkxmList.dataGrid({
+            url: "/QualityControlManage/MedicalCenter/GetTyzkxm",
+            postData: { bllx: childrenBllx, keyword: $("#mbxmKeyword").val() },
+            rownumbers: false,
+            height: $(window).height() - 183,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true, key: true },
+                { label: "质控编码", name: "Code", width: 100, align: "center", hidden: true },
+                { label: "质控名称", name: "Name", width: 200, align: "center", },
+
+            ],
+            unwritten: false,
+            viewrecords: true,
+            ondblClickRow: function (rowid) {
+                debugger;
+                var rowData = $gridmbzkxmList.jqGrid('getRowData', rowid);
+                var curfknr = $("#fknr").val();
+                curfknr += rowData.Name;
+                $("#fknr").val(curfknr);
+            },
+        })
+
+        var $gridwqrxxList = $("#gridwqrxxList");
+        $gridwqrxxList.dataGrid({
+            url: "/QualityControlManage/MedicalCenter/GetDclMsgJson",
+            unwritten: false,
+            treeGrid: true,
+            width: 2,
+            treeGridModel: "adjacency",
+            ExpandColumn: "Blmc",
+            postData: { status: "9", ksrq:"@DateTime.Now.ToString("yyyy-MM-01 00:00:00")" , jsrq: "@DateTime.Now.ToString("yyyy-MM-dd 23:59:59")" },
+            rownumbers: false,
+            height: $(window).height() - 123,
+            colModel: [
+                { label: "科室", name: "ks", width: 80, align: "center", },
+                { label: "姓名", name: "xm", width: 60, align: "center", },
+                { label: "住院号", name: "jzh", width: 60, align: "center", },
+                { label: "经管医生", name: "zyys", width: 60, align: "center", },
+                { label: "质控日期", name: "zkrq", width: 110, align: "center",formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+                { label: "限定日期", name: "qxclsj", width: 110, align: "center", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: "质控类型", name: "zklx", width: 100, align: "center", },
+                { label: "反馈环节质控信息", name: "fknr", width: 120, align: "center", },
+            ],
+        })
+        $("#zyys").dutyStaffFloatingSelector({
+            dutyCode: 'Doctor'
+        });
+    }
+
+    $('#tyxmKeyword').keyupEnterEvent(function () {
+        $("#gridtyzkxmList").jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetTyzkxm",
+            postData: { bllx: parentBllx, keyword: $("#tyxmKeyword").val() },
+        }).trigger('reloadGrid');
+    });
+    $('#mbxmKeyword').keyupEnterEvent(function () {
+        $("#gridmbzkxmList").jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetTyzkxm",
+            postData: { bllx: childrenBllx, keyword: $("#mbxmKeyword").val() },
+        }).trigger('reloadGrid');
+    });
+
+    function dclreload()
+    {
+        $("#gridwqrxxList").jqGrid('setGridParam', {
+            url: "/QualityControlManage/MedicalCenter/GetDclMsgJson",
+            postData: { status: "9", ksrq:"@DateTime.Now.ToString("yyyy-MM-01 00:00:00")" , jsrq: "@DateTime.Now.ToString("yyyy-MM-dd 23:59:59")" },
+        }).trigger('reloadGrid');
+    }
+
+    function btnClose() {
+        $.modalClose("QcMessageManage");
+    }
+    function btnMsgSent()
+    {
+        var sendData = $("#form1").formSerialize();
+        sendData["zkrq"] = "@DateTime.Now";
+        var zyysgh=$("#zyys").attr("data-label");
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        $.ajax({
+            type: "POST",
+            url: "/QualityControlManage/MedicalCenter/SendMsg",
+            data: { sendvo: sendData, zyysgh: zyysgh },
+            dataType: "json",
+            success: function (res) {
+                dclreload();
+                $.modalAlert(res.message, res.state);
+            }
+        });
+
+    }
+</script>

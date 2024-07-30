@@ -1,0 +1,144 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a id="NF-add" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        @*<div class="btn-group">
+            <a id="NF-delete" class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-trash-o"></i>删除</a>
+        </div>*@
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="编码/名称" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    });
+
+    //组织机构
+    function initControl() {
+
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/SysMedicalOrderFrequency/GetGridJson",
+            postData: getSearchPostData(),
+            height: 400,
+            colModel: [
+            { label: "yzpcId", name: "yzpcId", width: 100, align: "left", hidden: true },
+            { label: "编码", name: "yzpcCode", width: 100, align: "left" },
+            { label: "频次名称", name: "yzpcmc", width: 100, align: "left" },
+            { label: "名称说明", name: "yzpcmcsm", width: 100, align: "left" },
+            { label: "执行次数", name: "zxcs", width: 100, align: "left" },
+            { label: "执行周期", name: "zxzq", width: 100, align: "left" },
+            { label: "执行周期时间单位", name: "zxzqdw", width: 100, align: "left" },
+            { label: "周标志", name: "zbz", width: 100, align: "left" },
+            { label: "执行时间", name: "zxsj", width: 100, align: "left" },
+            { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+            { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+            { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+            { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+            { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } }
+            ]
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        })
+        $("#btn_search").trigger('click');
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var keyword = $("#txt_keyword").val();
+        var OrganizeId = $("#OrganizeId").val();
+        return { keyword: keyword, orgId:OrganizeId };
+    };
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    //新增
+    function btn_add() {
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "医嘱频次维护",
+            url: "/SysMedicalOrderFrequency/Form?orgId=" + $('#OrganizeId').val(),
+            width: "500px",
+            height: "620px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    //修改
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var yzpcId = $("#gridList").jqGridRowValue().yzpcId;
+        var OrganizeId = $("#OrganizeId").val();
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "修改信息",
+            url: "/SysMedicalOrderFrequency/Form?yzpcId=" + yzpcId + "&orgId=" + OrganizeId,
+            width: "500px",
+            height: "620px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    ////删除
+    //function btn_delete() {
+    //    var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+    //    if (!(seleRowid)) {
+    //        $.modalAlert("请选中一条信息", 'warning');
+    //        return;
+    //    }
+    //    var yzpcId = $("#gridList").jqGridRowValue().yzpcId;
+    //    var OrganizeId = $("#OrganizeId").val();
+    //    $.deleteForm({
+    //        url: "/SysMedicalOrderFrequency/DeleteForm",
+    //        param: { yzpcId: yzpcId, orgId: OrganizeId },
+    //        success: function () {
+    //            $("#gridList").trigger("reloadGrid");
+    //        }
+    //    })
+    //}
+
+</script>

@@ -1,0 +1,911 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    //只看医嘱查询
+    var isOnlyLook = Request.QueryString["IsOnlyLook"] == "true" ? true : false;
+    var kssj = Request.QueryString["kssj"];
+
+    //开关：是否开放检验检查
+    var IsOpenJyJcSwitch = ViewBag.IsOpenJyJcSwitch as bool?;
+
+    //开关：门诊是否开放膳食医嘱
+    var ISOpenSsyz = (ViewBag.ISOpenSsyz as bool?);
+
+    //开关：住院是否中草药医嘱
+    var ISOpenzcyyz = (ViewBag.ISOpenzcyyzSwitch as bool?);
+    //开关：是否开康复医嘱
+    var IsOpenRehabSwitch = ViewBag.IsOpenRehabSwitch as bool?;
+
+    var zyJYPrinturl = SysConfigReader.OrgReportLink("ZYJYPrint");//检验
+    var zyJCPrinturl = SysConfigReader.OrgReportLink("ZYJCPrint");//检查
+    var zyzcyPrinturl = SysConfigReader.OrgReportLink("zyzycfPrint");//中草药
+    //欠费医嘱执行开关
+    var ISOpenqfswith = (ViewBag.isqfswith);
+    var isopenPriorReview = (ViewBag.isopenPriorReview);
+    //秦皇岛智能审核事前提醒配置
+    var medicalInsurance = SysConfigReader.String("medicalInsurance");
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/Content/css/cispage.css", false)" rel="stylesheet" />
+
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/layout/jquery.layout.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/css/framework-ui-compact.css")" rel="stylesheet" />
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
+<link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
+<style>
+	#gridtyyzPager_center, #gridmedicinePager_center, #gridwordPager_center, #gridTakePager_center, #gridsfxmPager_center, #gridssyzPager_center, #gridzycfPager_center {
+		display: none;
+	}
+
+	.ui-th-ltr, .ui-jqgrid .ui-jqgrid-htable th.ui-th-ltr {
+		border: 1px solid #ddd;
+	}
+
+	#dv_gridmedicine input[role=textbox] {
+		padding: 2px 0;
+		text-align: center;
+	}
+
+	#dv_gridmedicine td {
+		padding: 0;
+	}
+
+	#dv_gridmedicine th {
+		padding: 5px 0;
+	}
+
+	#dv_gridmedicine select[role=select] {
+		padding: 0;
+	}
+
+	#dv_takegridmedicine td {
+		padding: 0;
+	}
+
+	#dv_takegridmedicine th {
+		padding: 5px 0;
+	}
+
+	#dv_takegridmedicine select[role=select] {
+		padding: 0;
+	}
+
+	#dv_takegridmedicine input[role=textbox] {
+		padding: 2px 0;
+		text-align: center;
+	}
+
+	#dv_gridsfxm td {
+		padding: 0;
+	}
+
+	#dv_gridsfxm th {
+		padding: 5px 0;
+	}
+
+	#dv_gridsfxm select[role=select] {
+		padding: 0;
+	}
+
+	#dv_gridsfxm input[role=textbox] {
+		padding: 2px 0;
+		text-align: center;
+	}
+
+	#dv_gridssyz td {
+		padding: 0;
+	}
+
+	#dv_gridssyz th {
+		padding: 5px 0;
+	}
+
+	#dv_gridssyz select[role=select] {
+		padding: 0;
+	}
+
+	#dv_gridssyz input[role=textbox] {
+		padding: 2px 0;
+		text-align: center;
+	}
+
+	#dv_gridTCMmedicine input[role=textbox] {
+		padding: 2px 0;
+		text-align: center;
+	}
+
+	#dv_gridTCMmedicine td {
+		padding: 0;
+	}
+
+	#dv_gridTCMmedicine th {
+		padding: 5px 0;
+	}
+
+	#dv_gridTCMmedicine select[role=select] {
+		padding: 0;
+	}
+</style>
+@*导航栏*@
+<ul class="nav nav-tabs navb-bg" id="myTab" style="position:fixed;top:0;z-index:100009;width:99%">
+	<li role="presentation"><a href="#linkyzcx" role="tab" data-toggle="tab">医嘱查询</a></li>
+
+	@if (!isOnlyLook)
+	{
+		<li role="presentation"><a href="#linkyplr" role="tab" data-toggle="tab">药品录入</a></li>
+		if (ISOpenzcyyz == true)
+		{
+			<li role="presentation"><a href="#linkzylr" role="tab" data-toggle="tab">中草药</a></li>
+		}
+
+		<li role="presentation"><a href="#linkcydy" role="tab" data-toggle="tab">出院带药</a></li>
+		<li role="presentation"><a href="#linkwzlr" role="tab" data-toggle="tab">文字录入</a></li>
+		<li role="presentation"><a href="#linkxmlr" role="tab" data-toggle="tab">项目录入</a></li>
+		if (IsOpenRehabSwitch == true)
+		{
+			<li role="presentation"><a href="#linkkfyz" role="tab" data-toggle="tab">康复医嘱</a></li>
+		}
+		if (IsOpenJyJcSwitch == true)
+		{
+			<li role="presentation" id="lijy"><a href="#linkjy" role="tab" data-toggle="tab">检验</a></li>
+			<li role="presentation" id="lijc"><a href="#linkjc" role="tab" data-toggle="tab">检查</a></li>
+		}
+		if (ISOpenSsyz == true)
+		{
+			<li role="presentation"><a href="#linkssyz" role="tab" data-toggle="tab">膳食医嘱</a></li>
+		}
+	}
+
+</ul>
+
+<div id="divPatientBasicInfo" style="position: fixed;top: 0px;z-index: 100009;width: 29%;line-height: 40px;font-size: 18px;white-space: nowrap;text-overflow: ellipsis;background: #e9f6fe;right: 1.2%;text-align:right;padding-right: 18px;display:none;color:#07bbf1;">
+</div>
+	<div class="panel-body"  id="jemxsm"  style="z-index: 1;background: white;margin-top:40px; position: absolute;left: 85%;width: 120px;height: 300px;display: none;border: solid 1px #ddd">
+		<table>
+			<tr>
+				<th class="formTitle" >账户余额:</th>
+				<td class="formValue" >	
+					<span id="sp-yjj" class="sptxt"></span>
+				</td>
+			</tr>
+			<tr>
+				<th class="formTitle" style="padding-top :10px">总 费 用:</th>
+				<td class="formValue" style="padding-top :10px">
+					<span id="sp-zfy" class="sptxt"></span>
+				</td>
+			</tr>
+			<tr>
+				<th class="formTitle" style="padding-top: 10px">余 额:</th>
+                <td class="formValue" style="padding-top: 10px">
+                    <span id="sp-jsfy" class="sptxt"></span>
+                </td>
+			</tr>
+		</table>
+	</div>
+
+<div style="margin-top:40px;">
+	@Html.Partial("~/Views/Shared/InpatientInfo.cshtml")
+	@Html.Partial("_InspectTemplateTreeForm")
+	@*@Html.Partial("_PresTemplateTreeForm")*@
+	<div class="tab-content">
+		@if (isOnlyLook)
+		{
+			@Html.Partial("AdviceListLook", new { }, new ViewDataDictionary { { "kssj", kssj } });
+		}
+		else
+		{
+			@Html.Partial("AdviceList")
+			@Html.Partial("~/Areas/DoctorManage/Views/Orginal/Index.cshtml")@*项目录入*@
+			@Html.Partial("~/Areas/DoctorManage/Views/Medicine/Index.cshtml")@*药品录入*@
+			@Html.Partial("~/Areas/DoctorManage/Views/Words/Index.cshtml")@*文字录入*@
+			@Html.Partial("~/Areas/DoctorManage/Views/Takemedicine/Index.cshtml")@*出院带药*@
+			@Html.Partial("~/Areas/DoctorManage/Views/Medicine/TCMMedicine.cshtml")@*中草药*@
+			if (IsOpenJyJcSwitch == true)
+			{
+				@Html.Partial("~/Areas/DoctorManage/Views/Apply/Inspection.cshtml")
+				@Html.Partial("~/Areas/DoctorManage/Views/Apply/Examination.cshtml")
+			}
+			if (IsOpenRehabSwitch == true)
+			{
+				@Html.Partial("~/Areas/DoctorManage/Views/Rehab/Index.cshtml")@*康复医嘱*@
+			}
+			@Html.Partial("~/Areas/DoctorManage/Views/DietaryAdvice/Index.cshtml")
+		}
+	</div>
+</div>
+<script>
+    window.alldataArray = [];
+    var transferbool = false;
+    $('#myTab a:first').trigger('click'); //初始化显示哪个tab
+    var yjjzhmsg="";
+    var currentobj = JSON.parse(sessionStorage.getItem('currentobj'));
+    if (currentobj) {
+        //sessionStorage.removeItem("currentobj");
+        $('#myTab a:first').trigger('click'); //初始化显示哪个tab
+        showPatientBasicInfo();
+       // patyjjqf(currentobj.zyh)
+    }
+
+
+    function showPatientBasicInfo() {
+        if (!$('#divPatientBasicInfo').is(':visible')) {
+            $('#myTab').css('width', '70%');
+            $('#divPatientBasicInfo').show();
+        }
+
+        $('#divPatientBasicInfo').html(window.currentobj.xm
+            + '&nbsp;/&nbsp;' +$.getGender(window.currentobj.sex)
+            + '&nbsp;/&nbsp;' + window.currentobj.age
+            + '&nbsp;/&nbsp;' + window.currentobj.brxzmc
+			+ '&nbsp;/&nbsp;' + window.currentobj.zyh
+			+ '&nbsp;/&nbsp;' +'<input type="button" id="jemx" name="hide" onclick="showJemx();" class="btn btn-primary btn-md" value="费用" style="width:55px" />'
+		);
+    }
+    function patyjjqf(patzyh)
+    {
+        yjjzhmsg="";
+        if ("@ISOpenqfswith" == "ON" && patzyh)
+        {
+            $.najax({
+                type: "POST",
+                url: "/PatientList/PatYjjWarn",
+                data: { patlist: patzyh },
+                dataType: "json",
+                async: true,
+                success: function (ajaxresp) {
+                    $.each(ajaxresp, function () {
+                        if(this.zhsy<=this.bje &&this.zhsy>0)
+                        {
+                            $.modalAlert("住院号:"+this.zyh+"预交账户余额已达到限额,请提醒患者充值", 'warning');
+                        }
+                        else if (this.zhsy<0)//&& this.zhye>0
+                        {
+                            yjjzhmsg = "住院号:" + this.zyh + "预交账户已欠费,不能产生计费,需先充值预交账户";
+                            $.modalAlert(yjjzhmsg, 'warning');
+                        }
+                        return;
+                    });
+                }
+            });
+        }
+    }
+
+	//<button id="jemx" name="jemx" value="hide" onclick="showJemx()"style="border:none"></button>
+    function pickDate(cellvalue, options, cell) {
+        $(cell).find('input[type=text]').addClass("input-wdatepicker");
+        $(cell).find('input[type=text]').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' });
+        });
+    }
+
+	function showJemx() {
+		//if ($("#jemx").attr("name") == "hide") {
+		//	$("#jemxsm").show();
+		//	$("#jemx").attr("name", "show");
+		//	$.najax({
+		//		url: "/PatientList/inpatientBedUsedInfo",
+		//		data: { zyh: window.currentobj.zyh },
+		//		dataType: "json",
+		//		type: "POST",
+		//		success: function (data) {
+		//			$("#sp-yjj").html(data.rows.zhye);
+		//			$("#sp-zfy").html(data.rows.zje);
+		//			$("#sp-jsfy").html((data.rows.zhye - data.rows.zje).toFixed(2));
+		//		}
+		//	});
+		//} else {
+		//	$("#jemx").attr("name", "hide");
+		//	$("#jemxsm").hide();
+		//}
+        var ycqbr = $.request("ycqbr");
+        //alert(aaa);
+        $.modalOpen({
+            id: "Form",
+            title: "病人费用情况",
+            url: "/DoctorManage/DoctorsAdvice/SettInfoShow?zyh=" + window.currentobj.zyh + "&ycqbr=" + ycqbr,
+            width: "700px",
+            height: "330px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].$.modalClose();
+            }
+        });
+
+
+
+	}
+	$('#jemx').blur(function () {
+		$("#jemx").attr("name", "hide");
+		$("#jemxsm").hide();
+	});
+    //验证当前操作是否存在病人
+    function patobjValidate() {
+        //当前是否选中病人
+        if (currentobj == undefined || currentobj.zyh == "" || isNaN(currentobj.zyh)) {
+            $.modalAlert("缺少病人", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    function transferPage($thishref) {
+        switch ($thishref) {
+            case "#linkyzcx":
+                $('.dv-home-patInfo').hide();
+                btn_search();
+                break;
+            case "#linkyplr":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.Yp).ToString()));
+                if (!(window.alldataArray && window.alldataArray.ypyz)) {
+                    window.alldataArray.ypyz = new Array();
+                }
+                init_MedicinePrescription();
+                break;
+            case "#linkwzlr":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.Wz).ToString()));
+                if (!(window.alldataArray && window.alldataArray.wzyz)) {
+                    window.alldataArray.wzyz = new Array();
+                }
+                init_WordPrescription();
+                break;
+            case "#linkxmlr":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.sfxm).ToString()));
+                if (!(window.alldataArray && window.alldataArray.xmyz)) {
+                    window.alldataArray.xmyz = new Array();
+                }
+                init_ItemPrescription();
+                break;
+        	case "#linkkfyz":
+	            $('.dv-home-patInfo').show();
+	            window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.rehab).ToString()));
+	            if (!(window.alldataArray && window.alldataArray.kfyz)) {
+	            	window.alldataArray.kfyz = new Array();
+	            }
+		        init_RehabPrescription();
+	            break;
+            case "#linkcydy":
+                $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.Cydy).ToString()));
+                if (!(window.alldataArray && window.alldataArray.cydy)) {
+                    window.alldataArray.cydy = new Array();
+                }
+                init_OutMedicinePrescription();
+                break;
+            case "#linkjy":
+                $('.dv-home-patInfo').hide();
+                $('#floatInspectTemplateTree').show();
+                window.SetTemplate(@((int)EnumjyjcmbLx.jy));
+                window.SetCurrentPageJyjclx(@((int)EnumjyjcmbLx.jy));
+                init_jyPrescription();
+                break;
+            case "#linkjc":
+                $('.dv-home-patInfo').hide();
+                $('#floatInspectTemplateTree').show();
+                window.SetTemplate(@((int)EnumjyjcmbLx.jc));
+                window.SetCurrentPageJyjclx(@((int)EnumjyjcmbLx.jc));
+                init_jcPrescription();
+                break;
+            case "#linkssyz":
+                 $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.ssyz).ToString()));
+                if (!(window.alldataArray && window.alldataArray.ssyz)) {
+                    window.alldataArray.ssyz = new Array();
+                }
+                init_FoodPrescription();
+                break;
+            case "#linkzylr":
+                  $('.dv-home-patInfo').show();
+                window.SetCurrentPageyzlx(@Html.Raw(((int)EnumYzlx.zcy).ToString()));
+                if (!(window.alldataArray && window.alldataArray.zyyz)) {
+                    window.alldataArray.zyyz = new Array();
+                }
+                init_TCMMedicinePrescription();
+                break;
+        }
+    }
+
+    function confirm(TargetHref) {
+        var status;
+        $.modalConfirm("当前页面还有医嘱数据未保存，是否仍需跳转?", function (flag) {
+            if (flag) {
+                transferbool = true;
+                $('#myTab a[href="' + TargetHref + '"]').tab('show')//.trigger('click'); //初始化显示哪个tab
+            } else {
+                return false;
+            }
+
+        });
+    }
+    $('a[data-toggle="tab"]').on('click', function (e, v) {
+        var currentlink = $('.nav-tabs').find("li.active a").attr("href");
+        if (currentlink!== "#linkyzcx") {//医嘱查询不提示
+            if ($("#gridmedicine:visible").length == 1 && $("#gridmedicine").jqGrid('getDataIDs').length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            }
+            else if ($("#gridword:visible").length == 1 && $("#gridword").jqGrid('getDataIDs').length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            } else if ($("#gridsfxm:visible").length == 1 && $("#gridsfxm").jqGrid('getDataIDs').length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            }
+            else if ($("#gridkfxm:visible").length == 1 && $("#gridkfxm").jqGrid('getDataIDs').length > 0) {
+	            e.preventDefault();
+	            e.stopPropagation();
+	            confirm($(this).attr("href"));
+            }
+            else if ($("#gridTake:visible").length == 1 && $("#gridTake").jqGrid('getDataIDs').length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            } else if ($("#alreadyJYAppliedList:visible").length == 1 && jylocaldata.length > 0) {
+                confirm($(this).attr("href"));
+            }
+            else if ($("#alreadyJCAppliedList:visible").length == 1 && jclocaldata.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            } else if ($("#gridssyz:visible").length == 1 && $("#gridssyz").jqGrid('getDataIDs').length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            } else if ($("#gridTCMmedicine:visible").length == 1 && $("#gridTCMmedicine").jqGrid('getDataIDs').length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                confirm($(this).attr("href"));
+            }
+        }
+
+    });
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            $('#floatPreTemplateTree').hide();
+            var targetHref = $(e.target).attr('href');
+            if (targetHref.indexOf('linkjy') == -1 && targetHref.indexOf('linkjc') == -1) {     //检验检查页
+                $('#floatInspectTemplateTree').hide();
+            } else {
+                $('#floatInspectTemplateTree').show();   //显示检验检查模板树
+            }
+            transferPage($(this).attr('href'));
+            transferbool = false;
+            //patyjjqf(currentobj.zyh);
+    });
+
+    $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+        if (!transferbool) {
+            var relatedTargetHref = $(e.relatedTarget).attr('href');
+            var TargetHref = $(this).attr("href");
+            if (relatedTargetHref.indexOf('#linkyplr') != -1 && $("#gridmedicine:visible").length == 1) {
+                if ($("#gridmedicine").jqGrid('getDataIDs').length > 0) {
+                    SaveDoctorService(null);
+                }
+            }
+            else if (relatedTargetHref.indexOf('#linkwzlr') != -1 && $("#gridword:visible").length == 1) {
+                if ($("#gridword").jqGrid('getDataIDs').length > 0) {
+                    SaveWordMedicine(null);
+                }
+            } else if (relatedTargetHref.indexOf('#linkxmlr') != -1 && $("#gridsfxm:visible").length == 1) {
+                if ($("#gridsfxm").jqGrid('getDataIDs').length > 0) {
+                    SaveItemMedicine(null);
+                }
+            }else if (relatedTargetHref.indexOf('#linkkfyz') != -1 && $("#gridsfxm:visible").length == 1) {
+            	if ($("#gridkfxm").jqGrid('getDataIDs').length > 0) {
+		            SaveRehabMedicine(null);
+	            }
+            }
+            else if (relatedTargetHref.indexOf('#linkcydy') != -1 && $("#gridTake:visible").length == 1) {
+                if ($("#gridTake").jqGrid('getDataIDs').length > 0) {
+                    SaveTakeMedicine(null);
+                }
+            } else if (relatedTargetHref.indexOf('#linkjy') != -1 && $("#alreadyJYAppliedList:visible").length == 1) {
+                if ($("#alreadyJYAppliedList").jqGrid('getDataIDs').length > 0) {
+                    SaveInspection(null);
+                }
+            }
+                //按组套保存
+            else if (relatedTargetHref.indexOf('#linkjy') != -1 && $("#alreadyJYAppliedGroupList:visible").length == 1) {
+                if ($("#alreadyJYAppliedGroupList").jqGrid('getDataIDs').length > 0) {
+                    SaveInspectionbyZt(null);
+                }
+            }
+            else if (relatedTargetHref.indexOf('#linkjc') != -1 && $("#alreadyJCAppliedList:visible").length == 1) {
+                if ($("#alreadyJCAppliedList").jqGrid('getDataIDs').length > 0) {
+                    SaveExamination(null);
+                }
+            } else if (relatedTargetHref.indexOf('#linkssyz') != -1 && $("#gridssyz:visible").length == 1) {
+                if ($("#gridssyz").jqGrid('getDataIDs').length > 0) {
+                    SavessyzMedicine(null);
+                } else if (relatedTargetHref.indexOf('#linkzylr') != -1 && $("#gridTCMmedicine:visible").length == 1) {
+                    if ($("#gridTCMmedicine").jqGrid('getDataIDs').length > 0) {
+                        SavTCMService(null);
+                    }
+                }
+            }
+        }
+    });
+
+    var cfColorArr = new Array();
+    var cfzhColorArr = new Array();
+    var cfSourceColorArr = [
+        { color: '#02a0ea', zhcolor: ['#015f95', '#017bbc', '#009ee7', '#4cb7e3', '#95d5f1'] },
+        { color: '#27c24c', zhcolor: ['#006c28', '#0b9b2c', '#27c24c', '#6fc874', '#94d794'] },
+        { color: '#f05050', zhcolor: ['#a50001', '#d32323', '#f0514e', '#ef827d', '#f5b0a9'] },
+        { color: '#1bd0c7', zhcolor: ['#02625e', '#01aca3', '#31d7d5', '#85d5d4', '#c0d2d2'] },
+        { color: '#6037af', zhcolor: ['#310075', '#6137b3', '#7266ba', '#938ece', '#b2a9d8'] },
+        { color: '#fe7e00', zhcolor: ['#c44300', '#eb4e00', '#ff7d00', '#f89e00', '#f6c579'] },
+        { color: '#b100ab', zhcolor: ['#59014f', '#7d197b', '#b13990', '#cc7eb2', '#cda7c0'] },
+        { color: '#f50090', zhcolor: ['#910159', '#c10071', '#f40191', '#f462b7', '#faa2d5'] },
+        { color: '#6b821a', zhcolor: ['#575c00', '#6b811c', '#91b225', '#98ac4d', '#beca8a'] },
+        { color: '#2d61d9', zhcolor: ['#17194c', '#002c8b', '#2d61db', '#6a8ee4', '#97b8e5'] }
+    ];
+
+    //获取处方呈现颜色
+    function getZhColor(zh) {
+        var matched = $.jsonWhere(cfColorArr, function (v) {
+            if (v.zh === zh) {
+                return v.color
+            }
+        });
+        if (matched && matched.length) {
+            return matched[0].color;
+        }
+        var unusedColor = $.jsonWhere(cfSourceColorArr, function (v) {
+            if (v) {
+                var usedArr = $.jsonWhere(cfColorArr, function (q) {
+                    return q && q.color === v.color;
+                });
+                if (!usedArr || usedArr.length == 0) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        if (unusedColor && unusedColor.length) {
+            var thisColor = unusedColor[0].color;
+            cfColorArr.push({ zh: zh, color: thisColor });
+            return thisColor;
+        }
+        return '#ddd';  //颜色用完了 默认一个颜色
+    }
+
+    //计算频次数量
+    function getpcsl(zxcs, zxzq, zxzqdw)
+    {
+        if (isNaN(zxzqdw) || zxzqdw=="") {
+            $.modalAlert("执行周期单位不能为空", 'error');
+            return;
+        }
+        var rtnsl;
+        switch (zxzqdw) {
+            case "1":
+                rtnsl = (zxcs / zxzq);
+                break;
+            case "2":
+                rtnsl = (zxcs / zxzq) * 24;
+                break;
+            case "3":
+                rtnsl = (zxcs / zxzq) * 24 * 60;
+                break;
+            case 4:
+                rtnsl = 0;
+                break;
+        }
+        return rtnsl;
+    }
+
+    //计算药品数量
+    function getypsl(jlzhxs, zyzhxs, ypjl, dwlb, zxcs, zxzq, zxzqdw, ts, qzfs)
+    {
+        var zysl = 0;
+        if (isNaN(dwlb) || dwlb == "") {
+            $.modalAlert("单位类别不能为空", 'error');
+            return;
+        }
+        var qzint = ypjl * ts;//默认住院单位 ，不需转换
+        if (dwlb == 1) {//剂量单位 转换成剂量单位
+            qzint = parseFloat((qzint / (jlzhxs * zyzhxs)).toFixed(10));
+        }
+        if (qzfs == "day") {
+            zysl = Number(Math.ceil(qzint * getpcsl(zxcs, zxzq, zxzqdw)));
+        } else if (qzfs == "times") {
+            zysl = Number(Math.ceil(qzint) * getpcsl(zxcs, zxzq, zxzqdw));
+        }
+        return zysl;
+    }
+    //提交医嘱到后台
+    function submitService(gridTakeData) {
+        $.najax({
+            url: "/DoctorManage/Medicine/SubmitdoctorService",
+            dataType: "json",
+            data: { reqdoctorservices: gridTakeData, deldata: deldata },
+            type: "POST",
+            loadingtext: "医嘱数据保存中，请稍后...",
+            success: function (resp) {
+                $("#gridTake").clearGridData();
+                $("#gridword").clearGridData();
+                $("#gridsfxm").clearGridData();
+                $("#gridkfxm").clearGridData();
+                $("#gridTCMmedicine").clearGridData();
+                $("#gridmedicine").clearGridData();
+                $("#gridjy").clearGridData();
+                $('#alreadyJYAppliedList').clearGridData();
+                $('#alreadyJYAppliedGroupList').clearGridData();
+                $("#gridjc").clearGridData();
+                $('#alreadyJCAppliedList').clearGridData();
+                $('#alreadyJCAppliedGroupList').clearGridData();
+                $('#gridssyz').clearGridData();
+
+                //事前提醒
+                switch("@medicalInsurance")
+                {
+                    case "qinhuangdao":
+                    case "shanghai":
+                        if(currentobj.brxzdm != '0' && currentobj.brxzdm != 'yb3' && currentobj.brxzdm != 'yb6' && currentobj.brxzdm != 'yb25'&& currentobj.brxzdm != 'yb4'&& currentobj.brxzdm != 'yb19'&& currentobj.brxzdm != 'yb23')
+                            yzsqtx(gridTakeData,resp.data);
+                        break;
+                }
+                if ((gridTakeData[0].yzlx ==@Html.Raw(((int)EnumYzlx.jc).ToString())|| gridTakeData[0].yzlx ==@Html.Raw(((int)EnumYzlx.jy).ToString())) && resp.data)
+                {
+                    var tempCode=gridTakeData[0].yzlx ==@Html.Raw(((int)EnumYzlx.jc).ToString())? "29":"30";
+                    rpturl = gridTakeData[0].yzlx ==@Html.Raw(((int)EnumYzlx.jc).ToString()) ? '@Html.Raw(zyJCPrinturl)' : '@Html.Raw(zyJYPrinturl)';
+                    $.ajax({
+                        url: '/MedicalRecord/GetBarCodeBycfh',
+                        data: { cfh: resp.data },
+                        success: function (r) {
+                            var aaa = r.replace(/\+/g, '%2B');
+
+                            var uri = '@reportUrl' + "?tempCode="+tempCode + "&systemCode=" + '@reportSystemCode'+"&zyh="+currentobj.zyh+ "&orgId=" + '@curOpr.OrganizeId' + "&yzdh=" +  resp.data+"&barcode="+aaa;
+                            window.open(uri);
+                            //rpturl = rpturl + "&zyh=" + currentobj.zyh + "&yzdh=" + resp.data + "&barcode=" + aaa;
+                            //window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                        }
+                    });
+                } else {
+                    //事前审核接口
+                    PriorReview(gridTakeData, resp.data);
+                    $.modalMsg("保存成功", 'success');
+                    if (gridTakeData[0].yzlx ==@Html.Raw((int)EnumYzlx.zcy).ToString()) {
+                        var uri = '@reportUrl' + "?tempCode=44"+ "&systemCode=" + '@reportSystemCode'+"&zyh="+currentobj.zyh+ "&orgId=" + '@curOpr.OrganizeId' + "&yzhs=" + resp.data+"&clbz=1";
+                        window.open(uri);
+
+                        @*rpturl = '@Html.Raw(zyzcyPrinturl)';
+                        rpturl = rpturl + "&zyh=" + currentobj.zyh + "&yzhs=" + resp.data;
+                        window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");*@
+
+                    }
+                }
+            }
+        });
+    }
+
+    function yzsqtx(gridTakeData,yzcfh)
+    {
+        $.ajax({
+            url: "http://127.0.0.1:33333/api/YiBao/DetailAuditFront_3101",//智能审核
+            dataType: "json",
+            data: { zyh: currentobj.zyh, operatorId: '@curOpr.UserCode', operatorName: '@curOpr.UserName', yzh: yzcfh,txlx:"zy" },
+            type: "POST",
+            async: true,
+            success: function (ajaxdata) {
+                var bfDataReturn = eval('(' + ajaxdata + ')');
+                if (bfDataReturn.infcode === 0 || bfDataReturn.infcode === "0") {
+                    if (bfDataReturn.output.result.length > 0) {
+                        if (bfDataReturn.output.result[0].vola_cont) {
+                            $.modalAlert("事前审核违规信息：" + bfDataReturn.output.result[0].vola_cont, 'error');
+                        }
+                        else {
+                            $.modalAlert("医保保存成功，但审核失败：【" + bfDataReturn.err_msg + "】请联系HIS工程师", 'error');
+                        }
+                    } else {
+
+                    }
+                }
+                else {
+                    $.modalAlert("医保保存成功，但审核审核失败：【" + bfDataReturn.err_msg + "】请联系HIS工程师", 'error');
+                }
+            }
+        })
+        //$.ajax({
+        //    url: "/DoctorManage/Medicine/GetqhdyzSqtxData",
+        //    dataType: "json",
+        //    data: { reqdoctorservices: gridTakeData,brxx:currentobj,yzcfh:yzcfh},
+        //    type: "POST",
+        //    cache:false,
+        //    async:true,
+        //    success: function (reqdata){
+        //        if(reqdata)
+        //        {
+        //            $.ajax({
+        //                url: "http://127.0.0.1:33333/api/QHDSmartCheck/IntelligentCheck",//智能审核
+        //                dataType: "json",
+        //                data: {jydm:reqdata.jydm,xmldata:reqdata.xmldata},
+        //                type: "POST",
+        //                async:true,
+        //                success:function(ajaxdata){
+        //                    var znshresult = eval('(' + ajaxdata + ')');
+        //                    if(znshresult){
+        //                        if(znshresult.Code==="1" && znshresult.Data.RESPONSEDATA.OUTPUT.length>0)
+        //                        {
+        //                            $.ajax({
+        //                                url:"/DoctorManage/Medicine/SaveLog",
+        //                                dataType:"json",
+        //                                data:{logId:reqdata.jlId,responsedata:znshresult.Data.RESPONSEDATA,responedataxml:JSON.stringify(znshresult.Data.RESPONSEDATA)},
+        //                                type:"POST",
+        //                                cache:false,
+        //                                async:true,
+        //                                success:function(logdata){
+        //                                }
+        //                            });
+
+        //                            var refdata=znshresult.Data.RESPONSEDATA.OUTPUT
+        //                            sessionStorage.setItem('sqtxdataList', JSON.stringify(refdata));
+        //                            //window.open("/MedicalRecord/AdvanceRemind", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        //                            $.modalOpen({
+        //                                id: "WarnDetail",
+        //                                title: "医嘱事前提醒",
+        //                                url:"/MedicalRecord/AdvanceRemind",
+        //                                width: "800px",
+        //                                height: "600px",
+        //                                btn: null
+        //                            });
+        //                        }
+        //                    }
+        //                }
+        //            });
+        //        }
+        //    }
+        //});
+    }
+
+    function ReviewToday() {
+        patobjValidate();
+        $.modalOpen({
+            id: "CurrentdayView",
+            title: "当日医嘱列表",
+            url: "/DoctorManage/Orginal/CurrentdayView?zyh=" + currentobj.zyh,
+            width: "800px",
+            height: "370px",
+            callBack: function (iframeId) {
+                $.modalClose("CurrentdayView");
+            }
+        });
+    }
+
+    //另存为模板
+    function saveAsTemplate(mbObj,mxList){
+        $.modalOpen({
+            id: "Form",
+            title: "套餐",
+            url: "/DoctorManage/DoctorsAdvice/Form",
+            width: "400px",
+            height: "300px",
+            callBack: function (iframeId) {
+                var obj = top.frames[iframeId].submitForm();
+                if (obj && obj.mbmc && obj.mblx) {
+                    $.modalClose("Form");
+                }
+                if (mbObj != typeof (undefined)) {
+                    mbObj.tcfw = obj.mblx;
+                    mbObj.tcmc = obj.mbmc;
+                }
+                $.najax({
+                    url: "@Url.Action("saveAsTemplate")",
+                    dataType: "json",
+                    data: { mbObj: mbObj, mxList: mxList },
+                    type: "POST",
+                    success: function (data) {
+                        $.modalMsg("保存成功", 'success');
+                        $("#beveltabs a:first").trigger('click');
+                    }
+                });
+            }
+        });
+    }
+
+
+    //清空 所有文本、处方、历史处方、grid列表
+    function newtouch_event_f4() {
+        window.alldataArray = [];
+    }
+   //事前审核接口调用
+    function PriorReview(gridTakeData, yzcfh) {
+        if ("@isopenPriorReview" == "ON" && currentobj.brxzdm != "0") {
+            var GetMAC = "";
+            $.ajax({
+                type: "Get",
+                url: "http://127.0.0.1:33333/api/YiBao/GetMAC",
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    GetMAC=data.Data;
+                },
+                error: function (request, error, ex) {
+                    $.modalAlert("医保审核服务不可访问：[" + ex + "]", 'error');
+                }
+            });
+            $.ajax({
+                url: "/DoctorManage/Medicine/GetPriorReviewData",
+                dataType: "json",
+                data: { reqdoctorservices: gridTakeData, brxx: currentobj, yzcfh: yzcfh, GetMAC},
+                type: "POST",
+                cache: false,
+                async: true,
+                success: function (reqdata) {
+                    if (reqdata) {
+                        if (reqdata.message != "") {
+                            $.modalAlert("事前审核接口调用调用失败:" + reqdata.message, 'warning');
+                        }
+                    }
+
+                }
+            });
+        //病案质量审核服务
+        $.ajax({
+            url: "/DoctorManage/Medicine/GetBashData",
+            dataType: "json",
+            data: { zyh: currentobj.zyh, GetMAC},
+            type: "POST",
+            cache: false,
+            async: true,
+            success: function (reqdata) {
+                if (reqdata) {
+                    if (reqdata.message != "") {
+                        $.modalAlert("病案审核接口调用调用失败:" + reqdata.message, 'warning');
+                    }
+                }
+            }
+        });
+        $.ajax({
+            url: "/DoctorManage/Medicine/GetDrgData",
+            dataType: "json",
+            data: { zyh: currentobj.zyh, GetMAC},
+            type: "POST",
+            cache: false,
+            async: true,
+            success: function (reqdata) {
+                if (reqdata) {
+                if (reqdata.message != "") {
+                    $.modalAlert("Drg接口调用失败:" + reqdata.message, 'warning');
+                    }
+                }
+            }
+        });
+        //$.ajax({
+        //    url: "/DoctorManage/Medicine/DeletePriorReview",
+        //    dataType: "json",
+        //    data: {},
+        //    type: "POST",
+        //    cache: false,
+        //    async: false,
+        //    success: function (reqdata) {
+        //        if (reqdata.message != "") {
+        //            $.modalAlert("删除事前审核内容接口调用失败:" + reqdata.message, 'warning');
+        //            return false;
+        //        }
+        //    }
+        //});
+        //$.ajax({
+        //    url: "/DoctorManage/Medicine/GetDiagnoseData",
+        //    dataType: "json",
+        //    data: {},
+        //    type: "POST",
+        //    cache: false,
+        //    async: false,
+        //    success: function (reqdata) {
+        //        if (reqdata.message != "") {
+        //            $.modalAlert("获取诊断信息失败:" + reqdata.message, 'warning');
+        //            return false;
+        //        }
+        //    }
+            //});
+        }
+    }
+</script>

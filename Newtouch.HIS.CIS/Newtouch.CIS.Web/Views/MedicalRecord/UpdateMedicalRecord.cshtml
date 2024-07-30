@@ -1,0 +1,264 @@
+﻿
+@{
+	ViewBag.Title = "LogQuery";
+	Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form name="form1">
+	<div class="panel panel-default">
+		<div class="panel-heading navb-bg">
+			筛选条件
+		</div>
+		<table class="form">
+			<tr>
+
+				<th class="formTitle">病例号/姓名：</th>
+				<td class="formValue">
+					<input type="text" class="form-control" id="txtxm" name="txtxm" />
+				</td>
+				<td class="formTitle">医生姓名：</td>
+				<td class="formValue">
+					<input id="txt_doctor" name="txt_doctor" type="text" class="form-control required" />
+				</td>
+				<td style="width: 20px"></td>
+				<th class="formTitle" id="thCZRQ">操作日期：</th>
+				<td class="formValue" colspan="3">
+					<input id="txtCreateTimestart" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 42%; float: left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+					<span style="margin-left: 2%; float: left;">—</span>
+					<input id="txtCreateTimeEnd" type="text" class="form-control input-wdatepicker formClearIgnore" style="width: 41%; float: left; margin-left: 2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+				</td>
+				
+			@*</tr>
+			<tr>*@
+				<th class="formTitle">患者年龄：</th>
+				<td class="formValue">
+					<select class="form-control" id="hznl">
+						<option value="" selected>全部</option>
+						<option value="1">大于35周岁</option>
+					</select>
+				</td>
+				<th class="formTitle">血糖血压：</th>
+				<td class="formValue">
+					<select class="form-control" id="xtxy">
+						<option value="" selected>全部</option>
+						<option value="1">有值</option>
+					</select>
+				</td>
+				<td class="formValue">
+					<input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+				</td>
+			</tr>
+		</table>
+		<table class="form" style="border-bottom-color:aliceblue;border-top:groove">
+			<tr>
+				<th class="formTitle">姓名：</th>
+				<td class="formValue">
+					<input type="text" class="form-control" id="txtname" name="txtname" disabled="disabled" />
+					<input type="hidden" class="form-control" id="jzID" name="txtname" disabled="disabled" />
+				</td>
+				<th class="formTitle">发病日期：</th>
+				<td class="formValue">
+					<input type="text" id="fbsj" name="fbsj" class="form-control input-wdatepicker activeValue focusInput" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+					<i class="fa fa-times" aria-hidden="true" hidden></i>
+				</td>
+				<th class="formTitle">血糖：</th>
+				<td class="formValue">
+					<select id="xuetangclfs" class="form-control">
+						<option value="">=请选择=</option>
+						<option value="xuetang_kf">空腹</option>
+						<option value="xuetang_ch">餐后</option>
+						<option value="xuetang_sj">随机</option>
+					</select>
+				</td>
+				<td class="formValue">
+					<div class="row">
+						<div class="col-md-7">
+							<input id="xuetang" name="xuetang" type="text" class="form-control form-an vitalsignschange" />
+						</div>
+						<div class="col-md-5">
+							<label>mmol/L</label>
+						</div>
+					</div>
+				</td>
+				<th class="formTitle">体温：</th>
+				<td class="formValue">
+					<div class="row">
+						<div class="col-md-7">
+							<input id="tiwen" name="tiwen" type="text" class="form-control form-an vitalsignschange" />
+						</div>
+						<div class="col-md-5">
+							<label>℃</label>
+						</div>
+					</div>
+				</td>
+				<td class="formValue" rowspan="2">
+					<input type="button" id="btn_save" class="btn btn-primary btn-md" style="margin-left: 10px; width: 60px;height:30px;" value="保存" />
+				</td>
+			</tr>
+			<tr>
+				<th class="formTitle">收缩压：</th>
+				<td class="formValue">
+					<div class="row">
+						<div class="col-md-7">
+							<input id="shousuoya" name="shousuoya" type="text" class="form-control form-an vitalsignschange" />
+						</div>
+						<div class="col-md-5">
+							<label>mmHg</label>
+						</div>
+					</div>
+				</td>
+				<th class="formTitle">舒张压：</th>
+				<td class="formValue">
+					<div class="row">
+						<div class="col-md-7">
+							<input id="shuzhangya" name="shuzhangya" type="text" class="form-control form-an vitalsignschange" />
+						</div>
+						<div class="col-md-5">
+							<label>mmHg</label>
+						</div>
+					</div>
+				</td>
+				<th class="formTitle"></th>
+			</tr>
+		</table>
+	</div>
+	<div class="gridPanel">
+		<table id="gridJSList"></table>
+		<div id="gridPager"></div>
+	</div>
+</form>
+<script>
+	//$('#xuetangclfs').itemDetailsBindSelect({ itemtype: "xuetangclfs" });
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        //结算主记录
+        gridJSListData();
+    });
+    $("#txt_doctor").dutyStaffFloatingSelector({
+        dutyCode: 'Doctor'
+    });
+    //门诊挂号结算查询
+    function gridJSListData() {
+        var $gridJsList = $("#gridJSList");
+        $gridJsList.dataGrid({
+            postData: getSearchPostData(),
+            height: $(window).height() - 160,
+            url: "@Url.Action("OutpatientPatientQuery")",
+            colModel: [
+                { label: 'jzId', name: 'jzId', hidden: true, align: 'left' },
+	            { label: 'xuetangclfs', name: 'xuetangclfs', hidden: true, align: 'left' },
+	            { label: 'dqxuetang', name: 'dqxuetang', hidden: true, align: 'left' },
+                { label: '就诊日期', name: 'jzsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                //{ label: '日期', name: 'createtime', width: 140, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '门诊号', name: 'mzh', width: 100, align: 'left' },
+                { label: '姓名', name: 'xm', align: 'center', width: 80 },
+                {
+                    label: '性别', name: 'xb', align: 'center', width: 50, formatter: function (val) {
+                        return $.getGender(val);
+                    }
+                },
+                { label: '年龄', name: 'nlshow', align: 'center', width: 50 },
+                 { label: '体温', name: 'tiwen', width: 80, align: 'left' },
+                { label: '血糖', name: 'xuetang', width: 80, align: 'left' },
+                { label: '血压', name: 'xueya', width: 80, align: 'left' },
+                { label: '发病日期', name: 'fbsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '职业', name: 'zy', width: 80, align: 'left' },
+                { label: '地址', name: 'dz', width: 80, align: 'left' },
+                { label: '初复诊', name: 'cfz', width: 80, align: 'left' },
+                { label: '主要症状', name: 'zs', width: 80, align: 'left' },
+                { label: '诊断名称', name: 'xyzdmc', width: 80, align: 'left' },
+                { label: '处理', name: 'clfa', width: 80, align: 'left' },
+                { label: '医生签名', name: 'jzys', width: 80, align: 'left' },
+                { label: '有效证件号', name: 'sfzh', width: 130, align: 'left' },
+                { label: '电话', name: 'ContactNum', width: 100, align: 'left' },
+                { label: '科别', name: 'ghksmc', width: 80, align: 'left' },
+                { label: '现病史', name: 'xbs', width: 80, align: 'left' },
+                { label: '家长姓名', name: 'jzxm', align: 'center', width: 80 },
+                { label: '电话号码', name: 'dhhm', align: 'center', width: 80 },
+                { label: '备注', name: 'bz', width: 100, align: 'left' },
+            ],
+            pager: "#gridPager",
+            sortname: " jzsj asc",
+            viewrecords: true,
+            onSelectRow: function (rowIndex) {
+	            cleanpatinfo();
+            	var rowData = $("#gridJSList").jqGrid('getRowData', rowIndex);
+            	$("#jzID").val(rowData.jzId);
+	            $("#txtname").val(rowData.xm);
+            	$("#tiwen").val(rowData.tiwen);
+            	$("#xuetangclfs").val(rowData.xuetangclfs);
+            	$("#xuetang").val(rowData.dqxuetang);
+            	$("#shousuoya").val(rowData.xueya.split('/')[0]);
+            	$("#shuzhangya").val(rowData.xueya.split('/')[1]);
+            	$("#fbsj").val(rowData.fbsj);
+            }
+        });
+
+        $("#btn_search").click(function () {
+            $('#gridJSList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                url: '@Url.Action("OutpatientPatientQuery")'
+            }).trigger('reloadGrid');
+
+	        cleanpatinfo();
+        });
+    	$("#btn_save").click(function () {
+    		if ($('#jzID').val()=="") {
+    			$.modalAlert("请先选择一条患者就诊信息", 'warning');
+		    }
+		    $.najax({
+			    url: "/MedicalRecord/SaveUpdateMed",
+			    data: { jzid: $('#jzID').val(), fbrq: $('#fbsj').val(), xuetang: $('#xuetang').val(), xuetangclfs: $('#xuetangclfs').val(), tiwen: $('#tiwen').val(), shousuoya: $('#shousuoya').val(), shuzhangya: $('#shuzhangya').val() },
+			    type: "POST",
+			    success: function(ajaxResp) {
+			    	if (ajaxResp) {
+			    		$.modalAlert("修改成功", 'success');
+			    		$("#btn_search").trigger('click');
+				    }
+			    },
+			    errorCallback: function (data) {
+			    	$.modalAlert(data.message, 'warning');
+			    }
+		    });
+	    });
+    }
+
+	function cleanpatinfo() {
+		$("#jzID").val("");
+		$("#txtname").val("");
+		$("#tiwen").val("");
+		$("#xuetangclfs").val("");
+		$("#xuetang").val("");
+		$("#shousuoya").val("");
+		$("#shuzhangya").val("");
+		$("#fbsj").val("");
+	}
+    function clearData() {
+        $("#txt_doctor").val("");
+        $("#txt_doctor").attr("data-StaffGh", "");
+    }
+    var jszbList = null;
+
+    function getSearchPostData() {
+        var xm = $("#txtxm").val();
+        var sfrqTimestart = $("#txtCreateTimestart").val();
+        var sfrqTimeEnd = $("#txtCreateTimeEnd").val();
+        var ysgh="";// = $("#txt_doctor").attr("data-StaffGh");
+        if (!!$("#txt_doctor").attr("data-StaffGh") && !!$("#txt_doctor").val()) {
+            ysgh = $("#txt_doctor").attr("data-StaffGh");
+        }
+        var hznl1 = $("#hznl").val();
+        var xtxy1 = $("#xtxy").val();
+	    var qbdc1 = "";
+        return {
+        	keyword: xm, kssj: sfrqTimestart, jssj: sfrqTimeEnd, jzysgh: ysgh, hznl: hznl1, xtxy: xtxy1, qbdc: qbdc1
+        };
+    };
+
+
+
+</script>

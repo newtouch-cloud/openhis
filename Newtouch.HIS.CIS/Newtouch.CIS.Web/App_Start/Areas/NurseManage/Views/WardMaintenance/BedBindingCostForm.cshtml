@@ -1,0 +1,172 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "床位费绑定";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default" style="padding-right:10px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>费用名称：</th>
+                <td class="formValue">
+                    <input id="txt_ChargeName" name="txt_ChargeName" type="text" class="form-control required" />
+                    <input type="hidden" id="hid_ChargeCode" value="" />
+                    <input type="hidden" id="hid_ChargePrice" value="" />
+                    <input type="hidden" id="hid_ChargeUtity" value="" />
+                    <input type="hidden" id="hid_ChargeItem" value="" />
+                </td>
+                <th class="formTitle"><span class="required">*</span>数量：</th>
+                <td class="formValue">
+                    <input id="txt_ChargeNum" name="txt_ChargeNum" type="text" class="form-control required" style="width:100px" />
+                </td>
+                <td>
+                    @Html.Partial("_MiddleButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+                {
+                    ShowKeyList = new[] { 2 },
+                    F2Text = "添加"
+                })
+                </td>
+            </tr>
+        </table>
+       
+    </div>
+    <div class="gridPanel">
+        <table id="gridCostList"></table>
+    </div>
+</form>
+<script lang="javascript">
+    var costs = [];
+    $(function(){
+        GetBedItems('@ViewBag.bedCode');
+        $("#txt_ChargeNum").val("1");
+    })
+
+    function GetBedItems(bedCode)
+    {
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/WardMaintenance/GetBedItems",
+            data: { bedCode:bedCode },
+            dataType: "json",
+            async:false,
+            success: function (xmlist) {
+                $('#gridCostList').jqGrid("clearGridData");
+                //$('#gridCostList').newtouchLocalDataGrid(null, xmlist);
+                if (xmlist.code !== 'SYSTEM_ERROR') {
+                    $('#gridCostList').newtouchLocalDataGrid(null, xmlist);
+                }
+            }
+        })
+    }
+    $("#txt_ChargeName").sfxmFloatingSelector({
+        djDecimalPlaces: 4,
+        showdwjls: true,
+        leftshift: 150,
+        ajaxparameters: function ($thisinput) {
+            return "mzzybz=1&dllb=2&keyword=" + $.trim($thisinput.val());
+        },
+        itemdbclickhandler: function ($this) {
+            $("#txt_ChargeName").val($this.attr('data-sfxmmc'));
+            $("#hid_ChargeCode").val($this.attr('data-sfxmCode'));
+            $("#hid_ChargePrice").val($this.attr('data-dj'));
+            $("#hid_ChargeUtity").val($this.attr('data-dw'));
+            $("#hid_ChargeItem").val($this.attr('data-sfdlcode'));
+        },
+    });
+    $("#gridCostList").newtouchLocalDataGrid({
+        height: 260,
+        unwritten: false,
+        colModel: [
+            { label: 'Id', name: 'ChargeId', hidden: true },
+            { label: "代码", name: "ChargeCode", width: 150, align: "center" },
+            { label: "名称", name: "ChargeName", width: 250, align: "left" },
+            { label: "单价", name: "ChargePrice", width: 100, align: "center" },
+            { label: "单位", name: "ChargeUtity", width: 100, align: "center" },
+            { label: "数量", name: "ChargeNum", width: 100, align: "center" },
+            { label: "床位等级绑定", name: "djbd", hidden: true },
+            { label: "项目大类", name: "ChargeItem", hidden: true },
+            {
+                label: "操作",  width: 100, align: "center",
+                formatter: function (cellvalue, options, rowObject) {
+                      return "<a href=\#\" onclick='DeleteCost($(this).parent().parent().attr(\"id\"))'' title='删除费用' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>删除</a>";
+                }
+            }
+        ]
+    });
+
+    //删除费用
+    function DeleteCost(selRowId) {
+        var rowData = $("#gridCostList").jqGrid('getRowData', selRowId);
+        if (rowData.djbd == "1") {
+            $.modalAlert("不能删除床位等级绑定的费用", "warning");
+            return;
+        }
+        if ((!!selRowId) ) {
+            $("#gridCostList").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    //添加
+    function newtouch_event_f2() {
+        if ($("#txt_ChargeName").val() === "") {
+            $.modalAlert("费用名称必填", 'warning');
+            return;
+        }
+        var chargeNum = $("#txt_ChargeNum").val();
+        if (chargeNum === "") {
+            $.modalAlert("数量必填", 'warning');
+            return;
+        }
+        if (isNaN(chargeNum)) {
+            $.modalAlert("数量必须为数字", 'warning');
+            return;
+        }
+        var dataRow = {
+            ChargeId: newGuid(),
+            ChargeCode: $("#hid_ChargeCode").val(),
+            ChargeName: $("#txt_ChargeName").val(),
+            ChargePrice: $("#hid_ChargePrice").val(),
+            ChargeUtity: $("#hid_ChargeUtity").val(),
+            ChargeNum: $("#txt_ChargeNum").val(),
+            ChargeItem:$("#hid_ChargeItem").val()
+        };
+        $("#gridCostList").jqGrid("addRowData", undefined, dataRow, "last");
+        clearData();
+    }
+    function clearData()
+    {
+        $("#txt_ChargeName").val("");
+        $("#txt_ChargeNum").val("1");
+        $("#hid_ChargeCode").val("");
+        $("#hid_ChargePrice").val("");
+        $("#hid_ChargeUtity").val("");
+        $("#hid_ChargeItem").val("");
+    }
+    function newGuid() {
+        var guid = "";
+        for (var i = 1; i <= 32; i++) {
+            var n = Math.floor(Math.random() * 16.0).toString(16);
+            guid += n;
+            if ((i === 8) || (i === 12) || (i === 16) || (i === 20))
+                guid += "-";
+        }
+        return guid;
+    }
+    function SavaBindItems() {
+        var rowIds = $("#gridCostList").jqGrid('getDataIDs');
+        var gridData = $("#gridCostList").jqGrid('getRowData');
+        gridData.push($("#gridCostList").jqGrid('getRowData', rowIds[rowIds.length - 1]));
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/WardMaintenance/SavaBindItems",
+            data: { mxList: gridData,bedCode:'@ViewBag.bedCode' },
+            dataType: "json",
+            async:false,
+            success: function () {
+                $.modalAlert("保存成功", 'warning');
+            }
+        })
+    }
+</script>

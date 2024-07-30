@@ -1,0 +1,162 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" style="margin-left: 4%;">
+            <li role="presentation"><a href="" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 20px; margin-left: 20px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>组织机构：</th>
+                        <td class="formValue" colspan="2">
+                            <select id="OrganizeId" name="OrganizeId" class="form-control required formClearIgnore">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>康复项目名称：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <input type="text" class="form-control required" id="kfsfxmName" name="kfsfxmName"  />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>HIS项目名称：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="xtsfxmName" name="xtsfxmName"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>康复项目编码：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="kfsfxmCode" name="kfsfxmCode"  />
+                        </td>
+                        <th class="formTitle"><span class="required">*</span>HIS项目编码：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="xtsfxmCode" name="xtsfxmCode"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">有效</th>
+                        <td class="formValue">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked" class="formClearIgnore"><label for="zt"></label>
+                            </div>
+                        </td>
+                        <th></th>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var sfxmdzId = $.request("sfxmdzId");
+    var OrganizeId = $.request("OrganizeId");
+    $(function () {
+        //组织机构下拉框
+        initControl();
+
+        if (!!sfxmdzId) {
+            $.najax({
+                url: "/RehabChargeItemComparison/GetFormJson?r=" + Math.random(),
+                data: { sfxmdzId: sfxmdzId, OrganizeId: OrganizeId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $("#kfsfxmName").val(data.kfsfxmCode).trigger('change');
+                }
+            });
+        }
+    })
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+        $("#OrganizeId").change(function () {
+            //清空
+            newtouch_globalevent_f4();
+        })
+
+    }
+
+    //康复项目下拉
+    $('#kfsfxmName').newtouchFloatingSelector({
+        width: 400,
+        height: 220,
+        caption: "康复收费项目",
+        minlength: 2,
+        url: '/RehabChargeItemComparison/GetRehabBindSelect',
+        ajaxparameters: function () {
+            var OrganizeId = $('#OrganizeId').val();
+            if (!OrganizeId) {
+                $.modalAlert("请先选择组织机构", 'warning');
+                return;
+            };
+            return "keyword=" + $.trim($('#kfsfxmName').val()) + "&OrganizeId=" + OrganizeId;
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#kfsfxmName').val($thistr.attr('data-Name'));
+            $('#kfsfxmCode').val($thistr.attr('data-Code'));
+        },
+        colModel: [{ label: '康复项目代码', name: 'Code', widthratio: 10 },
+            { label: '康复项目名称', name: 'Name', widthratio: 15 },
+            { label: '首拼', name: 'py', widthratio: 10 }
+        ]
+    });
+
+
+    //His项目下拉
+    $('#xtsfxmName').newtouchFloatingSelector({
+        width: 500,
+        height: 220,
+        caption: "His收费项目",
+        minlength: 2,
+        url: '/RehabChargeItemComparison/GetHisBindSelect',
+        ajaxparameters: function () {
+            var orgId = $('#OrganizeId').val();
+            if (!orgId) {
+                $.modalAlert("请先选择组织机构", 'warning');
+                return;
+            };
+            return "keyword=" + $.trim($('#xtsfxmName').val()) + "&orgId=" + orgId;
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#xtsfxmName').val($thistr.attr('data-sfxmmc'));
+            $('#xtsfxmCode').val($thistr.attr('data-sfxmCode'));
+        },
+        colModel: [{ label: '收费项目', name: 'sfxmCode', widthratio: 10 },
+            { label: '收费项目名称', name: 'sfxmmc', widthratio: 15 },
+            { label: '首拼', name: 'py', widthratio: 10 },
+            { label: '单价', name: 'dj', widthratio: 8 },
+            { label: '时长', name: 'duration', widthratio: 8 }
+        ]
+    });
+
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/RehabChargeItemComparison/SubmitForm?sfxmdzId=" + sfxmdzId,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+
+</script>
+

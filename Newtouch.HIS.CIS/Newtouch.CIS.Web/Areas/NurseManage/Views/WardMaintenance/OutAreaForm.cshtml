@@ -1,0 +1,317 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "病人出区";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var isOpendiags = SysConfigReader.String("Inpatient_OutAre");
+    var isopenPriorReview = (ViewBag.isopenPriorReview);//是否开启智能审核
+}
+<style type="text/css">
+    .zdinput {
+    width:90%
+    }
+    .select2-container--default {
+    
+    width:72% !important
+    }
+    </style>
+<form id="form1">
+    <div class="panel panel-default" style="padding-right:10px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">出区时间：</th>
+                <td class="formValue">
+                    <input id="txt_cqrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:70%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })"
+                       onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss', minDate: '%y-%M-%d 0:00:00', maxDate: '%y-%M-%d 23:59:59', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">出区方式：</th>
+                <td class="formValue">
+                    <select id="sel_cqfs" name="sel_cqfs" class="form-control required">
+                        @* 20190313 改成字典可维护
+                            <option value="1">治愈</option>
+                        <option value="2">好转</option>
+                        <option value="3">转院</option>
+                        <option value="4">死亡</option>*@
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">诊断时间：</th>
+                <td class="formValue">
+                    <input id="txt_zdsj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:70%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                       onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd ")" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">出院诊断：</th>
+                <td class="formValue">
+                    <input id="txt_cyzddm"  type="hidden" />
+                    <input id="txt_cyzd" disabled="disabled" name="txt_cyzd" type="text" style="background-color:#edeaea" class="form-control required zdinput" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">辅助诊断1：</th>
+                <td class="formValue">
+                    <input id="txt_fzzd1dm" type="hidden" />
+                    <input id="txt_fzzd1" disabled="disabled" name="txt_fzzd1" type="text" style="background-color:#edeaea"  class="form-control required zdinput" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">辅助诊断2：</th>
+                <td class="formValue">
+                    <input id="txt_fzzd2dm" type="hidden" />
+                    <input id="txt_fzzd2" disabled="disabled" name="txt_fzzd2" type="text" style="background-color:#edeaea"  class="form-control required zdinput" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">辅助诊断3：</th>
+                <td class="formValue">
+                    <input id="txt_fzzd3dm" type="hidden" />
+                    <input id="txt_fzzd3" disabled="disabled" name="txt_fzzd3" type="text" style="background-color:#edeaea"  class="form-control required zdinput" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">自定义诊断：</th>
+                <td class="formValue">
+                    <textarea id="txt_zdyzd" disabled="disabled" name="txt_zdyzd" style="background-color:#edeaea"  class="form-control zdinput" style="height: 60px;"></textarea>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<script lang="javascript">
+    var zdcnt = 0;
+    $(function () {
+        GetPatDiagnosis();
+
+        //出区方式
+        $("#sel_cqfs").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                $.each(top.clients.itemDetails, function (idx, value) {
+                    if (value.Type === "cqfs") {
+                        $.each(value.Items, function (key, val) {
+                            $('#sel_cqfs').append('<option value="' + val.Code + '">' + val.Name + '</option>');
+                        });
+                    }
+                });
+                return resultObjArr;
+            }
+        });
+        $("#sel_cqfs option[value='2']").prop("selected", true).trigger('change');//默认好转
+    })
+    //$("#txt_cyzd").zdFloatingSelector({
+    //    zdlx: "WM",
+    //    width:"75%",
+    //    itemdbclickhandler: function ($this) {
+    //        $("#txt_cyzd").val($this.attr('data-zdmc'));
+    //        $("#txt_cyzddm").val($this.attr('data-zdCode'));
+    //    }
+    //});
+    //$("#txt_fzzd1").zdFloatingSelector({
+    //    zdlx: "WM",
+    //    width: "75%",
+    //    itemdbclickhandler: function ($this) {
+    //        $("#txt_fzzd1").val($this.attr('data-zdmc'));
+    //        $("#txt_fzzd1dm").val($this.attr('data-zdCode'));
+    //    }
+    //});
+    //$("#txt_fzzd2").zdFloatingSelector({
+    //    zdlx: "WM",
+    //    width: "75%",
+    //    itemdbclickhandler: function ($this) {
+    //        $("#txt_fzzd2").val($this.attr('data-zdmc'));
+    //        $("#txt_fzzd2dm").val($this.attr('data-zdCode'));
+    //    }
+    //});
+    //$("#txt_fzzd3").zdFloatingSelector({
+    //    zdlx: "WM",
+    //    width: "75%",
+    //    itemdbclickhandler: function ($this) {
+    //        $("#txt_fzzd3").val($this.attr('data-zdmc'));
+    //        $("#txt_fzzd3dm").val($this.attr('data-zdCode'));
+    //    }
+    //});
+    function GetPatDiagnosis() {
+        $.najax({
+            type: "GET",
+            url: "/NurseManage/WardMaintenance/GetPatDiagnosis?r=" + Math.random(),
+            data: { zyh: '@ViewBag.zyh' },
+            loadingtext: "数据加载中，请稍后...",
+            dataType: "json",
+            success: function (zdlist) {
+                //zdcnt = zdlist.length;
+                $.each(zdlist, function (n, item) {
+                    if (item.zddm != "999999999")
+                    {
+                        zdcnt++;
+                    }
+                    if (item.zdlx=="0") {
+                        $("#txt_cyzd").val(item.zdmc);
+                        $("#txt_cyzddm").val(item.zddm);
+                    }
+                    if (item.zdlx == "1") {
+                        $("#txt_fzzd1").val(item.zdmc);
+                        $("#txt_fzzd1dm").val(item.zddm);
+                    }
+                    if (item.zdlx == "2") {
+                        $("#txt_fzzd2").val(item.zdmc);
+                        $("#txt_fzzd2dm").val(item.zddm);
+                    }
+                    if (item.zdlx == "3") {
+                        $("#txt_fzzd3").val(item.zdmc);
+                        $("#txt_fzzd3dm").val(item.zddm);
+                    }
+                    if (item.zdlx == "9") {
+                        $("#txt_zdyzd").val(item.zdmc);
+                    }
+                })
+            }
+        })
+    }
+    var theAcceptClickCallBack = null;
+    function AcceptClick(callBack) {
+        theAcceptClickCallBack = callBack;
+        var zyh = '@ViewBag.zyh';
+        var cyfs = $("#sel_cqfs").val();
+        var cqsj = $("#txt_cqrq").val();
+        //var zdrq = $("#txt_zdsj").val();
+        var zyzd = $("#txt_cyzd").val();
+        var zyzddm = $("#txt_cyzddm").val();
+        //var fzzd1 = $("#txt_fzzd1").val();
+        //var fzzd1dm = $("#txt_fzzd1dm").val();
+        //var fzzd2 = $("#txt_fzzd2").val();
+        //var fzzd2dm = $("#txt_fzzd2dm").val();
+        //var fzzd3 = $("#txt_fzzd3").val();
+        //var fzzd3dm = $("#txt_fzzd3dm").val();
+        //var zdyzd = $("#txt_zdyzd").val();
+        var patOutAreaVO = {
+            zyh: zyh,
+            cyfs: cyfs,
+            cqsj: cqsj,
+            zyzddm: zyzddm,
+            zyzd: zyzd
+        }
+        if (zyzd == "" || zyzddm == "") {
+            if ('@isOpendiags' == 'OFF') {
+                $.modalAlert('该患者病案首页出院诊断未录入，不允许出区！', 'warning');
+            }
+            else {
+                $.modalAlert('该患者没有出院诊断，不允许出区！', 'warning');
+            }
+            callBack();
+        }
+        if ("@isopenPriorReview" == "ON") {
+            var GetMAC = "";
+            $.ajax({
+                type: "Get",
+                url: "http://127.0.0.1:33333/api/YiBao/GetMAC",
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    GetMAC = data.Data;
+                },
+                error: function (request, error, ex) {
+                    $.modalAlert("医保审核服务不可访问：[" + ex + "]", 'error');
+                }
+            });
+            //病案质量审核服务
+            $.ajax({
+                url: "/DoctorManage/Medicine/GetBashData",
+                dataType: "json",
+                data: { zyh: zyh,GetMAC },
+                type: "POST",
+                cache: false,
+                async: true,
+                success: function (reqdata) {
+                    if (reqdata) {
+                        if (reqdata.message != "") {
+                            $.modalAlert("病案审核接口调用调用失败:" + reqdata.message, 'warning');
+                        }
+                    }
+                }
+            });
+            $.ajax({
+                url: "/DoctorManage/Medicine/GetDrgData",
+                dataType: "json",
+                data: { zyh: zyh, GetMAC},
+                type: "POST",
+                cache: false,
+                async: true,
+                success: function (reqdata) {
+                    if (reqdata) {
+                        if (reqdata.message != "") {
+                            $.modalAlert("Drg接口调用失败:" + reqdata.message, 'warning');
+                        }
+                    }
+                }
+            });
+        }
+        if (zdcnt == 1) {
+            $.modalConfirm("当前出院诊断只有一条，确定出区？", function (flag) {
+                if (flag) {
+                    $.ajax({
+                        type: "POST",
+                        url: "/NurseManage/WardMaintenance/SavaPatDiagnosis",
+                        data: { patOutAreaVO: patOutAreaVO },
+                        dataType: "json",
+                        async: false,
+                        success: function (ajaxresp) {
+                            if (ajaxresp.state == "success") {
+                                $.modalMsg('出区成功', 'success');
+                            }
+                            else {
+                                $.modalAlert(ajaxresp.message, 'warning');
+                            }
+                            clearData();
+                            callBack();
+                        }
+                    });
+                }
+                else {
+                    callBack();
+                }
+            });
+        }
+        else {
+            $.ajax({
+                type: "POST",
+                url: "/NurseManage/WardMaintenance/SavaPatDiagnosis",
+                data: { patOutAreaVO: patOutAreaVO },
+                dataType: "json",
+                async: false,
+                success: function (ajaxresp) {
+                    if (ajaxresp.state == "success") {
+                        $.modalMsg('出区成功', 'success');
+                    }
+                    else {
+                        $.modalAlert(ajaxresp.message, 'warning');
+                    }
+                    clearData();
+                    callBack();
+                }
+            });
+        }
+        
+        
+    }
+    function clearData()
+    {
+        $("#sel_cqfs").val("");
+        $("#txt_cqrq").val("");
+        $("txt_zdsj").val("");
+        $("#txt_cyzd").val("");
+        $("#txt_cyzddm").val("");
+        $("#txt_fzzd1").val("");
+        $("#txt_fzzd1dm").val("");
+        $("#txt_fzzd2").val("");
+        $("#txt_fzzd2dm").val("");
+        $("#txt_fzzd3").val("");
+        $("#txt_fzzd3dm").val("");
+        $("#txt_zdyzd").val("");
+    }
+
+
+</script>

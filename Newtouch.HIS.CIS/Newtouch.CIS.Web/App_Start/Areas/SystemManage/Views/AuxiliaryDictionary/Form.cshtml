@@ -1,0 +1,99 @@
+﻿
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" style="margin-left: 4%;">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" style="margin-top: 10px; margin-left: 48px; margin-right: 105px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">上级词典：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select class="form-control" id="ParentId" name="ParentId">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue"><input type="text" class="form-control required" id="Name" name="Name" placeholder="请输入名称" /></td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>编码：</th>
+                        <td class="formValue"><input type="text" class="form-control required" id="Code" name="Code" placeholder="请输入编码" /></td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">选项：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/SystemManage/AuxiliaryDictionary/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data)
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        $("#ParentId").bindSelect({
+            url: "/SystemManage/AuxiliaryDictionary/GetTreeSelectJson?treeidFieldName=Id",
+        });
+
+    }
+
+    var anPrevOrg = null;
+    $('#Code').focus(function () {
+        if (!!!keyValue && ($.trim($(this).val()) === '')) {
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?initFieldLength=8&fieldName=xt_fzcd.Code&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#Code').val(data.data);
+                }
+            });
+        }
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        $.submitForm({
+            url: "/SystemManage/AuxiliaryDictionary/SubmitForm?keyValue=" + keyValue,
+            param: $("#form1").formSerialize(),
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+</script>
+
+

@@ -1,0 +1,354 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "OutpatientRegSearch";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<form name="form1" autocomplete="off">
+    <div class="panel panel-default" style="">
+        <ul id="myTab" class="nav nav-tabs">
+            <li class="active"><a href="#ghmx" data-toggle="tab">病人挂号明细</a></li>
+            <li><a href="#ghtj" data-toggle="tab">科室医生统计</a></li>
+        </ul>
+        <div class="tab-content" style="margin-top:0%">
+            <div style="padding: 2px;padding-right:20px;" class="tab-pane fade in active" id="ghmx">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">挂号日期：</th>
+                        <td class="formValue" colspan="2">
+                            <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddDays(-3).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                            <span style="margin-left:1%;float:left">—</span>
+                            <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        </td>
+                        <th class="formTitle">挂号科室：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control" id="txtksmc" />
+                        </td>
+
+                        <th class="formTitle"></th>
+                        <td class="formValue" colspan="2">
+                            <input type="button" class="btn btn-primary btn-md" id="btnsyy" value="查询" />
+                            <input type="button" class="btn btn-primary btn-md" style="margin-left:10px;width:40px;margin-left:10px;" onclick="Excelbuttion()" value="导出" />
+                        </td>
+
+                    </tr>
+
+                </table>
+                <div style="margin-top:2px;">
+                    <div class="gridPanel">
+                        <table id="registedList"></table>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" ;style="background-color: #fff; height:100%;width:100%" id="ghtj">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">挂号日期：</th>
+                        <td class="formValue" colspan="2">
+                            <input id="tjkssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddDays(-3).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                            <span style="margin-left:1%;float:left">—</span>
+                            <input id="tjjssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        </td>
+                        <th class="formTitle">挂号科室：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control" id="txttjksmc" />
+                        </td>
+                        <th class="formTitle">
+                            <input type="button" class="btn btn-primary btn-md" id="btncx" onclick="bntcxClick();" value="查询" />
+                        </th>
+                        <td class="formValue"></td>
+                        <th></th>
+                        <td></td>
+                    </tr>
+                </table>
+                <div class="ui-layout" id="layout" style="width:100%;">
+                    <iframe class="ui-layout-center" style="width:100%;height:430px" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+                            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    $(function () {
+        var h = $(window).height() - 100
+        $('#layout iframe').css('height', h);
+	    gridlist();
+	    bntcxClick();
+		$("#btnsyy").click(function() {
+			var $gridList = $("#registedList");
+			$gridList.jqGrid('setGridParam', {
+				postData: postdata(),
+			}).trigger('reloadGrid');
+
+		});
+
+		var kszdlist;
+		$.ajax({
+			type: "POST",
+			url: "/PatientManage/HospiterRes/Getzdinfo",
+			dataType: "json",
+			async: false,
+			success: function (data) {
+				kszdlist = data;
+
+			}
+		});
+
+
+		//科室
+		$("#txtksmc").newtouchBatchFloatingSelector({
+			height: 200,
+			width: 300,
+			clickautotrigger: true,
+			//url: '/OutpatientManage/OutpatientReg/GetCurrentDayRegListJson',
+			filter: function (keyword) {
+				//遍历数据源，用keyword来筛选出结果
+				var resultObjArr = new Array();
+				$.each(kszdlist, function (idx, val) {
+					if ((val.py && val.py.toLowerCase().indexOf(keyword) >= 0)
+						|| (val.Name && val.Name.indexOf(keyword) >= 0)
+						|| keyword.trim() == "") {
+						resultObjArr.push(val);
+					}
+				});
+				return resultObjArr;
+
+			},
+			caption: "科室",
+			colModel: [
+				{ label: '编号', name: 'code', widthratio: 30 },
+				{ label: '名称', name: 'name', widthratio: 50 },
+				{ label: '拼音', name: 'py', hidden: true }
+			],
+			itemdbclickhandler: function ($thistr) {
+				$("#txtksmc").attr("data-label", $thistr.find("td:eq(0)").html());
+				$("#txtksmc").val($thistr.find('td:eq(1)').html());
+				return;
+			},
+		});
+	    //科室
+		$("#txttjksmc").newtouchBatchFloatingSelector({
+		    height: 200,
+		    width: 300,
+		    clickautotrigger: true,
+		    //url: '/OutpatientManage/OutpatientReg/GetCurrentDayRegListJson',
+		    filter: function (keyword) {
+		        //遍历数据源，用keyword来筛选出结果
+		        var resultObjArr = new Array();
+		        $.each(kszdlist, function (idx, val) {
+		            if ((val.py && val.py.toLowerCase().indexOf(keyword) >= 0)
+						|| (val.Name && val.Name.indexOf(keyword) >= 0)
+						|| keyword.trim() == "") {
+		                resultObjArr.push(val);
+		            }
+		        });
+		        return resultObjArr;
+
+		    },
+		    caption: "科室",
+		    colModel: [
+				{ label: '编号', name: 'code', widthratio: 30 },
+				{ label: '名称', name: 'name', widthratio: 50 },
+				{ label: '拼音', name: 'py', hidden: true }
+		    ],
+		    itemdbclickhandler: function ($thistr) {
+		        $("#txttjksmc").attr("data-label", $thistr.find("td:eq(0)").html());
+		        $("#txttjksmc").val($thistr.find('td:eq(1)').html());
+		        return;
+		    },
+		});
+	});
+
+	function postdata() {
+		return {
+			ksrq: $("#kssj").val(),
+			jsrq: $("#jssj").val(),
+			keywordo: $("#txtksmc").val() != "" ? $("#txtksmc").attr("data-label"):"",
+		};
+
+	}
+	var colModel;
+	function gridlist() {
+
+		 colModel = [
+			{ label: 'ghnm', name: 'ghnm', key: true, hidden: true },
+
+			{ label: '病历号', name: 'blh', width: 80, align: 'left' },
+			{ label: '门诊号', name: 'mzh', width: 100, align: 'left' },
+			{ label: '姓名', name: 'xm', width: 70, align: 'left' },
+			{ label: '证件号', name: 'zjh', width: 130, align: 'left' },
+			{
+				label: '性别', name: 'xb', width: 40, align: 'left',
+				formatter: function (val) {
+					return $.getGender(val);
+				}
+			},
+			{
+				label: '费用性质', name: 'brxz', width: 50, align: 'left',
+				formatter: function (val) {
+					if (val == '0') {
+						return '自费';
+					}
+					else if (val == '1') {
+						return '医保';
+					}
+					else {
+						return '';
+					}
+				}
+			},
+			{ label: '挂号科室', name: 'ghksmc', width: 100, align: 'left' },
+			{ label: 'ghks', name: 'ghks', hidden: true },
+			{ label: 'ghys', name: 'ghys', hidden: true },
+			{ label: '挂号医生', name: 'ghysmc', width: 50, align: 'left' },
+			{
+				label: '挂号状态', name: 'ghzt', width: 50, align: 'left',
+				formatter: function (val) {
+					if (val == '0') {
+						return '待结';
+					}
+					else if (val == '1') {
+						return '已结';
+					}
+					else if (val == '2') {
+						return '已退';
+					}
+					else {
+						return '';
+					}
+				}
+			},
+			{
+				label: '挂号日期', name: 'ghrq', width: 100, align: 'left',
+				formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' }
+			},
+			{
+				label: '就诊状态', name: 'jzzt', width: 60, align: 'left',
+				formatter: function (cellvalue) {
+					return $.enum.getDescByValue("EnumOutpatientJzbz", cellvalue);
+				}
+			},
+			{ label: '就诊科室', name: 'jzksmc', width: 100, align: 'left' },
+			{ label: 'ghks', name: 'jzks', hidden: true },
+			{ label: 'ghys', name: 'jzys', hidden: true },
+			{ label: '就诊医生', name: 'jzysmc', width: 50, align: 'left' },
+			{
+				label: '就诊日期', name: 'jzrq', width: 120, align: 'left',
+				formatter: "date", formatoptions: { srcformat: 'Y-m-d h:i:s', newformat: 'Y-m-d H:i:s' }
+			 },
+			 { label: '票据号', name: 'fph', width: 80, align: 'left' },
+			 { label: '是否退号', name: 'syth', width: 60, align: 'left' },
+			 { label: '退号医生', name: 'thys', width: 70, align: 'left' },
+			 { label: '退号时间', name: 'thrq', width: 120, align: 'left',},
+		];
+
+		var $gridList = $("#registedList");
+		$gridList.dataGrid({
+			url: "/OutpatientManage/OutpatientReg/GetRegListJson",
+			height: $(window).height() - 165,
+			caption: "挂号数据 &nbsp; &nbsp;&nbsp;&nbsp;<span id='ghrc'></span> &nbsp;&nbsp;&nbsp;(<span id='thrc'></span>)",
+			postData: postdata(),
+			colModel: colModel,
+			gridComplete: function () {
+				var ids = $gridList.getDataIDs();
+
+				var thrc = 0;
+				for (i = 0; i < ids.length; i++) {
+					var rowData = $gridList.getRowData(ids[i]);
+					if (rowData && rowData.syth == "是") {
+						thrc += 1;
+					}
+				}
+				$("#ghrc").html("挂号人次：" + ids.length + "次");
+				$("#thrc").html("其中退号人次：" + thrc + "次");
+				//console.log(ids);
+			},
+		});
+
+	}
+
+	var exportCols = null;
+	function Excelbuttion() {
+		debugger;
+		exportCols = new Array();
+		var colsChooseSourceArr = new Array();
+		$.each(colModel, function () {
+			if (!(this.hidden === true)) {
+				if (this.label != "操作") {
+					exportCols.push({ Heading: this.label, Name: this.name, Width: this.width });
+					colsChooseSourceArr.push({ Heading: this.label, Name: this.name });
+				}
+			}
+		});
+		var url = "/HospitalizationManage/BookkeepInHos/ExcelExportChooseColumns";
+		var cols = JSON.stringify(colsChooseSourceArr);
+		cols = encodeURIComponent(cols);
+		url += "?cols=" + cols;
+		$.modalOpen({
+			id: "ExcelExportChooseColumns",
+			title: "导出Excel",
+			url: url,
+			width: "600px",
+			height: "350px",
+			callBack: function (iframeId) {
+				//结果
+				var restArr = top.frames[iframeId].GetChoosedCols();
+				if (!!!restArr || !!!restArr.length || restArr.length == 0) {
+					$.modalAlert("请选择导出列", 'error');
+					return false;
+				}
+				var isContainFilter = top.frames[iframeId].GetIsContainFilter();
+				//关闭选择窗口
+				$.modalClose("ExcelExportChooseColumns");
+				//
+				exportCols = $.jsonWhere(exportCols, function (v) {
+					var matched = false;
+					for (var iIndex = 0; iIndex < restArr.length; iIndex++) {
+						if (restArr[iIndex] == v.Name) {
+							matched = true;
+						}
+					}
+					return matched;
+				});
+				//导出
+				Export(isContainFilter);
+			}
+		});
+	}
+
+	function Export(isContainFilter) {
+
+		var url = "/OutpatientManage/OutpatientReg/SelectRegChargeQueryExcel?r=" + Math.random();
+		url += "&ksrq=" + $("#kssj").val();
+		url += "&jsrq=" + $("#jssj").val();
+		url += "&keywordo=" + $("#txtksmc").attr("data-label");
+		url += "&keywordt=" + $("#txtksmc").val();
+		url += "&isContainFilter=" + isContainFilter;
+		url += "&colStanWidth=" + "70";  //列宽度标准列
+		var cols = JSON.stringify(exportCols);
+		top.$.cookie('ExportExcelCols', cols, { path: "/" });
+		//url += "&cols=" + encodeURIComponent(cols);
+
+		window.open(url);
+	}
+	function bntcxClick() {
+	    if ($('#tjkssj').val().length == 0 || $('#tjjssj').val().length == 0) {
+	        $.modalAlert("请选择时间范围", "error");
+	        return;
+	    }
+	    var url = getUrl();
+	    $("#iframerightiframerightiframerightttt").attr('src', url);
+	}
+	function getUrl() {
+	    var ksrq = $("#tjkssj").val()+" 00:00:00";
+	    var jsrq = $("#tjjssj").val()+" 23:59:59";
+	    var ks = $("#txttjksmc").val() != "" ? $("#txttjksmc").attr("data-label") : "";
+	    var srcUrl2 = '@Html.Raw(reportUrl)' + "?tempCode=1249" + "&orgId=" + '@(opr.OrganizeId)' + "&ksrq=" + ksrq + "&jsrq=" + jsrq + "&ks=" + ks + "&systemCode=" + '@reportSystemCode';
+	    return srcUrl2;
+	}
+</script>

@@ -1,0 +1,124 @@
+﻿
+@{
+	ViewBag.Title = "SurgeryFrom";
+	Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+	<div class="container" style="margin-top: 3px; margin-left: 10px; margin-right: 10px;">
+		<ul class="nav nav-tabs" role="tablist" id="myTab">
+			<li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+		</ul>
+		<div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" style="padding-top: 5px; margin-right: 104px;margin-left:20px;" id="basicInfo">
+				<table class="form">
+					<tr>
+						<td class="formTitle"><span class="required">*</span>国临版编码：</td>
+						<td class="formValue">
+							<input id="ssm" name="ssm" type="text" class="form-control required" placeholder="请输入编码" />
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle"><span class="required">*</span>国临版手术名称：</td>
+						<td class="formValue">
+							<input id="ssmc" name="ssmc" type="text" class="form-control required" placeholder="请输入名称" />
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle">医保手术码：</th>
+						<td class="formValue">
+							<input id="ssm_yb" name="ssm_yb" type="text" class="form-control" placeholder="" />
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle">医保手术名称：</th>
+						<td class="formValue">
+							<input id="ssmc_yb" name="ssmc_yb" type="text" class="form-control" placeholder="" />
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle"><span class="required">*</span>手术级别：</td>
+						<td class="formValue">
+							<select id="ssjb" name="ssjb" class="form-control required">
+								<option value="">==请选择==</option>
+								<option value="1">1</option>
+								<option value="2">2</option>
+								<option value="3">3</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle"><span class="required">*</span>手术类型：</th>
+						<td class="formValue formDdlSelectorTd">
+							@Html.DropDownList("sslx", Newtouch.Infrastructure.EnumSSLX.ss.ToDescSelectList(), "==请选择==", new { @class = "form-control required" })
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle"><span class="required">*</span>拼音码：</th>
+						<td class="formValue">
+							<input id="pym" name="pym" type="text" class="form-control required" placeholder="" />
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle" style="height: 30px;">状态：</th>
+						<td class="formValue" style="padding-top: 1px;">
+							<div class="ckbox">
+								<input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+							</div>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+	</div>
+</form>
+
+<script>
+	var keyValue = $.request("keyValue");
+	$(function () {
+		initControl()
+		if (!!keyValue) {
+			$.najax({
+				url: "/SysDiagnosis/SurgeryUpGetGridJson",
+				data: { keyValue: keyValue },
+				dataType: "json",
+				async: false,
+				success: function (data) {
+					$("#form1").formSerialize(data);
+				}
+			});
+		}
+	});
+
+	function initControl() {
+		//首拼
+		$('#ssmc').keyup(function () {
+			$('#pym').val($(this).toShouPin());
+		})
+	}
+
+	function submitForm() {
+		var postData = $("#form1").formSerialize();
+		if (!postData.ssm) {
+			$.modalAlert("手术编码为必填", 'warning');
+			return;
+		}
+		if (!postData.ssjb) {
+			$.modalAlert("手术级别为必填", 'warning');
+			return;
+		}
+		if (!postData.sslx) {
+			$.modalAlert("手术类型为必填", 'warning');
+			return;
+		}
+		
+		$.submitForm({
+			url: "/SysDiagnosis/SurSubmitForm?keyValue=" + keyValue,
+			param: postData,
+			success: function () {
+				$.currentWindow().$("#gridList").resetSelection();
+				$.currentWindow().$("#gridList").trigger("reloadGrid");
+			}
+		})
+	}
+</script>

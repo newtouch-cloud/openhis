@@ -1,0 +1,405 @@
+﻿@{
+    ViewBag.Title = "门诊预约";
+    Layout = null;
+}
+<style>
+    #linkbespeakRegister {
+        margin-top: 3px;
+        padding: 5px 0;
+    }
+
+    .dv-yy {
+        float: left;
+        width: 30%;
+        background-color: #ffffff;
+    }
+
+    .dv-yydetail {
+        float: right;
+        width: 69%;
+    }
+
+    #linkbespeakRegister th, td {
+        padding: 10px 0;
+    }
+
+    .dv-yydetail-bottom {
+        float: right;
+    }
+
+        .dv-yydetail-bottom input {
+            margin: 10px 10px 0 0;
+        }
+
+    .dv-calendar {
+        margin: 0 auto;
+        border: 2px solid #59acff;
+        padding: 5px;
+    }
+
+    .dv-search {
+        margin-bottom: 5px;
+        height: 25px;
+    }
+
+        .dv-search div {
+            float: left;
+            margin-right: 10px;
+        }
+
+        .dv-search select {
+            line-height: 20px;
+            height: 20px;
+        }
+
+    .dv-table {
+        border-top: 1px solid #59acff;
+    }
+
+        .dv-table th {
+            text-align: center;
+            font-weight: 200;
+        }
+
+    .td-weekend {
+        color: #fe2e01;
+    }
+
+    .dv-table td {
+        padding: 1.5px 0;
+        margin: 0;
+        text-align: center;
+        vertical-align: middle;
+        cursor: pointer;
+    }
+
+    .sp-regInfo {
+        display: block;
+        color: #fe2e01;
+        font-size: 11px;
+    }
+
+    .td-SeparateLine {
+        border-top: 1px solid #ccc;
+        height: 1px;
+        padding: 1px;
+    }
+
+    .td-choose {
+        border-bottom: 2px solid #ffbb00;
+    }
+</style>
+<div id="linkbespeakRegister" role="tabpanel" class="tab-pane">
+    <div class="dv-yy">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>科室：</th>
+                <td class="formValue" style="width:100%;">
+                    <select id="sel_dept" class="form-control required"></select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">专家：</th>
+                <td class="formValue">
+                    <select id="sel_ys" class="form-control">
+                        <option value="">== 医生 ==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr style="display: none;">
+                <th class="formTitle"><span class="required">*</span>日期：</th>
+                <td class="formValue">
+                    <select id="sel_rq" class="form-control required"></select>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <div class="dv-calendar ">
+                        <div class="dv-search">
+                            <select class="form-control" name="selDate" id="selYear" style="border-radius: 0; width: 65px; float: left; padding: 3px 6px;">
+                                <option value="@DateTime.Now.Year">@DateTime.Now.Year 年</option>
+                                <option value="@DateTime.Now.AddYears(1).Year">@DateTime.Now.AddYears(1).Year 年</option>
+                            </select>
+                            <select class="form-control" name="selDate" id="selMonth" style="border-radius: 0;width: 50px; float: left;padding: 3px 6px;">
+                                @{
+                                    var otherMonthCount = 12 - DateTime.Now.Month + 1;
+                                    for (var i = 0; i < otherMonthCount; i++)
+                                    {
+                                        <option value="@DateTime.Now.AddMonths(i).Month">@DateTime.Now.AddMonths(i).Month 月</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="dv-table">
+                            <table style="width:100%;">
+                                <thead>
+                                    <tr>
+                                        <th>一</th>
+                                        <th>二</th>
+                                        <th>三</th>
+                                        <th>四</th>
+                                        <th>五</th>
+                                        <th class="td-weekend">六</th>
+                                        <th class="td-weekend">日</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tb_clendarContent"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>时间：</th>
+                <td class="formValue" id="td_regTime"></td>
+            </tr>
+            <tr>
+                <th class="formTitle">已预约数：</th>
+                <td class="formValue" colspan="3">
+                    <span id="zyys" style="color: #fe2e01;"></span>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center" style="padding:10px 0;">
+                    <input type="button" class="btn btn-primary" value="保存预约" onclick="SaveYy()" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="dv-yydetail">
+        <div>
+            <table id="yyGridList"></table>
+            <div id="yyGridPager"></div>
+        </div>
+        <span style="margin-right: 10px; color: #fe2e01;margin-left: 10px; line-height: 30px;">注：只显示当月1号以后的预约信息</span>
+        <div class="dv-yydetail-bottom">
+            <input type="button" class="btn btn-primary" value="取消预约" onclick="CancelYy()" />
+        </div>
+    </div>
+</div>
+
+<script>
+    var $gridList = $("#yyGridList");
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        $("#linkbespeakRegister").height($(document).height() - 60);
+        $(".dv-yy").height($(document).height() - 60);
+        $(".dv-yydetail").height($(document).height() - 130);
+        init();
+        $("#tb_clendarContent").on("click", ".td-enable", function () {
+            $.each($(".td-enable"), function (index, item) {
+                $(this).removeClass("td-choose");
+            });
+            $(this).addClass("td-choose");
+            changeDay(this);
+            $("#zyys").html("");
+            $("#td_regTime").html("");
+        });
+    });
+
+    //初始化
+    function init() {
+        //挂号科室
+        $('#sel_dept').bindSelect({
+            url: "/SystemManage/SysBaseData/SelectDepartmentList",
+            id: "Code",
+            text: "Name"
+        });
+        $("#sel_dept").change(function () {
+            BuildCalendar();
+            //专家
+            $("#sel_ys").bindSelect({
+                url: "/SystemManage/BespeakRegisterManage/GetDoctorsByDept?deptCode=" + $("#sel_dept").val(),
+                id: "gh",
+                text: "zjmc"
+            });
+        });
+        $("#sel_ys").change(function () {
+            BuildCalendar();
+        });
+        $("#selYear").change(function () {
+            BuildCalendar();
+        });
+        $("#selMonth").change(function () {
+            BuildCalendar();
+        });
+    }
+
+    //拼接日历html
+    function BuildCalendar() {
+        $("#zyys").html("");
+        $("#td_regTime").html("");
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/BuildClendar",
+            data: { year: $("#selYear").val(), month: $("#selMonth").val(), deptCode: $("#sel_dept").val(), ysgh: $("#sel_ys").val() },
+            dataType: "text",
+            success: function (data) {
+                $("#tb_clendarContent").html(data);
+            }
+        });
+    }
+
+    window.init_bespeakRegister = function () {
+        //门诊预约信息
+        $gridList.dataGrid({
+            height: $(window).height() - 165,
+            url: "/SystemManage/BespeakRegisterManage/GetArrangedRegistersGridJson",
+            postData: { blh: window.currPatientInfo.blh, r: Math.random() },
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '门诊类型', name: 'mzlx', width: 80, align: 'left' },
+                { label: '科室', name: 'ksmc', width: 120, align: 'left' },
+                { label: '日期', name: 'regDate', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '时间', name: 'regTime', width: 70, align: 'left' },
+                { label: '专家', name: 'zjmc', width: 90, align: 'left' },
+                { label: '预约号', name: 'bespeakNo', width: 60, align: 'left' },
+                { label: '创建人', name: 'CreatorCode', width: 80, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } }
+            ],
+            pager: "#yyGridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            unwritten: false
+        });
+        BuildCalendar();
+    };
+
+    //切换日期
+    function changeDay(tdObj) {
+        var sp = $(tdObj).children(".sp-regInfo");
+        if (sp != null && sp.length > 0) {
+            var regDate = $(sp[0]).attr("attr-regDate");
+            GetRegTimes($("#sel_dept").val(), regDate, $("#sel_ys").val());
+        }
+    }
+
+    //获取指定日期预约排班信息
+    function GetRegTimes(ksCode, regDate, gh) {
+        if (ksCode == null || regDate == null) return;
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/GetRegTimes",
+            data: { deptCode: ksCode, regDate: regDate, gh: gh },
+            dataType: "json",
+            success: function (data) {
+                BuildRegTime(data, regDate);
+            }
+        });
+    }
+
+    //组装预约日期和时间
+    function BuildRegTime(data, regDate) {
+        $("#td_regTime").html("");
+        if (data != null && data.length > 0) {
+            for (var i = 0; i < data.length; i++) {
+                $("#td_regTime").append("<input type=\"radio\" attr-regDate=\"" + regDate + "\" name=\"rd_regTime\" id=\"" + data[i].Id + "\" onclick=\"chooseRegTime(this)\" value=\"" + data[i].regTime + "\" />" + data[i].regTime);
+            }
+        }
+    }
+
+    //选择时段
+    function chooseRegTime(obj) {
+        var regTime = $(obj).val();
+        if (regTime == undefined || regTime === "") return;
+        var regKs = $("#sel_dept").val();
+        if (regKs == undefined || regKs === "") return;
+        var regDate = $(obj).attr("attr-regDate");
+        if (regDate == undefined || regDate === "") return;
+        //获取可预约总人数和已预约数
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/GetBespeakMaxCount",
+            data: { deptCode: regKs, regDate: regDate, regTime: regTime, gh: $("#sel_ys").val() },
+            dataType: "json",
+            success: function (data) {
+                if (data != null) {
+                    $("#zyys").html(data.yyys + " / " + data.bespeakMaxCount);
+                    if (data.yyys >= data.bespeakMaxCount) {
+                        $.modalMsg("该科室或专家已满额，无法继续预约", "error", 2000);
+                    }
+                }
+            }
+        });
+    }
+
+    //保存预约
+    function SaveYy() {
+        var chs = $(".td-choose");
+        if (chs == null || chs.length === 0) {
+            $.modalMsg("请选择预约日期", "warning", 1500);
+            return;
+        }
+        if ($("#td_regTime").html() === "") {
+            $.modalMsg("当天没有预约挂号资源,请重新选择", "warning", 1500);
+            return;
+        }
+        var obj = $("input[name=rd_regTime]:checked");
+        if (obj == null || obj.length === 0) {
+            $.modalMsg("请选择预约时间", "warning", 1500);
+            return;
+        }
+        $.najax({
+            url: "/SystemManage/BespeakRegisterManage/SaveYy",
+            type: "POST",
+            data: { brId: obj[0].id, blh: window.currPatientInfo.blh, zjlx: window.currPatientInfo.zjlx, zjh: window.currPatientInfo.zjh },
+            dataType: "json",
+            success: function (data) {
+                if (data.state === 'success') {
+                    $.modalMsg("提交预约成功", "success", 1000);
+                    RefreshJqgridData();
+                    BuildCalendar();
+                }
+                else {
+                    $.newtouchAlert(data);
+                }
+            }
+        });
+    }
+
+    //刷新jqgrid数据
+    function RefreshJqgridData() {
+        $gridList.jqGrid('setGridParam', {
+            url: "/SystemManage/BespeakRegisterManage/GetArrangedRegistersGridJson",
+            postData: { blh: window.currPatientInfo.blh, r: Math.random() }
+        }).trigger('reloadGrid');
+    }
+
+    //取消预约
+    function CancelYy() {
+        var id = $gridList.jqGrid('getGridParam', 'selrow');
+        if (id == null || id === "") {
+            $.modalMsg("请选择要取消的预约挂号", "warning", 1000);
+            return;
+        }
+        $.modalConfirm("您确定要取消吗",
+            function (flag) {
+                if (flag) {
+                    $.najax({
+                        url: "/SystemManage/BespeakRegisterManage/CancelYy",
+                        type: "POST",
+                        data: { yyId: id },
+                        dataType: "json",
+                        success: function (data) {
+                            if (data.state === 'success') {
+                                $.modalMsg("取消预约成功", "success", 1000);
+                                RefreshJqgridData();
+                                BuildCalendar();
+                            } else {
+                                $.newtouchAlert(data);
+                            }
+                        }
+                    });
+                }
+            });
+    }
+
+    //刷新已预约数
+    function Refreshyyys() {
+        var chooseChk = $("input[name=rd_regTime]:checked");
+        if (chooseChk != null && chooseChk.length > 0) {
+            chooseRegTime(chooseChk[0]);
+        }
+    }
+</script>
+

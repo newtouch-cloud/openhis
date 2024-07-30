@@ -1,0 +1,200 @@
+﻿@{
+    ViewBag.Title = "门诊发药统计";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+}
+<style>
+    #btn_print {
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">搜索</div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle ">单据号：</th>
+                    <td class="formValue">
+                        <input type="text" id="fydh" name="fydh" class="form-control newtouch_Readonly" />
+                    </td>
+                    <th class="formTitle ">目标药房：</th>
+                    <td class="formValue">
+                        <input type="text" id="lybm" name="lybm" data-yfbmCode="" placeholder="请选择目标药房" class="form-control" autocomplete="off" />
+                    </td>
+                    <td class="formTitle"><span class="required">*</span>发药方式：</td>
+                    <td class="formValue">
+                        <select id="fyfs" class="form-control">
+                            <option value="">==请选择==</option>
+                        </select>
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary" value="查询" style="margin-left:10px;" />
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+</form>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 8 },
+    F8Text = "出库"
+})
+<span style="color: red;line-height: 30px;">注：展示的出库数量仅供参考，实际出库数量以点击出库按钮时库存拥有数量为准。</span>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        $(".toolbar").css("width", 90);
+        init();
+        gridList(); //药品信息
+    });
+
+    //初始化
+    function init() {
+        NewDjh();
+        GetTargetDept();
+        $("#fyfs").bindSelect({
+            url: "/InStorage/GetCrkfs?crkbz=1",
+            id: "crkfsCode",
+            text: "crkfsmc"
+        });
+    }
+
+    //生成单据号
+    function NewDjh() {
+        $.ajax({
+            type: "Get",
+            url: "/InStorage/InitDjh",
+            data: { djmc: '内部发药单', r: Math.random() },
+            dataType: "json",
+            success: function (res) {
+                if (res.state === "success") {
+                    $("#fydh").val(res.data);
+                }
+                else {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+    //获取目标药房
+    function GetTargetDept() {
+        $("#lybm").newtouchBatchFloatingSelector({
+            height: 200,
+            width: 250,
+            clickautotrigger: true,
+            url: "/DrugStorage/GetTheLowerYfbmCodeList",
+            ajaxmethod: 'POST',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#lybm").val());
+                return reqData;
+            },
+            caption: "领药部门",
+            colModel: [
+                { label: '药房编码', name: 'yfbmCode', widthratio: 50 },
+                { label: '药房名称', name: 'yfbmmc', widthratio: 50 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#lybm").val($thistr.attr('data-yfbmmc'));
+                $("#lybm").attr("data-yfbmCode", $thistr.attr('data-yfbmCode'));
+                $("#btn_search").trigger("click");
+                return;
+            }
+        });
+    }
+
+    //药品信息
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            height: $(window).height() - document.getElementById('gridList').offsetTop - 115,
+            colModel: [
+                { label: '药品名称', name: 'ypmc', width: 250, align: 'left' },
+                { label: '规格', name: 'gg', width: 120, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 230, align: 'left' },
+                { label: '数量', name: 'slStr', width: 100, align: 'right' },
+                { label: '零售单价', name: 'lsjdjdw', width: 120, align: 'right' },
+                {
+                    label: '零售总额',
+                    name: 'lsze',
+                    width: 100,
+                    align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(2);
+                    }
+                },
+                { label: '单位', name: 'dw', hidden: true },
+                { label: 'ypdm', name: 'ypdm', hidden: true }
+            ],
+            multiselect: true,
+            pager: "#gridPager",
+            sortname: 'ypmc',
+            viewrecords: true
+        });
+
+        //查询
+        $("#btn_search").click(function () {
+            if ($("#lybm").val() === "") {
+                $.modalMsg("请选择目标药房", "error", 1500);
+                return false;
+            }
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: { rkbm: $("#lybm").attr("data-yfbmCode") },
+                    url: "/DrugStorage/GetDirectDeliveryDrugsList"
+                }).trigger('reloadGrid');
+        });
+    }
+
+    //出库
+    function newtouch_event_f8() {
+        var ypCodes = "";
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        for (var i = 0; i < selRowIds.length; i++) {
+            ypCodes += $("#gridList").jqGrid('getRowData', selRowIds[i]).ypdm + ',';
+        }
+        if (ypCodes === "") {
+            $.modalMsg("请选择需要出库的药品", "error", 2000);
+            return;
+        }
+        if ($("#fyfs").val() === "") {
+            $.modalMsg("请选择发药方式", "error", 2000);
+            return;
+        }
+        $.najax({
+            url: "/DrugStorage/DirectDeliveryBatchSubmit",
+            type: "POST",
+            dataType: "json",
+            data: { rkbm: $("#lybm").attr("data-yfbmCode"), ypCodes: ypCodes, djh: $("#fydh").val(), fyfs: $("#fyfs").val() },
+            success: function (ajaxresp) {
+                if (ajaxresp.state === "success") {
+                    $.modalMsg("批量出库成功", 'success', 1500);
+                    var uri = '@reportUrl' + "?tempCode=1252&Organizeid=" + '@ViewBag.OrganizeId' + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&crkId=" + ajaxresp.message;
+                    window.open(uri);
+                    $("#btn_search").trigger("click");
+                }
+                else {
+                    var msg = ajaxresp.message != null ? ajaxresp.message : "批量出库失败";
+                    $.modalMsg(msg, "error", 1500);
+                }
+            },
+            complete: function () {
+                NewDjh();
+            }
+        });
+    }
+
+</script>

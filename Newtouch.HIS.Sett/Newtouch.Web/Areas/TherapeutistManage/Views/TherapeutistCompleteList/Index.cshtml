@@ -1,0 +1,144 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<!DOCTYPE html>
+<style>
+    @@media screen and (min-width:600px) {
+        .form .formValue {
+            width: 135%;
+        }
+    }
+
+    @@media screen and (min-width:1000px) {
+        .form .formValue {
+            width: auto;
+        }
+    }
+</style>
+<script>
+    var Editing_ysList = []; //编辑域中的人员
+    $(function () {
+        gridList();
+        //绑定 人员 树
+        $('#zls').click(function () {
+            var initIdSelected = "";
+            $.each(Editing_ysList, function () {
+                initIdSelected += this.id + ",";
+            })
+            $.modalOpen({
+                id: "StaffCorrelation",
+                title: "选择治疗师",
+                url: "/SystemManage/SysStaff/Selector?single=true&isContansChildOrg=false&callbackType=json&dutyCode=RehabDoctor&initIdSelected=" + initIdSelected,
+                showleftlalbel: false,
+                width: "650px",
+                height: "570px",
+                callBack: function (iframeId) {
+                    top.frames[iframeId].AcceptClick(function (data) {
+                        staffTreeCallback(data);
+                    });
+                }
+            });
+        });
+    });
+
+    function getSearchPostData() {
+        var postData = {};
+        postData.BeginDate = $('#Kssj').val();
+        postData.EndDate = $('#Jssj').val();
+        postData.zls = "";
+        if (!postData.BeginDate || !postData.EndDate) {
+            return;
+        }
+        if (new Date(postData.BeginDate) > new Date(postData.EndDate)) {
+            $.modelAlert("开始日期不能大于结束日期", "warning");
+        }
+        if (Editing_ysList.length > 0) {
+            postData.zls = Editing_ysList[0].gh;
+        }
+        return postData;
+    }
+    function gridList() {
+        var $gridList = $("#HisgridList");
+        $gridList.dataGrid({
+            url: "/TherapeutistManage/TherapeutistCompleteList/GetGridJson",
+            shrinkToFit: true,
+            postData: getSearchPostData(),
+            height: $(window).height() - 185,
+            colModel: [
+                { label: "主键", name: "jfbbh", hidden: true, key: true },
+                { label: "类型", name: "type", width: 80, key: true },
+                { label: '患者姓名', name: 'hzxm', width: 80, align: 'left' },
+                { label: '治疗师姓名', name: 'ysxm', width: 100, align: 'left' },
+                { label: '治疗时间', name: 'jzsj', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '时长(分)', name: 'zlsc', width: 50, align: 'left' },
+                 { label: '大类', name: 'dlmc', width: 100, align: 'left' },
+                { label: '治疗项目', name: 'sfxmmc', width: 150, align: 'left' },
+                { label: '数量', name: 'sl', width: 80, align: 'left' },
+            ],
+            pager: "#gridPager",
+            sortname: 'jzsj desc',
+            rowNum: '10',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: getSearchPostData(),
+                    url: "/TherapeutistManage/TherapeutistCompleteList/GetGridJson"
+                }).trigger('reloadGrid');
+        });
+        $gridList.closest(".ui-jqgrid-bdiv").css({ 'overflow-x': 'hidden' });
+    }
+
+    //人员树 选择 回调
+    function staffTreeCallback(treeSeleData) {
+        Editing_ysList = [];
+        var zlsNames = "";
+        $.each(treeSeleData, function () {
+            zlsNames += this.text + ",";
+            Editing_ysList.push({ id: this.id, gh: this.value, Name: this.text, ks: this.Ex1, ksmc: this.Ex2 });
+        })
+        if (zlsNames.length > 0) {
+            zlsNames = zlsNames.substring(0, zlsNames.length - 1);
+        }
+
+        $('#zls').val(zlsNames);
+    }
+</script>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <td class="formTitle">开始时间：</td>
+                    <td class="formValue">
+                        <input id="Kssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd'})" />
+                    </td>
+                    <td class="formTitle">结束时间：</td>
+                    <td class="formValue">
+                        <input id="Jssj" type="text" class="form-control input-wdatepicker" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({dateFmt:'yyyy-MM-dd'})" />
+                    </td>
+                    <td class="formTitle">治疗师：</td>
+                    <td class="formValue">
+                        <input type="text" id="zls" class="form-control" placeholder="治疗师姓名" />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                    </td>
+                    <th class="formTitle"></th>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<div class="gridPanel">
+    <table id="HisgridList"></table>
+    <div id="gridPager"></div>
+</div>
+

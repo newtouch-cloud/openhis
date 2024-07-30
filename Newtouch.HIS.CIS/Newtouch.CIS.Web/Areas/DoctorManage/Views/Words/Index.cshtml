@@ -1,0 +1,464 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "文字录入";
+}
+<style>
+    #dv_gridword td {
+        padding: 0;
+    }
+
+    #dv_gridword th {
+        padding: 5px 0;
+    }
+
+    #gridword select[role=select] {
+        padding: 0;
+    }
+
+    #gridword input[role=textbox] {
+        padding: 2px 0;
+        text-align: center;
+    }
+</style>
+<div id="linkwzlr" role="tabpanel" class="tab-pane" style="width:98%;margin-right: 10px;margin-top: 3px;">
+    <div class="contentPanel" style="border: 1px solid #ddd;">
+        <div style="background-color: #fff;" id="dv_gridword">
+            <table id="gridword"></table>
+            <div id="gridwordPager"></div>
+        </div>
+    </div>
+    <div class="toolbar" style="float:right;width:80%;margin:10px 30px 12px;text-align:right;">
+        <a class="btn btn-primary" style="margin-left:4px;" onclick="HistoricalOrders(@Html.Raw(((int)EnumYzlx.Wz).ToString()))">历史医嘱引用</a>
+        <a class="btn btn-primary" style="margin-left:4px;" id="btn_bottombutton_f7" onclick="ReviewToday()">当日查看</a>
+        <a class="btn btn-primary" style="margin-left:4px;" id="btn_bottombutton_f8" onclick="SaveWordTemplate()">另存为套餐</a>
+        <a class="btn btn-primary" style="margin-left:4px;" id="btn_bottombutton_f9" onclick="SaveWordMedicine('1')">保存</a>
+    </div>
+</div>
+<script>
+    var deldata = [];//删除对象
+    var wzyzflag = 0;
+    var wordlocaldata = new Array();
+    function init_WordPrescription() {
+        //仅尚未保存到数据库的医嘱需要初始化在grid中
+        wordlocaldata = new Array();
+        if (window.alldataArray.wzyz) {
+            wordlocaldata = $.jsonWhere($.deepClone.clone(window.alldataArray.wzyz), function (icf) {
+                return !!!icf.Id;
+            });
+            $.each(wordlocaldata, function () {
+                if (!this.Id) {
+                    $.modalAlert('医嘱异常', "warning");
+                    location.href = location.href;
+                }
+                this.action = getWordActionStr();
+            });
+        }
+        else {
+            window.alldataArray.wzyz = new Array(); //方便后面使用$.each()
+        }
+
+        if (wzyzflag == 0) {   //该页面初始化
+            gridword();
+
+            wzyzflag = 1;
+        }
+
+        else {
+            $("#gridword").clearGridData(); //先清
+            //再次打开该页面
+            $("#gridword").jqGrid('setGridParam', {
+                datatype: 'local',
+                data: wordlocaldata
+            }).trigger("reloadGrid");
+        }
+    }
+
+
+    //药品列表
+    function gridword() {
+        var $gridword = $("#gridword");
+        $gridword.jqGrid({
+            datatype: 'local',
+            data: wordlocaldata,
+            height: $(window).height() - 180,
+            shrinkToFit: true,   //true:按比例初始化列宽度 false:使用colModel指定的宽度
+            autowidth: true,
+            rownumbers: true,  //是否显示序号
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                { label: 'Id', name: 'Id', align: 'center', hidden: true },
+                { label: '长<br>临', name: 'yzlb', width: 35, editwidth: '100%', align: 'center', editable: true},
+                {
+                    label: '<span class="required">*</span>指示', name: 'xmmc', width: 250, editwidth: '100%', align: 'center', editable: true
+                },
+                {
+                    label: '<span class="required">*</span>开始时间', name: 'kssj', width: 140, editwidth: '95%',
+
+                    align: 'center',
+                    editable: true, unformat: pickDate, formatter: "date",
+                    formatoptions: { srcformat: 'Y-m-d h:m:s', newformat: 'Y-m-d h:m:s' },
+                    formatter: function (cellvalue, options, cell) {
+                        return (typeof (cellvalue) == "undefined") ? "" : cellvalue;
+                    }
+                },
+                { label: 'xmdm', name: 'xmdm', width: 100, editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '<span class="required">*</span>频次', name: 'pcmc', width: 60, editwidth: '100%', align: 'center', editable: true },
+                { label: 'pcCode', name: 'pcCode', editwidth: '100%', align: 'center', editable: true, hidden: true },
+                { label: '天数', name: 'ts', width: 80, editwidth: '100%', align: 'center', editable: true },
+                { label: 'zxcs', name: 'zxcs', editable: true, hidden: true },
+                { label: 'zxzq', name: 'zxzq', editable: true, hidden: true },
+                { label: 'zxzqdw', name: 'zxzqdw', editable: true, hidden: true },
+                { label: '嘱托', name: 'ztnr', width: 260, editwidth: '100%', align: 'center', editable: true },
+                { label: '操作', name: 'action', width: 80, align: 'center' },
+                { name: 'yzlx', hidden: true },
+                { name: 'zyh', hidden: true },
+                { name: 'ysgh', hidden: true }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            pager: "gridwordPager",
+            gridComplete: function () {
+                EnableWordInlineEditBox();
+                //隐藏grid底部滚动条
+                $gridword.closest(".ui-jqgrid-bdiv").css({ "overflow-x": "hidden" });
+            }
+        });
+
+        //二级菜单
+        $gridword.jqGrid('setGroupHeaders', {
+            useColSpanStyle: true,
+            groupHeaders: [
+                {
+                    startColumnName: 'xmmc',
+                    numberOfColumns: 3,
+                    titleText: '基本信息'
+                }]
+        });
+
+        $.each($(".jqg-first-row-header").find("th"),
+            function () {
+                $(this).css("padding", 0);
+            });
+        //自定义按钮
+        $gridword.navGrid('#gridwordPager',
+                {
+                    edit: false,
+                    add: false,
+                    del: false,
+                    search: false,
+                    refresh: false,
+                    view: false,
+                    position: "left",
+                    cloneToTop: false
+                })
+            .navButtonAdd('#gridwordPager',
+                {
+                    buttonicon: "glyphicon glyphicon-new-window",
+                    title: "新医嘱",
+                    caption: "新医嘱",
+                    position: "last",
+                    onClickButton: function() {
+                        newWordPresData();
+                    }
+            });
+        $("#gridwordPager_right").append("<div class=\"ckbox\" style=\"margin-top:2px;\"><input id=\"chkwordyz\" name=\"chkwordyz\" type=\"checkbox\" ><label for=\"chkwordyz\">临时医嘱</label></div>");
+        $("#gridwordPager_right").append("<div class=\"ckbox\" style=\"margin-top:2px;\"><input id=\"chkycy\" name=\"chkycy\" type=\"checkbox\" ><label for=\"chkycy\">预出院</label></div>");
+    }
+
+    //启用行内编辑
+    function EnableWordInlineEditBox() {
+        var ids = $("#gridword").getDataIDs();
+        $.each(ids, function () {
+            var rowid = String(this);
+            //打开编辑模式
+            $("#gridword").jqGrid('editRow', rowid, false, initWordInlineFunc);
+            $("#" + rowid + "_kssj").css("text-align", "left");
+
+            //医嘱类别 长、临
+            if ($("#" + rowid + "_yzlb").val() == undefined || $("#" + rowid + "_yzlb").val() === "") {
+                var yzlb = $("#chkwordyz").is(":checked") ? "临" : "长";
+                $("#" + rowid + "_yzlb").val(yzlb);
+            }
+            $("#" + rowid + "_yzlb").attr('readonly', 'true');
+        });
+
+    }
+
+    //初始化 浮层
+    function initWordInlineFunc(rowid) {
+        //部分列只读
+        $("#" + rowid + "_pcmc").attr('readonly', 'true');
+        var currlineId = $("#gridword").getRowData(rowid).Id;
+        $("#" + rowid + "_xmmc").attr('autocomplete', 'off');
+        if (currlineId.indexOf("0.") == '-1') {//修改的数据，不允许修改收费项目
+           // $("#" + rowid + "_xmmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        }
+
+        //医嘱类别 浮动
+        $("#" + rowid + "_yzlb").yzlbFloatingSelector({
+            isinputchangetriggered: false,
+            showtext: 'Name',
+            attrcols: ['yzlb', "Name"],
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_yzlb").val($this.attr('data-yzlb'));
+                $("#" + rowid + "_yzlb").trigger("change");
+            }
+        });
+
+        $("#" + rowid + "_yzlb").change(function () {
+            if ($("#" + rowid + "_yzlb").val() === "临") {
+                $("#" + rowid + "_ts").css('background-color', '#f6f7fb').attr('readonly', 'true'); //临时医嘱 禁用天数
+            } else {
+                $("#" + rowid + "_ts").css('background-color', '#fff').removeAttr('readonly'); //长期医嘱 启用天数
+            }
+        });
+
+        //频次浮层
+        $("#" + rowid + "_pcmc").pcFloatingSelector({
+            showtext: 'yzpcmc',
+            attrcols: ['yzpcmc', 'yzpcCode', 'zxcs', 'zxzq', 'zxzqdw'],
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_pcmc").val($this.attr('data-yzpcmc'));
+                $("#" + rowid + "_pcCode").val($this.attr('data-yzpcCode'));
+                $("#" + rowid + "_zxcs").val($this.attr('data-zxcs'))
+                $("#" + rowid + "_zxzq").val($this.attr('data-zxzq'))
+                $("#" + rowid + "_zxzqdw").val($this.attr('data-zxzqdw'));
+                if($("#" + rowid + "_pcmc").val()=="ST")
+                {
+                    $("#" + rowid + "_yzlb").val("临");
+                }
+                var pcCode = $("#" + rowid + "_pcCode").val();
+                //临时医嘱天数禁用
+                if ('@ViewBag.pcStr' !== '' && pcCode !== '' && (!isNaN(pcCode)) &&
+                    (('@ViewBag.pcStr').indexOf(pcCode) > -1)) {
+                    $("#" + rowid + "_ts").css('background-color', '#f6f7fb').attr('readonly', 'true');
+                } else {
+                    $("#" + rowid + "_ts").css('background-color', 'white').removeAttr('readonly');
+                }
+            }
+        });
+
+        //嘱托浮层
+        $("#" + rowid + "_ztnr").ztFloatingSelector({
+            height: 100,
+            itemdbclickhandler: function ($this) {
+                $("#" + rowid + "_ztnr").val($this.attr('data-ztmc'));
+            }
+        });
+
+
+        //指示浮层
+        //$("#" + rowid + "_xmmc").zsFloatingSelector({
+        //    height: 300,
+        //    itemdbclickhandler: function ($this) {
+        //        $("#" + rowid + "_xmmc").val($this.attr('data-ssmc') + '   ' + $this.attr('data-sssj') + '   ' + $this.attr('data-Name'));
+        //    }
+        //});
+    }
+
+    //新医嘱 按钮
+    function newWordPresData() {
+        if (patobjValidate()) {
+            var dataRow = {
+                Id: Math.random().toString() + new Date().getMilliseconds(),
+                xmdm: "999999999999999999",
+                action: getWordActionStr(),
+                kssj: $.getTime(),
+                yzlx: @((int)EnumYzlx.Wz),//文字录入
+                yzzt: 0,//默认未审
+                zyh: currentobj.zyh,
+                yzlb: $("#chkwordyz").is(":checked") ? "临" : "长",
+                xmmc: $("#chkycy").is(":checked") ? "预出院" : ""
+                //ycy: $("#chkycy").is(":checked") ?"YCY":""
+            };
+            $("#gridword").jqGrid("addRowData", undefined, dataRow, "last");
+        }
+    }
+
+    //删除明细
+    function deleteIRowData(selRowId, recalc) {
+        if (!!selRowId) {
+           var Id= $("#gridword").jqGrid('getRowData', selRowId).Id;
+            $("#gridword").jqGrid("delRowData", selRowId);
+            if (Id.indexOf("0.")==='-1') {//记录下来，从数据库删除
+                deldata.push(Id);
+            }
+        }
+    }
+
+    function getWordActionStr() {
+        return "<i class='fa fa-plus-square-o' style='font-size: large; color: #09a3ea;' onclick='newWordPresData()'></i>&nbsp;&nbsp;&nbsp;<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;' onclick='deleteIRowData($(this).parent().parent().attr(\"id\"));return false;'></i>";
+    }
+
+    //保存按钮动作
+    function SaveWordMedicine(savetodb) {
+        patobjValidate();
+            //获取所有行Id，遍历使编辑框处于保存状态
+            var rowIds = $("#gridword").jqGrid('getDataIDs');
+            for (var i = 0; i < rowIds.length; i++) {
+                var saveResult = $("#gridword").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+                if (!saveResult) {
+                    EnableWordInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                    return;   //保存失败，则return
+                }
+            }
+        var gridwordData = $("#gridword").jqGrid('getRowData_AllLine', null, true);
+            if (gridwordData.length<1) {
+                $.modalAlert("当前没有保存的医嘱内容", 'warning');
+
+        }
+
+            var flag = false;
+            var gridSimpleData = [];
+            $.each(gridwordData, function () {    //去掉action
+                for (var i = 0; i < $(this).length; i++) {
+                    delete $(this)[i].action;
+                    $(this)[i].ysgh = '@ViewBag.ysgh';
+
+                    if (savetodb == '1') {
+                        if (this.xmmc == undefined || this.xmmc == "") {
+                            $.modalAlert("缺少项目", "warning");
+                            flag = true;
+                            return false;
+                        } else if (this.kssj == undefined || this.kssj == "") {
+                            $.modalAlert("缺少开始时间", "warning");
+                            flag = true;
+                            return false;
+                        } else if (this.kssj < window.currentobj.ryrq) {
+                            $.modalAlert("[" + this.xmmc + "]开始时间不能早于入院时间 入院日期：" + window.currentobj.ryrq, "warning");
+                            flag = true;
+                            return false;
+                        } else if (this.pcmc == undefined || this.pcmc == "") {
+                            $.modalAlert("缺少频次", "warning");
+                            flag = true;
+                            return false;
+                        }
+                    }
+                }
+        });
+
+        if (flag) {
+            EnableWordInlineEditBox();
+            return;
+        }
+
+        //保存数据
+        window.alldataArray.wzyz = $.jsonWhere(window.alldataArray.wzyz, function (iyzmx) {
+            if (!!!iyzmx.Id) {
+                return false;   //编辑列表里有
+            }
+            for (var iIndex = 0; iIndex < gridwordData.length; iIndex++) {
+                if (gridwordData[iIndex].Id === iyzmx.Id) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        $.each(gridwordData, function () {
+            this.yztag = $("#chkycy").is(":checked") ? "YCY" : "";//预出院赋值
+            window.alldataArray.wzyz.unshift(this);
+        });
+
+        wordlocaldata = new Array();
+
+        if (savetodb==='1') {
+            submitService(gridwordData);
+            window.alldataArray.wzyz = [];
+        }
+    }
+    //验证
+    function ValidateWord() {
+        patobjValidate();
+        //是否有数据
+        var data = $("#gridword").jqGrid('getRowData_AllLine', null, true);
+        if (data.length===0) {
+            $.modalAlert("缺少医嘱数据", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+    //修改操作时初始化
+    function EditWInit(zyh, yzId, yzlb) {
+        $.najax({
+            url: "/DoctorManage/Medicine/GetYZDetail",
+            dataType: "json",
+            data: { zyh: zyh, yzId: yzId, yzlx: yzlb },//yzlx:长临记号
+            type: "POST",
+            success: function (data) {
+                currentobj = data.patientInfo;
+                wordlocaldata = data.DoctorServiceUIRequestDto;
+                $.each(wordlocaldata, function () {
+                    this.action = getMActionStr();
+                });
+                $("#gridword").jqGrid('setGridParam', {
+                    datatype: 'local',
+                    data: wordlocaldata,
+                }).trigger("reloadGrid");
+
+            }
+        });
+    }
+
+     //另存为模板
+    function SaveWordTemplate() {
+        $.modalOpen({
+            id: "Form",
+            title: "套餐",
+            url: "/DoctorManage/DoctorsAdvice/Form",
+            width: "400px",
+            height: "300px",
+            callBack: function (iframeId) {
+                var obj = top.frames[iframeId].submitForm();
+                if (obj && obj.mbmc != "" && obj.mblx) {
+                    $.modalClose("Form");
+                } else {
+                    $.modalAlert("套餐名称和套餐范围必填", "warning");
+                    return;
+                }
+                var mbObj = {};
+                if (obj != typeof (undefined)) {
+                    mbObj.tcfw = obj.mblx;
+                    mbObj.tcmc = obj.mbmc;
+                    mbObj.tclx = @Html.Raw(((int)EnumYzlx.Wz).ToString());
+                    mbObj.ysgh = '@ViewBag.ysgh';
+                }
+
+                //获取所有行Id，遍历使编辑框处于保存状态
+                var rowIds = $("#gridword").jqGrid('getDataIDs');
+                for (var i = 0; i < rowIds.length; i++) {
+                    var saveResult = $("#gridword").saveRow(rowIds[i], null, null, null, function (callbackRowId) { }, null, null);
+
+                    if (!saveResult) {
+                        EnableWordInlineEditBox();    //重启启用编辑 否则下次Save时会返回false
+                        return;   //保存失败，则return
+                    }
+                }
+                var gridWordData = $("#gridword").jqGrid('getRowData_AllLine', null, true);
+                if (gridWordData.length < 1) {
+                    $.modalAlert("缺少医嘱数据", 'warning');
+                    return false;
+                }
+                $.each(gridWordData, function () {    //去掉action
+                    for (var i = 0; i < $(this).length; i++) {
+                        delete $(this)[i].action;
+                    }
+                });
+
+                $.najax({
+                    url: "@Url.Action("saveAsTemplate")",
+                    dataType: "json",
+                    data: { mbObj: mbObj, mxList: gridWordData },
+                    type: "POST",
+                    success: function (data) {
+                        $.modalMsg("保存成功", 'success');
+                        window.$('#current').trigger('click');
+                    }
+                });
+            }
+        });
+    }
+</script>

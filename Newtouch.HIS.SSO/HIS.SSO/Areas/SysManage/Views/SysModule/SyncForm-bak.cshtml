@@ -1,0 +1,399 @@
+﻿@{
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div class="widget-body">
+    <div id="wizard" class="wizard" data-target="#wizard-steps" style="border-left: none; border-top: none; border-right: none;">
+        <ul class="steps">
+            <li data-target="#step-1" class="active"><span class="step">1</span>选择菜单<span class="chevron"></span></li>
+            <li data-target="#step-2"><span class="step">2</span>菜单确认<span class="chevron"></span></li>
+        </ul>
+    </div>
+    <div class="step-content" id="wizard-steps" style="border-left: none; border-bottom: none; border-right: none;">
+        <div class="step-pane active" id="step-1" style="margin: 10px; margin-bottom: 0px;">
+            <div class="btn-toolbar">
+                <form class="form-inline" role="form">
+                    <div class="form-group">
+                        <i class="fa fa-filter"></i> 导入目标：
+                    </div>
+                    <div class="form-group">
+                        <div class="ckbox">
+                            <input type="checkbox" class="form-check" name="ck_showSync" id="ck_showSync">
+                            <label for="ck_showSync">
+                                显示已同步菜单
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <select id="sel_regapp" class="form-control" style="width:10%;">
+                            <option value="">------请选择业务系统-----</option>
+                        </select>
+                    </div>
+                    <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+
+                </form>
+            </div>
+            <table id="table"></table>
+        </div>
+        <div class="step-pane" id="step-2" style="margin: 10px; margin-bottom: 0px;">
+            <form class="form-inline" role="form">
+                <div class="form-group" style="width:40%;overflow-y:auto;" id="dv_treeParent">
+                    <div id="treeParent"></div>
+                </div>
+                <div class="form-group" style="width:58%;overflow-y:auto;" id="dv_selectmenu">
+                    <table id="table_selected"></table>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="form-button" id="wizard-actions">
+        <a id="btn_last" disabled class="btn btn-default btn-prev">上一步</a>
+        <a id="btn_next" class="btn btn-default btn-next" style="margin-right: 10px;">下一步</a>
+        <a id="btn_finish" class="btn btn-default" style="display: none;margin-right: 10px;" onclick="submitForm()">完成</a>
+    </div>
+</div>
+<script>
+    $(function () {
+        tableInit($('#table'));
+        selectedMenuTableInit($('#table_selected'), []);
+        wizardInit();
+        treeDataInit();
+        pageDataInit();
+    });
+
+    function pageDataInit() {
+        $("#btn_search").on('click', function () {
+            tableRefresh($('#table'));
+        });
+
+        $("#sel_regapp").bindSelect({
+            url: "/SysManage/Common/GetRegAppList",
+            id: "AppId",
+            text: "AppName",
+            param: { withSystemMenu: true }
+        });
+
+        $("#ParentId").bindSelect({
+            url: "/SysManage/SysModule/GetTreeSelectJson",
+        });
+
+        $("#dv_treeParent").height($(window).height() - 150);
+        $("#dv_selectmenu").height($(window).height() - 150);
+    }
+
+    function treeDataInit() {
+        $.najax({
+            url: "/SysManage/SysModule/GetBsTreeSelectJson",
+            data: { withSystemMenu: true },
+            dataType: "json",
+            success: function (data) {
+                $('#treeParent').treeview({
+                    color: "#428bca",
+                    expandIcon: 'fa fa-chevron-right',
+                    collapseIcon: 'fa fa-chevron-down',
+                    nodeIcon: 'fa fa-bookmark',
+                    data: data
+                });
+            }
+        });
+    }
+
+    function wizardInit() {
+        $('#wizard').wizard().on('change', function (e, data) {
+            var $finish = $("#btn_finish");
+            var $next = $("#btn_next");
+            if (data.direction == "next") {
+                switch (data.step) {
+                    case 1:
+                        var selrow = $(table).bootstrapTable("getSelections");
+                        if (!selrow || selrow.length == 0) {
+                            $.modalMsg("请选择菜单", "warning");
+                            return false;
+                        }
+                        selectedMenuTableInit($('#table_selected'), selrow);
+                        $finish.show();
+                        $next.hide();
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                $finish.hide();
+                $next.show();
+            }
+        });
+    }
+    //待选菜单表
+    function tableInit($table) {
+        $table.bootstrapTable({
+            url: "/SysManage/SysModule/GetAppMenuTreeGridJson", //服务器返回数据的网址
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+            height: $(window).height() - 150,
+            queryParams: queryParams,
+            classes: "table table-bordered table-striped table-hover",
+            theadClasses: "table-light",//设置表头样式
+            idField: 'Id',
+            showColumns: false,
+            columns: [
+                {
+                    field: 'ck',
+                    checkbox: true,
+                    formatter: function (cellvalue, row) {
+                        if (row.IsSync) {
+                            return { disabled: true };
+                        }
+                        return { disabled: false };
+                    }
+                },
+                {
+                    field: 'Id',
+                    visible: false
+                }, {
+                    field: 'Icon',
+                    title: '图标',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    formatter: function (value, row, index) {
+                        if (value) {
+                            return '<i class=\"' + value + '\"></i>';
+                        }
+                        else {
+                            return "";
+                        }
+                    }
+
+                }, {
+                    field: 'Name',
+                    title: '名称',
+                    halign: 'center',
+                    width: '30',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'zt',
+                    title: '状态',
+                    halign: 'center',
+                    //sortable: true,
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        return cellvalue == "1" ? "<i class=\"fa fa-toggle-on icon-theme-success\"></i>" : "<i class=\"fa fa-toggle-off icon-theme-default\"></i>";
+                    }
+                },
+                {
+                    field: 'UrlAddress',
+                    title: '路径',
+                    halign: 'center',
+                    width: '35',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'px',
+                    title: '排序',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    //sortable: true,
+                },
+                {
+                    field: 'Description',
+                    title: '说明',
+                    halign: 'center',
+                    width: '15',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'IsSync',
+                    visible: false
+                }, {
+                    field: 'SyncStu',
+                    title: '同步标志',
+                    halign: 'center',
+                    align: 'center',
+                    formatter: function (cellvalue, row) {
+                        if (row.IsSync) {
+                            return '<i class="fa fa-check  icon-theme-success" aria-hidden="true" title="已同步" /></i>';
+                        }
+                        return '';
+                    }
+                },
+                {
+                    field: 'ParentId',
+                    visible: false
+                },
+                {
+                    field: 'OrganizeId',
+                    visible: false
+                }
+            ],
+            treeShowField: 'Name',
+            parentIdField: 'ParentId',
+            uniqueId: 'Id',
+            search: true,                       //是否显示表格搜索
+
+            //******分页设置****
+            toolbar: '.btn-toolbar',            //工具按钮用哪个容器 #toolbar
+            toolbarAlign: 'left',
+            pagination: false,                   //是否显示分页（*）
+            sortable: true,                     //是否启用排序
+            sortOrder: "desc",                   //排序方式
+            //sidePagination: 'client',           //分页方式：client客户端分页，server服务端分页（*）
+            onLoadSuccess: function (data) {
+                $table.treegrid({
+                    initialState: "expanded",//展开
+                    treeColumn: 1,//指明第几列数据改为树形
+                    //expanderExpandedClass: "glyphicon glyphicon-triangle-bottom",
+                    //expanderCollapsedClass: "glyphicon glyphicon-triangle-right",
+                    onChange: function () {
+                        $table.bootstrapTable("resetView");
+                    }
+                });
+            },
+            onClickRow: function (row, $element, field) {
+                bstableMutiSelected($table, "Id", [row.Id], $element);
+            },
+            formatLoadingMessage: function () {
+                return "<span class='table-loading-text'>正在加载中，请稍候</span>";
+            },
+            formatNoMatches: function () {
+                return "暂无数据";
+            }
+
+        });
+        $table.bootstrapTable('hideLoading');
+
+    }
+    //已选菜单表
+    function selectedMenuTableInit($table, data) {
+        $table.bootstrapTable('destroy').bootstrapTable({
+            data: data,
+            height: $(window).height() - 250,
+            classes: "table table-bordered table-striped table-hover",
+            theadClasses: "table-light",//设置表头样式
+            idField: 'Id',
+            showColumns: false,
+            columns: [
+                {
+                    field: 'Id',
+                    visible: false
+                }, {
+                    field: 'Icon',
+                    title: '图标',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    formatter: function (value, row, index) {
+                        if (value) {
+                            return '<i class=\"' + value + '\"></i>';
+                        }
+                        else {
+                            return "";
+                        }
+                    }
+
+                }, {
+                    field: 'Name',
+                    title: '名称',
+                    halign: 'center',
+                    width: '30',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'zt',
+                    title: '状态',
+                    halign: 'center',
+                    //sortable: true,
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        return cellvalue == "1" ? "<i class=\"fa fa-toggle-on icon-theme-success\"></i>" : "<i class=\"fa fa-toggle-off icon-theme-default\"></i>";
+                    }
+                },
+                {
+                    field: 'UrlAddress',
+                    title: '路径',
+                    halign: 'center',
+                    width: '35',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'px',
+                    title: '排序',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    //sortable: true,
+                },
+                {
+                    field: 'Description',
+                    title: '说明',
+                    halign: 'center',
+                    width: '15',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'ParentId',
+                    visible: false
+                },
+                {
+                    field: 'OrganizeId',
+                    visible: false
+                }
+            ],
+            treeShowField: 'Name',
+            parentIdField: 'ParentId',
+            uniqueId: 'Id',
+            search: true,                       //是否显示表格搜索
+            //******分页设置****
+            pagination: false,                   //是否显示分页（*）
+            onLoadSuccess: function (data) {
+                $table.treegrid({
+                    initialState: "expanded",//展开
+                    treeColumn: 1,//指明第几列数据改为树形
+                    onChange: function () {
+                        $table.bootstrapTable("resetView");
+                    }
+                });
+            },
+            formatLoadingMessage: function () {
+                return "<span class='table-loading-text'>正在加载中，请稍候</span>";
+            },
+            formatNoMatches: function () {
+                return "暂无数据";
+            }
+
+        });
+        $table.bootstrapTable('hideLoading');
+    }
+
+    function tableRefresh($table) {
+        $table.bootstrapTable('refresh', { queryParams: queryParams });
+    }
+    //请求的参数
+    function queryParams(params) {
+        var data = {
+            //每页多少条数据
+            limit: params.limit,
+            //请求第几页
+            offset: params.offset,
+            order: params.order,
+            sort: params.sort,
+            search: params.search,
+            queryParams: {
+                MenuAppId: $("#sel_regapp option:selected").val(),
+                ShowSync: $("#ck_showSync").is(':checked')
+            }
+        };
+        return data;
+    }
+
+</script>

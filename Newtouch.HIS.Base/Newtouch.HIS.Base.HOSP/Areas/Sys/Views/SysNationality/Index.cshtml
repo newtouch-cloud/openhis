@@ -1,0 +1,111 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-add" authorize="yes" class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-edit" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="名称/编码/首拼" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    $(function () {
+        initControl();
+        gridList()
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val() },
+            url: "/Sys/SysNationality/GetGridJson",
+            height: $(window).height() - 128,
+            colModel: [
+                 { label: "主键", name: "gjId", hidden: true, key: true },
+                 { label: '名称', name: 'gjmc', width: 150, align: 'left' },
+                  { label: "编码", name: "gjCode", width: 100, align: 'left' },
+                  { label: "首拼", name: "py", width: 100, align: 'left' },
+                 { label: "有效", name: "zt", width: 80, align: "left", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                 { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                 { label: '创建时间', name: 'CreateTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                 { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                 { label: '最后修改时间', name: 'LastModifyTime', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                 { label: '排序', name: 'px', width: 100, align: 'left' }
+            ],
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val()},
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function initControl() {
+
+    }
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增国籍",
+            url: "/Sys/SysNationality/Form",
+            width: "550px",
+            height: "470px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var keyValue = $("#gridList").jqGridRowValue().gjId;
+        $.modalOpen({
+            id: "Form",
+            title: "修改国籍",
+            url: "/Sys/SysNationality/Form?keyValue=" + keyValue,
+            width: "550px",
+            height: "470px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+</script>
+

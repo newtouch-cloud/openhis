@@ -1,0 +1,119 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "处方出库单品种科室分布";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #btn_print {
+        background-color: #fff;
+        color: #00a9ea;
+        font-weight: bolder;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">搜索</div>
+        <div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">药品：</th>
+                    <td class="formValue">
+                        <input id="keyword" type="text" class="form-control" />
+                    </td>
+                    <td class="formTitle">
+                        <input type="button" id="btn_search" class="btn btn-primary" value="查询" style="margin-left:10px;" />
+                    </td>
+                    <th class="formTitle ">统计日期:</th>
+                    <td class="formValue">
+                        <input id="startTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd 00:00:00")" on onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <th class="formTitle">到：</th>
+                    <td class="formValue">
+                        <input id="endTime" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-dd HH:mm:ss")" on onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" />
+                    </td>
+                    <td class="formValue" style="width:15%;margin-left:10px">
+                        <div id="rangeRadio" style="margin-left:30px">
+                            <label><input type="radio" id="qbradio" name="optionsRadios" class="optionsRadios formClearIgnore" checked value="0" />全部</label>
+                            <label><input type="radio" id="mzradio" name="optionsRadios" class="optionsRadios formClearIgnore" value="1" />门诊</label>
+                            <label><input type="radio" id="zyradio" name="optionsRadios" class="optionsRadios formClearIgnore" value="2" />住院</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="ui-layout" id="dv_layout" style="width: 100%; height: 100%;">
+        <iframe class="ui-layout-center" style="width:100%; height: 100%;" id="if_data" name="if_data" scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+    </div>
+</form>
+<script>
+    //初始化输入码
+    function InitSrm() {
+        $("#keyword").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 350,
+            width: 1080,
+            url: "/StorageManage/DrugStockSearch/DrugAndStockSearch",
+            ajaxmethod: 'Get',
+            inputtextcheck: function () {
+                return true;
+            },
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#keyword").val());
+                return reqData;
+            },
+            colModel: [
+                { label: '类别', name: 'dlmc', width: 60 },
+                { label: '代码', name: 'ypdm', width: 100 },
+                { label: '名称', name: 'ypmc', width: 200, align: 'left' },
+                { label: '规格', name: 'gg', width: 110, align: 'left' },
+                { label: '库存', name: 'slStr', width: 90, align: 'center' },
+                { label: '零售单价', name: 'lsjdjdw', width: 120, align: 'center' },//部门单位零售价
+                { label: '批准文号', name: 'pzwh', width: 150, align: 'center' },
+                { label: '厂家', name: 'sccj', width: 200, align: 'left' },
+                { label: 'pfj', name: 'pfj', hidden: true },//部门单位批发价
+                { label: 'lsj', name: 'lsj', hidden: true },//部门单位零售价
+                { label: 'ykpfj', name: 'ykpfj', hidden: true },
+                { label: 'yklsj', name: 'yklsj', hidden: true },
+                { label: 'bzs', name: 'bzs', hidden: true },
+                { label: 'bzdw', name: 'bzdw', hidden: true },
+                { label: 'dw', name: 'dw', hidden: true },//部门单位
+                { label: 'zhyz', name: 'zhyz', hidden: true },
+                { label: 'zxdw', name: 'zxdw', hidden: true },
+                { label: 'zxdwlsj', name: 'zxdwlsj', hidden: true }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#keyword").val($thistr.attr('data-ypmc'));
+            }
+        });
+    }
+    
+    $(function () {
+        InitSrm();
+        $('#if_data').css('height', $(window).height() - 85);
+        //查询
+        $("#btn_search").click(function () {
+
+            if ($("#keyword").val() == "" || $("#keyword").val() == null) {
+                $.modalAlert("请先填写药品，然后搜索！", 'error');
+                return false;
+            }
+
+            var range = $('input[name="optionsRadios"]:checked').val();
+
+            var url =
+                "../../Report/PrintReport?type=CktjksfbReport&param=orgId=@ViewBag.OrganizeId|yfbmCode=@Constants.CurrentYfbm.yfbmCode" +
+                    "|kssj=" +
+                    $('#startTime').val() +
+                    "|jssj=" +
+                    $('#endTime').val() +
+                    "|searchrange=" +
+                    range +
+                    "|searchCondition=" +
+                    $("#keyword").val();
+            $("#if_data").attr('src', url);
+        });
+    });
+
+</script>

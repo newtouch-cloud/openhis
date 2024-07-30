@@ -1,0 +1,419 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<style>
+    .ul-zbq {
+        width: 100%;
+        height: 95%;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+        .ul-zbq li {
+            margin: 25px;
+            display: inline;
+            float: left;
+            height: 100px;
+            width: 170px;
+            border: 1px solid #ccc;
+            border-radius: 5px 5px 0 0;
+            -webkit-box-shadow: #666 3px 4px 8px;
+            -moz-box-shadow: #666 3px 4px 8px;
+            box-shadow: #666 3px 4px 8px;
+        }
+
+    .dv-cwmc {
+        background-color: #AFEEEE;
+        line-height: 25px;
+        text-align: center;
+        color: black;
+        /*color: white;*/
+        padding-left: 10px;
+    }
+
+        .dv-cwmc i {
+            line-height: 25px;
+            float: left;
+        }
+
+    .bedmouseover {
+        background-color: #00a0e9 !important
+    }
+
+    .bedbordermouseover {
+        border-color: #00a0e9 !important
+    }
+
+    .bedchoose {
+        background-color: #dd4b39 !important
+    }
+
+    .bedborderchoose {
+        border-color: #dd4b39 !important
+    }
+
+    .sp-leave {
+        width: 20px;
+        height: 20px;
+        float: right;
+        margin-right: 20px;
+    }
+
+    .sp-leave-1 {
+        background-color: pink;
+    }
+
+    .sp-leave-2 {
+        background-color: blue;
+    }
+
+    .sp-leave-3 {
+        background-color: green;
+    }
+
+    .dv-patxm {
+        line-height: 25px;
+        padding-left: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+        .dv-patxm i {
+            line-height: 20px;
+            width: 20px;
+            color: #ffffff;
+            text-align: center;
+            margin-right: 10px;
+        }
+
+    .dv-doctorxm {
+        line-height: 25px;
+        padding-left: 10px;
+    }
+
+        .dv-doctorxm i {
+            line-height: 20px;
+            width: 20px;
+            text-align: center;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+        }
+
+    .dv-patType {
+        line-height: 25px;
+        padding-left: 10px;
+    }
+
+    .footerright {
+        width: 20px;
+        float: left
+    }
+
+    .ui-pg-input {
+        display: inline-block;
+        height: auto;
+        width: auto;
+        font-size: .9em;
+        margin: 0;
+        line-height: inherit;
+        padding: 0px 0px;
+        height: 20px;
+        text-align: center;
+        box-shadow: none;
+        -webkit-box-shadow: none;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+</style>
+<div id="dv_zbqleft" style=" float: left;height:95%;">
+    <ul class="ul-zbq"></ul>
+    <table id="div_zbqList"></table>
+</div>
+
+<div style="height: 22px;" class="footer">
+    <div class="left" style="float: left; width: 230px"> 检索到 <span class="records"></span> 条记录</div>
+    <div class="right" style="width: 292px; height: 22px; float: right">
+        <div class="footerright">
+            <span class="glyphicon glyphicon-step-backward"></span>
+        </div>
+        <div class="footerright">
+            <span class="glyphicon glyphicon-backward"></span>
+        </div>
+        <div class="footerright">
+            <span class="ui-separator"></span>
+        </div>
+        <div style="float: left; margin: auto 10px">
+            <input class="ui-pg-input" type="text" size="2" maxlength="7" value="1" role="textbox">
+            共<span id="sp_1_gridPager"></span>页
+        </div>
+        <div class="footerright">
+            <span class="ui-separator"></span>
+        </div>
+        <div class="footerright">
+            <span class="glyphicon glyphicon-forward"></span>
+        </div>
+        <div class="footerright">
+            <span class="glyphicon glyphicon-step-forward"></span>
+        </div>
+        <div class="footerright">
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var currentpage;//当前页
+    var totalpage;//共..页
+    var row = 15;//每页显示床位卡片数
+
+    var currentobj = [];
+    //当前选中病人对象
+    var currentPatient = {};
+    var zbqPatientList;
+
+    $(function () {
+        initzbq();
+
+        $('.ul-zbq').on("mouseover", "li", function () {
+            if (!$(this).find(".dv-cwmc").hasClass("bedchoose")) {
+                $(this).find(".dv-cwmc").css("background-color", "#00a0e9");
+                $(this).css("border-color", "#00a0e9");
+                $(this).find(".dv-cwmc").css("color", "white");
+            }
+        });
+
+        $('.ul-zbq').on("mouseout", "li", function () {
+            if (!$(this).find(".dv-cwmc").hasClass("bedchoose")) {
+                $(this).find(".dv-cwmc").css("background-color", "#B0E2FF");//#AFEEEE
+                $(this).css("border-color", "#B0E2FF");//#AFEEEE
+                $(this).find(".dv-cwmc").css("color", "black");
+            }
+        });
+        var timer = null;
+        $('.ul-zbq').on("click", "li", function () {
+            $(".ul-zbq li").each(function () {
+                if ($(this).find(".dv-cwmc").hasClass("bedchoose")) {
+                    $(this).find(".dv-cwmc").removeClass("bedchoose");
+                    $(this).trigger("mouseout");
+                }
+                if ($(this).hasClass("bedborderchoose")) {
+                    $(this).removeClass("bedborderchoose");
+                }
+            });
+            $(this).find(".dv-cwmc").addClass("bedchoose");
+            $(this).addClass("bedborderchoose");
+            currentobj = { "blh": $(this).find(".dv-patxm").attr('data-blh'),"zyh": $(this).find(".dv-patxm").attr('data-zyh'), "xm": $(this).find(".dv-patxm").attr('data-xm'), "sex": $(this).find(".dv-patxm").attr('data-sex'), "age": $(this).find(".dv-patxm").attr('data-age'), "brxzmc": $(this).find(".dv-patxm").attr('data-brxzmc'), "brxzdm": $(this).find(".dv-patxm").attr('data-brxzdm'), "ryrq": $(this).find(".dv-patxm").attr('data-ryrq') };
+            onSelectpatient(currentobj);
+            clearTimeout(timer);
+            timer = setTimeout(function () { initInpatStu(currentobj) }, 200);
+        });
+        $('.ul-zbq').on("dblclick", "li", function () {
+            clearTimeout(timer);
+            sessionStorage.setItem('currentobj', JSON.stringify(currentobj));
+            top.top.$.Newtouchtab.tryCloseTab({ name: "医嘱管理", url: "/DoctorManage/DoctorsAdvice/Index" });
+            top.top.$.Newtouchtab.addTabWithOutMenu({ name: "医嘱管理", enName: "", url: "/DoctorManage/DoctorsAdvice/Index" });
+        });
+    });
+
+
+    function initzbq() {
+        $(".ul-zbq").children("li").remove();
+        //初始化jqgrid
+        div_zbqList();
+        $('#gbox_div_zbqList').hide();//默认隐藏jqgrid
+        //请求在病区病人信息
+        //ajaxrequestzbq();
+    }
+    //请求在病区病人信息
+    function ajaxrequestzbq() {
+        if (window.validateSearch()) {
+            $.najax({
+                url: "/PatientList/GetzbqPatientList",
+                dataType: "json",
+                data: { rows: rows, page: $('.ui-pg-input').val(), bqCode: $('#sel_inpatientArea').val(), ys: $('#sel_inpatienttype').val(), bedCode: $('#txt_cwmc').val() },
+                type: "POST",
+                success: function (respdata) {
+                    currentpage = respdata.page;//当前页
+                    totalpage = respdata.total;//共..页
+                    $('.ui-pg-input').val(respdata.page);
+                    $('#sp_1_gridPager').text(respdata.total);
+                    $('.records').text(respdata.records);
+                    $(".ul-zbq").children("li").remove();
+                    zbqPatientList = respdata.rows;//创建病人li
+                    $('#div_zbqList').jqGrid("clearGridData");
+                    $('#div_zbqList').newtouchLocalDataGrid(null, zbqPatientList);
+                    createli(respdata.rows);
+                }
+            });
+        }
+    }
+    //<i class="fa fa-' + ($.getGender(v.sex) == '男' ? " mars" : "venus") + '" style = "background-color:' + ($.getGender(v.sex) == '男' ? " #00a0e9" : "pink") + '; border: 1px solid ' + ($.getGender(v.sex) == '男' ? " #00a0e9" : "pink") +';" aria - hidden="true" ></i >
+    //创建病人li
+    function createli(respdata) {
+        $.jsonWhere(respdata, function (v) {
+            var li = '  <li>'
+                + ' <div class="dv-cwmc" title="住院号:' + v.zyh + '">'
+                //+ ' <i class="glyphicon glyphicon-chevron-up" aria-hidden="true" title="预出院时间:"></i>'
+                //+ ' <i class="glyphicon glyphicon-chevron-up" aria-hidden="true" style="display:' + v.display + '" title="预出院时间:' + $.getTime({ date: v.kssj }) + ' &#10医嘱内容:' + v.ztnr + '"></i>'
+                + ' <i class="fa fa-bed" aria-hidden="true"></i><span style="user-select:none;">' + v.cwmc + '&nbsp;&nbsp;' + v.nlshow + '&nbsp;&nbsp;' + $.getGender(v.sex) + '</span>' /*+ $.getGender(v.sex) +*/
+                + '<span title="住院天数">&nbsp;' + v.zyts + '天</span>'
+                + '<span  style="width:9px;height:9px;background-color:yellow;float:right;border-top-right-radius:3px;margin-top:-1px;margin-right:-1px;display:' + v.display + '" title="预出院时间:' + $.getTime({ date: v.kssj }) + ' &#10医嘱内容:' + v.ztnr + '"> </span>'
+                + ' </div >'
+                + ' <div class="dv-patxm" data-blh=' + v.blh + ' data-zyh=' + v.zyh + ' data-age=' + v.nlshow + ' data-xm=' + v.xm + ' data-sex=' + v.sex + ' data-brxzdm=' + v.brxzdm + ' data-brxzmc=' + v.brxzmc + ' data-ryrq=' + v.ryrq.substring(0, 10) + '>'
+                + ' <img src="../../../../Content/img/' + ($.getGender(v.sex) == '男' ? "male.gif" : "female.png") + '" title="住院号:' + v.zyh + '" style="padding-right: 10px;"/><span title="病人姓名">' + v.xm + '</span>'
+                + '<span title="入院诊断：' + v.zdmc + '" style="color: #00868B">&nbsp;&nbsp;&nbsp;' + v.zdmc + '</span>'
+                + ' </div>'
+                + ' <div class="dv-doctorxm" title="医生名称">'
+                + ' <i class="fa fa-user-md"></i><span>' + v.ysmc + '</span>'
+                + ' <label class="sp-leave sp-leave-' + v.hljb + '" data-hllb=' + v.hljb + ' title="护理级别:' + $.enum.getDescByValue("EnumHljb", v.hljb) + '"><span>' + $.enum.getDescByValue("EnumHljb", v.hljb) + '</span></label>'
+                + ' </div>'
+                + ' <div class="dv-patType">'
+                + ' <span title="病人性质">' + v.brxzmc + '</span>'
+                + ' <span title="危重级别" style="float: right;padding-right:10px;">' + $.enum.getDescByValue("EnumWzjb", v.wzjb) + '</span>'
+                + ' <span title="护理级别" style="float: right;padding-right:10px;">' + $.enum.getDescByValue("EnumHljb", v.hljb) + '</span>'
+                + ' <span title="皮试信息" style="float: right;padding-right:10px;" onclick=querySkinTest("' + v.zyh + '","' + v.ps + '")>' + $.enum.getDescByValue("EnumPs", v.ps) + '</span>'
+                + ' <span title="新医嘱待审" style="color:red;float: right;padding-right:10px;">' + v.cnt + '条' + '</span>'
+                //+ ' <label class="sp-leave sp-leave-' + v.hljb + '" data-hllb=' + v.hljb + ' title="护理级别:' + $.enum.getDescByValue("EnumHljb", v.hljb) + '"></label>'
+                + ' <span>' + v.brzt + '</span>'
+                + ' </div>'
+                + ' </li >';
+            $('.ul-zbq').append(li);
+        });
+    }
+
+
+
+    function div_zbqList() {
+        var timerlist = null;
+        $('#div_zbqList').newtouchLocalDataGrid({
+            height: $(window).height() - 120,
+            unwritten: false,
+            rownumbers: true,
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '床号', name: 'cwmc', align: 'center', width: 100 },
+                { label: '姓名', name: 'xm', align: 'center', width: 120 },
+                {
+                    label: '性别', name: 'sex', align: 'center', width: 50, formatter: function (val) {
+                        return $.getGender(val);
+                    }
+                },
+                { label: '年龄', name: 'age', align: 'center', width: 50 },
+                { label: '住院号', name: 'zyh', align: 'center', width: 50 },
+                { label: '入院日期', name: 'ryrq', align: 'center', width: 100, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d' } },
+                {
+                    label: '护理级别', name: 'hljb', align: 'center', width: 80, formatter: function (val) {
+                        return $.enum.getDescByValue("EnumHljb", val);
+                    }
+                },
+                { label: '入院诊断', name: 'zdmc', width: 140, align: 'left' },
+                { label: '病人性质', name: 'brxzmc', align: 'center', width: 50 },
+                { label: '病人代码', name: 'brxzdm', align: 'center', width: 50, hidden: true }
+            ],
+            onSelectRow: function (rowid) {
+                var obj = $("#div_zbqList").jqGrid('getRowData', rowid);
+                onSelectpatient(obj);
+
+                clearTimeout(timerlist);
+                timerlist = setTimeout(function () { initInpatStu(obj); }, 200);
+
+            }, ondblClickRow: function (rowid) {
+                clearTimeout(timerlist);
+                var obj = $("#div_zbqList").jqGrid('getRowData', rowid);
+                onSelectpatient(obj);
+                sessionStorage.setItem('currentobj', JSON.stringify(currentPatient));
+                top.top.$.Newtouchtab.tryCloseTab({ name: "医嘱管理", url: "/DoctorManage/DoctorsAdvice/Index" });
+                top.top.$.Newtouchtab.addTabWithOutMenu({ name: "医嘱管理", enName: "", url: "/DoctorManage/DoctorsAdvice/Index" });
+            }
+        });
+    }
+
+    function zbqdblClickRow(rowid) {
+
+    }
+    $('.fa-id-card-o,.fa-list').click(function () {
+        clearSelectpatient();
+        //点击列表模式
+        if ($(this).attr("Class") == "fa fa-list") {
+            $('.ul-zbq,.fa-list').hide();
+            $('#gbox_div_zbqList,.fa-id-card-o').show();
+            $('#div_zbqList').jqGrid("clearGridData");
+            $('#div_zbqList').newtouchLocalDataGrid(null, zbqPatientList);
+        } else if ($(this).attr("Class") == "fa fa-id-card-o") {//点击card模式
+            $('.ul-zbq,.fa-list').show();
+            $('#gbox_div_zbqList,.fa-id-card-o').hide();
+        }
+    });
+
+    $('.footerright').click(function () {
+        var icon = $(this).find('span').attr('class');
+        currentpage = parseInt(currentpage);
+        totalpage = parseInt(totalpage);
+        switch (icon) {
+            case "glyphicon glyphicon-step-backward"://第一页
+                if (currentpage > 1) {
+                    currentpage = 1;
+                }
+                break;
+            case "glyphicon glyphicon-backward"://上一页
+                if (currentpage > 1) {
+                    currentpage = currentpage - 1;
+                }
+                break;
+            case "glyphicon glyphicon-forward"://下一页
+                if (currentpage < totalpage) {
+                    currentpage = currentpage + 1;
+                }
+                break;
+            case "glyphicon glyphicon-step-forward"://最后一页
+                if (currentpage < totalpage) {
+                    currentpage = totalpage;
+                }
+                break;
+        }
+        $('.ui-pg-input').val(currentpage)
+        ajaxrequestzbq();
+    });
+
+    //清除选中病人
+    function clearSelectpatient() {
+        currentPatient = {};
+        //$('#currentxm').html("");
+        //$('#currentsex').html("");
+        //$('#currentage').html("");
+        //$('#currentbrxzmc').html("");
+    }
+    //选中当前病人
+    function onSelectpatient(obj) {
+        currentPatient.blh = obj.blh;//病人姓名
+        currentPatient.xm = obj.xm;//病人姓名
+        currentPatient.sex = obj.sex;//性别
+        currentPatient.age = obj.nlShow == null ? obj.age : obj.nlshow; //年龄
+        currentPatient.zyh = obj.zyh;//住院号
+        currentPatient.brxzmc = obj.brxzmc;//病人性质
+        currentPatient.brxzdm = obj.brxzdm;//病人性质代码
+        currentPatient.ryrq = obj.ryrq;//病人入院日期
+    }
+
+    //查询阳性皮试记录
+    function querySkinTest(zyh, ps) {
+        if (ps != 1) {//阴
+            return;
+        }
+        else {
+            $.modalOpen({
+                id: "InpatientVitalSignsForm",
+                title: "皮试信息",
+                url: "/NurseManage/OrderAudit/SkinTestInfo?zyh=" + zyh,
+                width: "480px",
+                height: "360px",
+                leftlalbelchecked: true,
+                leftlalbelcheckedasClose: false,
+                callBack: function (iframeId) {
+                }
+            });
+        }
+    }
+</script>

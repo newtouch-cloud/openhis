@@ -1,0 +1,198 @@
+﻿
+@{
+    ViewBag.Title = "手术申请";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    body {
+        background: white;
+        /*background-image: linear-gradient( 135deg, #d5b1f8 10%, #a49cf2 50%);*/
+        background-attachment: fixed;
+        background-size: cover;
+        /*color:#3dd73c*/
+    }
+</style>
+<div class="panel">
+    <div id="dv_left" class="panel panel-default" style="width:40%;float:left;padding-right:5px;">
+        <div class="panel-heading">
+            <span style="font-weight:bold;width:50px;">住院患者</span>
+        </div>
+        <div class="topPanel">
+            <div class="search">
+                <table class="form">
+                    <tr>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="bqlist" name="bqlist" class="form-control " style="width:95%;float:left;">
+                                <option value="">   选择病区   </option>
+                            </select>
+                        </td>
+                        <td rowspan="2">
+                            <div class="input-group">
+                                <input id="txt_keyword" type="text" class="form-control" placeholder="患者姓名/住院号" style="width: 150px;">
+                                <span class="input-group-btn" style="width:200px;">
+                                    <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div>
+            <table id="gridList"></table>
+            <div id="gridPager"></div>
+        </div>
+    </div>
+    <div id="dv_right" class="panel panel-default" style="width:58%;float:right; padding-right: 10px; bottom: 10px;background-color:white;">
+        <ul class="nav nav-tabs navb-bg" id="myTab" style="position:fixed; top: 0;z-index:100009;">
+            <li role="presentation"><a href="#linkpat" role="tab" data-toggle="tab">患者信息</a></li>
+            <li role="presentation"><a href="#linkop" role="tab" data-toggle="tab">手术申请</a></li>
+        </ul>
+        <div class="tab-content" >
+            <div id="dv-pat" style="display: none; padding: 50px 10px 10px 10px;" >
+                @Html.Partial("ApplyCard")
+            </div>
+            <div id="dv-op" style="display: none; padding: 50px 10px 10px 10px;">
+                @Html.Partial("ApplyOPDetail")
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var patinfo = null;
+    $(function () {
+        GridInit();
+        tabInit();
+        $("#bqlist").bindSelect({
+            url: "/Operation/Common/Getbqlist",
+            id: "bqcode",
+            text: "bqmc"
+        });
+    });
+
+    function GridInit() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            /*postData: { bdate: $("#datepicker1").val(), edate: $("#datepicker2").val() },*/
+            url: "/Operation/OpApply/GetPatGridList",
+            autowidth: true,
+            height: $(window).height() - 170,
+            colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "姓名", name: "xm", width: 60, align: 'left' },
+                { label: "住院号", name: "zyh", width: 60, align: 'left'  },
+                { label: "入院诊断", name: "zdmc", width: 130, align: 'left' },
+                { label: "入院日期", name: "ryrq", width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: "nl", name: "nl", hidden: true },
+                { label: "WardName", name: "WardName", hidden: true },
+                { label: "BedCode", name: "BedCode", hidden: true },
+                {
+                    label: "sex", name: "sex", hidden: true, formatter: function (val) {
+                        if (val == "1") {
+                            return "男";
+                        }
+                        else if (val == 2) {
+                            return "女";
+                        }
+                        else {
+                            return "未知"
+                        }
+                    }
+                },
+            ],
+            onSelectRow: function (rowid, status) {
+                //debugger
+                if (status == true) {
+                    var rowData = $("#gridList").jqGrid('getRowData', rowid);
+                    $("#xm").html(rowData.xm);
+                    $("#zyh").html(rowData.zyh);
+                    $("#nl").html(rowData.nl);
+                    $("#xb").html(rowData.sex);
+                    $("#ryzdmc").html(rowData.zdmc);
+                    $("#bqmc").html(rowData.WardName);
+                    $("#bedcode").html(rowData.BedCode);
+                    $("#sq_xm").html(rowData.xm);
+                    $("#sp_sq_zyh").html(rowData.zyh);
+                    $("#sq_zyh").val(rowData.zyh);
+                    $("#sq_basic").html(rowData.sex + "," + rowData.nl);
+                    $("#sq_ryzdmc").html(rowData.zdmc);
+                    $("#sq_bqmc").html(rowData.WardName);
+                    $("#sq_bedcode").html(rowData.BedCode);
+                    //加载申请手术列表
+                    $("#gridListOP").resetSelection();
+                    $("#gridListOP").jqGrid('setGridParam', {
+                        postData: { 'zyh': rowData.zyh }, //发送数据
+                        page: 1
+                    }).trigger("reloadGrid"); //重新载入
+                }
+            },
+            loadComplete: function () {
+                //$("#gridList").jqGrid('setCell', 1, 0, '', { background: '#4bde77' });
+                //$("#gridList").jqGrid('setCell', 2, 0, '', { background: '#4bde77' });
+                //$("#gridList").jqGrid('setCell', 3, 0, '', { background: '#4bde77' });
+                //var gfxScore = $('#gridList').jqGrid('getRowData', 1).AvgScore;
+                //$("#gfxScore").text(gfxScore);
+            },
+
+
+            sortname:"ID desc",
+            rowNum: 10,
+            pager: "#gridPager",
+            viewrecords: false
+        });
+
+        //for ( var i = 0; i <= data.length; i++){
+        //    jQuery("#gridList").jqGrid('addRowData', i + 1, data[i]);
+        //}
+
+        $('#btn_search').click(function () {
+            var bq = $("#bqlist option:selected").val();
+            var keyword = $("#txt_keyword").val();
+            //var queryJson = {
+            //    zyh: zyh,
+            //    sqlx: sq,
+            //}
+            // var timeType = $("#time_horizon a.active").attr('data-value');
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: keyword, bq: bq },
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+
+    function tabInit() {
+        $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+            switch ($(this).attr('href')) {
+                case "#linkpat":
+                    $("#dv-pat").show();
+                    $("#dv-op").hide();
+                    break;
+                case "#linkop":
+                    $("#dv-pat").hide();
+                    $("#dv-op").show();
+
+                    break;
+            }
+
+        });
+
+        $('#myTab a:first').trigger('click'); 
+    }
+
+    //申请手术按钮
+    function showOpApply() {
+        //debugger
+        $.ajax({
+            url: "/Operation/OpApply/GetFormJson",
+            data: { keyValue: "" },
+            dataType: "json",
+            success: function (data) {
+                $("#formapply").formSerialize(data);
+                $("#dv_apply_btn").show();
+                $("#dv_cancel_btn").hide();
+            }
+        });
+        $('#myTab [href="#linkop"').trigger('click');
+    }
+    
+</script>

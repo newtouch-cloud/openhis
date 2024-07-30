@@ -1,0 +1,580 @@
+﻿@using Newtouch.OR.ManageSystem.Infrastructure
+@{
+    ViewBag.Title = "手术申请New";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<style>
+    .heightfull {
+        height: 100%;
+    }
+
+    .heighthalf {
+        height: 50%;
+    }
+
+    .container {
+        background-color: #ffffff !important;
+        height: 100vh; /*元素的高度与 window 的高度相同*/
+    }
+
+    .form-control {
+        height: 99% !important;
+        padding: 6.5px 5px !important;
+    }
+
+    .colorgreen {
+        color: #689f38;
+    }
+
+    .card {
+        width: 95%;
+        margin: 0px 10px;
+        position: relative;
+        border: 1px solid #ddd;
+        background-color: #fff;
+        padding: 10px;
+        box-shadow: 10px 10px 0px #ddd; /*水平和垂直阴影*/
+    }
+
+    .patcard {
+        background-color: #f3ebfb;
+        padding-bottom: 10px;
+        width:100%;
+    }
+    .title {
+        font-weight: bold;
+        font-size: 20px;
+        color: #00a0ea;
+        padding: 15px 25px 5px 25px;
+        width: 100%;
+        text-align: center;
+    }
+
+
+
+    .tableth {
+        background-color: #e2eef1;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+    }
+    /*.table {
+        margin: 30px auto 0px auto;
+        background-color: #ededfc;
+        border-bottom-right-radius: 5px;
+        border-bottom-left-radius: 5px;
+    }
+
+    .fixed-table-header {
+        border-right: solid 1px #ddd;
+        border-top: solid 1px #ddd;
+        border-top-right-radius: 5px;
+        border-top-left-radius: 5px;
+    }
+
+        .fixed-table-header table {
+            border-top: solid 0px #ddd !important;
+            margin-top: -1px;
+
+        }*/
+    .btnopr {
+        margin: 2px 3px;
+    }
+</style>
+<div class="container">
+    <div class="row heightfull">
+        <div class="col-xs-6 col-sm-4 heightfull">
+            <div class="row toolbar" id="toolbar" style="height:5%;">
+                <div class="col-sm-5">
+                    <select id="bqlist" name="bqlist" class="form-control ">
+                        <option value="">   全部病区   </option>
+                    </select>
+                </div>
+                <div class="col-sm-6">
+                    <div class="row">
+                        <div class="col-sm-11">
+                            <div class="input-group">
+                                <input id="txt_keyword" type="text" class="form-control" placeholder="患者姓名/住院号">
+                                <span id="btn-search" class="input-group-addon btn-success"><i class="fa fa-search"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="height:94%;">
+                <table class="table" id="table"></table>
+            </div>
+            
+        </div>
+
+        <div class="col-xs-6 col-sm-8 heightfull" style="overflow-y:auto;">
+             
+                @Html.Partial("_PatientCard")
+            <div class="row" style="padding-top: 10px; padding-left: 10px; height: 70%; width: 99%;">
+                <ul class="nav nav-tabs navb-bg" id="myTab">
+                    <li role="presentation"><a href="#linkpat" role="tab" data-toggle="tab">手术列表</a></li>
+                    <li role="presentation"><a href="#linkop" role="tab" data-toggle="tab">手术申请</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div id="dv-pat" style="display: none; width:95%;">
+                        <div class="row" style="padding:10px 10px;">
+                            <div id="time_horizon" class="btn-group col-sm-11">
+                                <a class="btn btn-default active" data-value="">全部</a>
+                                <a class="btn btn-default" data-value="@((int)EnumSqzt.dsh)">已申请</a>
+                                <a class="btn btn-default" data-value="@((int)EnumSqzt.ypb)">已审核</a>
+                                <a class="btn btn-default" data-value="@((int)EnumSqzt.yqx)">已取消</a>
+                            </div>
+                        </div>
+                        <div class="col-sm-12">
+                            <table class="table" id="tabel_patop"></table>
+                        </div>
+                    </div>
+                    <div id="dv-op" style="display: none; width: 95%;height:90%;">
+                        @Html.Partial("OpApplyCard")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+    $(function () {
+        $("#bqlist").bindSelect({
+            url: "/Operation/Common/Getbqlist",
+            id: "bqcode",
+            text: "bqmc"
+        });
+        tabInit();
+        PatListTableLoad();
+        PatOpTableLoad();
+        $(".fa-refresh").on('click', function () {
+            tableRefresh();
+        });
+
+
+        $("#btn-search").on('click', function () {
+            tableRefresh();
+        });
+        $("#time_horizon a.btn-default").click(function () {
+            $("#time_horizon a.btn-default").removeClass("active");
+            $(this).addClass("active");
+            patOpTableRefresh();
+        });
+
+       /* console.log($("#sel_ssmc").select2("data"));*/
+    });
+
+    function tabInit() {
+        $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+            switch ($(this).attr('href')) {
+                case "#linkpat":
+                    $("#dv-pat").show();
+                    $("#dv-op").hide();
+                    patOpTableRefresh();
+                    break;
+                case "#linkop":
+                    var zyh = $("#zyh").val();
+                    if (!zyh) {
+                        $.modalAlert("患者信息不可为空", 'warning');
+                        return;
+                    }
+                    $("#dv-pat").hide();
+                    $("#dv-op").show();
+                    $("#dv_opdetailpat").hide();
+                    break;
+            }
+
+        });
+
+        $('#myTab a:first').trigger('click');
+    }
+    function tableRefresh() {
+        $('#table').bootstrapTable('refresh', { queryParams: queryParams });
+    }
+    function patOpTableRefresh() {
+        $('#tabel_patop').bootstrapTable('refresh', { queryParams: queryParams });
+    }
+    //请求的参数
+    function queryParams(params) {
+        var data = {
+            //每页多少条数据
+            limit: params.limit,
+            //请求第几页
+            offset: params.offset,
+            order: params.order,
+            sort: params.sort,
+            search: params.search,
+            queryParams: {
+                bq: $("#bqlist option:selected").val(),
+                keyword: $("#txt_keyword").val(),
+                zyh: $("#zyh").val(),
+                sqlx: $("#time_horizon a.active").attr('data-value'),
+            }
+        };
+        return data;
+    }
+    function getPatListTableHeight() {
+        var height = $(window).height() - $('#toolbar').height();
+        return height;
+    }
+    function getPatOpTableHeight() {
+        var height = $(window).height() - $('.card').height()-20;
+        return height;
+    }
+    //患者列表 col定义
+    var patListColumns = [{
+        field: 'Id',
+        title: 'Id',
+        visible: false
+    }, {
+        field: 'xm',
+        title: '姓名',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+        formatter: function (value, row, index) {
+            return row.sex == "1" ? "<i class='fa fa-male colorgreen' title='男'></i> " + row.xm : "<i class='fa fa-female colorgreen' title='女'></i> " + row.xm;
+        }
+    }, {
+        field: 'sex',
+        title: '性别',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+        visible: false,
+        formatter: function (value, row, index) {
+            return row.sex == "1" ? "男" : "女";
+        }
+    }, {
+        field: 'nl',
+        title: '年龄',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }, {
+        field: 'zyh',
+        title: '住院号',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }, {
+        field: 'zdmc',
+        title: '入院诊断',
+        halign: "center",
+        align: 'left',
+        valign: 'middle',
+    }, {
+        field: 'ryrq',
+        title: '入院日期',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+        visible: false
+    }, {
+        field: 'WardName',
+        title: '病区',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+    }];
+    function PatlistTable() {
+        $('#table').bootstrapTable('refresh', { url: '/Operation/OpApply/GetPatGridList', queryParams: queryParams });
+    }
+    function PatListTableLoad() {
+        $('#table').bootstrapTable('destroy').bootstrapTable({
+            url: '/Operation/OpApply/GetPatGridList',
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+           // classes: "table table-bordered table-striped table-hover",
+            search: false,
+            striped: true, //是否显示行间隔色
+            toolbar: '#toolbar',            //工具按钮用哪个容器 #toolbar
+            //toolbarAlign: 'left',
+            //******分页设置****
+            queryParams: queryParams,
+            pagination: true,                   //是否显示分页（*）
+            pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
+            pageSize: 20,                       //每页的记录行数（*）
+            pageList: [20, 50, 100],            //可供选择的每页的行数（*）
+            paginationHAlign: "left",
+            paginationDetailHAlign: "right",
+            //sortable: true,                     //是否启用排序
+            //sortOrder: "asc",                   //排序方式
+            sidePagination: 'client',           //分页方式：client客户端分页，server服务端分页（*）
+            showPaginationSwitch: false,
+            //******分页设置****
+            //******表格头部设置****
+            showHeader: true,                   //显示表格头部
+            theadClasses: "tableth",        //这里设置表头样式
+            //******表格头部设置****
+            showRefresh: false,//刷新按钮
+            height: getPatListTableHeight(),
+            columns: patListColumns,
+            onDblClickRow: function (row, $element, field) {
+                PatInit(row.zyh);
+
+            },
+        }).bootstrapTable("hideLoading");
+    }
+
+
+
+
+    /***************患者手术列表*************** */
+    var patOpColumns = [{
+        field: 'Id',
+        title: 'Id',
+        visible: false
+    }, {
+            field: 'sqzt',
+            title: 'sqzt',
+            visible: false
+        }, {
+        field: 'ssmcn',
+        title: '手术名称',
+        halign: "center",
+        align: 'left',
+        valign: 'middle'
+        }, {
+            field: 'sssj',
+            title: '手术时间',
+            halign: "center",
+            align: 'left',
+            valign: 'middle',
+        formatter: function (value, row, index) {
+            return row.sssj.replace("T", " ");
+            }
+        },
+        {
+            field: 'sqztmc',
+            title: '手术状态',
+            halign: "center",
+            align: 'center',
+            valign: 'middle',
+            formatter: function (value, row, index) {
+                if (row.sqzt == (@((int)EnumSqzt.dsh))) {
+                    return "已申请";
+                }
+                else if (row.sqzt == (@((int)EnumSqzt.ypb))) {
+                    return "已排班";
+                }
+                else if (row.sqzt == (@((int)EnumSqzt.yqx))) {
+                    return "已取消申请";
+                }
+                else {
+                    return "状态异常";
+                }
+            }
+        }, {
+            field: 'ysxm',
+            title: '主刀医生',
+            halign: "center",
+            align: 'left',
+            valign: 'middle'
+        }, {
+            field: 'LastModifyTime',
+            title: '最近更新',
+            halign: "center",
+            align: 'left',
+            valign: 'middle',
+            formatter: function (value, row, index) {
+                if (!row.LastModifyTime) {
+                    return row.CreateTime.replace("T", " ");
+                }
+                return row.LastModifyTime.replace("T", " ");
+            }
+        }, {
+            field: 'Applyno',
+            title: '手术申请号',
+            align: 'left',
+            valign: 'middle'
+        }, {
+        field: 'nl',
+        title: '详情',
+        halign: "center",
+        align: 'center',
+        valign: 'middle',
+        formatter: function (value, row, index) {
+            if (row.sqzt == (@((int)EnumSqzt.dsh))) {
+                return "<a class='btn btn-info btnopr' onclick='showDetail(\"" + row.Id + "\")'>&nbsp;详 情&nbsp;</a>&nbsp;&nbsp;<a class='btn btn-danger btnopr' onclick='applyCancel(\"" + row.Id + "\")'>&nbsp;作 废&nbsp;</a>";
+            }
+            else {
+                return "<a class='btn btn-info btnopr' onclick='showDetail(\"" + row.Id + "\")'>&nbsp;详 情&nbsp;</a>";
+            }
+        }
+    }];
+    function PatOpTableLoad() {
+        $('#tabel_patop').bootstrapTable('destroy').bootstrapTable({
+            url: '/Operation/OpApply/GetGridListOP',
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+            //classes: "table table-bordered table-striped table-hover",
+            search: false,
+            striped: true, //是否显示行间隔色
+            queryParams: queryParams,
+            pagination: false,                   //是否显示分页（*）
+            uniqueId:"Id",
+            //sortable: true,                     //是否启用排序
+            //sortOrder: "asc",                   //排序方式
+            //******表格头部设置****
+            showHeader: true,                   //显示表格头部
+            theadClasses: "tableth",        //这里设置表头样式
+            //******表格头部设置****
+            showRefresh: false,//刷新按钮
+            /* height: getTableHeight(),*/
+            columns: patOpColumns,
+        }).bootstrapTable("hideLoading");
+        $(".fixed-table-loading").remove();
+        $(".no-records-found").remove();
+    }
+
+    var $Operations = $("#sel_ssmc").select2({
+        language: "zh-CN",
+        allowClear: true,
+        ajax: {
+            url: "/Operation/Common/GetOperations",
+            delay: 250,
+            data: function (params) {
+                var query = {
+                    ssdmData: params.term
+                }
+                return query;
+            },
+            processResults: function (data) {
+                return processResultsData(data);
+            },
+            cache: true,
+        },
+    });
+
+    function processResultsData(resultData) {
+        //返回最终数据data 给dataArray
+        var jsonObj = JSON.parse(resultData);
+        var dataArray = [];
+        for (var i = 0; i < resultData.length; i++) {
+            var dataObj = {};
+            if (!!jsonObj[i]) {
+                dataObj.id = jsonObj[i].ssdm;
+                dataObj.text = jsonObj[i].ssmc;
+                dataArray.push(dataObj);
+            }
+        }
+        return {
+            results: dataArray
+        };
+    }
+
+    function OperationDicAjax(ssdmArray) {
+        $.najax({
+            url: "/Operation/Common/GetOperationAjax",
+            data: { ssdm: !!ssdmArray? ssdmArray.join(","):null },
+            dataType: "json",
+            success: function (data) {
+                if (data.length > 0) {
+                    var selData = $("#sel_ssmc").val();
+                    if (ssdmArray != null && ssdmArray.length > 0 && (!selData || (!!selData && selData.length != ssdmArray.length))) {
+                        var array = [];
+                        $.each(data, function () {
+                            var option = new Option(this.ssmc, this.ssdm, true, true);
+                            $Operations.append(option);
+                        });
+
+                        $Operations.trigger("change");
+                        //OperationsRefresh();
+                        //$("#sel_ssmc").val(ssdmArray).trigger("change");
+                    }
+                }
+
+            }
+        });
+    }
+
+    //申请手术按钮
+    function showOpApply() {
+        var zyh = $("#zyh").val();
+        if (!zyh) {
+            $.modalAlert("患者信息不可为空", 'warning');
+            return;
+        }
+        $('#myTab [href="#linkop"').trigger('click');
+        $.ajax({
+            url: "/Operation/OpApply/GetFormJson",
+            data: { keyValue: "" },
+            dataType: "json",
+            success: function (data) {
+                $("#formapply").formSerialize(data);
+                $("#sel_ssmc").val("").trigger("change");
+                $("#dv_apply_btn").show();
+                $("#dv_cancel_btn").hide();
+                //$("#dv_back_btn").show();
+            }
+        });
+
+    }
+    //查看手术申请详情
+    function showDetail(rowid) {
+        var rowData=$('#tabel_patop').bootstrapTable("getRowByUniqueId", rowid);
+        /*var rowData = $('#table').bootstrapTable('getSelections');*/
+          if (rowData.sqzt ==@((int)EnumSqzt.dsh)) {
+              $("#dv_apply_btn").show();
+              $("#dv_cancel_btn").show();
+              //$("#dv_back_btn").hide();
+          }
+          else if (rowData.sqzt ==@((int)EnumSqzt.ypb)) {
+              $("#dv_apply_btn").hide();
+              $("#dv_cancel_btn").hide();
+              //$("#dv_back_btn").show();
+          }
+          else if (rowData.sqzt ==@((int)EnumSqzt.yqx)) {
+              $("#dv_apply_btn").hide();
+              $("#dv_cancel_btn").hide();
+              //$("#dv_back_btn").show();
+        }
+        $('#myTab [href="#linkop"').trigger('click');
+        $.ajax({
+            url: "/Operation/OpApply/GetFormJson",
+            data: { keyValue: rowData.Applyno },
+            dataType: "json",
+            success: function (data) {
+                $("#formapply").formSerialize(data);
+                //$("#Applyno").html("手术申请编号：" + data.Applyno);
+                if (data.sssj != null) {
+                    $("#sssj").val(data.sssj.replace("T", " "));
+                }
+                OperationDicAjax(data.ssdm);
+                $("#sel_ssmc").val(data.ssdm).trigger("change");
+                $("#ysgh").val(data.ysxm);
+                $("#zdysgh").val(data.ysgh);
+                $("#mzysgh").val(data.mzys);
+                $("#mzys").val(data.mzysxm).data("name", data.mzysxm).attr("attr-code",data.mzys);
+            }
+        });
+    }
+
+    //撤销手术申请详情
+    function applyCancel(rowid) {
+        var rowData = $('#tabel_patop').bootstrapTable("getRowByUniqueId", rowid);
+        $.deleteForm({
+            prompt:"注：请确认是否撤销此项手术申请？",
+            url: "/Operation/OpApply/DeleteApply",
+            param: { keyValue: rowData.Applyno },
+            success: function () {
+                patOpTableRefresh();
+            }
+        });
+    }
+
+    //多选取值
+    function getMultiSelectText(id) {
+        return $.map($("#" + id).select2('data'), function (value) {
+            return value.text
+        }).join(",");
+    }
+
+    function patchangeRefresh() {
+        patOpTableRefresh();
+        $('#myTab a:first').trigger('click');
+    }
+</script>
+

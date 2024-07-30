@@ -1,0 +1,209 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "发票支付确认";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+<script src="~/Content/js/index.js"></script>
+<style>
+    /*.inline {
+        width: 80%;
+        display: inline;
+    }
+
+    .PriceInline {
+        width: 70%;
+        display: inline;
+    }
+
+    #dv-detail table th {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail .ui-jqgrid-labels, #dv-detail .jqgrow .ui-row-ltr {
+        height: 30px;
+        vertical-align: middle;
+    }
+
+
+    #dv-detail table td {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail input[role=textbox] {
+        padding: 2px 2px;
+    }
+
+    #gridList .ckbox label {
+        margin-top: 24px;
+    }*/
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">采购信息</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">日期：</th>
+                <td class="formValue" style="width:10%">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <td class="formValue" style="width:8px;float:left;">-</td>
+                <td class="formValue" style="width:10%;float:left;">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px;float:left;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle "><span class="required">*</span>供应商：</th>
+                <td class="formValue">
+                    <input type="text" id="yq" name="yq" class="form-control" placeholder="请选择供应商" autocomplete="off" style="width:60%" />
+                    <input type="hidden" id="yqbm" />
+                </td>
+
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="获取明细" />
+                    <input type="button" id="btn_accept" class="btn btn-md btn-primary" value="支付确认" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        @*<div id="gridPager"></div>*@
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        InitFloat();
+
+        //gridList();
+    });
+
+
+    //初始化浮层
+    function InitFloat() {
+        //物资供应商
+        $("#yq").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            url: '/Storage/GetSupplierList',
+            height: 300,
+            width: 400,
+            caption: "物资供应商",
+            ajaxparameters: function () {
+                return "key=" + $("#yq").val();
+            },
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '编码', name: 'py', widthratio: 45 },
+                { label: '供应商', name: 'name', widthratio: 55 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#yqbm").val($thistr.attr('data-py'));
+                $("#yq").val($thistr.attr('data-name'));
+            }
+        });
+    }
+    
+    function getPostData() {
+        var kssj = $("#kssj").val().replace(/\-/g, "");
+        var jssj = $("#jssj").val().replace(/\-/g, "");
+        var yqbm = $("#yqbm").val();
+        return {
+            QSRQ: kssj, JZRQ: jssj, QYBM: yqbm, FPDM: " ", FPH: " ", FPBHCXTJ:" "
+        }
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetBillPayGridJson",
+            height: $(window).height() - 200,
+            postData: getPostData(),
+            colModel: [
+                { label: '发票编号', name: 'FPBH', width: 140, align: 'left' },
+                { label: '发票代码', name: 'FPDM', width: 140, align: 'left' },
+                { label: '发票号', name: 'FPH', width: 140, align: 'left' },
+                { label: '发票日期', name: 'FPRQ', width: 80, align: 'left' },
+                { label: '发票含税总金额', name: 'FPHSZJE', width: 100, align: 'left' },
+                { label: '企业名称', name: 'QYMC', width: 150, align: 'left' },
+                { label: '企业编码', name: 'QYBM', width: 150, align: 'left',hidden:true },
+                { label: '医院编码', name: 'YYBM', width: 80, align: 'left' },
+                { label: '配送点编码', name: 'PSDBM', width: 80, align: 'left' },
+                { label: '发票状态', name: 'FPZT', width: 60, align: 'left' ,hidden:true},
+                { label: '支付标识', name: 'ZFBZ', width: 60, align: 'left' },
+            ],
+
+            multiselect: false,
+
+            //pager: "#gridPager",
+            sortname: 'FPH',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData:  getPostData() ,
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //获取明细
+    $('#btn_search').click(function () {
+        if ($("#yq").val() == "" || $("#yq").val() == null) {
+            $.modalAlert("请选择供应商", 'warning');
+            return ;
+        }
+        var kssj = new Date($("#kssj").val());
+        var jssj = new Date($("#jssj").val());
+        if (getDaysBetween(kssj,jssj) > 30) {
+
+            $.modalAlert("日期不能超过30天", 'warning');
+            return;
+        }
+        gridList();
+    });
+
+    //明细验收
+    $('#btn_accept').click(function () {
+        var rowData = $("#gridList").jqGridRowValue();
+        if (rowData == null) {
+            $.modalAlert("请选择需要验收的单据", 'warning');
+            return;
+        }
+        //var psmxbh = rowData.PSMXBH;
+        //var hctbdm = rowData.HCTBDM;
+        //var scph = rowData.SCPH;
+        //var pssl = rowData.PSSL
+        $.modalOpen({
+            id: "Form",
+            title: "支付确认",
+            url: "/PurchaseManage/Purchase/BillPayForm?FPID=" + rowData.FPBH + "&FPDM=" + rowData.FPDM + "&FPH=" + rowData.FPH + "&QYBM=" + rowData.QYBM +  "&FPHSZJE=" + rowData.FPHSZJE,
+            width: "350px",
+            height: "150px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].SubmitForm();
+                //$.modalClose("Form");
+                //$('#btn_search').trigger('click');
+            }
+        });
+    });
+    
+
+</script>
+
+

@@ -1,0 +1,332 @@
+﻿@using Newtouch.Herp.Infrastructure.Enum
+@using Newtouch.Tools
+
+@{
+    ViewBag.Title = "调价审核";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            筛选条件
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">关键字</th>
+                    <td class="formValue">
+                        <input type="text" id="txtINPUTCODE" class="form-control" placeholder="药品代码 拼音 名称" />
+                    </td>
+                    <th class="formTitle">审核状态</th>
+                    <td class="formValue">
+                        @Html.DropDownList("ddlSHZT", EnumTjShzt.Waiting.ToDescSelectList(), "全部", new { @class = "form-control" })
+                    </td>
+                    <td class="formValue">
+                        <input type="button" id="btn_search" class="btn btn-primary btn-md" value="查询" style="width:55px;margin-left:30%;" />
+                    </td>
+                    <th></th>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel" style="margin-top:10px">
+        <div class="gridPanel">
+            <table id="gridXSHYPInfoList"></table>
+            <div id="gridPager" rel="form1"></div>
+        </div>
+    </div>
+</form>
+<div style="float:left;margin:10px 30px 12px;">
+    <span style="background-color:#EECBAD">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> 已过期
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 2, 3, 6, 7, },
+    F2Text = "审核",
+    F3Text = "拒绝",
+    F6Text = "撤销",
+    F7Text = "执行"
+})
+
+<script>
+    $(function () {
+        gridXSHYPInfoList();
+    });
+
+    function gridXSHYPInfoList() {
+        var $gridXshypInfoList = $("#gridXSHYPInfoList");
+        $gridXshypInfoList.dataGrid({
+            url: '/ProductManage/PriceAdjustment/SelectAdjustPriceApprovalList',
+            postData: getSearchPostData(),
+            height: $(window).height() - document.getElementById('gridXSHYPInfoList').offsetTop - 115,
+            colModel: [
+                {
+                    label: "审核状态", name: "shzt", width: 60, align: 'left', formatter: function (val) {
+                        switch (val) {
+                        case '@((int)EnumTjShzt.Audited)':
+                            return "@EnumTjShzt.Audited.GetDescription()";
+                        case '@((int)EnumTjShzt.Refuse)':
+                            return "@EnumTjShzt.Refuse.GetDescription()";
+                        case '@((int)EnumTjShzt.Revoke)':
+                            return "@EnumTjShzt.Revoke.GetDescription()";
+                        case '@((int)EnumTjShzt.Waiting)':
+                            return "@EnumTjShzt.Waiting.GetDescription()";
+                        default:
+                            return "";
+                        }
+                    }
+                },
+                {
+                    label: '执行标志', name: 'zxbz', width: 70, align: 'left', hidden: true, formatter: function (val) {
+                    switch (val) {
+                    case '@((int)EnumTjZxbz.Already)':
+                        return "@EnumTjZxbz.Already.GetDescription()";
+                    case '@((int)EnumTjZxbz.Not)':
+                        return "@EnumTjZxbz.Not.GetDescription()";
+                    default:
+                        return "";
+                    }
+                } },
+                { label: '类别', name: 'lbmc', width: 80, align: 'left' },
+                { label: '物资名称', name: 'wzmc', width: 120, align: 'left' },
+                { label: '规格', name: 'gg', width: 100, align: 'left' },
+                {
+                    label: '原零售价', name: 'ylsj', width: 70, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(4);
+                    }},
+                {
+                    label: '新零售价', name: 'lsj', width: 70, align: 'right',
+                    formatter: function (val) {
+                        return val.toFixed(4);
+                    }},
+                { label: '定价单位', name: 'dwmc', width: 70, align: 'center' },
+                { label: '转化因子', name: 'zhyz', width: 70, align: 'center' },
+                { label: '调整文件', name: 'tzwj', width: 80, align: 'left' },
+                { label: '预执行时间', name: 'zxsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                {
+                    label: '是否过期', name: 'Isgq', width: 80, align: 'left', hidden: true ,
+                    formatter: function (val) {
+                        return val === "true" ? "已过期" : "";
+                    }
+                },
+                { label: '生产厂家', name: 'supplierName', width: 120, align: 'left' },
+                { label: '提交时间', name: 'tzsj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: '有效', name: 'zt', width: 50, align: 'center', formatter: function (val) { return val === "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>";} },
+                { label: 'productId', name: 'productId', hidden: true },
+                { label: 'wztjId', name: 'wztjId', hidden: true }
+            ],
+            multiselect: true,
+            pager: "#gridPager",
+            sortname: 'shzt desc',
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+                if (rowid) {
+                    $("#btn_bottombutton_f2").nfnRemoveReadonly();
+                    $("#btn_bottombutton_f3").nfnRemoveReadonly();
+                    $("#btn_bottombutton_f6").nfnRemoveReadonly();
+                    $("#btn_bottombutton_f7").nfnRemoveReadonly();
+
+                    var isHasWsh = false;
+                    var isHasYsh = false;
+                    var isHasYjj = false;
+                    //var isHasYcx = false;
+
+                    var rowsData = $("#gridXSHYPInfoList").jqGrid("getRowData_AllLine", true);
+                    var rowsDataArray = rowsData;
+                    for (var i = 0; i < rowsDataArray.length; i++) {
+                        if (rowsDataArray[i].shzt === "@EnumTjShzt.Waiting.GetDescription()") {
+                            isHasWsh = true;
+                        }
+                        if (rowsDataArray[i].shzt === "@EnumTjShzt.Audited.GetDescription()") {
+                            isHasYsh = true;
+                        }
+                        if (rowsDataArray[i].shzt === "@EnumTjShzt.Refuse.GetDescription()") {
+                            isHasYjj = true;
+                        }
+                        @*if (rowsDataArray[i].shzt === "@EnumTjShzt.Revoke.GetDescription()"
+                            || rowsDataArray[i].zxbz === "@EnumTjZxbz.Already.GetDescription()") {
+                            isHasYcx = true;
+                        }*@
+                    }
+
+                    if (isHasWsh) {
+                        $("#btn_bottombutton_f6").nfnAddReadonly();
+                        $("#btn_bottombutton_f7").nfnAddReadonly();
+                    }
+                    if (isHasYsh) {
+                        $("#btn_bottombutton_f2").nfnAddReadonly();
+                        $("#btn_bottombutton_f3").nfnAddReadonly();
+                    }
+                    if (isHasYjj) {
+                        $("#btn_bottombutton_f2").nfnAddReadonly();
+                        $("#btn_bottombutton_f3").nfnAddReadonly();
+                        $("#btn_bottombutton_f7").nfnAddReadonly();
+                    }
+                    //if (isHasYcx) {
+                    //    $("#btn_bottombutton_f2").nfnAddReadonly();
+                    //    $("#btn_bottombutton_f3").nfnAddReadonly();
+                    //    $("#btn_bottombutton_f6").nfnAddReadonly();
+                    //    $("#btn_bottombutton_f7").nfnAddReadonly();
+                    //}
+                }
+            },
+            gridComplete: function () {
+                //已过期 背景色为红色
+                var ids = $("#gridXSHYPInfoList").getDataIDs();
+                for (var i = 0; i < ids.length; i++) {
+                    var rowData = $("#gridXSHYPInfoList").getRowData(ids[i]);
+                    if (rowData.Isgq === "已过期") {
+                        $("#" + ids[i]).find("td").css("background-color", "#EECBAD");
+                    }
+                }
+                $("#btn_bottombutton_f2").nfnRemoveReadonly();
+                $("#btn_bottombutton_f3").nfnRemoveReadonly();
+                $("#btn_bottombutton_f6").nfnRemoveReadonly();
+                $("#btn_bottombutton_f7").nfnRemoveReadonly();
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridXshypInfoList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        });
+        $("#btn_search").trigger('click');
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var inputCode = $("#txtINPUTCODE").val();
+        var shzt = $("#ddlSHZT").val();
+        return { inputCode: inputCode, shzt: shzt };
+    };
+
+    //已过期 背景色为红色
+    function afterCompleteFunction() {
+        var ids = $("#gridXSHYPInfoList").getDataIDs();
+        for (var i = 0; i < ids.length; i++) {
+            var rowData = $("#gridXSHYPInfoList").getRowData(ids[i]);
+            if (rowData.Isgq === "已过期") {
+                $("#" + ids[i]).find("td").css("background-color","#EECBAD");
+            }
+        }
+    }
+
+    //批准 EnumPriceAdjustOperationType:1:批准,2:拒绝,3:撤销,4:执行
+    function newtouch_event_f2() {
+        AdjustPriceApproval("@((int)EnumTjShzt.Audited)");
+    }
+    //拒绝
+    function newtouch_event_f3() {
+        AdjustPriceApproval("@((int)EnumTjShzt.Refuse)");
+    }
+    //撤销
+    function newtouch_event_f6() {
+        AdjustPriceApproval("@((int)EnumTjShzt.Revoke)");
+    }
+
+    //审核 拒绝 撤销 执行操作
+    function AdjustPriceApproval(operationType) {
+        if (!ValidateData()) {
+            return;
+        }
+        if (tjIds === "") {
+            $.modalAlert("未获取到需操作数据", 'warning');
+            return;
+        }
+        var tipStr = "";
+        if (operationType === "@((int)EnumTjShzt.Audited)") {
+            tipStr = "确定要批准吗？";
+        } else if (operationType === "@((int)EnumTjShzt.Refuse)") {
+            tipStr = "确定要拒绝吗？";
+        } else if (operationType === "@((int)EnumTjShzt.Revoke)") {
+            tipStr = "确定要撤销吗？";
+        }
+        $.modalConfirm(tipStr, function (flag) {
+            if (!flag) {
+                return false;
+            } else{
+                $.najax({
+                    url: "/ProductManage/PriceAdjustment/AdjustPriceApproval",
+                    dataType: "json",
+                    data: { ids: tjIds, operationType: operationType },
+                    Type: "POST",
+                    success: function(data) {
+                        if (data.state === 'success') {
+                            $.modalMsg("操作成功", 'success',1500);
+                        } else {
+                            var msg = data.message != null ? data.message : "操作失败";
+                            $.modalMsg(msg, 'error', 1500);
+                        }
+                        $("#btn_search").trigger('click');
+                    }
+                });
+            }
+        });
+
+    }
+
+    var tjIds = "";
+    //执行
+    function newtouch_event_f7() {
+        if (!ValidateData()) {
+            return;
+        }
+        if (tjIds === "") {
+            $.modalAlert("未获取到需操作数据", 'warning');
+            return;
+        }
+        $.modalConfirm("确定要执行吗？", function (flag) {
+            if (!flag) {
+                return false;
+            } else {
+                $.najax({
+                    url: "/ProductManage/PriceAdjustment/AdjustPriceExecute",
+                    dataType: "json",
+                    data: { ids: tjIds},
+                    Type: "POST",
+                    success: function (data) {
+                        if (data.state === 'success') {
+                            $.modalMsg("操作成功", 'success', 1500);
+                        } else {
+                            var msg = data.message != null ? data.message : "操作失败";
+                            $.modalMsg(msg, 'error', 1500);
+                        }
+                        $("#btn_search").trigger('click');
+                    }
+                });
+            }
+        });
+    }
+
+    //数据验证
+    function ValidateData() {
+        tjIds = "";
+        var rowsDataArray = $("#gridXSHYPInfoList").jqGrid("getRowData_AllLine", true);
+        if (rowsDataArray.length === 0) {
+            $.modalAlert("请先选择需操作的数据", 'warning');
+            return false;
+        }
+        for (var i = 0; i < rowsDataArray.length; i++) {
+            if (rowsDataArray[i].Isgq === '已过期') {
+                $.modalAlert(rowsDataArray[i].wzmc + " 已过期，执行时间需大于当前时间", 'warning');
+                return false;
+            }
+            tjIds += rowsDataArray[i].wztjId + ",";
+        }
+        return true;
+    }
+
+    ////禁用
+    //function DisableControls(flag) {
+    //    if (flag === "0" || flag === "2" || flag === "3") {
+    //        $("#btn_bottombutton_f7").attr("disabled", "disabled").css("background-color", "rgb(238, 238, 238)");
+    //    } else {
+    //        $("#btn_bottombutton_f7").removeAttr("disabled");
+    //    }
+    //}
+</script>
+
+

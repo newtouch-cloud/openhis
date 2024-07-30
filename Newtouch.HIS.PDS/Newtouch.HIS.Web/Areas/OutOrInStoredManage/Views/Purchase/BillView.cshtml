@@ -1,0 +1,168 @@
+﻿
+@{
+    ViewBag.Title = "发票查询";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var from = (ViewBag.from as string) ?? "";
+}
+<style>
+    .table-responsive {
+        border: 0;
+    }
+
+    .ui-jqgrid .ui-jqgrid-pager .ui-pager-table {
+        width: 90%;
+    }
+</style>
+
+<div class="topPanel" style="border-bottom:1px solid rgb(221, 221, 221);margin-bottom: 1%;">
+    <div class="search">
+        <table class="form">
+            <tr>
+
+                <th class="formTitle">发票号：</th>
+                <td class="formValue">
+                    <input id="txt_fph" name="txt_fph" type="text" class="form-control form-an" placeholder="请输入发票号" />
+                </td>
+                <th class="formTitle">订单时间：</th>
+                <td class="formValue" colspan="3">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; margin-top:10px;float:left;" value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:1%;float:left">—</span>
+                    <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; margin-top:10px;float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                @*<th class="formTitle">入库状态：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="fpzt" name="fpzt" class="form-control required">
+                        <option value="9" selected="selected">全部</option>
+                        <option value="0">未入库</option>
+                        <option value="1">已入库</option>
+                    </select>
+                </td>*@
+                <td style="padding-left: 20px;">
+                    <button type="button" id="btn_search" class="btn btn-primary btn-md">&nbsp;查询&nbsp;</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<form id="formPatSer" style="margin:2px;margin-top:10px;">
+    <div class="gridPanel">
+        <table id="GridList" rel="formPatSer"></table>
+        <div id="gridPager" style="padding-right:20%"></div>
+    </div>
+</form>
+
+<script>
+    //上一个window对象
+    var prevWindow;
+    if ('@(from)' !== '') {
+        prevWindow = top.top.frames['@(from)'];
+    }
+    else {
+        prevWindow = $.currentWindow();
+    }
+
+    $(function () {
+
+        var obj = new Object;
+        //obj.ddbh = $.request("ddbh");
+        var searInfo = new gridList();
+        //加载数据
+        //searInfo.init(obj);
+
+
+
+        //查询
+        $("#btn_search").click(function () {
+            $("#GridList").jqGrid('setGridParam', {
+                postData: {
+                    kssj: $("#kssj").val(), jssj: $("#jssj").val(), fph: $("#fph").val(),fpzt:"9"
+                },
+                page: 1,
+                url: "/OutOrInStoredManage/Purchase/GetBillStoreGridJson",
+            }).trigger('reloadGrid');
+        });
+    });
+
+    function gridList() {
+        var $gridList = $("#GridList");
+        $gridList.dataGrid({
+            url: "/OutOrInStoredManage/Purchase/GetBillStoreGridJson",
+            height: $(window).height() - 200,
+            postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val(), fph: $("#fph").val(), fpzt: "9"},
+            colModel: [
+
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '发票号', name: 'fph', width: 100, align: 'left' },
+                { label: '药企编码', name: 'yqbm', width: 100, align: 'left' },
+                { label: '发票含税总金额', name: 'fphszje', width: 100, align: 'left' },
+                //{
+                //    label: '发票状态', name: 'fpzt', width: 100, align: 'left', formatter: function (cellvalue) {
+                //        if (cellvalue == 0) return '未入库';
+                //        else if (cellvalue == 1) return '已入库';
+                //        else return '';
+                //    }
+                //},
+            ],
+
+            multiselect: false,
+
+            pager: "#gridPager",
+            sortname: 'CreateTime',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                SearchConfirm();
+            }
+        });
+    }
+        //$("#btn_search").click(function () {
+        //    $('#gridDJMXInfo').jqGrid("clearGridData");
+        //    $gridList.jqGrid('setGridParam', {
+        //        postData: { kssj: $("#kssj").val(), jssj: $("#jssj").val() },
+        //    }).trigger('reloadGrid');
+        //});
+
+
+
+        //加载事件
+        //myPatSearchInfo.prototype.init = function (data) {
+        //    if (data.blh === "null") {
+        //        $("#txt_blh").val("");
+        //    } else {
+        //        $("#txt_blh").val(data.blh);
+        //    }
+        //    loadGrid(data);
+        //};
+        //return myPatSearchInfo;
+    //}());
+
+    //jqGrid 双击选中某行
+    function btn_edit() {
+        SearchConfirm();
+    }
+
+    function BillDbGrid() {
+        var $gridList = $("#GridList");
+        var Id = $gridList.jqGridRowValue().Id;
+        var obj = new Object();
+        obj.Id = Id;
+        obj.fph = $gridList.jqGridRowValue().fph;
+        obj.yqbm = $gridList.jqGridRowValue().yqbm;
+        obj.fphszje = $gridList.jqGridRowValue().fphszje;
+        obj.fpzt = $gridList.jqGridRowValue().fpzt;
+        prevWindow.GetQueryAjax(obj);
+        //关闭窗口
+        ReceiptCancle();
+    }
+    //确定 主页面调用
+    function SearchConfirm() {
+        BillDbGrid();
+    }
+
+    //取消
+    function ReceiptCancle() {
+        $.modalClose();
+    }
+</script>
+
+

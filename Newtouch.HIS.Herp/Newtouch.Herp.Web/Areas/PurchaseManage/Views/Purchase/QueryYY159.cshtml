@@ -1,0 +1,94 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "耗材按采购单获取采购明细状态";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+<script src="~/Content/js/index.js"></script>
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">采购明细获取</div>
+        <table class="form">
+            <tr style="float:left">
+                <th class="formTitle">采购单编号：</th>
+                <td class="formValue">
+                    <input id="ddbh" class="form-control" placeholder="采购单编号" />
+                </td>
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="查询" />
+                </th>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        //gridList();
+    });
+
+    
+
+    function getPostData() {
+        return {
+            DDBH: $("#ddbh").val(),
+            DDMXBHCXTJ :'',
+        };
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PurchaseManage/Purchase/GetGridJsonYY159",
+            height: $(window).height() - 200,
+            postData: getPostData(),
+            colModel: [
+                { label: '采购单明细编号', name: 'DDMXBH', width: 180, align: 'left' },
+                {
+                    label: '采购单明细状态', name: 'CGMXZT', width: 180, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumCGMXZT", val);
+                    }
+                },
+                {
+                    label: '企业库存', name: 'QYKC', width: 100, align: 'left', formatter: function (val) {
+                        return $.enum.getDescByValue("EnumQYKC", val);
+                    }
+                },
+                { label: '采购单明细审核意见', name: 'CGMXSHYJ', width: 120, align: 'left' },
+                { label: '采购单企业处理说明', name: 'CGDCLSM', width: 80, align: 'left' },
+
+            ],
+            multiselect: false,
+            //pager: "#gridPager",
+            //sortname: '',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: getPostData(),
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //查询
+    $('#btn_search').click(function () {
+        if ($("#ddbh").val() == "" || $("#ddbh").val() == null) {
+            $.modalAlert("请填写采购单号", 'warning');
+            return ;
+        }
+        gridList();
+    });
+</script>
+
+

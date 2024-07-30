@@ -1,0 +1,259 @@
+﻿
+@{
+
+	ViewBag.Title = "病人住院史查询";
+	Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form name="form1"  style="background-color: #fff;">
+	<div class="panel panel-default">
+		<table class="form" style="width: 65%;">
+			<tr>
+                <th class="formTitle">【查询条件】卡号：</th>
+				<td class="formValue">
+					<input type="text" class="form-control" id="jkkh" name="jkkh" />
+				</td>
+				<th class="formTitle">住院号/姓名：</th>
+				<td class="formValue">
+					<input type="text" class="form-control" id="txt_keyword" name="txt_keyword" />
+				</td>	
+				<td class="formValue">
+					<input type="button" id="btn_search" class="btn btn-primary btn-md" style="margin-left: 10px; width: 40px;" value="查询" />
+				</td>
+			</tr>
+		</table>
+        <hr />
+        <table class="form" style="border:solid 1px #65c2a0;">
+            <tr>
+                <th class="formTitle">姓名：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="xm" name="xm" style="border: none;" readonly="readonly" />
+                </td>
+                <th class="formTitle">性别：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="xb" name="xb" style="border: none;" readonly="readonly" />
+                </td>
+                <th class="formTitle">出生日期：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="csrq" name="csrq" style="border: none;" readonly="readonly" />
+                </td>
+                <td></td>
+            </tr>
+        </table>
+	</div>
+	<div>
+		<table id="gridList1"></table>
+		<div id="gridPager1"></div>
+	</div>
+	<div style="background-color: #fff; margin-top:5px;">
+		<table id="gridJSMXList"></table>
+		@*<div id="gridJSMXListPager"></div>*@
+	</div>
+	<div class="gridPanel" style="width: 50%; float: left;background-color: #fff;">
+		<p style="font-weight:bold; font-size: 18px;padding-left:30px;display: table-cell;vertical-align: middle;height: 35px;">诊断信息</p>
+		<table id="gridList2"></table>
+		<div id="gridPager2"></div>
+	</div>
+
+	<div class="gridPanel" style="width: 50%; float: left;background-color: #fff;border-left:5px solid grey;margin-right:-5px;">
+		<p style="font-weight:bold; font-size: 18px;padding-left:30px;display: table-cell;vertical-align: middle;height: 35px;">手术信息</p>
+		<table id="gridList3"></table>
+		<div id="gridPager3"></div>
+	</div>
+</form>
+
+<script>
+	$(function() {
+		//浏览器窗口调整大小时重新加载jqGrid的宽
+		$(window).resize(function() {
+			initLayout("MyTabGrid");
+		});
+		GridInit();
+		showZd("");
+		showSS("");
+	});
+
+	//住院信息列表
+	function GridInit() {
+
+		var $gridList1 = $("#gridList1");
+		$gridList1.dataGrid({
+			postData: { id: "" },
+			url: "/ReportManage/PatientHistory/GetPagintionHospitalList",
+			autowidth: true,
+			height: 120,
+			colModel: [
+                { label: "Id", name: "Id", hidden: true },
+                { label: "病案号", name: "BAH", width: 60, align: 'left' },
+                { label: "住院号", name: "ZYH", width: 50, align: 'left' },
+				{
+					label: "入院日期",
+					name: "RYSJ",
+					width: 180,
+					align: 'left',
+					formatter: "date",
+					formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+				},
+				{ label: "入院科室", name: "RYKB", width: 180, align: 'left' },
+				{
+					label: "出院日期",
+					name: "CYSJ",
+					width: 180,
+					align: 'left',
+					formatter: "date",
+					formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+				},
+				{ label: "出院科室", name: "CYKB", width: 180, align: 'left' },
+			],
+			sortname: "ID desc",
+			rowNum: 4,
+			pager: "#gridPager1",
+			viewrecords: true,
+			onSelectRow: function(id) {
+				id = $("#gridList1").jqGridRowValue().Id;
+				//病人信息
+				showPatient(id);
+				//诊断列表
+				//showZd(id);
+				$("#gridList2").jqGrid('setGridParam',
+					{
+						postData: { id: id },
+						page: 1
+					}).trigger('reloadGrid');
+				//手术列表
+				$("#gridList3").jqGrid('setGridParam',
+					{
+						postData: { id: id },
+						page: 1
+					}).trigger('reloadGrid');
+			},
+		});
+		$("#btn_search").click(function() {
+			btn_submitSearch();
+		});
+	}
+
+	//病人信息
+	function showPatient(id) {
+		if (!!id) {
+			$.ajax({
+				url: "/ReportManage/PatientHistory/GetFormJson",
+				data: { id: id },
+				dataType: "json",
+				success: function(data) {
+					$("#xm").val(data.XM);
+					var xb = data.XB == 1 ? "男" : "女";
+					$("#xb").val(xb);
+					$("#csrq").val(data.CSRQ.replace("T", " "));
+				}
+			});
+		}
+	}
+
+	//诊断信息
+	function showZd(id) {
+		var $gridList2 = $("#gridList2");
+		$gridList2.dataGrid({
+			postData: { id: id },
+			url: "/ReportManage/PatientHistory/GetPagintionZdList",
+			autowidth: true,
+			height: 140,
+			colModel: [
+				{ label: "Id", name: "Id", hidden: true },
+				{
+					label: "诊断类别",
+					name: "zdType",
+					width: 80,
+					align: 'left',
+					formatter: function(val) {
+						if (val == 0) {
+							return "门诊诊断";
+						} else if (val == 1) {
+							return "出院诊断";
+						} else {
+							return "其他诊断";
+						}
+					}
+				},
+				{ label: "诊断描述", name: "zdms", width: 100, align: 'left' },
+				{ label: "治疗结果", name: "zljg", width: 80, align: 'left' },
+				{ label: "治疗天数", name: "zlts", width: 70, align: 'left' },
+				{
+					label: "诊断日期",
+					name: "zdrq",
+					width: 120,
+					align: 'left',
+					formatter: "date",
+					formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+				},
+			],
+			sortname: "ID desc",
+			//rowNum: 4,
+			//pager: "#gridPager2",
+			//viewrecords: true,
+			viewrecords: false,
+			shrinkToFit: false,
+			autoScroll: true
+		});
+	}
+
+	//手术信息
+	function showSS(id) {
+		var $gridList3 = $("#gridList3");
+		$gridList3.dataGrid({
+			postData: { id: id },
+			url: "/ReportManage/PatientHistory/GetPagintionSSList",
+			autowidth: true,
+			height: 140,
+			colModel: [
+				{ label: "Id", name: "Id", hidden: true },
+				{ label: "手术名称", name: "ssmc", width: 120, align: 'left' },
+				{ label: "麻醉方法", name: "mzfs", width: 80, align: 'left' },
+				{ label: "手术医师", name: "ssys", width: 80, align: 'left' },
+				{
+					label: "手术日期",
+					name: "ssrq",
+					width: 120,
+					align: 'left',
+					formatter: "date",
+					formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+				},
+			],
+			sortname: "ID desc",
+			//rowNum: 4,
+			//pager: "#gridPager3",
+			//viewrecords: true
+			viewrecords: false,
+			shrinkToFit: false,
+			autoScroll: true
+		});
+	}
+
+	//回车搜索
+	$('#jkkh').keyupEnterEvent(function() {
+		btn_submitSearch();
+	});
+
+	$('#txt_keyword').keyupEnterEvent(function () {
+		btn_submitSearch();
+	});
+	function btn_submitSearch()
+	{
+		$("#gridList1").jqGrid('setGridParam',
+			{
+				postData: { jkkh: $("#jkkh").val(), keyword: $("#txt_keyword").val() },
+				page: 1
+			}).trigger('reloadGrid');
+		$("#gridList2").jqGrid('setGridParam',
+			{
+				postData: { id: "" },
+				page: 1
+			}).trigger('reloadGrid');
+		$("#gridList3").jqGrid('setGridParam',
+			{
+				postData: { id: "" },
+				page: 1
+			}).trigger('reloadGrid');
+	}
+
+</script>

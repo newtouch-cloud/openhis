@@ -1,0 +1,427 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "出区诊断";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var isOpendiag = SysConfigReader.String("Inpatient_OutAre");
+}
+<form id="form1">
+    <div class="panel-default" style="padding-right:10px;">
+        <table id="tablezd" class="form">
+            <tr>
+                <th class="formTitle">诊断时间：</th>
+                <td class="formValue">
+                    <input id="txt_zdsj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:70%;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { RefreshOrder() } })" value="@DateTime.Now.ToString("yyyy-MM-dd ")" />
+                </td>
+                <th class="formTitle"></th>
+                <td class="formValue"></td>
+            </tr>
+            <tr>
+
+                <th class="formTitle" style="margin-left:20px;">
+                    <i id="zdCircle" class="fa fa-plus-circle plusToggleCircle" aria-hidden="true" style="width:30px;margin-left: 10px; color: #6ff3ad; font-size: large;"></i>
+                    出院诊断：
+                </th>
+                <td class="formValue" colspan="2">
+                    <input id="txt_cyzddm" type="hidden" />
+                    <input id="txt_cyzd" name="txt_cyzd" type="text" class="form-control required zdinput" />
+                </td>
+                <th class="formTitle">出院情况：</th>
+                <td class="formValue">
+                    <select id="txt_cyqk" name="txt_cyqk" class="form-control " data-EnumType="EnumCYQK"></select>
+                </td>
+            </tr>
+            @*<tr>
+                    <th class="formTitle">辅助诊断1：</th>
+                    <td class="formValue" colspan="2">
+                        <input id="txt_fzzd1dm" type="hidden" />
+                        <input id="txt_fzzd1" name="txt_fzzd1" type="text" class="form-control required zdinput" />
+                    </td>
+                    <th class="formTitle">出院情况1：</th>
+                    <td class="formValue">
+                        <select id="txt_cyqk1" name="txt_cyqk1" class="form-control " data-EnumType="EnumCYQK"></select>                </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">辅助诊断2：</th>
+                    <td class="formValue"  colspan="2">
+                        <input id="txt_fzzd2dm" type="hidden" />
+                        <input id="txt_fzzd2" name="txt_fzzd2" type="text" class="form-control required zdinput" />
+                    </td>
+                    <th class="formTitle">出院情况2：</th>
+                    <td class="formValue">
+                        <select id="txt_cyqk2" name="txt_cyqk2" class="form-control " data-EnumType="EnumCYQK"></select>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">辅助诊断3：</th>
+                    <td class="formValue"  colspan="2">
+                        <input id="txt_fzzd3dm" type="hidden" />
+                        <input id="txt_fzzd3" name="txt_fzzd3" type="text" class="form-control required zdinput" />
+                    </td>
+                    <th class="formTitle">出院情况3：</th>
+                    <td class="formValue">
+                        <select id="txt_cyqk3" name="txt_cyqk3" class="form-control " data-EnumType="EnumCYQK"></select>
+                    </td>
+                </tr>*@
+            @*<tr>
+                    <th class="formTitle">自定义诊断：</th>
+                    <td class="formValue"  colspan="2">
+                        <textarea id="txt_zdyzd" name="txt_zdyzd" class="form-control zdinput" style="height: 60px;"></textarea>
+                    </td>
+                    <th class="formTitle">出院情况  <br />自定义：</th>
+                    <td class="formValue">
+                        <select id="txt_cyqkzdy" name="txt_cyqkzdy" class="form-control " data-EnumType="EnumCYQK"></select>
+                    </td>
+                </tr>*@
+        </table>
+    </div>
+</form>
+<script lang="javascript">
+    var isopendiag = '@isOpendiag';
+    var ybnhlx = "";
+    var brxz = '@ViewBag.brxz';
+    if(isopendiag =="OFF")
+    {
+        $("#zdCircle").css("display", "none");
+        $("#txt_cyzd").attr("disabled", true);
+        $("#txt_cyqk").attr("disabled", true);
+        $("#txt_zdsj").attr("disabled", true);
+    }
+    if (brxz == "1") {
+        ybnhlx = "yb";
+    }
+    if (brxz == "8") {
+        ybnhlx = "nh";
+    }
+    $(function () {
+        GetPatDiagnosis();
+    });
+    $("#txt_cyzd").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 600,
+        clickautotrigger: true,
+        url: "/NurseManage/WardMaintenance/GetryzdSelect",
+        ajaxparameters: function () {
+            return "ryzd=" + $("#txt_cyzd").val() + "&ybnhlx=" + ybnhlx;
+        },
+        caption: "出院诊断",
+        colModel: [
+            { label: '名称', name: 'zdmc', widthratio: 60 },
+            { label: '拼音', name: 'py', widthratio: 20 },
+            { label: 'icd10', name: 'icd10', widthratio: 20 },
+            { label: '编号', name: 'zdbh', hidden: true },
+            { label: '内码', name: 'zdnm', hidden: true }
+        ],
+        itemdbclickhandler: function ($this) {
+            $("#txt_cyzd").val($this.attr('data-zdmc'));
+            $("#txt_cyzddm").val($this.attr('data-zdbh'));
+        }
+    });
+    $("#txt_fzzd1").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 600,
+        clickautotrigger: true,
+        url: "/NurseManage/WardMaintenance/GetryzdSelect",
+        ajaxparameters: function () {
+            return "ryzd=" + $("#txt_fzzd1").val() + "&ybnhlx=" + ybnhlx;
+        },
+        caption: "出院诊断",
+        colModel: [
+            { label: '名称', name: 'zdmc', widthratio: 60 },
+            { label: '拼音', name: 'py', widthratio: 20 },
+            { label: 'icd10', name: 'icd10', widthratio: 20 },
+            { label: '编号', name: 'zdbh', hidden: true },
+            { label: '内码', name: 'zdnm', hidden: true }
+        ],
+        itemdbclickhandler: function ($this) {
+            $("#txt_fzzd1").val($this.attr('data-zdmc'));
+            $("#txt_fzzd1dm").val($this.attr('data-zdbh'));
+        }
+    });
+    $("#txt_fzzd2").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 600,
+        clickautotrigger: true,
+        url: "/NurseManage/WardMaintenance/GetryzdSelect",
+        ajaxparameters: function () {
+            return "ryzd=" + $("#txt_fzzd2").val() + "&ybnhlx=" + ybnhlx;
+        },
+        caption: "出院诊断",
+        colModel: [
+            { label: '名称', name: 'zdmc', widthratio: 60 },
+            { label: '拼音', name: 'py', widthratio: 20 },
+            { label: 'icd10', name: 'icd10', widthratio: 20 },
+            { label: '编号', name: 'zdbh', hidden: true },
+            { label: '内码', name: 'zdnm', hidden: true }
+        ],
+        itemdbclickhandler: function ($this) {
+            $("#txt_fzzd2").val($this.attr('data-zdmc'));
+            $("#txt_fzzd2dm").val($this.attr('data-zdbh'));
+        }
+    });
+    $("#txt_fzzd3").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 600,
+        clickautotrigger: true,
+        url: "/NurseManage/WardMaintenance/GetryzdSelect",
+        ajaxparameters: function () {
+            return "ryzd=" + $("#txt_fzzd3").val() + "&ybnhlx=" + ybnhlx;
+        },
+        caption: "出院诊断",
+        colModel: [
+            { label: '名称', name: 'zdmc', widthratio: 60 },
+            { label: '拼音', name: 'py', widthratio: 20 },
+            { label: 'icd10', name: 'icd10', widthratio: 20 },
+            { label: '编号', name: 'zdbh', hidden: true },
+            { label: '内码', name: 'zdnm', hidden: true }
+        ],
+        itemdbclickhandler: function ($this) {
+            $("#txt_fzzd3").val($this.attr('data-zdmc'));
+            $("#txt_fzzd3dm").val($this.attr('data-zdbh'));
+        }
+    });
+    function GetPatDiagnosis() {
+        $.najax({
+            type: "GET",
+            url: "/NurseManage/WardMaintenance/GetPatDiagnosis?r=" + Math.random(),
+            data: { zyh: '@ViewBag.zyh' },
+            loadingtext: "数据加载中，请稍后...",
+            dataType: "json",
+            success: function(zdlist) {
+                $.each(zdlist,
+                    function (n, item) {
+                        if (item.zdlx == "0") {
+                            $("#txt_cyzd").val(item.zdmc);
+                            $("#txt_cyzddm").val(item.zddm);
+                            $("#txt_cyqk").val(item.cyqk).trigger("change");
+                        }
+                        //if (item.zdlx == "1") {
+                        //    $("#txt_fzzd1").val(item.zdmc);
+                        //    $("#txt_fzzd1dm").val(item.zddm);
+                        //    $("#txt_cyqk1").val(item.cyqk).trigger("change");
+                        //}
+                        //if (item.zdlx == "2") {
+                        //    $("#txt_fzzd2").val(item.zdmc);
+                        //    $("#txt_fzzd2dm").val(item.zddm);
+                        //    $("#txt_cyqk2").val(item.cyqk).trigger("change");
+                        //}
+                        //if (item.zdlx == "3") {
+                        //    $("#txt_fzzd3").val(item.zdmc);
+                        //    $("#txt_fzzd3dm").val(item.zddm);
+                        //    $("#txt_cyqk3").val(item.cyqk).trigger("change");
+                        //}
+                        //if (item.zdlx == "1") {
+                        //    $("#txt_zdyzd").val(item.zdmc);
+                        //    $("#txt_cyqkzdy").val(item.cyqk).trigger("change");
+						//}
+						//辅助诊断
+						if (item.zdlx >= "1") {
+							$('#tablezd .plusToggleCircle').click();
+							var number = item.zdlx;
+							$("#txt_fzzd" + number).val(item.zdmc);
+							$("#txt_fzzd" +number+"dm").val(item.zddm);
+							$("#txt_cyqk" + number).val(item.cyqk).trigger("change");
+						}
+                    });
+            }
+        });
+    }
+    function SavaOutArea_bak()
+    {
+        var zyh = '@ViewBag.zyh';
+        //var cyfs = $("#sel_cqfs").val();
+        //var cqsj = $("#txt_cqrq").val();
+        var zdrq = $("#txt_zdsj").val();
+        var zyzd = $("#txt_cyzd").val();
+        var zyzddm = $("#txt_cyzddm").val();
+        var cyqk = $("#txt_cyqk").val();
+        var fzzd1 = $("#txt_fzzd1").val();
+        var fzzd1dm = $("#txt_fzzd1dm").val();
+        var cyqk1 = $("#txt_cyqk1").val();
+        var fzzd2 = $("#txt_fzzd2").val();
+        var fzzd2dm = $("#txt_fzzd2dm").val();
+        var cyqk2 = $("#txt_cyqk2").val();
+        var fzzd3 = $("#txt_fzzd3").val();
+        var fzzd3dm = $("#txt_fzzd3dm").val();
+        var cyqk3 = $("#txt_cyqk3").val();
+        var zdyzd = $("#txt_zdyzd").val();
+        var cyqkzdy = $("#txt_cyqkzdy").val();
+        var patOutAreaVO = {
+            zyh: zyh,
+            //cyfs: cyfs,
+            //cqsj: cqsj,
+            zdrq: zdrq,
+            zyzd: zyzd,
+            zyzddm: zyzddm,
+            cyqk: cyqk,
+            fzzd1: fzzd1,
+            fzzd1dm: fzzd1dm,
+            cyqk1: cyqk1,
+            fzzd2: fzzd2,
+            fzzd2dm: fzzd2dm,
+            cyqk2: cyqk2,
+            fzzd3: fzzd3,
+            fzzd3dm: fzzd3dm,
+            cyqk3: cyqk3,
+            zdyzd: zdyzd,
+            cyqkzdy: cyqkzdy
+        }
+        if (zyzd == "" || zyzddm=="") {
+            $.modalAlert('该患者没有出院诊断，不允许出区！', 'warning');
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/NurseManage/WardMaintenance/SavaOutPatDiagnosis",
+            data: { patOutAreaVO: patOutAreaVO },
+            dataType: "json",
+            async:false,
+            success: function (ajaxresp) {
+                if (ajaxresp.state==="success") {
+                    $.modalMsg('保存成功', 'success');
+                }
+                else {
+                    $.modalAlert(ajaxresp.message, 'warning');
+                }
+                clearData();
+            }
+        });
+	}
+
+	function SavaOutArea() {
+
+		var PatDxList = [];
+
+		//出院诊断
+		var PatDxObj = {
+				zyh:'@ViewBag.zyh',
+				zdrq : $("#txt_zdsj").val(),
+				zdlb:2,
+				zdlx:0,
+				zddm: $("#txt_cyzddm").val(),
+				zdmc: $("#txt_cyzd").val(),
+				cyqk: $("#txt_cyqk").val()
+		}
+
+		if (PatDxObj.zddm == "" || PatDxObj.zdmc == "") {
+			$.modalAlert('该患者没有出院诊断，不允许出区！', 'warning');
+			return;
+		}
+		PatDxList.push(PatDxObj);
+
+		//自定义诊断
+		 @*PatDxObj = {
+				zyh:'@ViewBag.zyh',
+				zdrq : $("#txt_zdsj").val(),
+				zdlb:2,
+				zdlx:1,//自定义诊断由9改为1
+				zddm: "999999999",//自定义诊断代码默认999999999
+				zdmc: $("#txt_zdyzd").val(),
+				cyqk: $("#txt_cyqkzdy").val()
+			}
+		PatDxList.push(PatDxObj);*@
+
+		//辅助诊断
+		var number = $('#tablezd .zdinput').length;
+        for (var i = 1; i <= number-1; i++) {
+			 PatDxObj = {
+				zyh:'@ViewBag.zyh',
+				zdrq : $("#txt_zdsj").val(),
+				zdlb:2,
+				zdlx: i,
+				zddm:$("#txt_fzzd"+i+"dm").val(),
+				zdmc:$("#txt_fzzd" + i).val(),
+				cyqk:$("#txt_cyqk" + i).val()
+			}
+			PatDxList.push(PatDxObj);
+        }
+		$.ajax({
+			type: "POST",
+			url: "/NurseManage/WardMaintenance/SavaPatDxList",
+			data: { PatDxList: PatDxList },
+			dataType: "json",
+			async: false,
+			success: function (ajaxresp) {
+				if (ajaxresp.state === "success") {
+					$.modalMsg('保存成功', 'success');
+				}
+				else {
+					$.modalAlert(ajaxresp.message, 'warning');
+				}
+				clearData();
+			}
+		});
+
+	}
+
+	//辅助诊断 新增icon
+	$('#tablezd .plusToggleCircle').click(function () {
+		//var number = $('#tablexyzd .zdText').length + 1;
+		//var $newTr = $('<tr><th class="formTitle">副7</th><td class="formValue"><input type="checkbox" id="chk' + number + '" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label><input type="text" id="zd' + number + '" class="form-control activeValue focusInput zdText" style="width:70%;" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><td><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td></tr>');
+		//var $newTr = $('<tr><th class="formTitle">副</th><td class="formValue"><input type="checkbox" id="chk' + number + '" class="chkValue" style="float:left;" /><label style="float:left;margin-top:3px;">疑似</label><input type="text" id="zd' + number + '" class="form-control activeValue focusInput zdText" style="width:70%;" /><i class="fa fa-times" aria-hidden="true" hidden></i></td><td><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="margin-left: 10px; color: #6ff3ad; font-size: large;"></i></td><th class="formTitle">常用诊断</th><td class="formValue"><input type="text"  id="xycyzdoption' + number + '" name="xycyzdoption' + number + '" class="form-control activeValue focusInput xycyzdoptionText" /></td></tr>');
+
+	    var number = $('#tablezd .zdinput').length;// + 1;
+
+	    //var $newTr = $('<tr><th class="formTitle"><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="width:30px;margin-left: 10px; color: #6ff3ad; font-size: large;"></i>辅助诊断' + number + '：</th><td class="formValue" colspan="2"><input id="txt_fzzd' + number + 'dm" type="hidden" /><input id="txt_fzzd' + number + '" name="txt_fzzd' + number + '" type="text" class="form-control required zdinput" /></td><th class="formTitle">出院情况' + number + '：</th><td class="formValue"><select id="txt_cyqk' + number + '" name="txt_cyqk' + number + '" class="form-control" data-EnumType="EnumCYQK"></select></td></tr>');
+		if (isopendiag == "OFF") {
+		    var $newTr = $('<tr><th class="formTitle"><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="width:30px;display:none; margin-left: 10px; color: #6ff3ad; font-size: large;"></i>辅助诊断：</th><td class="formValue" colspan="2"><input id="txt_fzzd' + number + 'dm" type="hidden" /><input id="txt_fzzd' + number + '" name="txt_fzzd' + number + '" type="text"  disabled="disabled" class="form-control required zdinput" /></td><th class="formTitle">出院情况：</th><td class="formValue"><select id="txt_cyqk' + number + '" name="txt_cyqk' + number + '"  disabled="disabled" class="form-control"><option value="1">治愈</option><option value="2">好转</option ><option value="3">未愈</option><option value="4">死亡</option><option value="5">其他</option></select ></select></td></tr>');
+		    $newTr.appendTo($(this).closest('table'));
+		}
+		else
+		{
+		    var $newTr = $('<tr><th class="formTitle"><i class="fa fa-minus minusToggleCircle" aria-hidden="true" style="width:30px;margin-left: 10px; color: #6ff3ad; font-size: large;"></i>辅助诊断：</th><td class="formValue" colspan="2"><input id="txt_fzzd' + number + 'dm" type="hidden" /><input id="txt_fzzd' + number + '" name="txt_fzzd' + number + '" type="text" class="form-control required zdinput" /></td><th class="formTitle">出院情况：</th><td class="formValue"><select id="txt_cyqk' + number + '" name="txt_cyqk' + number + '" class="form-control"><option value="1">治愈</option><option value="2">好转</option ><option value="3">未愈</option><option value="4">死亡</option><option value="5">其他</option></select ></select></td></tr>');
+		    $newTr.appendTo($(this).closest('table'));
+		}
+
+		//辅助诊断浮层
+		bindFzzdFloatingSelector(number);
+	});
+
+	//删除icon
+	$('#form1').on('click', '.minusToggleCircle', function () {
+		$(this).closest('tr').remove();
+	})
+
+	//辅助诊断浮层
+	function bindFzzdFloatingSelector(number) {
+        $("#txt_fzzd" + number).newtouchBatchFloatingSelector({
+            height: 200,
+            width: 600,
+            clickautotrigger: true,
+            url: "/NurseManage/WardMaintenance/GetryzdSelect",
+            ajaxparameters: function () {
+                return "ryzd=" + $("#txt_fzzd" + number).val() + "&ybnhlx=" + ybnhlx;
+            },
+            caption: "出院诊断",
+            colModel: [
+                { label: '名称', name: 'zdmc', widthratio: 60 },
+                { label: '拼音', name: 'py', widthratio: 20 },
+                { label: 'icd10', name: 'icd10', widthratio: 20 },
+                { label: '编号', name: 'zdbh', hidden: true },
+                { label: '内码', name: 'zdnm', hidden: true }
+            ],
+			itemdbclickhandler: function ($this) {
+				$("#txt_fzzd" + number).val($this.attr('data-zdmc'));
+                $("#txt_fzzd" + number + "dm").val($this.attr('data-zdbh'));
+			}
+		});
+	}
+
+    function clearData()
+    {
+        //$("#sel_cqfs").val("");
+        //$("#txt_cqrq").val("");
+        $("txt_zdsj").val("");
+        $("#txt_cyzd").val("");
+        $("#txt_cyzddm").val("");
+        $("#txt_fzzd1").val("");
+        $("#txt_fzzd1dm").val("");
+        $("#txt_fzzd2").val("");
+        $("#txt_fzzd2dm").val("");
+        $("#txt_fzzd3").val("");
+        $("#txt_fzzd3dm").val("");
+        $("#txt_zdyzd").val("");
+    }
+</script>

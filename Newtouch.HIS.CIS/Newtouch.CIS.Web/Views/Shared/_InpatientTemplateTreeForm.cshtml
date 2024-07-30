@@ -1,0 +1,121 @@
+﻿@using Newtouch.Infrastructure;
+<div id="floatLeftMostPartDiv" style="display:none;">
+    <div data-href="personal" data-type=@Html.Raw(((int)EnumTcfw.Person).ToString()) class=""><span>个人</span></div>
+    <div data-href="department" data-type=@Html.Raw(((int)EnumTcfw.Dept).ToString()) class=""><span>科室</span></div>
+    @if (ViewBag.bhbq)
+    {
+    <div data-href="ward" data-type=@Html.Raw(((int)EnumTcfw.Ward).ToString()) class=""><span>病区</span></div>
+    }
+    <div data-href="hospital" data-type=@Html.Raw(((int)EnumTcfw.Hosp).ToString()) class=""><span>全院</span></div>
+</div>
+<div id="floatPreTemplateTree" style="display:none;">
+    <div class="ui-layout-west">
+        <div id="treeContent">
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    var pageFlag = "";
+    function SetCurrentPageyzlx(page) {
+        pageFlag = page;
+        //模拟点击tab
+        //$("#beveltabs a:first").trigger('click');
+        if ('@ViewBag.bhbq' == "False") {
+            $('#floatLeftMostPartDiv div').css("height","33.33%");
+            //$('#beveltabs').addClass("notcontainbqmargin");
+        } else {
+            $('#floatLeftMostPartDiv div').css("height", "25%");
+        }
+          $("#floatLeftMostPartDiv div").removeClass("activepart");
+    }
+    var presTempClieckHandling = false;
+    $("#floatLeftMostPartDiv div").on("click", function (e) {
+        e.preventDefault();
+        if ($(this).hasClass('activepart')) {
+            //再点击 隐藏
+            $("#floatLeftMostPartDiv div").removeClass("activepart");
+            $('#floatPreTemplateTree').hide();
+        } else {
+            $("#floatLeftMostPartDiv div").removeClass("activepart");
+            $(this).addClass("activepart");
+            $('#floatPreTemplateTree').show();
+        }
+       
+        $("#treeContent").treeview({
+            height: $(window).height() - 100,
+            slimscroll: false,
+            url: "/DoctorManage/DoctorsAdvice/GetTreeList?tcfw=" + $(this).attr('data-type') + "&yzlx=" + pageFlag,
+            onnodeclick: function (item) {
+                $.modalOpen({
+                    id: "TemplatePresForm",
+                    title: "套餐明细",
+                    url: "/DoctorManage/DoctorsAdvice/TemplatePresForm?tcId=" + item.id + "&tclx=" + pageFlag,
+                    width: "800px",
+                    height: "650px",
+                    btn: ['复制', '关闭'],
+                    callBack: function (iframeId) {
+                        var idlist = top.frames[iframeId].submitForm();
+                        if (idlist != "") {
+                             $.najax({
+                                url: "/DoctorManage/DoctorsAdvice/GetMBDetailByDetailId",
+                                dataType: "json",
+                                data: { idList: idlist },
+                                type: "POST",
+                                loadingtext: "模板引用中，请稍后...",
+                                 success: function (resp) {
+                                    $.modalClose("TemplatePresForm");
+                                    if (resp && resp.length > 0) {
+                                        var getActionStr, grid;
+                                        var newCfh = '';
+                                        if (pageFlag == '@Html.Raw(((int)EnumYzlx.Yp).ToString())') {
+                                            getActionStr = getMActionStr();
+                                            grid = "gridmedicine";
+                                        }
+                                        if (pageFlag == '@Html.Raw(((int)EnumYzlx.Wz).ToString())') {
+                                            getActionStr = getWordActionStr();
+                                            grid = "gridword";
+                                        }
+                                        if (pageFlag == '@Html.Raw(((int)EnumYzlx.sfxm).ToString())') {
+                                            getActionStr = getIActionStr();
+                                            grid = "gridsfxm";
+                                        }
+	                                    if (pageFlag == '@Html.Raw(((int)EnumYzlx.rehab).ToString())') {
+		                                    getActionStr = getRActionStr();
+		                                    grid = "gridkfxm";
+	                                    }
+                                        if (pageFlag == '@Html.Raw(((int)EnumYzlx.Cydy).ToString())') {
+                                            getActionStr = getTActionStr();
+                                            grid = "gridTake";
+                                        }
+                                        if (pageFlag == '@Html.Raw(((int)EnumYzlx.ssyz).ToString())') {
+                                            getActionStr = getSSActionStr();
+                                            grid = "gridssyz";
+                                        }
+                                        var l = resp;
+                                        for (var i = 0; i < l.length; i++) {
+                                            l[i].Id = Math.random().toString() + new Date().getMilliseconds();
+                                            l[i].yzzt = 0;//默认未审
+                                            l[i].action = getActionStr;
+                                            l[i].zyh = currentobj.zyh;
+                                            l[i].kssj = $.getTime();
+                                            if (pageFlag == '@Html.Raw(((int)EnumYzlx.ssyz).ToString())') {
+                                                l[i].ssxhdm = l[i].xmdm;
+                                                l[i].ssxh = l[i].xmmc;
+                                                l[i].ssxhval = l[i].xmmc;
+                                            }
+                                            $("#" + grid).jqGrid("addRowData", undefined, l[i], "first");
+                                        }
+                                    }
+                                },
+                                complete: function () {
+                                    presTempClieckHandling = false;
+                                }
+                            });
+                        }
+                    }
+                });
+
+            }
+        });
+    });
+</script>

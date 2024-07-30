@@ -1,0 +1,116 @@
+﻿
+@{
+    ViewBag.Title = "OpenMadicineForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<div style="margin-top: 20px; margin-left: 30px;">
+    <span style="color:red;">*.药房药品限制</span>，比如限制中药药房只可入库（发药等操作）中药类药品
+</div>
+<form id="form1">
+    <div style="padding-top: 10px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle"><span class="required">*</span>组织机构：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle"><span class="required">*</span>药房部门编码：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="yfbmCode" name="yfbmCode" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>收费大类编码：</th>
+                <td class="formValue formDdlSelectorTd">
+                    <select id="dlCode" name="dlCode" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">排序：</th>
+                <td class="formValue">
+                    <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle" style="height: 35px;">状态：</th>
+                <td class="formValue" style="padding-top: 1px;">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/PharmacyDepartment/GetOpenMedicineFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+
+                    $('#yfbmCode').val(data.yfbmCode).trigger('change');
+                    $('#dlCode').val(data.dlCode).trigger('change');
+                }
+            });
+        }
+        else {
+            var newOrgId = $.request('orgId');
+            if (newOrgId) {
+                $("#OrganizeId").val(newOrgId).trigger('change');
+            }
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+        });
+        //组织对应的科室下拉框加载
+        $("#OrganizeId").bind("change", function () {
+            var organizeId = $(this).val();
+            //获取药房部门
+            $("#yfbmCode").bindSelect({
+                url: "/PharmacyWindow/PharmacyDepartmentList?organizeId=" + organizeId,
+                id: "yfbmCode",
+                text: "yfbmmc",
+            })
+            //获取收费大类
+            $("#dlCode").bindSelect({
+                url: "/ChargeCategory/GetTreeSelectJson?organizeId=" + organizeId,
+            })
+        });
+    }
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/PharmacyDepartment/OpenMedicineSubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

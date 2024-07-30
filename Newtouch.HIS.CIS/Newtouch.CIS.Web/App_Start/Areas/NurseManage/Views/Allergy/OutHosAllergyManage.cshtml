@@ -1,0 +1,220 @@
+﻿@{
+    ViewBag.Title = "皮试管理";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading navb-bg">
+        筛选条件
+    </div>
+    <div style="padding: 2px;">
+        <table class="form">
+            <tr>
+                <td class="formTitle">关键字：</td>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="keyword" placeholder="病历号/姓名/拼音" />
+                </td>
+                <td class="formTitle">科室：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select class="form-control" id="sel_ks">
+                        <option value="">==全部==</option>
+                    </select>
+                </td>
+                <td class="formTitle">状态：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select class="form-control" id="sel_zt">
+                        <option value="">===全部===</option>
+                        <option value="0">未执行</option>
+                        <option value="1">已执行</option>
+                    </select>
+                </td>
+                <td class="formTitle">就诊时间：</td>
+                <td class="formValue">
+                    <input id="txt_kssj" type="text" class="form-control input-wdatepicker" style="width:95%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-01")">
+                </td>
+                <td class="formTitle" style="width:5px">至</td>
+                <td class="formValue">
+                    <input id="txt_jssj" type="text" class="form-control input-wdatepicker" style="width:95%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                </td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel" style="width: 48%;float:left;">
+    <table id="gridListPatient"></table>
+    <div id="gridPager1" rel="form1"></div>
+</div>
+<div class="gridPanel" style="margin-left:0.5%;width:51.5%;float:left;">
+    <table id="gridListPs"></table>
+    <div id="gridPager2" rel="form2"></div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 7, 8 },
+    F7Text = "执行",
+    F8Text = "取消执行"
+})
+<script>
+    var localdata = {};
+    var $gridPsList = $("#gridListPs");
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+
+        });
+        Initial();
+    });
+
+    //初始化
+    function Initial() {
+        gridList();
+        gridMxInfo();
+        //绑定科室
+        $("#sel_ks").bindSelect({
+            url: "/SystemManage/SysDepartment/GetTreeSelectJson",
+        });
+    }
+
+    //主表信息
+    function gridList() {
+        var $gridList = $("#gridListPatient");
+        $gridList.dataGrid({
+            url: "/NurseManage/Allergy/GetMzPatientListJson",
+            postData: getGridListPar(),
+            height: $(window).height() - document.getElementById('gridListPatient').offsetTop - 120,
+            colModel: [
+                { label: 'Id', name: 'jzId', key: true, hidden: true },
+                //{ label: '来源', name: 'Name', width: 30, align: 'center' },
+                { label: '病历号', name: 'blh', width: 100, align: 'center' },
+                { label: '姓名', name: 'xm', width: 70, align: 'center' },
+                { label: '性别', name: 'xb', width: 30, align: 'center' },
+                { label: '出生日期', name: 'csny', width: 80, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '科室', name: 'ghksmc', width: 80, align: 'center' },
+                { label: '拼音', name: 'py', width: 50, align: 'center' }
+            ],
+            pager: "#gridPager1",
+            rowNum: '15',
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                localdata = {};
+                ajaxmxList();
+            },
+        });
+        $("#btn_search").click(function () {
+            $gridPsList.jqGrid('clearGridData');
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: getGridListPar()
+                }).trigger('reloadGrid');
+        });
+    }
+    //查询参数
+    function getGridListPar() {
+        var ksmc = $("#sel_ks").find("option:selected").text();
+        var ks = ksmc.indexOf('=') >= 0 ? "" : ksmc;
+        var keyword = $('#keyword').val();
+        var kssj = $('#txt_kssj').val();
+        var jssj = $('#txt_jssj').val();
+        var zxzt = $('#sel_zt').val();
+        return { keyword: keyword, ks: ks, kssj: kssj, jssj: jssj, zxzt: zxzt }
+    }
+
+    //加载患者皮试项目
+    function ajaxmxList() {
+        var rowData = $("#gridListPatient").jqGridRowValue();
+        var Id = rowData.jzId;
+        localdata["jzid"] = rowData.Id;
+        localdata["blh"] = rowData.blh;
+        localdata["xm"] = rowData.xm;
+        localdata["sex"] = rowData.xb;
+        $gridPsList.jqGrid('setGridParam', {
+            url: "/NurseManage/Allergy/GetMzPatientPsItemsJson",
+            postData: { Id: Id },
+        }).trigger('reloadGrid');
+    }
+
+    //皮试项目
+    function gridMxInfo() {
+        $gridPsList.dataGrid({
+            height: $(window).height() - document.getElementById('gridListPs').offsetTop - 120,
+            multiselect: false,
+            colModel: [
+                { label: 'cfmxId', name: 'cfmxId', key: true, hidden: true },
+                { label: '项目code', name: 'xmCode', hidden: true },
+                { label: '病历号', name: 'blh', hidden: true },
+                { label: '过敏信息Id', name: 'gmxxId', hidden: true },
+                { label: '项目名称', name: 'xmmc', width: 100, align: 'center' },
+                { label: '数量', name: 'sl', width: 30, align: 'center' },
+                { label: '单价', name: 'dj', width: 50, align: 'center' },
+                { label: '金额', name: 'je', width: 50, align: 'center' },
+                { label: '单位', name: 'dw', width: 50, align: 'center' },
+                { label: '执行人', name: 'CreatorName', width: 50, align: 'center' },
+                { label: '结果', name: 'Result', width: 50, align: 'center' },
+                { label: '备注', name: 'Remark', width: 100, align: 'center' }
+            ],
+            pager: "#gridPager2",
+            rowNum: '15',
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                newtouch_event_f7();
+            },
+        });
+    }
+
+    //执行
+    function newtouch_event_f7() {
+        if (!$gridPsList.jqGridRowValue().xmCode) {
+            $.modalAlert("请选中一个皮试项目", 'warning');
+            return;
+        }
+        if ($gridPsList.jqGridRowValue().Result) {
+            $.modalAlert("已经做过皮试，禁止重复操作", 'warning');
+            return;
+        }
+        var xmcode = $gridPsList.jqGridRowValue().xmCode;
+        var xmmc = $gridPsList.jqGridRowValue().xmmc;
+        var cfmxid = $gridPsList.jqGridRowValue().cfmxId;
+        $.modalOpen({
+            id: "Form",
+            title: "过敏信息",
+            url: "/NurseManage/Allergy/AllergyForm?cfmxid=" + cfmxid + "&xmcode=" + xmcode + "&xmmc=" + xmmc + "&blh=" + localdata.blh + "&xm=" + localdata.xm + "&sex=" + localdata.sex,
+            width: "500px",
+            height: "340px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $gridPsList.resetSelection();
+                    $gridPsList.trigger("reloadGrid");
+                });
+            }
+        });
+    }
+    
+    //取消执行
+    function newtouch_event_f8() {
+        var gmxxId = $gridPsList.jqGridRowValue().gmxxId;
+        var blh = $gridPsList.jqGridRowValue().blh;
+        if (!!!gmxxId) {
+            $.modalAlert("请选中一条已执行的项目", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "@Url.Action("DeleteExecutedGmxx")",
+            param: { gmxxId: gmxxId },
+            success: function () {                
+                $gridPsList.resetSelection();
+                $gridPsList.trigger("reloadGrid");
+            }
+        })
+    }
+</script>

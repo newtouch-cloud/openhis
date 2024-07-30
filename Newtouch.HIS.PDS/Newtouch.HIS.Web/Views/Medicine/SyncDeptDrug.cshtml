@@ -1,0 +1,139 @@
+﻿
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<form id="form2">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <td class="formTitle">关键字：</td>
+                <td class="formValue">
+                    <input type="text" id="srm" class="form-control" placeholder="请输入药品代码 拼音 名称" />
+                </td>
+                <td class="formTitle">药品类别：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select class="form-control" id="yplb">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle">药品剂型：</td>
+                <td class="formValue formDdlSelectorTd">
+                    <select class="form-control" id="ypjx" name="ypjx">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <td class="formTitle" rowspan="2">
+                    <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+<div class="gridPanel">
+    <table id="tbypGridList"></table>
+    <div id="tbypGridPager" rel="form2"></div>
+</div>
+<script lang="javascript">
+    var $gridList = $("#tbypGridList");
+    $(function () {
+        initialddlYPLBList();
+        initialddlJXList();
+        tbypGridList();
+    });
+
+    //药品类别
+    function initialddlYPLBList() {
+        $("#yplb").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineCategoryList"
+        });
+    }
+
+    //药品剂型
+    function initialddlJXList() {
+        $("#ypjx").bindSelect({
+            url: "/PharmacyDrugStorage/GetMedicineFormulationList",
+            id: "jxCode",
+            text: "jxmc"
+        });
+    }
+
+    //待选药品加载
+    function tbypGridList() {
+        $gridList.dataGrid({
+            url: "/Medicine/GettbypGridJson",
+            postData: $("#form1").formSerialize(),
+            height: 400,
+            colModel: [
+                { label: "主键", name: "ypId", hidden: true, key: true },
+                { label: "类别", name: "yplb", width: 70, align: 'left' },
+                { label: "药品代码", name: "ypCode", width: 70, align: 'left' },
+                { label: '药品名称', name: 'ypmc', width: 180, align: 'left' },
+                { label: '剂型', name: 'jxmc', width: 50, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left' },
+                { label: '零售价', name: 'lsj', width: 50, align: 'left' },
+                { label: '批发价', name: 'pfj', width: 50, align: 'left' },
+                { label: '单位', name: 'deptdw', width: 50, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 150, align: 'left' },
+                { label: 'bmypId', name: 'bmypId', hidden: true }
+            ],
+            multiselect: true,
+            pager: "#tbypGridPager",
+            sortname: 'bmypId asc , ypmc asc',
+            viewrecords: true,
+            gridComplete: function () {
+                var ids = $gridList.getDataIDs();
+                if (ids != null && ids.length > 0) {
+                    for (var i = 0; i < ids.length; i++) {
+                        var data = $gridList.getRowData(ids[i]);
+                        if (data.bmypId !== '') {
+                            $("#jqg_tbypGridList_" + ids[i]).attr("checked", true);
+                        }
+                    }
+                }
+            },
+            onSelectAll: function (rowids, statue) {
+                if (rowids != null && rowids.length > 0) {
+                    if (statue) {//全选
+                        Save(rowids, 0);
+                    } else { //全部取消
+                        $.modalConfirm("确定要全部删除吗？", function (flag) {
+                            if (flag) {
+                                Save(rowids, 1);
+                            }
+                        });
+                    }
+                }
+            },
+            onSelectRow: function (rowids, statue) {
+                if (statue) {//选中
+                    Save(rowids, 0);
+                } else { //取消
+                    Save(rowids, 1);
+                }
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam',
+                {
+                    postData: $("#form2").formSerialize()
+                }).trigger('reloadGrid');
+        });
+    }
+
+    //提交 operateType=0:添加  1：删除
+    function Save(items, opereateType) {
+        $.najax({
+            type: "POST",
+            url: "/Medicine/FreshList",
+            dataType: "json",
+            data: { "yp": items, "opereateType": opereateType },
+            success: function (ajaxresp) {
+                if (ajaxresp.state === 'success') {
+                    $.currentWindow().$("#gridList").trigger("reloadGrid");
+                    $.modalMsg("同步成功", 'success', 1500);
+                }
+            }
+        });
+    }
+</script>

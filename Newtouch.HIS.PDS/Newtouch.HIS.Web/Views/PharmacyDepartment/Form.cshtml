@@ -1,0 +1,167 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+        <ul class="nav nav-tabs" role="tablist" id="myTab">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 104px;margin-left:20px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>组织机构：</td>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue">
+                            <input id="yfbmmc" name="yfbmmc" type="text" class="form-control required" placeholder="请输入名称" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>编码：</td>
+                        <td class="formValue">
+                            <input id="yfbmCode" name="yfbmCode" type="text" class="form-control required" placeholder="请输入编码" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>对应科室编码：</th>
+                        <td class="formValue">
+                            <input id="ksCode" name="ksCode" type="text" class="form-control required" placeholder="请输入科室编码" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">院内外标志：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="ynwbz" name="ynwbz" type="checkbox" checked="checked"><label for="ynwbz">院内</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>药剂部门级别：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="yjbmjb" name="yjbmjb" class="form-control required">
+                                <option value="">==请选择==</option>
+                                <option value="1">一级药剂部门</option>
+                                <option value="2">二级药剂部门</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">发药标志：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="fybz" name="fybz" type="checkbox" checked="checked"><label for="fybz">允许发药</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>门诊住院标志：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="mzzybz" name="mzzybz" class="form-control required">
+                                <option value="">==请选择==</option>
+                                <!-- 药库 -->
+                                <option value="0">不发药</option>
+                                <!-- 门诊药房 -->
+                                <option value="1">门诊用药</option>
+                                <!-- 住院药房 -->
+                                <option value="2">住院用药</option>
+                                <!-- 住院药房 -->
+                                <option value="3">门诊住院通用</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>首拼：</th>
+                        <td class="formValue">
+                            <input id="py" name="py" type="text" class="form-control required" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;">状态：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/PharmacyDepartment/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+        //首拼
+        $('#yfbmmc').keyup(function () {
+            $('#py').val($(this).toShouPin());
+        })
+    }
+
+    var anPrevOrg = null;
+    $('#yfbmCode').focus(function () {
+        var organizeId = $("#OrganizeId").val();
+        if (!!!keyValue && ($.trim($(this).val()) === '' || organizeId != anPrevOrg)) {
+            anPrevOrg = organizeId;
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?topOrgIdIsStar=false&initFieldLength=8&fieldName=xt_yfbm.yfbmCode&orgId=" + organizeId + "&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#yfbmCode').val(data.data);
+                }
+            });
+        }
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/PharmacyDepartment/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

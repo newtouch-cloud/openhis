@@ -1,0 +1,355 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "调拨入库";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var ffzt = new[] {
+        (int) EnumSLDDeliveryStatus.None,
+        (int) EnumSLDDeliveryStatus.Part,
+    };
+}
+
+<style>
+    .txt-ffsl {
+        height: 18px;
+        line-height: 20px;
+        margin: 3px !important;
+        width: 80px;
+    }
+
+    .form-control {
+        padding: 0 3px;
+    }
+</style>
+
+<form id="form1" style="overflow-x: hidden;">
+    <div class="panel panel-default" style="margin-bottom: 5px;">
+        <div class="panel-heading">筛选信息</div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">申请单号：</td>
+                <td class="formValue"><input type="text" id="sldh" name="sldh" class="form-control" placeholder="请输入申领单号" /></td>
+                <th class="formTitle"><span class="required">*</span>发药药房：</th>
+                <td class="formValue">
+                    <input type="text" id="fybmmc" name="fybmmc" class="form-control" placeholder="请选择发药药房" autocomplete="off" />
+                    <input type="hidden" id="fybm" />
+                </td>
+                <th class="formTitle" style="width: 75px;padding-right: 0;">日期：</th>
+                <td class="formValue" style="width:130px;">
+                    <input id="startDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.AddDays(-31).ToString("yyyy-MM-dd 00:00")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                </td>
+                <th class="formTitle" style="width: 35px;padding-right: 0;">到：</th>
+                <td class="formValue" style="width:130px;">
+                    <input id="endDate" type="text" class="form-control input-wdatepicker " value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm' })" />
+                </td>
+                <td class="formTitle">发药状态：</td>
+                <td class="formValue">
+                    @Html.DropDownList("ffzt", EnumSLDDeliveryStatus.None.ToSomeDescSelectList(String.Join(",", ffzt)), "全部", new { @class = "form-control" })
+                </td>
+                <td class="formTitle">
+                    <input type="button" class="btn btn-primary btn-md" value="查询" id="btn_search" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv_right" style="float: left; margin-left: 305px;">
+        <table id="MedicineGridList"></table>
+        <div id="gridPager2" rel="form1"></div>
+        @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+   {
+       ShowKeyList = new[] { 8 },
+       F8Text = "入库"
+   })
+    </div>
+    <div id="dv_left" class="panel panel-default" style="float: left; width:300px; margin-left:-100%;">
+        <table id="parentgridList"></table>
+    </div>
+</form>
+<script>
+    var globalData = [];
+    var medicineData = [];
+    var lastRowId;
+    var fymx = $(window).width() - $("#dv_left").width() - 5;
+    var $MedicineGridList = $("#MedicineGridList");
+
+    $(function () {
+        initLayout();
+        $(window).resize(function () {
+            initLayout();
+        });
+        gridList();
+        medicineGridList([]);
+        InitBackspaceKey("fybmmc");
+        initFybm();
+    });
+
+    //按backspace键清楚所有
+    function InitBackspaceKey(id) {
+        $("#" + id).keydown(function (e) {
+            var e = window.event ? window.event : e;
+            var keyCode = e.which ? e.which : e.keyCode;
+            if (keyCode === 8) {
+                $("#" + id).val("");
+            }
+        });
+    }
+
+    //自适应
+    function initLayout() {
+        $("#dv_right").width(fymx);
+    }
+
+    //初始化发药部门
+    function initFybm() {
+        $("#fybmmc").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 200,
+            width: 400,
+            url: "GetYfbmList",
+            ajaxmethod: 'Get',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#fybmmc").val());
+                return reqData;
+            },
+            colModel: [
+                { label: '部门代码', name: 'yfbmCode', widthratio: 40 },
+                { label: '部门名称', name: 'yfbmmc', widthratio: 60 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#fybmmc").val($thistr.attr('data-yfbmmc'));
+                $("#fybm").val($thistr.attr('data-yfbmCode'));
+                return;
+            }
+        });
+    }
+
+    function gridList() {
+        var $gridList = $("#parentgridList");
+        $gridList.dataGrid({
+            caption: "申领信息",
+            url: "RequestInfo",
+            height: $(window).height() - 190,
+            postData: $("#form1").formSerialize(),
+            colModel: [
+                {
+                    label: '发药状态', name: 'ffzt', width: 50, align: 'left',
+                    formatter: function (cellvalue) {
+                        switch (cellvalue) {
+                            case @((int)EnumSLDDeliveryStatus.None): return "未入库";
+                            case @((int)EnumSLDDeliveryStatus.Part): return "部分入库";
+                            case @((int)EnumSLDDeliveryStatus.All): return "已入库";
+                            case @((int)EnumSLDDeliveryStatus.Abandon): return "已终止";
+                        }
+                    }
+                },
+                { label: "申请单号", name: "Sldh", width: 120, align: 'left' },
+                { label: '申请时间', name: 'CreateTime', width: 85, align: 'left', formatter: 'date', formatoptions: { srcformat: 'y-m-d H:i', newformat: 'y-m-d H:i' } },
+                { label: '药房部门名称', name: 'yfbmmc', width: 100, align: 'left' },
+                {
+                    label: '终止', name: '', width: 40, align: 'center', formatter: function (cellvalue, options, rowObject) {
+                        if (rowObject.ffzt === @((int)EnumSLDDeliveryStatus.Abandon)||rowObject.ffzt === @((int)EnumSLDDeliveryStatus.All)) {
+                            return "";
+                        }
+                        return "<input type=\"button\" class=\"btn btn-default btn-md\" value=\"终止\" onclick=\"btn_Abandon('" + arguments[1].rowId + "'," + rowObject.ffzt + ");\" />";
+                    }
+                },
+                { label: "主键", name: "sldId", hidden: true, key: true },
+                { label: "ffzt", name: "ffzt", hidden: true }
+            ],
+            sortname: 'ffzt ,CreateTime desc',
+            multiselect: true,
+            viewrecords: false,
+            beforeRequest: function () {
+                $("#gridPager1_left").hide();
+                $("#gridPager1_right").hide();
+            },
+            onSelectRow_page: function (rowid, status) {
+                if (!status) {
+                    var newMedicineData = [];
+                    for (var i = 0; i < medicineData.length; i++) {
+                        if (medicineData[i].sldId !== rowid) {
+                            newMedicineData.push(medicineData[i]);
+                        }
+                    }
+                    medicineData = [];
+                    medicineData = newMedicineData;
+
+                    if (medicineData.length === 0) {
+                        $(".unwritten").show();
+                    } else {
+                        $(".unwritten").hide();
+                    }
+                    $MedicineGridList.jqGrid("clearGridData");
+                    $MedicineGridList.newtouchLocalDataGrid(null, medicineData);
+                    return;
+                }
+                var data = $("#parentgridList").jqGrid('getRowData', rowid);
+                var sldId = data.sldId;
+                if (data.ffzt === '@((int)EnumSLDDeliveryStatus.Abandon)') {
+                    $("#jqg_parentgridList_" + rowid).hide();
+                    $.modalAlert("该条记录已终止", "warning");
+                    return;
+                } else if (data.ffzt === '@((int)EnumSLDDeliveryStatus.All)') {
+                    $("#jqg_parentgridList_" + rowid).hide();
+                    $.modalAlert("该条记录已全发药", "warning");
+                    return;
+                }
+                $.najax({
+                    type: "Get",
+                    url: "RequestMedicineInfo?sldId=" + sldId,
+                    dataType: "json",
+                    success: function (res) {
+                        if (res != null && res.length > 0) {
+                            for (var k = 0; k < res.length; k++) {
+                                res[k].Slbm = data.Slbm;
+                                medicineData.push(res[k]);
+                            }
+                            if (medicineData.length === 0) {
+                                $(".unwritten").show();
+                            } else {
+                                $(".unwritten").hide();
+                            }
+                            $MedicineGridList.jqGrid("clearGridData");
+                            $MedicineGridList.newtouchLocalDataGrid(null, medicineData);
+                        }
+                    }
+                });
+            }
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: $("#form1").formSerialize()
+            }).trigger('reloadGrid');
+            medicineData = [];
+            $MedicineGridList.jqGrid("clearGridData");
+            $MedicineGridList.trigger("reloadGrid");
+        });
+    }
+
+    //终止
+    function btn_Abandon(id, zt) {
+        if (zt === @((int)EnumSLDDeliveryStatus.None) || zt === @((int)EnumSLDDeliveryStatus.Part)) {
+            $.najax({
+                url: "/DrugStorage/Abandonzt?id=" + id,
+                dataType: "json",
+                cache: false,
+                success: function (res) {
+                    if (res.state === "success") {
+                        $.modalMsg("终止成功！", 'success', 1000);
+                    }
+                    $("#parentgridList").resetSelection();
+                    $("#parentgridList").trigger("reloadGrid");
+                    $MedicineGridList.jqGrid("clearGridData");
+                    $(".unwritten").show();
+                }
+            });
+        }
+    }
+
+    function medicineGridList() {
+        $MedicineGridList.newtouchLocalDataGrid({
+            autoScroll: true,
+            caption: "药品信息",
+            height: $(window).height() - 220,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            colModel: [
+                {
+                    label: '现发数量', name: 'fysl', width: 55, align: 'center'
+                },//包装单位数量
+                { label: '单位', name: 'bzdw', width: 40, align: 'center' },
+                { label: '已发数量', name: 'yfslStr', width: 55, align: 'right' },
+                { label: '申领数量', name: 'Sl', width: 55, align: 'right' },
+                { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
+                { label: '规格', name: 'ypgg', width: 80, align: 'left' },
+                { label: '生产厂家', name: 'ycmc', width: 110, align: 'left' },
+                { label: '批发价', name: 'Pfj', width: 50, align: 'right' },
+                { label: '零售价', name: 'Lsj', width: 50, align: 'right' },
+                { label: '批发总额', name: 'Pjze', width: 50, align: 'right' },
+                { label: '零价总额', name: 'lsje', width: 50, align: 'right' },
+                { label: "sldmxId", name: "sldmxId", hidden: true },
+                { label: '药品编码', name: 'Ypdm', hidden: true },
+                { label: '申领部门', name: 'Slbm', hidden: true },
+                { label: '转换因子（包装单位）', name: 'zhyz', hidden: true },
+                { label: '申领数量', name: 'Slsl', hidden: true },
+                { label: '已发数量', name: 'yfsl', hidden: true },
+                { label: '库存数量', name: 'kcsl', hidden: true },
+                { label: '身亲单ID', name: 'sldId', hidden: true },
+                { label: '出库部门', name: 'Ckbm', hidden: true },
+                { label: 'pc', name: 'pc', hidden: true },
+                { label: 'Ph', name: 'Ph', hidden: true },
+                { label: 'sldh', name: 'sldh', hidden: true },
+                { label: 'Yxq', name: 'Yxq', hidden: true },
+                { label: 'crkmxId', name: 'crkmxId', hidden: true },
+                { label: 'jj', name: 'jj', hidden: true },
+                { label: 'Rkzhyz', name: 'Rkzhyz', hidden: true }
+            ],
+            pager: "#gridPager2",
+            sortname: 'ypmc desc',
+            viewrecords: true
+        });
+    }
+
+    //入库
+    function newtouch_event_f8() {
+        var kcInfoJsonSave = $MedicineGridList.jqGrid('getRowData_AllLine');
+        if (kcInfoJsonSave === [] || kcInfoJsonSave.length === 0) {
+            $.modalAlert("发药失败,无药品信息！", 'error');
+            return false;
+        }
+
+        debugger;
+        var b = false;
+        var dic = [];
+        $.each(kcInfoJsonSave, function (index, item) {
+            var obj={
+                        Ypdm: item.Ypdm,
+                        Kcsl: item.Slsl,
+                        Pc: item.pc,
+                        Ph: item.Ph,
+                        sldh: item.sldh,
+                        sldId: item.sldId,
+                        sldmxId: item.sldmxId,
+                        Yxq: item.Yxq,
+                        crkmxId: item.crkmxId,
+                        jj: item.jj,
+                        Rkzhyz: item.Rkzhyz,
+                        Ckbm:item.Ckbm,
+                    };
+            for (var i = 0; i < dic.length; i++) {
+                if (dic[i].key === obj.Ckbm) {
+                    dic[i].value.push(obj);
+                    b = true;
+                    break;
+                }
+            }
+            if (!b) {
+                dic.push({ 'key': obj.Ckbm, 'value': [obj] });
+            }
+        });
+
+        $.najax({
+            type: "POST",
+            url: "ExecHandOutMedicineByReq",
+            data: { rkdmx: dic },
+            dataType: "json",
+            success: function (res) {
+                medicineData = [];
+                if (res.state === "success") {
+                    $.modalMsg('入库成功', 'success', 1000);
+                    $("#parentgridList").resetSelection();
+                    $("#parentgridList").trigger("reloadGrid");
+                    $('#parentgridList').jqGrid("clearGridData");
+
+                    $MedicineGridList.resetSelection();
+                    $MedicineGridList.trigger("reloadGrid");
+                    $MedicineGridList.jqGrid("clearGridData");
+                } else if (res.state === "error") {
+                    $.modalAlert(res.message, 'error');
+                }
+            }
+        });
+    }
+
+</script>
+

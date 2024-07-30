@@ -1,0 +1,600 @@
+﻿@{
+    ViewBag.Title = "注射输液执行";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var mzzszPrinturl = SysConfigReader.OrgReportLink("mzzszPrint");//注射输液单 zszPrint
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<style>
+    #btn_search {
+        width: 45px;
+        font-weight: bolder;
+    }
+    .red {
+        color: red;
+    }
+
+</style>
+<div class="panel panel-default">
+    <div class="panel-heading navb-bg">
+        筛选条件
+    </div>
+    <table class="form">
+        <tr>
+            <td class="formTitle" style="display:none">卡号：</td>
+            <td class="formValue" style="display:none">
+                <input type="text" class="form-control" id="txtkh" placeholder="卡号" />
+            </td>
+            <td class="formTitle">门诊号：</td>
+            <td class="formValue">
+                <input type="text" class="form-control" id="txtmzh" placeholder="门诊号" />
+            </td>
+            <td class="formTitle">发票号：</td>
+            <td class="formValue">
+                <input type="text" class="form-control" id="txtfph" placeholder="发票号" />
+            </td>
+            <td class="formTitle"><span style="color:#ff0000;">*</span>收费时间：</td>
+            <td class="formValue">
+                <input id="txtsfkssj" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" value="@DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd 00:00:00")">
+            </td>
+            <td class="formTitle" style="width:10px">至</td>
+            <td class="formValue">
+                <input id="txtsfjssj" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")">
+            </td>
+            <td class="formValue">
+                <input type="button" class="btn btn-primary btn-md" id="btn_search" value="查询" />
+                <input type="button" class="btn btn-primary btn-md" id="btn_sync" value="同步处方" />
+            </td>
+        </tr>
+    </table>
+</div>
+<div class="gridPanel" style="width: 28%;float:left;">
+    <table id="gridPatList"></table>
+    <div id="gridPatPager" rel="form1"></div>
+</div>
+<div class="gridPanel" style="margin-left:0.5%;width:71.5%;float:left;">
+    <table id="gridRpList"></table>
+    <div id="gridRpPager" rel="form1"></div>
+</div>
+<div style="margin-left:0.5%;">
+    <table class="form" style="width:200px;float: left;">
+        <tr>
+            <td class="formTitle">座号/床号：</td>
+            <td class="formValue">
+                <input id="txtSeatNum" name="txtSeatNum" type="text" class="form-control" placeholder="座号/床号" value="" />
+            </td>
+        </tr>
+    </table>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new[] { 4,6, 7, 8, 9, 10,2 },
+    F8Text="留观登记",
+    F6Text= "成组",
+    F7Text = "执行",
+    F4Text = "输液开始",
+    F9Text = "输液结束",
+    F10Text = "打印条码",
+    F2Text = "打印注射输液单",
+})
+</div>
+@Html.Partial("_PrintCommonView")
+<script>
+    var $gridList = $("#gridPatList");
+    var $gridMxList = $("#gridRpList");
+    var currentMzh = "";
+    $("#btn_bottombutton_f9").attr("style", "display:none;");
+    $("#btn_bottombutton_f4").attr("style", "display:none;");
+    $(".toolbar").width(500);
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+
+        });
+        Initial();
+        //同步
+        $("#btn_sync").click(function () {
+            $.najax({
+                url: "@Url.Action("SyncSettRpDetail")",
+                data: getGridPatPar(),
+                dataType: "json",
+                type: "Get",
+                success: function (data) {
+                    if (data != null && data.state === "success") {
+                        $("#btn_search").trigger("click");
+                    }
+                }
+            });
+        });
+        $("#btn_search").click(function () {
+            currentMzh = "";
+            if ($("#txtsfkssj").val() === "" || $("#txtsfjssj").val() === "") {
+                $.modalMsg("收费时间不能为空", "warning");
+                return;
+            }
+            $gridMxList.jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam',
+            {
+                url: "/NurseManage/Infusion/PatientListQuery",
+                postData: getGridPatPar(),
+            }).trigger('reloadGrid');
+        });
+
+    });
+
+    //回车事件绑定
+    $(window).keyup(function (event) {
+        if (event.keyCode == 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //初始化
+    function Initial() {
+        gridList();
+    }
+
+    $('#txtmzh ,#txtfph,#txtsfkssj,#txtsfjssj').change(function () {
+        currentMzh = "";
+        if ($("#txtsfkssj").val() === "" || $("#txtsfjssj").val() === "") {
+            $.modalMsg("收费时间不能为空", "warning");
+            return;
+        }
+        $gridMxList.jqGrid("clearGridData");
+        $gridList.jqGrid('setGridParam',
+        {
+            url: "/NurseManage/Infusion/PatientListQuery",
+            postData: getGridPatPar(),
+        }).trigger('reloadGrid');
+    });
+    //组装患者信息查询条件
+    function getGridPatPar() {
+        return { kh: $("#txtkh").val(), mzh: $("#txtmzh").val(), fph: $("#txtfph").val(), kssj: $("#txtsfkssj").val(), jssj: $("#txtsfjssj").val() }
+    }
+
+    //主表信息
+    function gridList() {
+        //患者信息
+        $gridList.dataGrid({
+            url: "/NurseManage/Infusion/PatientListQuery",
+            postData: getGridPatPar(),
+            height: $(window).height() - document.getElementById('gridPatList').offsetTop - 70,
+            colModel: [
+                { label: '姓名', name: 'xm', width: 60, align: 'center' },
+                { label: '卡号', name: 'kh', width: 80, align: 'center', hidden: true },
+                { label: '门诊号', name: 'mzh', width: 100, align: 'center' },
+            ],
+            pager: "#gridPatPager",
+            rowNum: '25',
+            sortname: 'xm',
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                var rowData = $gridList.jqGrid('getRowData', rowid);
+                currentMzh = rowData.mzh;
+                $gridMxList.jqGrid('setGridParam',
+                    {
+                        url:"@Url.Action("MzsyypxxQury")",
+                        postData: { mzh: rowData.mzh}
+                    }).trigger('reloadGrid');
+            }
+        });
+        var checkTrigger = false;
+        var list = new Array();
+        var liststu = false;
+        var j = 0;
+        //输液药品信息
+        $gridMxList.dataGrid({
+            url: "",
+            height: $(window).height() - document.getElementById('gridRpList').offsetTop - 120,
+            multiselect: true,
+            colModel: [
+                { label: 'Id', name: 'Id', key: true, hidden: true },
+                { label: '姓名', name: 'xm', width: 30, align: 'center' },
+                { label: '组', name: 'groupNo', width: 30, align: 'center' },
+                { label: '处方号', name: 'cfh', width: 110, align: 'center' },
+                {
+                    label: '皮试标识', name: 'ispsbz', width: 50, align: 'center', formatter: function (val) {
+                        return val == 1 ? "是" : "否"
+                    }
+                },
+                {
+                    label: '皮试结果', name: 'psjg', width: 50, align: 'center'
+                },
+                {
+                    label: '留观标志', name: 'islgbz', width: 50, align: 'center', formatter: function (val) {
+                        return val == 1 ? "是" : "否"
+                    }
+                },
+                { label: '总次数', name: 'zcs', width: 50, align: 'center' },
+                { label: '已执行次数', name: 'yzxcs', width: 80, align: 'center' },
+                { label: '床/座号', name: 'seatNum', width: 50, align: 'center' },
+
+                { label: '药品名称', name: 'ypmc', width: 100, align: 'center' },
+                { label: '规格', name: 'ypgg', width: 50, align: 'left' },
+                { label: '用法', name: 'yfmc', width: 50, align: 'center' },
+                { label: '用量', name: 'ylStr', width: 50, align: 'center', hidden: true },
+                { label: '数量', name: 'slStr', width: 50, align: 'center' },
+                { label: '剂量', name: 'jlStr', width: 50, align: 'center' },
+                { label: '收费时间', name: 'sfsj', width: 115, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: 'cfId', name: 'cfId', hidden: true },
+                //{ label: '输液开始', name: 'sykssj', width: 115, align: 'center',hidden:true, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                //{ label: '输液结束', name: 'syjssj', width: 115, align: 'center', hidden: true, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                //{ label: '配药师', name: 'dispenserName', width: 50, align: 'left' },
+                //{ label: '执行人', name: 'executorName', width: 50, align: 'left' },
+                //{ label: '备注', name: 'remark', width: 100, align: 'left' }
+            ],
+            pager: "#gridRpPager",
+            rowNum: '25',
+            sortname: 'groupNo',
+            viewrecords: true,
+            gridComplete: function () {
+                var ids = $("#gridRpList").jqGrid('getDataIDs');
+                for (var i = 0; i < ids.length; i++) {
+                    var rowData = $("#gridRpList").jqGrid('getRowData', ids[i]);
+                    if (rowData.islgbz == "是") {
+                        $('#gridRpList tr[id="' + ids[i] + '"]').addClass('red');
+                    }
+                }
+            },
+            onSelectRow: function (rowIndex, s) {
+                if (!checkTrigger) {
+                    var len = 0;
+                    var rowData = $("#gridRpList").jqGrid('getRowData', rowIndex);
+                    var ids = $("#gridRpList").jqGrid('getRowData_AllLine');
+
+                    liststu = s; //同步状态
+                    for (var i = 0; i < ids.length; i++) {
+                        if (ids[i].groupNo == rowData.groupNo && ids[i].groupNo != "") {
+                            if (s == true) {
+                                if (rowIndex != ids[i].Id) {
+                                    list[len] = ids[i].Id;
+                                    len += 1;
+                                }
+                            }
+                            else {
+                                if (rowIndex != ids[i].Id) {
+                                    list[len] = ids[i].Id;
+                                    len += 1;
+                                }
+                            }
+                        }
+
+                    }
+                    checkTrigger = true;
+                }
+
+                if (list.length > 0) {
+
+                    for (j = j; j < list.length; j++) {
+                        if (liststu) //同组选中
+                        {
+                            j = j + 1;
+                            $("#gridRpList").jqGrid("setSelection", list[j - 1], true);
+
+                        }
+                        else { //同组取消选中
+                            //j = j + 1;
+                            $("#gridRpList").jqGrid("setSelection", list[j], false);      //取消不触发onselectrow
+                        }
+
+                    }
+                }
+
+                j = 0;
+                checkTrigger = false;
+                list = new Array();
+                liststu = false;
+            }
+        });
+    }
+
+    function ValidationExeCute()
+    {
+        var validpsMsg = "";
+        var validlgMsg = "";
+        var selRowIds = jQuery("#gridRpList").jqGrid("getGridParam", "selarrrow");//选中的id
+        if (selRowIds == null || selRowIds.length === 0) return;
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridRpList").jqGrid('getRowData', selRowIds[i]);
+            if (rowData.ispsbz == "是" && rowData.psjg == "阳性") {
+                validpsMsg = "处方号:" + rowData.cfh + "皮试结果为阳性";
+            }
+            if (rowData.ispsbz == "是" && rowData.psjg=="") {
+                validpsMsg = "处方号:" + rowData.cfh + "未做皮试";
+            }
+            //if (rowData.islgbz == "是") {
+
+            //}
+
+            return validpsMsg;
+        }
+    }
+
+    //获取选中checkbox的ID
+    function getCheckedIds() {
+        var allChk = $("#gridRpList input[type=checkbox]:checked");
+        if (allChk.length == 0) return null;
+        var ids = [];
+        $.each(allChk, function (index, item) {
+            ids.push($(item).parent().parent().parent()[0].id);
+        });
+        return ids;
+    }
+    function newtouch_event_f8() {
+        if (currentMzh === "") {
+            $.modalMsg("请选择患者", "warning");
+            return;
+        }
+        var ids = getCheckedIds();
+        //var selRowIds = $("#gridRpList").jqGrid("getGridParam", "selarrrow");//选中的id
+        if (ids == null || ids.length <= 0) {
+            $.modalMsg("请勾选要登记留观的处方", "warning");
+            return;
+        }
+        var idsstr = "";
+        var cfh = ""; //只限制选择单个处方进行登记
+        for (var i = 0; i < ids.length; i++) {
+            var rowData = $("#gridRpList").jqGrid('getRowData', ids[i]);
+            if (cfh != "") {
+                if (cfh != rowData.cfh) {
+                    $.modalMsg("只能选择单个处方进行留观登记", "warning");
+                    return;
+                }
+            }
+            cfh = rowData.cfh;
+            if (rowData.islgbz != "是") {
+                $.modalMsg("只有处方中为留观的才可以进行留观登记", "warning");
+                return;
+            }
+            idsstr += rowData.Id + ",";
+        }
+        console.log(idsstr);
+        $.modalOpen({
+            id: "observationFrom",
+            title: "留观登记",
+            url: "/NurseManage/Infusion/observationFrom?keyValue=" + idsstr,
+            width: "1000px",
+            height: "700px",
+            callBack: function (iframeId, isClose) {
+                top.frames[iframeId].SavaOutArea();
+                $.loading(false);
+                $.modalClose("observationFrom");
+            }
+        });
+    }
+        //分组
+        function newtouch_event_f6() {
+            if (currentMzh === "") {
+                $.modalMsg("请选择患者", "warning");
+                return;
+            }
+            var ids = getCheckedIds();
+            if (ids == null || ids.length <= 0) {
+                $.modalMsg("请勾选要成组的药品", "warning");
+                return;
+            }
+            $.najax({
+                url: "@Url.Action("Grouping")",
+                data: { tags: ids, mzh: currentMzh },
+                dataType: "json",
+                type: "Post",
+                success: function (data) {
+                    if (data != null && data.state === "success") {
+                        $gridMxList.jqGrid('setGridParam',
+                        {
+                            url: "@Url.Action("MzsyypxxQury")",
+                            postData: { mzh: currentMzh }
+                        }).trigger('reloadGrid');
+                    }
+                }
+            });
+        }
+
+        //执行
+        function newtouch_event_f7() {
+            if (currentMzh === "") {
+                $.modalMsg("请选择患者", "warning");
+                return;
+            }
+            var ids = getCheckedIds();
+            if (ids == null || ids.length <= 0) {
+                $.modalMsg("请勾选要执行的药品", "warning");
+                return;
+            }
+            var viladExe = ValidationExeCute();
+            if (viladExe) {
+                $.modalConfirm(viladExe + "是否继续执行?", function (flag) {
+                    if (flag) {
+                        syExeCute(ids);
+                    }
+                });
+            }
+            else {
+                syExeCute(ids);
+            }
+
+        }
+
+        function syExeCute(ids)
+        {
+            var keyValue = "";
+            for (var i = 0; i < ids.length; i++) {
+                keyValue += ids[i] + ",";
+            }
+            $.modalOpen({
+                id: "Form",
+                title: "输液执行",
+                url: "/NurseManage/Infusion/InjectionForm?keyValue=" + keyValue + "&seatNum=" + $("#txtSeatNum").val(),
+                width: "500px",
+                height: "400px",
+                callBack: function (iframeId, isClose) {
+                    $.currentWindow(iframeId).AcceptClick(function () {
+                        $gridMxList.jqGrid('setGridParam',
+                        {
+                            url: "@Url.Action("MzsyypxxQury")",
+                            postData: { mzh: currentMzh }
+                    }).trigger('reloadGrid');
+                });
+                }
+        });
+        }
+
+        //开始输液
+        function newtouch_event_f4() {
+            if (currentMzh === "") {
+                $.modalMsg("请选择患者", "warning");
+                return;
+            }
+            var ids = getCheckedIds();
+            if (ids == null || ids.length <= 0) {
+                $.modalMsg("请勾选要开始输液的药品", "warning");
+                return;
+            }
+            $.najax({
+                url: "@Url.Action("StartInfusion")",
+                data: { tags: ids, seatNum: $("#txtSeatNum").val() },
+                dataType: "json",
+                type: "Post",
+                success: function (data) {
+                    if (data != null && data.state === "success") {
+                        $gridMxList.jqGrid('setGridParam',
+                        {
+                            url: "@Url.Action("MzsyypxxQury")",
+                            postData: { mzh: currentMzh }
+                        }).trigger('reloadGrid');
+                    }
+                }
+            });
+        }
+
+        //结束输液
+        function newtouch_event_f9() {
+            if (currentMzh === "") {
+                $.modalMsg("请选择患者", "warning");
+                return;
+            }
+            var ids = getCheckedIds();
+            if (ids == null || ids.length <= 0) {
+                $.modalMsg("请勾选要结束输液的药品", "warning");
+                return;
+            }
+            $.najax({
+                url: "@Url.Action("EndInfusion")",
+                data: { tags: ids },
+                dataType: "json",
+                type: "Post",
+                success: function (data) {
+                    if (data != null && data.state === "success") {
+                        $gridMxList.jqGrid('setGridParam',
+                        {
+                            url: "@Url.Action("MzsyypxxQury")",
+                            postData: { mzh: currentMzh }
+                        }).trigger('reloadGrid');
+                    }
+                }
+            });
+        }
+        function newtouch_event_f2() {
+            var selRowIds = jQuery("#gridRpList").jqGrid("getGridParam", "selarrrow");//选中的id
+            if (selRowIds == null || selRowIds.length === 0) {
+                $.modalMsg("请选择输液药品", "warning");
+                return;
+            }
+            //var cfh = "";
+            //var cfid = "";
+            //for (var i = 0; i < selRowIds.length; i++) {
+            //    var rowData = $("#gridRpList").jqGrid('getRowData', selRowIds[i]);
+            //    if (cfh != "" && cfh != rowData.cfh)
+            //    {
+            //        $.modalMsg("请选择同一组处方输液药品进行打印", "warning");
+            //        return;
+            //    }
+            //    cfh = rowData.cfh;
+            //    cfid = rowData.cfId;
+            //}
+            var groupNo = "";
+            var cfidList = new Array();
+            for (var i = 0; i < selRowIds.length; i++) {
+                var rowData = $("#gridRpList").jqGrid('getRowData', selRowIds[i]);
+                if (groupNo != "" && groupNo != rowData.groupNo) {
+                    $.modalMsg("请选择同一组处方输液药品进行打印", "warning");
+                    return;
+                }
+                cfh = rowData.groupNo;
+                if (cfidList.indexOf(rowData.cfId) == -1) {
+                    cfidList.push(rowData.cfId);
+                }
+            }
+            cfid = cfidList.join(",");
+            var rpturl = '@Html.Raw(reportUrl)' + "?tempCode=1294" + "&systemCode=" + '@reportSystemCode' + "&orgId=" + '@curOpr.OrganizeId';//'@Html.Raw(mzzszPrinturl)';
+            rpturl = rpturl + "&mzh=" + currentMzh + "&cfId=" + cfid;
+            window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        }
+
+        //打印
+        function newtouch_event_f10() {
+            if (currentMzh === "") {
+                $.modalMsg("请选择患者", "warning");
+                return;
+            }
+            var selRowIds = jQuery("#gridRpList").jqGrid("getGridParam", "selarrrow");//选中的id
+            if (selRowIds == null || selRowIds.length === 0) {
+                $.modalMsg("请勾选要打印输液的药品", "warning");
+                return;
+            }
+            var cfh = "";
+            var tmpIds = "";
+            for (var i = 0; i < selRowIds.length; i++) {
+                var rowData = $("#gridRpList").jqGrid('getRowData', selRowIds[i]);
+                if (cfh != "" && cfh != rowData.cfh) {
+                    $.modalMsg("请选择同一组处方输液药品进行打印", "warning");
+                    return;
+                }
+                cfh = rowData.cfh;
+                tmpIds = rowData.Id;
+            }
+            //var ids = getCheckedIds();
+            //if (ids == null || ids.length <= 0) {
+            //    $.modalMsg("请勾选要打印输液的药品", "warning");
+            //    return;
+            //}
+            //var tmpIds = "";
+            //for (var i = 0; i < ids.length; i++) {
+            //    tmpIds += ids[i] + ",";
+            //}
+            $.loading(true, '数据查询中，请稍后...');
+
+            $.ajax({
+                url: "@Url.Action("PrintBottleLabel")",
+                type: 'get',
+                data: { tags: tmpIds },
+                async: true,
+                cache: false,
+                success: function (res) {
+                    if (!!res) {
+                        $.loading(false);
+                        $.modalOpen({
+                            id: "PrintBottleLabel",
+                            title: "瓶贴打印",
+                            url: "/NurseManage/Infusion/PrintBottleLabel?tags=" + tmpIds,
+                            width: "500px",
+                            height: "480px",
+                            btn : ['', '关闭'],
+                            btnclass : ['', 'btn btn-danger'],
+                            callBack: function (iframeId) {
+                                $.loading(false);
+                            }
+                        });
+
+                        //webPrint.PrintHtml(res);
+                    }
+                    else {
+                        $.modalAlert('打印内容数据加载失败', 'error');
+                        return;
+                    }
+                },
+                complete: function () {
+                    $.loading(false);
+                }
+            });
+        }
+</script>

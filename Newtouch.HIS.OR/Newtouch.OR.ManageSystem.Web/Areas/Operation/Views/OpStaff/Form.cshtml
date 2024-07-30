@@ -1,0 +1,73 @@
+﻿
+@{
+    ViewBag.Title = "手术人员详细信息";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding-top: 20px; margin-right: 30px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">工号：</th>
+                <td class="formValue">
+                    <input id="Code" name="Code" type="text" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">姓名：</th>
+                <td class="formValue">
+                    <input id="Name" name="Name" type="text" onchange="getZjm()" class="form-control" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">助记码：</th>
+                <td class="formValue">
+                    <input id="zjm" name="zjm" type="text" readonly="true" class="form-control" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        if (!!keyValue) {
+            $.ajax({
+                url: "/Operation/OpStaff/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    getZjm();
+                }
+            });
+        }
+    });
+
+    function AcceptClick(callBack) {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+
+        $.submitForm({
+            url: "/Operation/OpStaff/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                callBack();
+                $.modalClose();
+            }
+        });
+    }
+
+    //获取手术名称首拼音
+    function getZjm() {
+        var Name = $("#Name").val();
+        if (Name) {
+            var zjm = $("#Name").toShouPin();
+            $("#zjm").val(zjm);
+        }
+    }
+</script>
+

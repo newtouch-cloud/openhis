@@ -1,0 +1,851 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "采购药品";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+
+<style>
+    .inline {
+        width: 80%;
+        display: inline;
+    }
+
+    .PriceInline {
+        width: 70%;
+        display: inline;
+    }
+
+    #dv-detail table th {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail .ui-jqgrid-labels, #dv-detail .jqgrow .ui-row-ltr {
+        height: 30px;
+        vertical-align: middle;
+    }
+
+
+    #dv-detail table td {
+        border: solid 1px #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #dv-detail input[role=textbox] {
+        padding: 2px 2px;
+    }
+
+    #gridList .ckbox label {
+        margin-top: 24px;
+    }
+</style>
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">发药信息</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>配送点：</th>
+                <td class="formValue">
+                    <input type="text" id="psd" name="psd" class="form-control" placeholder="请选择配送点" autocomplete="off" />
+                    <input type="hidden" id="psdbm" />
+                </td>
+                @*<td class="formValue" id="psdtd">
+                    <select id="psd" name="psdOptionRadio" class="form-control required">
+                        <option value="MDWGK01">上海明德五官科医院</option>
+                    </select>
+                </td>*@
+                <th class="formTitle"><span class="required">*</span>订单类型：</th>
+                <td class="formValue" id="ddlxtd">
+                    <select id="ddlx" name="ddlx" class="form-control required">
+                        <option value="1">医院自行订单</option>
+                        <option value="2">托管药库订单</option>
+                        <option value="3">特需药品订单</option>
+                    </select>
+                </td>
+                <th class="formTitle "><span class="required">*</span>最晚到货日期：</th>
+                <td class="formValue">
+                    <input id="zwdhrq" type="text" class="form-control input-wdatepicker" style="width:90%; float:left;" value="@DateTime.Now.AddMonths(1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                @*<th class="formTitle "><span class="required">*</span>药企：</th>
+        <td class="formValue">
+            <input type="text" id="yq" name="yq" class="form-control" placeholder="请选择药企" autocomplete="off" />
+            <input type="hidden" id="yqbm" />
+        </td>*@
+
+                <th class="formTitle">
+                    <input type="button" id="btn_add" class="btn btn-md btn-primary" value="添加" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+{
+    ShowKeyList = new int[] { 7, 8, 9 },
+    F7Text = "重置",
+    F8Text = "保存",
+    F9Text = "保存并提交"
+})
+<script type="text/javascript">
+
+    var $gridList = $("#gridList");
+    var keyValue = $.request("keyValue");//采购Id
+    var cgId = keyValue;
+    //var yfbmstr = $.request("yfbm");
+    //var yfmcstr = $.request("yfmc");
+    //var djId = $.request("djId");
+
+    $(function () {
+        $(window).resize(function () {
+            window.initLayout("MyTabGrid");
+        });
+        init();
+        InitFloat();
+
+        GetTargetDept();
+        //$("#fyfs").bindSelect({ url: "/DrugStorage/GetCrkfs?crkbz=1", id: "crkfsCode", text: "crkfsmc" });
+        $("#btn_add").click(function () {
+            $("#gridList").jqGrid("addRowData", undefined, { operate: GetOperatehtml() }, "last");
+        });
+        InitBackspaceKeyForRkbm();
+        //var djId = keyValue;
+        if (cgId != null && cgId != "") {
+            $.najax({
+                type: "Get",
+                url: "/OutOrInStoredManage/Purchase/QueryPurchasebyId",
+                data: { cgId: cgId },
+                dataType: "json",
+                success: function (ajaxresp) {
+                    if (ajaxresp !== null) {
+                        $("#ddsj").val(ajaxresp[0].ddsj);
+                        $("#czlx").val(ajaxresp[0].czlx);
+                        $("#yybm").val(ajaxresp[0].yybm);
+                        $("#psdbm").val(ajaxresp[0].psdbm);
+                        $("#ddlx").val(ajaxresp[0].ddlx);
+                        $("#ddbh").val(ajaxresp[0].ddbh);
+                        $("#yyjhdh").val(ajaxresp[0].yyjhdh);
+                        $("#zwdhrq").val(ajaxresp[0].zwdhrq);
+                    }
+                }
+            });
+            $.najax({
+                type: "Get",
+                url: "/OutOrInStoredManage/Purchase/QueryPurchaseDetailbyId",
+                data: { cgId: cgId },
+                dataType: "json",
+                success: function (ajaxresp) {
+                    if (ajaxresp !== null && ajaxresp.length != 0) {
+                        //$("#yqbm").val(ajaxresp[0].yqbm);
+                        //$("#yq").val(ajaxresp[0].yqmc);
+                        for (var i = 0; i < ajaxresp.length; i++) {
+                            ajaxresp[i].operate = GetOperatehtml();
+                            ajaxresp[i].dlmc = ajaxresp[i].yplb;
+                            $("#gridList").jqGrid("addRowData", undefined, ajaxresp[i], "last");
+
+                            $("#jqg" + (i + 1) + "_ypmc").val(ajaxresp[i].ypmc);
+                            $("#jqg" + (i + 1) + "_ypdm").val(ajaxresp[i].ypCode);
+                            $("#jqg" + (i + 1) + "_yq").val(ajaxresp[i].yqmc);
+                            $("#jqg" + (i + 1) + "_yqbm").val(ajaxresp[i].yqbm);
+                            $("#jqg" + (i + 1) + "_zxspdm").val(ajaxresp[i].zxspdm);
+                            $("#jqg" + (i + 1) + "_cgdj").val(ajaxresp[i].cgdj);
+                            $("#jqg" + (i + 1) + "_cgsl").val(ajaxresp[i].cgsl);
+                            $("#jqg" + (i + 1) + "_cgjldw").val(ajaxresp[i].cgjldw);
+                            $("#jqg" + (i + 1) + "_ybgg").val(ajaxresp[i].ggbz);
+                            $("#sel_dw_jqg" + (i + 1)).append('<option value="dw" data-dw="' + ajaxresp[i].dw + '" selected>' + ajaxresp[i].dw + '</option>');
+                            //$("#jqg" + (i + 1) + "_cglx").append('<option value="' + ajaxresp[i].cglx + '" selected>' + ajaxresp[i].cglxmc  + '</option>');
+                            $("#jqg" + (i + 1) + "_cglx").val(ajaxresp[i].cglxmc);
+                            //$.ajax({
+                            //    type: "POST",
+                            //    url: "/PrepareMedicine/BydjQueryKykc",
+                            //    data: { ypbm: ajaxresp[i].ypdm, pc: ajaxresp[i].pc, ph: ajaxresp[i].ph, yfbm: $("#yfbm").val() },
+                            //    dataType: "json",
+                            //    async: false,
+                            //    success: function (res) {
+                            //        if (res != null) {
+                            //            $("#jqg" + (i + 1) + "_kykc").val(res.kysl);
+                            //            $("#jqg" + (i + 1) + "_slStr").val(res.kysl);
+                            //        }
+                            //    }
+                            //});
+                            //$("#sel_dw_jqg" + (i + 1)).append('<option value="ckdw" data-zhyz="' + ajaxresp[i].zhyz + '" selected>' + ajaxresp[i].dw + '</option>');
+                        }
+                    }
+                }
+            });
+        } else {
+            $("#gridList").jqGrid("addRowData", undefined, { operate: GetOperatehtml() }, "last");
+        }
+        //if (ypcodestr != null && yfbmstr != null && ypcodestr != "" && yfbmstr != "") {
+        //    $("#lybm").val(yfmcstr);
+        //    $("#yfbm").val(yfbmstr);
+        //    $.najax({
+        //        type: "Get",
+        //        url: "/PrepareMedicine/ApplyDrugsSearch",
+        //        data: { ypcodestr: ypcodestr, yfbmstr: yfbmstr },
+        //        dataType: "json",
+        //        success: function (ajaxresp) {
+        //            if (ajaxresp !== null) {
+        //                for (var i = 0; i < ajaxresp.length; i++) {
+        //                    ajaxresp[i].operate = GetOperatehtml();
+        //                    $("#gridList").jqGrid("addRowData", undefined, ajaxresp[i], "last");
+        //                    $("#sel_dw_jqg" + (i + 1)).append('<option value="ckdw" data-zhyz="' + ajaxresp[i].zhyz + '" selected>' + ajaxresp[i].dw + '</option>');
+        //                }
+        //            }
+        //        }
+        //    });
+        //}
+        //else {
+        //   // $("#gridList").jqGrid("addRowData", undefined, { operate: GetOperatehtml() }, "last");
+        //}
+    });
+
+    //按backspace键清楚所有
+    function InitBackspaceKeyForRkbm() {
+        $("#rkbmmc").keydown(function (e) {
+            e = window.event ? window.event : e;
+            var keyCode = e.which ? e.which : e.keyCode;
+            if (keyCode === 8) {//tab
+                $("#rkbmmc").val("");
+                $("#rkbm").val("");
+            }
+        });
+    }
+
+    //初始化
+    function init() {
+        //NewDjh();
+        InitJqGrid();
+        //$("#gridList").jqGrid("addRowData", undefined, { operate: GetOperatehtml() }, "last");
+    }
+
+    //添加发药明细
+    function addItem(obj) {
+        var ids = $("#gridList").getDataIDs();
+        var lastRowoid = ids[ids.length - 1];
+        var dataRow = {
+            operate: GetOperatehtml(),
+        };
+        $("#gridList").jqGrid("addRowData", undefined, dataRow, "after", lastRowoid);
+    }
+
+    //删除发药明细
+    function deleteItem(obj) {
+        var selRowId = $(obj).parent().parent().attr("id");
+        if (!!selRowId) {
+            $("#gridList").jqGrid("delRowData", selRowId);
+        }
+    }
+
+    //获取操作按钮html
+    function GetOperatehtml() {
+        return "<i class='fa fa-plus-square-o' style='font-size: large; color: #09a3ea;vertical-align: middle;' onclick='addItem(this);'></i>&nbsp;&nbsp;&nbsp;<i class='fa fa-minus-square-o' style='font-size: large; color: #09a3ea;vertical-align: middle;' onclick='deleteItem(this);'></i>";
+    }
+
+    //初始化出库明细
+    function InitJqGrid() {
+        $gridList.newtouchLocalDataGrid({
+            data: [],
+            height: $(window).height() - document.getElementById('gridList').offsetTop - 85,
+            rownumbers: true,  //是否显示序号
+            shrinkToFit: true,
+            multiselect: true,
+            editurl: "clientArray",  //行编辑不向服务器提交数据
+            unwritten: false,
+            colModel: [
+                { label: '操作', name: 'operate', width: 50, align: 'center' },
+                {
+                    label: '序号', name: 'sxh', width: 51, align: 'center', formatter: function (cellvalue, options, cell) {
+                        var rowId = options.rowId;
+                        var sxh = rowId.replace("jqg", "");
+                        return sxh;
+                    } },
+                { label: '<span class="required">*</span>药品名称', name: 'ypmc', width: 200, align: 'center', editable: true, editwidth: "100%" },
+                { label: '<span class="required">*</span>药企', name: 'yq', width: 200, align: 'center', editable: true, editwidth: "100%" },
+                { label: "药品代码", name: "ypdm", width: 75, align: 'center', editable: true, editwidth: "100%" },
+                { label: "商品统编代码", name: "zxspbm", width: 120, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: "药品类别", name: "dlmc", width: 75, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: '库存量', name: 'slStr', width: 70, align: 'center', editable: true, editwidth: "100%" },
+                { label: '采购单价', name: 'cgdj', width: 75, align: 'center', editable: true, editwidth: "100%" },
+                { label: '<span class="required">*</span>采购数量', name: 'cgsl', width: 50, align: 'center', editable: true, editwidth: "100%" },
+                { label: '<span class="required">*</span>单位', name: 'dw', width: 50, align: 'center', formatter: function (cellvalue, options) { return "<select name=\"dw\" id=\"sel_dw_" + options.rowId + "\" rowid=" + options.rowId + " class=\"editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ></select>"; } },
+                { label: '医保规格', name: 'ybgg', width: 100, align: 'center', editable: true, editwidth: "100%" },
+                { label: 'cglxxxxxxx', name: 'cglxxxxxxx', editwidth: '', align: 'center', editable: true, hidden:true },
+                {
+                    label: '<span class="required">*</span>采购类型', name: 'cglx', width: 120, align: 'center', editable: true, editwidth: "100%", edittype: "select", editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    var $thisval = $(this).val();
+
+                                    $("#" + rowid + "_cglxxxxxxx").val($thisval);
+                                }
+                            }
+                        ]
+                    }
+                },
+                { label: 'splxxxxxxx', name: 'splxxxxxxx', editwidth: '', align: 'center', editable: true, hidden: true },
+                {
+                    label: '<span class="required">*</span>商品类型', name: 'splx', width: 80, align: 'center', editable: true, editwidth: "100%", edittype: "select", editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    var $thisval = $(this).val();
+
+                                    $("#" + rowid + "_splxxxxxxx").val($thisval);
+                                }
+                            }
+                        ]
+                    }
+                },
+                { label: 'cgjldwwwwwww', name: 'cgjldwwwwwww', editwidth: '', align: 'center', editable: true,  hidden:true,},  //不可去掉
+                {
+                    label: '<span class="required">*</span>采购计量单位', name: 'cgjldw', width: 80, align: 'center', editable: true, editwidth: "100%", edittype: "select", editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    var $thisval = $(this).val();
+
+                                    $("#" + rowid + "_cgjldwwwwwww").val($thisval);
+                                }
+                            }
+                        ]
+                    }
+                },
+                { label: 'dcpsbsssssss', name: 'dcpsbsssssss', editwidth: '', align: 'center', editable: true, hidden: true },  //不可去掉
+                {
+                    label: '<span class="required">*</span>多次配送', name: 'dcpsbs', width: 60, align: 'center', editable: true, editwidth: "100%", edittype: "select", editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) {
+                                    var row = $(e.target).closest('tr.jqgrow');
+                                    var rowid = row.attr('id');
+                                    var $thisval = $(this).val();
+
+                                    $("#" + rowid + "_dcpsbsssssss").val($thisval);
+                                }
+                            }
+                        ]
+                    }
+                },
+                { label: '备注说明', name: 'bzsm', width: 70, align: 'center', editable: true, editwidth: "100%" },
+
+                { label: '药企编码', name: 'yqbm', width: 75, align: 'center', editable: true, editwidth: '100%', hidden: true, },
+                //{ label: '有效期', name: 'yxq', width: 50, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: '生产厂家', name: 'sccj', width: 200, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: '批次', name: 'pc', width: 90, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: '批号', name: 'ph', width: 80, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: '零售单价', name: 'lsjdjdw', width: 75, align: 'center', editable: true, editwidth: "100%" },
+                //{ label: '零售总额', name: 'lsze', width: 80, align: 'center', editable: true, editwidth: "100%" },
+                { label: 'pc', name: 'pc', hidden: true },
+                { label: 'ph', name: 'ph', hidden: true },
+                { label: 'bzs', name: 'bzs', hidden: true, editable: true },
+                { label: 'kykc', name: 'kykc', hidden: true, editable: true },
+                { label: 'pfj', name: 'pfj', hidden: true, editable: true },
+                { label: 'lsj', name: 'lsj', hidden: true, editable: true },
+                { label: 'zxdwlsj', name: 'zxdwlsj', hidden: true, editable: true },
+                { label: 'ykpfj', name: 'ykpfj', hidden: true, editable: true },
+                { label: 'yklsj', name: 'yklsj', hidden: true, editable: true },
+                { label: 'zxdwjj', name: 'zxdwjj', hidden: true, editable: true },
+                { label: 'bzdwjj', name: 'bzdwjj', hidden: true, editable: true }
+            ],
+            editinputwidthborder: false,    //是否需要边框 默认为true
+            editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
+            gridComplete: function () {
+                var ids = $("#gridList").getDataIDs();
+                var lastRowoid = ids[ids.length - 1];
+                EnableInlineEditBox(lastRowoid);
+            }
+        });
+    }
+
+    //组装提交数据
+    function AssembleDataPurchase(rowData, rowid) {
+        return {
+            czlx: rowData.czlx,
+            //yybm: "",//医院编码
+            //psdbm: rowData.psdbm,
+            //ddlx: rowData.ddlx,
+            //ddbh: rowData.ddbh,
+            //yyjhdh: "",//医院计划单号
+            //zwdhrq: rowData.zwdhrq,
+            //jls: 0,
+            sxh: rowData.sxh,
+            cglx: rowData.cglxxxxxxx =="" ? '1' : rowData.cglxxxxxxx,
+            splx: rowData.splxxxxxxx == "" ? '1' : rowData.splxxxxxxx,
+            zxspbm: rowData.zxspbm,
+            cgjldw: rowData.cgjldwwwwwww == "" ? '1' : rowData.cgjldwwwwwww,
+            ggbz: rowData.ybgg,
+            cgsl: rowData.cgsl,
+            cgdj: rowData.cgdj,
+            yqbm: rowData.yqbm,
+            dcpsbs: rowData.dcpsbsssssss == "" ? '0' : rowData.dcpsbsssssss,
+            bzsm: rowData.bzsm == '' ? ' ' : rowData.bzsm,
+            dw: $("#sel_dw_" + rowid).find("option:selected").text(),
+            //dw: $(rowData.dw).text(),
+            ybgg: rowData.ybgg,
+            ypCode: rowData.ypdm,
+            OrganizeId: '',
+        }
+    }
+
+    //启用行内编辑
+    function EnableInlineEditBox(rowid) {
+        $("#gridList").jqGrid('editRow', rowid, false, initInlineFunc);//打开编辑模式
+        $("#jqg_gridList_" + rowid).trigger("click");
+    }
+
+    //初始化 浮层
+    function initInlineFunc(rowid) {
+        //部分列只读
+        $("#" + rowid + "_dlmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_ypdm").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_slStr").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_gg").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_ph").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_yxq").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_sccj").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        $("#" + rowid + "_lsj").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        //$("#" + rowid + "_lsjdjdw").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        //$("#" + rowid + "_lsze").css('background-color', '#f6f7fb').attr('readonly', 'true');
+        InitSrm(rowid + "_ypmc", rowid)//药品浮层
+        InitGys(rowid + "_yq", rowid)//药企浮层
+        InitTabKey("sel_dw_" + rowid, rowid);//单位tab换行
+
+        $("#" + rowid + "_cglxxxxxxx").parent().next().children('select').append('<option value="1">医保范围招标</option><option value="2">医保范围未招标</option><option value="3">医保范围招标未中标</option><option value="4">医保范围挂网</option><option value="5">自费范围挂网</option><option value="6">市级量价挂钩集中采购</option><option value="7">不允许采购</option><option value="9">其他</option><option value="1">医保范围招标</option>');//采购类型
+        $("#" + rowid + "_splxxxxxxx").parent().next().children('select').append('<option value="1">药品类</option><option value="2">医用耗材器械类</option><option value="9">其他</option>');//商品类型
+
+        $("#" + rowid + "_cgjldwwwwwww").parent().next().children('select').append('<option value="1">计价单位</option><option value="2">最小使用单位</option>');//采购计量单位
+        $("#" + rowid + "_dcpsbsssssss").parent().next().children('select').append('<option value="0">不允许</option><option value="1">允许</option>');//多次配送标识
+    }
+
+    //tab键出发
+    function InitTabKey(id, rowid) {
+        $("#" + id).keydown(function (e) {
+            e = window.event ? window.event : e;
+            var keyCode = e.which ? e.which : e.keyCode;
+            if (keyCode === 9) {//tab
+                $(this).parent().parent().find(".fa-plus-square-o").trigger("click");
+            }
+        });
+    }
+    //获取目标药房
+    function GetTargetDept() {
+        $("#lybm").newtouchBatchFloatingSelector({
+            height: 200,
+            width: 250,
+            clickautotrigger: true,
+            url: "/OrderAudit/GetTheLowerYfbmCodeList",
+            ajaxmethod: 'POST',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#lybm").val());
+                return reqData;
+            },
+            caption: "领药部门",
+            colModel: [
+                { label: '药房编码', name: 'yfbmCode', widthratio: 50 },
+                { label: '药房名称', name: 'yfbmmc', widthratio: 50 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#lybm").val($thistr.attr('data-yfbmmc'));
+                $("#lybm").attr("data-yfbmCode", $thistr.attr('data-yfbmCode'));
+                $("#yfbm").val($thistr.attr('data-yfbmCode'));
+                return;
+            }
+        });
+    }
+
+    //初始化输入码
+    function InitSrm(id, rowid) {
+        $("#" + id).newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 350,
+            width: 1200,
+            url: "/StorageManage/DrugStockSearch/DrugAndStockSearch",
+            ajaxmethod: 'Get',
+            inputtextcheck: function () {
+                if ($("#yqbm").val() === "" || $("#yq").val() === "") {
+                    $.modalMsg("请在浮层中选择药企", "error", 1000);
+                    return false;
+                }
+                return true;
+            },
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#" + id).val());
+                return reqData;
+            },
+            colModel: [
+                { label: '类别', name: 'dlmc', width: 60 },
+                { label: '代码', name: 'ypdm', width: 100 },
+                { label: '名称', name: 'ypmc', width: 200, align: 'left' },
+                { label: '规格', name: 'gg', width: 110, align: 'left' },
+                { label: '库存', name: 'slStr', width: 90, align: 'center' },
+                { label: '零售单价', name: 'lsjdjdw', width: 120, align: 'center' },//部门单位零售价
+                { label: '批准文号', name: 'pzwh', width: 150, align: 'center' },
+                { label: '厂家', name: 'sccj', width: 200, align: 'left' },
+                { label: '国家医保代码', name: 'gjybdm', width: 110, align: 'left' },//国家医保代码
+                { label: 'pfj', name: 'pfj', hidden: true },//部门单位批发价
+                { label: 'lsj', name: 'lsj', hidden: true },//部门单位零售价
+                { label: 'ykpfj', name: 'ykpfj', hidden: true },
+                { label: 'yklsj', name: 'yklsj', hidden: true },
+                { label: 'bzs', name: 'bzs', hidden: true },
+                { label: 'bzdw', name: 'bzdw', hidden: true },
+                { label: 'dw', name: 'dw', hidden: true },//部门单位
+                { label: 'zhyz', name: 'zhyz', hidden: true },
+                { label: 'zxdw', name: 'zxdw', hidden: true },
+                { label: 'zxdwlsj', name: 'zxdwlsj', hidden: true },
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#" + rowid + "_slStr").val($thistr.attr('data-slStr'));
+                $("#" + rowid + "_dlmc").val($thistr.attr('data-dlmc'));
+                $("#" + rowid + "_ypdm").val($thistr.attr('data-ypdm'));
+                $("#" + rowid + "_ypmc").val($thistr.attr('data-ypmc'));
+                $("#" + rowid + "_ybgg").val($thistr.attr('data-gg'));
+                $("#" + rowid + "_sccj").val($thistr.attr('data-sccj'));
+                $("#" + rowid + "_lsj").val($thistr.attr('data-lsj'));
+                $("#" + rowid + "_lsjdjdw").val($thistr.attr('data-lsjdjdw'));
+                $("#" + rowid + "_cgdj").val($thistr.attr('data-ykpfj'));
+                $("#" + rowid + "_yklsj").val($thistr.attr('data-yklsj'));
+                $("#" + rowid + "_ykpfj").val($thistr.attr('data-ykpfj'));
+                $("#" + rowid + "_zhyz").val($thistr.attr('data-zhyz'));
+                $("#" + rowid + "_bzs").val($thistr.attr('data-bzs'));
+                $("#" + rowid + "_zxdwlsj").val($thistr.attr('data-zxdwlsj'));
+                $("#" + rowid + "_zxspbm").val($thistr.attr('data-gjybdm'));
+                initDw($thistr, rowid);
+                $("#" + rowid + "_sl").val("");
+                $("#" + rowid + "_lsze").val("");
+                $("#sel_dw_" + rowid).trigger("change");
+                InitKcCheck(rowid);
+                ChangeDw(rowid);
+            }
+        });
+    }
+
+    //初始化供应商
+    function InitGys(id, rowid) { //药企供应商
+        $("#" + id).newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 200,
+            width: 400,
+            id: 'selectGys',
+            url: '/Medicine/MedicineSupplierList',
+            ajaxmethod: 'Get',
+            inputtextcheck: function () {
+                return true;
+            },
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#"+id).val());
+                return reqData;
+            },
+            caption: "供应商信息",
+            colModel: [
+                { label: '药企编码', name: 'gysCode', widthratio: 30 },
+                { label: '药企', name: 'gysmc', widthratio: 70 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#" + rowid + "_yqbm").val($thistr.attr('data-gysCode'));
+                $("#" + rowid + "_yq").val($thistr.attr('data-gysmc'));
+            }
+        });
+    }
+    //单位切换
+    function ChangeDw(rowid) {
+        $("#sel_dw_" + rowid).change(function () {
+            if (CheckKc(rowid)) CalculationLsze(rowid);
+        });
+    }
+
+    //初始化输入库存检查事件
+    function InitKcCheck(rowid) {
+        $("#" + rowid + "_sl").blur(function () {
+            if (CheckKc(rowid)) CalculationLsze(rowid);
+        });
+    }
+
+    //库存检查事件
+    function CheckKc(rowid) {
+        var zhyz = Number($("#sel_dw_" + rowid).find("option:selected").attr("data-kykc"));
+        var sl = Number($("#" + rowid + "_sl").val());
+        var maxsl = Number($("#" + rowid + "_kykc").val());
+        if (zhyz * sl > maxsl) {
+            $.modalMsg("发药数不得超过库存总量", "error", 1000);
+            $("#" + rowid + "_sl").val("");
+            return false;
+        }
+        return true;
+    }
+
+    //计算零售总额
+    function CalculationLsze(rowid) {
+        var zhyz = Number($("#sel_dw_" + rowid).find("option:selected").attr("data-zhyz"));
+        var sl = Number($("#" + rowid + "_sl").val());
+        var zxdwlsj = Number($("#" + rowid + "_zxdwlsj").val());
+        //$("#" + rowid + "_lsze").val((zhyz * sl * zxdwlsj).toFixed(2));
+    }
+
+    ////初始化药品批次
+    //function InitPc(id, rowid) {
+    //    $("#" + id).newtouchBatchFloatingSelector({
+    //        height: 300,
+    //        width: 720,
+    //        clickautotrigger: true,
+    //        url: "/StorageManage/DrugStockSearch/StockGroupByBatchSearch",
+    //        ajaxmethod: 'POST',
+    //        ajaxreqdata: function () {
+    //            var reqData = {};
+    //            reqData.ypdm = $("#" + rowid + "_ypdm").val();
+    //            return reqData;
+    //        },
+    //        caption: "批次",
+    //        colModel: [
+    //            { label: '批次', name: 'pc', width: 150, align: 'center' },
+    //            { label: '批号', name: 'ph', width: 150, align: 'center' },
+    //            { label: '库存', name: 'slStr', width: 100, align: 'center' },
+    //            { label: '进价', name: 'jjdjdw', width: 100, align: 'center' },
+    //            { label: '系数', name: 'zhyz', width: 60 },
+    //            { label: '有效期', name: 'yxq', width: 150, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+    //            { label: 'kykc', name: 'kykc', hidden: true },
+    //            { label: 'zxdwjj', name: 'zxdwjj', hidden: true },
+    //            { label: 'bzdwjj', name: 'bzdwjj', hidden: true }
+    //        ],
+    //        itemdbclickhandler: function ($thistr) {
+    //            $("#" + rowid + "_ph").val($thistr.attr('data-ph'));
+    //            $("#" + rowid + "_pc").val($thistr.attr('data-pc'));
+    //            $("#" + rowid + "_slStr").val($thistr.attr('data-slStr'));
+    //            $("#" + rowid + "_yxq").val($thistr.attr('data-yxq'));
+    //            $("#" + rowid + "_kykc").val($thistr.attr('data-kykc'));
+    //            $("#" + rowid + "_zxdwjj").val($thistr.attr('data-zxdwjj'));
+    //            $("#" + rowid + "_bzdwjj").val($thistr.attr('data-bzdwjj'));
+    //            $("#" + rowid + "_sl").val("");
+    //            $("#" + rowid + "_lsze").val("");
+    //        }
+    //    });
+    //}
+
+    //初始化单位
+    function initDw($thistr, rowid) {
+        $("#sel_dw_" + rowid).empty();
+        $("#sel_dw_" + rowid).append('<option value="bzdw" data-zhyz="' + $thistr.attr('data-bzs') + '" selected>' + $thistr.attr('data-bzdw') + '</option>');
+        if ($thistr.attr('data-dw') !== $thistr.attr('data-bzdw')) {
+            $("#sel_dw_" + rowid).append('<option value="bmdw" data-zhyz="' + $thistr.attr('data-zhyz') + '" selected>' + $thistr.attr('data-dw') + '</option>');
+        }
+        if ($thistr.attr('data-zxdw') !== $thistr.attr('data-bzdw') && $thistr.attr('data-dw') != $thistr.attr('data-zxdw')) {
+            $("#sel_dw_" + rowid).append('<option value="zxdw" data-zhyz="1" selected>' + $thistr.attr('data-zxdw') + '</option>');
+        }
+    }
+
+    //新发药单
+    function newtouch_event_f7() {
+        $("#gridList").clearGridData();
+        init();
+        $("#rkbmmc").val("");
+        $("#rkbm").val("");
+        $("#slksmc").val("");
+        $("#slksbm").val("");
+        $("#lybm").val("");
+        $("#yfbm").val("");
+    }
+
+    //初始化浮层
+    function InitFloat() {
+
+        ////药企
+        //$("#yq").newtouchBatchFloatingSelector({
+        //    clickautotrigger: true,
+        //    height: 200,
+        //    width: 400,
+        //    url: "/Medicine/MedicineSupplierList",
+        //    ajaxmethod: 'Get',
+        //    ajaxreqdata: function () {
+        //        var reqData = {};
+        //        reqData.keyword = $.trim($("#yq").val());
+        //        return reqData;
+        //    },
+        //    colModel: [
+        //        { label: '药企编码', name: 'gysCode', widthratio: 30 },
+        //        { label: '药企', name: 'gysmc', widthratio: 70 }
+        //    ],
+        //    itemdbclickhandler: function ($thistr) {
+        //        $("#yqbm").val($thistr.attr('data-gysCode'));
+        //        $("#yq").val($thistr.attr('data-gysmc'));
+        //        return;
+        //    }
+        //});
+
+        //配送点
+        $("#psd").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            url: '/PurchaseManage/Purchase/QueryLocation',
+            height: 300,
+            width: 400,
+            caption: "配送点",
+            ajaxmethod: "Get",
+            //ajaxparameters: function () {
+            //    return "key=" + $("#psd").val();
+            //},
+            colModel: [
+                { label: 'Id', name: 'Id', hidden: true },
+                { label: '编码', name: 'psdbm', widthratio: 45 },
+                { label: '配送点', name: 'psdmc', widthratio: 55 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#psdbm").val($thistr.attr('data-psdbm'));
+                $("#psd").val($thistr.attr('data-psdmc'));
+            }
+        });
+
+    }
+
+    //保存
+    function newtouch_event_f8() {
+        var list = [];
+        var validationFailedArr = [];
+        $.each($("#gridList").find("input[type=checkbox]:checked"), function () {
+            var rowid = $(this).parent().parent().parent().attr("id");
+            $("#gridList").saveRow(rowid, null, null, null, function (callbackRowId) { }, null, null);
+            var rowData = $("#gridList").jqGrid('getRowData', rowid);
+            if (!Validately(rowData, rowid)) {
+                validationFailedArr.push(rowid);
+                return;
+            }
+            list.push(AssembleDataPurchase(rowData, rowid));
+        });
+        if (validationFailedArr.length > 0) {
+            for (var i = 0; i < validationFailedArr.length; i++) {
+                $("#gridList").jqGrid('editRow', validationFailedArr[i], false, initInlineFunc);//打开编辑模式
+            }
+            return;
+        }
+        if (list.length === 0) {
+            $.modalMsg("请勾选编辑数据！", 'warning', 1000);
+            return;
+        }
+        var par = new Object();
+        par["cgmx"] = list; //采购明细
+        par["psdbm"] = $("#psd").val();//配送点编码 
+        par["ddlx"] = $("#ddlx").val();//订单类型
+        par["zwdhrq"] = $("#zwdhrq").val();//最晚到货日期
+        par["yqbm"] = $("#yqbm").val();//药企编码
+        par["jls"] = list.length//记录数
+        par["yybm"] = "77370296000";//医院编码
+        par["ddbh"] = " ";//订单编号 新增:空   修改/撤销:订单编号
+        par["yyjhdh"] = "test";//医院计划单号
+        par["ddzt"] = "1";//1已保存 2已传报 3已验收
+        par["ddsj"] = new Date();//订单时间
+        par["czlx"] = 1;//操作类型 1新增 3作废
+
+
+        $.najax({
+            type: "POST",
+            url: "/OutOrInStoredManage/Purchase/SubmitPurchase",
+            data: { cgEntity: par, cgmxList: list, keyValue: keyValue},
+            dataType: "json",
+            success: function (res) {
+                if (res) {
+                    newtouch_event_f7();
+                    $.modalMsg(res.message, 'success');
+                }
+            }
+        });
+    }
+    //保存并传报
+    function newtouch_event_f9() {
+        var list = [];
+        var validationFailedArr = [];
+        $.each($("#gridList").find("input[type=checkbox]:checked"), function () {
+            var rowid = $(this).parent().parent().parent().attr("id");
+            $("#gridList").saveRow(rowid, null, null, null, function (callbackRowId) { }, null, null);
+            var rowData = $("#gridList").jqGrid('getRowData', rowid);
+            if (!Validately(rowData, rowid)) {
+                validationFailedArr.push(rowid);
+                return;
+            }
+            list.push(AssembleDataPurchase(rowData, rowid));
+        });
+        if (validationFailedArr.length > 0) {
+            for (var i = 0; i < validationFailedArr.length; i++) {
+                $("#gridList").jqGrid('editRow', validationFailedArr[i], false, initInlineFunc);//打开编辑模式
+            }
+            return;
+        }
+        if (list.length === 0) {
+            $.modalMsg("请勾选编辑数据！", 'warning', 1000);
+            return;
+        }
+        var par = new Object();
+        par["cgmx"] = list; //采购明细
+        par["psdbm"] = $("#psd").val();//配送点编码 
+        par["ddlx"] = $("#ddlx").val();//订单类型
+        par["zwdhrq"] = $("#zwdhrq").val();//最晚到货日期
+        par["yqbm"] = $("#yqbm").val();//药企编码
+        par["jls"] = list.length//记录数
+        par["yybm"] = "77370296000";//医院编码
+        par["ddbh"] = " ";//订单编号 新增:空   修改/撤销:订单编号
+        par["yyjhdh"] = "test";//医院计划单号
+        par["ddzt"] = "1";//1已保存 2已传报 3已验收
+        par["ddsj"] = new Date();//订单时间
+        par["czlx"] = 1;//操作类型 1新增 3作废
+
+
+        $.najax({
+            type: "POST",
+            url: "/OutOrInStoredManage/Purchase/SubmitAndUploadPurchase",
+            data: { cgEntity: par, cgmxList: list, keyValue: keyValue },
+            dataType: "json",
+            success: function (res) {
+                if (res) {
+                    newtouch_event_f7();
+                    $.modalMsg(res.message, 'success');
+                }
+            }
+        });
+    }
+    //数值验证
+    function Validately(rowData, rowid) {
+        //if ($("#rkbm").val() === "" || $("#rkbmmc").val() === "") {   //去掉左右两端空格
+        //    $.modalMsg("请选择发药部门", "error", 1000);
+        //    return false;
+        //}
+        if (rowData.ypmc === "") {
+            $.modalMsg('药品必选', 'error', 1000);
+            return false;
+        }
+        //if (rowData.pc === "") {
+        //    $.modalMsg('批次必选', 'error', 1000);
+        //    return false;
+        //}
+        var reg = /^[1-9]\d*$/;//大于0的整数
+        if (!reg.test(rowData.cgsl)) {
+            $.modalMsg("数量必须为大于0的整数！", "warning", 1500);
+            return false;
+        }
+        //if ($("#sel_dw_" + rowid).val() === "") {
+        //    $.modalMsg('请选择单位', 'error', 1000);
+        //    return false;
+        //}
+        return true;
+    }
+
+</script>

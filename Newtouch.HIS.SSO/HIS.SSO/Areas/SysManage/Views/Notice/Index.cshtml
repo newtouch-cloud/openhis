@@ -1,0 +1,344 @@
+﻿@using NewtouchHIS.Lib.Base.Extension;
+@using static NewtouchHIS.Lib.Base.BaseEnum;
+
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .list-group {
+        margin-bottom: 0;
+    }
+
+    .list-group-item {
+        background-color: #E6E6FA;
+    }
+
+</style>
+<script src="~/js/noticetemplate.js"></script>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group" id="noticeStuGroup">
+            <a class="btn btn-default active">全部消息</a>
+            <a class="btn btn-default" data-value="@((int)NoticeStuEnum.UnSend)"><i class="fa fa-circle icon-theme-warning"></i> 未发送</a>
+            <a class="btn btn-default" data-value="@((int)NoticeStuEnum.Send)"><i class="fa fa-circle icon-theme-info"></i> 已发送</a>
+            <a class="btn btn-default" data-value="@((int)NoticeStuEnum.Read)"><i class="fa fa-circle icon-theme-success"></i> 已读</a>
+            <a class="btn btn-default" data-value="@((int)NoticeStuEnum.Wait)"><i class="fa fa-circle icon-theme-danger"></i> 待处理</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="关键字" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="search pull-right" style="padding-right:20px;">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <select class="form-control selctcontrol-green" id="msgtype">
+                            <option value="1">收件箱</option>
+                            <option value="2">发件箱</option>
+                            @if (ViewBag.IsHospAdministrator)
+                            {
+                                <option value="999">消息管理</option>
+                            }
+                        </select>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="navb-bg">
+    <div class="dv-table-container">
+        <div class="btn-toolbar"></div>
+        <table id="table"></table>
+    </div>
+
+</div>
+
+
+<script>
+    $(function () {
+        mounted();
+
+        $("#btn_search").on('click', function () {
+            tableRefresh();
+        });
+        $("#noticeStuGroup a.btn-default").click(function () {
+            $("#noticeStuGroup a.btn-default").removeClass("active");
+            $(this).addClass("active");
+            $('#btn_search').trigger("click");
+        });
+
+    });
+    //请求的参数
+    function queryParams(params) {
+        var data = {
+            //每页多少条数据
+            limit: params.limit,
+            //请求第几页
+            offset: params.offset,
+            order: params.order,
+            sort: params.sort,
+            search: params.search,
+            queryParams: {
+                keyword: $("#txt_keyword").val(),
+                msgtype: $("#msgtype option:selected").val(),
+                NoticeStu: $("#noticeStuGroup a.active").attr('data-value')
+            }
+        };
+        return data;
+    }
+    var $table = $('#table');
+    function mounted() {
+        $table.bootstrapTable({
+            url: "/SysManage/Notice/GetNoticeList", //服务器返回数据的网址
+            method: 'POST',                      //数据请求方式
+            contentType: "application/x-www-form-urlencoded",
+            height: $(window).height() - 96,
+            queryParams: queryParams,
+            classes: "table table-bordered table-striped table-hover",
+            theadClasses: "table-light",//设置表头样式
+            idField: 'Id',
+            showColumns: false,
+            columns: [
+                // {
+                //     field: 'ck',
+                //     checkbox: true
+                // },
+                {
+                    field: 'Id',
+                    visible: false
+                }, {
+                    field: 'NoticeId',
+                    visible: false
+                },
+
+
+                {
+                    field: 'AppId',
+                    title: '消息内容',
+                    halign: 'center',
+                    align: 'left',   //水平内容对齐方式
+                    width: '25',
+                    widthUnit: '%',
+                    formatter: function (cellvalue, row) {
+                        if (cellvalue == "MRQC") {
+                            return noticeMrqc(row.ContentData);
+                        }
+                        return cellvalue;
+                    }
+                },
+
+                {
+                    field: 'NoticeStu',
+                    title: '消息状态',
+                    halign: 'center',
+                    //sortable: true,
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        if (cellvalue == @((int)NoticeStuEnum.Read)) {
+                            return '<span><i class="fa fa-circle icon-theme-success"></i> ' + '@((NoticeStuEnum.Read).GetDescription())' + '</span>';
+                        }
+                        else if (cellvalue == @((int)NoticeStuEnum.Send)) {
+                            return '<span><i class="fa fa-circle icon-theme-info"></i> ' + '@(NoticeStuEnum.Send.GetDescription())' + '</span>';
+                        }
+                        else if (cellvalue == @((int)NoticeStuEnum.UnSend)) {
+                            return '<span><i class="fa fa-circle icon-theme-warning"></i> ' + '@(NoticeStuEnum.UnSend.GetDescription())' + '</span>';
+                        }
+                        else if (cellvalue == @((int)NoticeStuEnum.Wait)) {
+                            return '<span><i class="fa fa-circle icon-theme-danger"></i> ' + '@(NoticeStuEnum.Wait.GetDescription())' + '</span>';
+                        }
+                        else {
+                            return '异常';
+                        }
+                    }
+                },
+                {
+                    field: 'NoticeStu',
+                    title: 'NoticeStu',
+                    visible: false
+                }, {
+                    field: 'GroupName',
+                    title: '消息组',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '10',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'GroupYwlx',
+                    title: '业务类型',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        if (cellvalue == @((int)GroupYwlxEnum.Zy)) {
+                            return '@((GroupYwlxEnum.Zy).GetDescription())';
+                        }
+                        else if (cellvalue == @((int)GroupYwlxEnum.Mz)) {
+                            return '@(GroupYwlxEnum.Mz.GetDescription())';
+                        }
+                        else {
+                            return '';
+
+                        }
+                    }
+                },
+                {
+                    field: 'SendFromName',
+                    title: '发件人',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '10',
+                    widthUnit: '%',
+                },
+                {
+                    field: 'RecipientName',
+                    title: '收件人',
+                    halign: 'center',
+                    width: '10',
+                    widthUnit: '%',
+                },
+                // {
+                //     field: 'Content',
+                //     title: '消息模板',
+                //     halign: 'center',
+                //     width: '10',
+                //     widthUnit: '%',
+                // },
+                {
+                    field: 'ContentData',
+                    title: '消息内容',
+                    halign: 'center',
+                    width: '20',
+                    widthUnit: '%',
+                    visible: false
+                },
+                {
+                    field: 'AppName',
+                    title: '来源',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '5',
+                    widthUnit: '%',
+                    //sortable: true,
+                },
+                {
+                    field: 'CreateTime',
+                    title: '发送时间',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '8',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        return $.getTime({ date: cellvalue });
+                    }
+                },
+                {
+                    field: 'LastModifyTime',
+                    title: '最近更新',
+                    halign: 'center',
+                    align: 'center',   //水平内容对齐方式
+                    width: '8',
+                    widthUnit: '%',
+                    formatter: function (cellvalue) {
+                        if (!!cellvalue) {
+                            return $.getTime({ date: cellvalue });
+                        }
+                        return "";
+
+                    }
+                },
+                {
+                    field: 'OrganizeId',
+                    visible: false
+                }
+            ],
+            //treeShowField: 'Name',
+            //parentIdField: 'ParentId',
+            uniqueId: 'Id',
+            //******分页设置****
+            //toolbar: '.btn-toolbar',            //工具按钮用哪个容器 #toolbar
+            //toolbarAlign: 'left',
+            pagination: true,                   //是否显示分页（*）
+            pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
+            pageSize: 30,                       //每页的记录行数（*）
+            pageList: [5, 50, 100],            //可供选择的每页的行数（*）
+            paginationHAlign: "left",
+            paginationDetailHAlign: "right",
+            sortable: true,                     //是否启用排序
+            sortOrder: "desc",                   //排序方式
+            sidePagination: 'server',           //分页方式：client客户端分页，server服务端分页（*）
+            //******分页设置****
+            onLoadSuccess: function (data) {
+
+            },
+            onDblClickRow: function (row, $element, field) {
+                btn_edit(row);
+            },
+            onClickRow: function (row, $element, field) {
+                var selrow = $(table).bootstrapTable("getSelections");
+                if (selrow != null && selrow.length > 0 && selrow[0] != null && selrow[0].Id != row.Id) {
+                    bstableSelectedToggle($table, "Id", [selrow[0].Id], false);
+                }
+                bstableSelected($table, "Id", [row.Id], $element);
+                noticeReadProc(row.Id);
+            },
+            formatLoadingMessage: function () {
+                return "<span class='table-loading-text'>正在加载中，请稍候</span>";
+            },
+            formatNoMatches: function () {
+                return "暂无数据";
+            }
+
+        });
+        $table.bootstrapTable('hideLoading');
+
+    }
+
+
+    //对应的函数进行判断；
+    function checkFormatter(value, row, index) {
+        if (row.type)//type 为是否选中状态值
+            return {
+                disabled: false,//设置是否可用
+                checked: true//设置选中
+            };
+        return value;
+    }
+
+
+    function tableRefresh() {
+        $table.bootstrapTable('refresh', { queryParams: queryParams });
+    }
+
+    function noticeReadProc(id) {
+        var selrow = $(table).bootstrapTable("getRowByUniqueId", id);
+        if (!!id && !!selrow && selrow.NoticeStu == '@((int)NoticeStuEnum.Send)') {
+            $.najax({
+                url: "/SysManage/Notice/NoticeStuRead",
+                data: { keyValue: id },
+                dataType: "json",
+                type: "POST",
+                success: function (data) {
+                }
+            });
+        }
+    }
+
+</script>

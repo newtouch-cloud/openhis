@@ -1,0 +1,86 @@
+﻿@using Newtouch.Infrastructure;
+@using Newtouch.HIS.Web.Core.Extensions;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+@using Newtouch.HIS.Web.Core.Extensions;
+<form id="form1">
+    <div style="margin: 10px; margin-bottom: 0px;">
+        <div class="alert alert-danger" style="text-align: left; margin-bottom: 10px;">
+            <i class="fa fa-warning alert-dismissible" style="position: relative; top: 1px; font-size: 15px; padding-right: 5px;"></i>
+            请填写损益原因信息，用于创建或修改损益原因信息！
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">表单信息</h3>
+            </div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>损益原因：</th>
+                    <td class="formValue">
+                        <input id="syyy" name="syyy" type="text" class="form-control required" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle"><span class="required">*</span>损益标志：</th>
+                    <td class="formValue">
+                        @Html.DropDownList("sybz", EnumProfitLossMark.Loss.ToDescSelectList(), new { @class = "form-control" })
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">排序：</th>
+                    <td class="formValue">
+                        <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle" style="height: 35px;">选项：</th>
+                    <td class="formValue" style="padding-top: 1px;">
+                        <div class="ckbox">
+                            <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        if (!!keyValue) {
+            $.najax({
+                url: "/Dictionaries/GetSyyyFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                success: function (data) {
+                    $("#syyy").val(data.syyy);
+                    $("#sybz").val($.trim(data.sybz));
+                    $("#px").val(data.px);
+                    if (data.zt == "1") {
+                        $("#zt").prop("checked", true);
+                    }
+                    else {
+                        $("#zt").prop("checked", false)
+                    }
+                }
+            });
+        }
+    });
+
+    function AcceptClick(callBack) {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/Dictionaries/SubmitSyyyForm?keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                callBack();
+                $.modalClose();
+            }
+        });
+    }
+</script>

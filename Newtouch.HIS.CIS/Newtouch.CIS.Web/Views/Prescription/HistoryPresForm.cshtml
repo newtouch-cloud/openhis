@@ -1,0 +1,94 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "HistoryPresForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    var cfId = $.request("cfId");
+    var cflx = $.request("cflx");
+    var brxzCode = $.request("brxzCode");
+
+    var RehabPres = @Html.Raw(((int)EnumCflx.RehabPres).ToString());
+    var RegularItemPres = @Html.Raw(((int)EnumCflx.RegularItemPres).ToString());
+    var WMPres = @Html.Raw(((int)EnumCflx.WMPres).ToString());
+    var TCMPres = @Html.Raw(((int)EnumCflx.TCMPres).ToString());
+    $(function () {
+        gridList();
+    });
+    function gridList() {
+        if (!cfId)
+        {
+            return;
+        }
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Prescription/GetHistoryPresDetailByCfId",
+            postData: { cfId : cfId },
+            height: $(window).height() - 60,
+            unwritten: false,
+            rownumbers: true,
+            multiselect: true,
+            colModel: [
+                { label: 'cfmxId', name: 'cfmxId', hidden: true },
+                { label: '组号', name: 'zh', width: 30, align: 'left', hidden: cflx == WMPres ? null : true },
+                { label: '项目名称', name: 'xmmc', width: 120, align: 'left', hidden: (cflx == RehabPres || cflx == RegularItemPres) ? null : true },
+                { label: '药品名称', name: 'ypmc', width: 120, align: 'left', hidden: cflx == WMPres ? null : cflx == TCMPres ? null : true },
+                { label: '规格', name: 'ypgg', width: 100, align: 'left', hidden: cflx == WMPres ? null : cflx == TCMPres ? null : true },
+                { label: '剂量（单位）', name: 'mcjl', width: 90, align: 'left', hidden: cflx == WMPres ? null : cflx == TCMPres ? null : true },
+                { label: '用法', name: 'yfmc', width: 70, align: 'left', hidden: (cflx == RehabPres || cflx == RegularItemPres) ? true : null},
+                { label: '单价', name: 'dj', width: 60, align: 'left' , hidden: cflx == TCMPres ? true : null, formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }},
+                { label: '每次治疗量', name: 'mczll', width: 60, align: 'left', hidden: (cflx == RehabPres || cflx == RegularItemPres) ? null : true },
+                { label: 'pcCode', name: 'pcCode', hidden: true },
+                { label: '频次', name: 'pcmc', width: 60, align: 'left', hidden: cflx == TCMPres ? true : null},
+                { label: '数量', name: 'sl', width: 50, align: 'left' , hidden: cflx == TCMPres ? true : null},
+                { label: '部位', name: 'bw', width: 160, align: 'left', hidden: (cflx == RehabPres || cflx == RegularItemPres) ? null : true  },
+                { label: '总量（单位）', name: 'zl', width: 80, align: 'left', hidden: (cflx == RehabPres || cflx == RegularItemPres) ? null : true },
+                { label: '金额', name: 'je', width: 80, align: 'left', hidden: cflx == TCMPres ? true : null, formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }},
+                    { label: '执行科室', name: 'zxks', hidden: true },
+                    { label: '执行科室名称', name: 'zxksmc', hidden: (cflx == RehabPres||cflx==RegularItemPres) ? null : true  },
+                    { label: '是否医保', name: 'sfyb', width: 80 },
+            ],
+            onSelectRow: function (rowid, status) {
+                if (status === true) {
+                    var data = $("#gridList").getRowData(rowid);
+                    if (brxzCode != "" &&'@ViewBag.ControlbrxzCode'.indexOf(brxzCode) > -1 && data.sfyb == "否") {
+                        $.modalAlert("该患者为医保患者，不可选择自费项目【" + data.xmmc + "】", "warning");
+                        $gridList.jqGrid('setSelection', rowid, false); //设置jqGrid选中
+                        return false;
+                    }
+                }
+            },
+            viewrecords: true,
+        });
+    }
+
+    function submitForm(callback) {
+        var data = $("#gridList").jqGrid('getRowData_AllLine', true, true);
+        if(!data || data.length==0){
+            $.modalAlert("请选择明细进行复制", 'warning');
+            return;
+        }
+        var cfmxIdStr = "";
+        $.each(data, function () {
+            for (var i = 0; i < $(this).length; i++) {
+                cfmxIdStr = cfmxIdStr + $(this)[i].cfmxId +",";
+            }
+        });
+        $.najax({
+            url: "/Prescription/GetPresDetailList",
+            dataType: "json",
+            data: { cflx: cflx, cfmxIdStr: cfmxIdStr },
+            type: "POST",
+            success: function (data) {
+                callback(data);
+            }
+        });
+    }
+</script>
+
