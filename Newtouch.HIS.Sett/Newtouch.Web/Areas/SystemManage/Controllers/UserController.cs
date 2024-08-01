@@ -8,6 +8,7 @@ using System;
 using FrameworkBase.MultiOrg.Domain.Entity;
 using System.Linq;
 using Newtouch.HIS.Domain.ValueObjects;
+using StackExchange.Redis.Extensions.Core.Extensions;
 
 namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
 {
@@ -153,6 +154,55 @@ namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
             {
                 treeList = funcTreeItemFilter(treeList);
             }
+
+            #region 补充父节点 start
+            var parentDeptList = new HashSet<string>();
+            // 控制总计算深度，防止因为数据错误，找不到父节点死循环
+            var totalReFindParent = 10;
+            do {
+                totalReFindParent--;
+                parentDeptList = new HashSet<string>();
+                // 找出treeList 中没有parentId 的 
+                foreach (TreeViewModel item in treeList)
+                {
+                    if (item.parentId == null)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        bool exists = treeList.Where(p => p.id == item.parentId).ToList().Count > 0;
+                        if (exists)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            parentDeptList.Add(item.parentId);
+                        }
+                    }
+
+                }
+
+                parentDeptList.ForEach(id => {
+                    var deptItem = detpData.Where(p => p.Id == id).First();
+                    if (deptItem != null)
+                    {
+                        TreeViewModel deptTree = new TreeViewModel();
+                        deptTree.id = deptItem.Id;
+                        deptTree.text = deptItem.Name;
+                        deptTree.value = deptItem.Code;
+                        deptTree.parentId = deptItem.ParentId;
+                        deptTree.isexpand = isExpand;  //默认不展开，人太多
+                        deptTree.complete = true;
+                        deptTree.showcheck = false;
+                        deptTree.hasChildren = true;
+                        treeList.Add(deptTree);
+                    }
+                });
+
+            } while (parentDeptList.Count > 0 && totalReFindParent > 0);
+            #endregion 补充父节点 end
 
             //缓存end
             IList<RoleUnionUser> checkedUserList = null; //已checked的用户
