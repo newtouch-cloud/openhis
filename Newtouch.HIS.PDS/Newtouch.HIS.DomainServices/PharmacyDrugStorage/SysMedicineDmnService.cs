@@ -39,6 +39,7 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
 			,x.nbdl,x.mzzybz,x.CreateTime,d.pzwh,
             d.yptssx,d.ypflCode,d.zlff,d.jzlx,d.mrbzq,d.sjap,d.zbbz,d.yl,d.yldw,d.zjtzsj
 			,d.ghdw,d.ypcd,d.ypgg,d.ybdm,d.xnhybdm, d.gjybdm,c.dlmc sfdlMc, e.jxmc jxmc, f.ypflmc ypflMc, case when d.ybdm IS NULL then '2' when d.ybdm IS NOT NULL AND d.LastYBUploadTime IS NOT NULL AND d.LastYBUploadTime >= d.LastModifyTime then '1' else '0' end isSynch,d.gjybmc
+            , x.cfl,x.jl,x.bzs, 0.00 as cls
             FROM [NewtouchHIS_Base].dbo.xt_yp as x  
 			left join [NewtouchHIS_Base].dbo.xt_ypsx as d on x.ypId=d.ypId
 			left join [NewtouchHIS_Base].dbo.xt_sfdl c	on x.dlCode = c.dlCode and c.OrganizeId = @organizeId
