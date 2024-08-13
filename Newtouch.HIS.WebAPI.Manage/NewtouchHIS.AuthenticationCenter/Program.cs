@@ -43,12 +43,9 @@ builder.Services.AddTransient<IJWTService, HSJWTService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 #region 鉴权授权
 app.UseAuthentication();        //添加jwt鉴权 

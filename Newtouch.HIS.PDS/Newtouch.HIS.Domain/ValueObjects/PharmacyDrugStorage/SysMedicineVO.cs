@@ -490,6 +490,9 @@ namespace Newtouch.HIS.Domain.ValueObjects.PharmacyDrugStorage
 
 
 
-        /// <summary>        /// 医保规格        /// </summary>        public string ybgg { get; set; }
+        /// <summary>
+        /// 医保规格
+        /// </summary>
+        public string ybgg { get; set; }
     }
 }
