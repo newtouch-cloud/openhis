@@ -828,7 +828,7 @@ FROM     xt_brjbxx  jb
             hospPatientBasicInfo.xian_sheng = VO.xian_sheng;
             hospPatientBasicInfo.xian_shi = VO.xian_shi;
             hospPatientBasicInfo.xian_xian = VO.xian_xian;
-            hospPatientBasicInfo.xian_dz = VO.xian_xian;
+            hospPatientBasicInfo.xian_dz = VO.xian_dz;
             hospPatientBasicInfo.hu_sheng = VO.hu_sheng;
             hospPatientBasicInfo.hu_shi = VO.hu_shi;
             hospPatientBasicInfo.hu_xian = VO.hu_xian;
