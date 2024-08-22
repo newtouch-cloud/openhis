@@ -1,0 +1,145 @@
+﻿
+@{
+    ViewBag.Title = "商业保险";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<form id="form1">
+    <div class="topPanel">
+        <div class="toolbar">
+            <div class="btn-group">
+                <a id="NF-add" class="btn btn-primary dropdown-text" onclick="AddCommercialInsurance()"><i class="fa fa-plus"></i>新建</a>
+            </div>
+            <div class="btn-group">
+                <a id="NF-edit" class="btn btn-primary dropdown-text" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+            </div>
+            <div class="btn-group">
+                <a id="NF-delete" class="btn btn-primary dropdown-text" onclick="btn_delete()"><i class="fa fa-trash-o"></i>删除</a>
+            </div>
+            <div class="btn-group">
+                <a id="NF-Details" class="btn btn-primary dropdown-text" onclick="btn_details()"><i class="fa fa-search-plus"></i>查看</a>
+            </div>
+        </div>
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="请输入要查询关键字(病历号)" style="width: 200px;">
+                            <span class="input-group-btn">
+                                <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div style="margin-top: 10px;">
+        <table id="gridCInsuranceList"></table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridCInsuranceList"></table>
+        <div id="gridPager" rel="form1"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        gridCInsuranceList();
+    });
+    function gridCInsuranceList() {
+        var $gridCInsuranceList = $("#gridCInsuranceList");
+        $gridCInsuranceList.dataGrid({
+            height: $(window).height() - 130,
+            url: "/InsuranceManage/CommercialInsurance/GetListJson",
+            colModel: [
+                { label: '主键', name: 'Id', hidden: true, key: true },
+                { label: '代码', name: 'bxCode', width: 80, align: 'left' },
+                { label: '公司名称', name: 'Name', width: 120, align: 'left' },
+                { label: '英文', name: 'EnglishName', width: 100, align: 'left' },
+                { label: '报销比例', name: 'bxbl', width: 120, align: 'left' },
+                 { label: '可报项目', name: 'kbxmmc', width: 120, align: 'left' },
+                { label: '备注', name: 'remark', width: 120, align: 'left' }
+            ],
+            multiselect: false,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridCInsuranceList.jqGrid('setGridParam',
+                {
+                    postData: { code: $("#code").val(), engName: $("#engName").val() },
+                    page: 1,
+                    url: "/InsuranceManage/CommercialInsurance/GetListJson"
+                }).trigger('reloadGrid');
+        });
+    }
+
+    function AddCommercialInsurance() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增商保维护",
+            url: "/InsuranceManage/CommercialInsurance/Form",
+            width: "500px",
+            height: "350px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+
+            }
+        });
+    }
+
+    function btn_edit() {
+        var seleRowid = jQuery("#gridCInsuranceList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请先选中一条信息", "warning");
+            return;
+        }
+        var keyValue = $("#gridCInsuranceList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Form",
+            title: "修改信息",
+            url: "/InsuranceManage/CommercialInsurance/Form?keyValue=" + keyValue,
+            width: "500px",
+            height: "350px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_delete() {
+        var seleRowid = jQuery("#gridCInsuranceList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请先选中一条信息", "warning");
+            return;
+        }
+        $.deleteForm({
+            url: "/InsuranceManage/CommercialInsurance/DeleteForm",
+            param: { keyValue: $("#gridCInsuranceList").jqGridRowValue().Id },
+            success: function () {
+                $.currentWindow().$("#gridCInsuranceList").resetSelection();
+                $.currentWindow().$("#gridCInsuranceList").trigger("reloadGrid");
+            }
+        });
+    }
+    function btn_details() {
+        var seleRowid = jQuery("#gridCInsuranceList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请先选中一条信息", "warning");
+            return;
+        }
+        var keyValue = $("#gridCInsuranceList").jqGridRowValue().Id;
+        $.modalOpen({
+            id: "Details",
+            title: "查看机构",
+            url: "/InsuranceManage/CommercialInsurance/Form?keyValue=" + keyValue,
+            width: "500px",
+            height: "350px",
+            btn: null
+        });
+    }
+</script>

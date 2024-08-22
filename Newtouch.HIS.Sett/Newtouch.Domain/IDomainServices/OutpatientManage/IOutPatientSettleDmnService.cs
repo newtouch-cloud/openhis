@@ -2,7 +2,6 @@
 using Newtouch.HIS.Domain.DTO;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Domain.ValueObjects.DaySettleManage;
 using Newtouch.HIS.Domain.ValueObjects.OutpatientManage;
 using System;
 using System.Collections.Generic;
@@ -82,55 +81,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
             , int ghpbId
             , OutpatientSettFeeRelatedDTO feeRelated, string brxz
             , string ybjsh, string mzh
-            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, string mzyyghId, out object newJszbInfo);
-
-        /// <summary>
-        /// 项目生成单独结算（未收费项目处理）
-        /// </summary>
-        /// <param name="orgId"></param>
-        /// <param name="ghnm"></param>
-        /// <param name="fph"></param>
-        /// <param name="sfrq"></param>
-        /// <param name="feeRelated"></param>
-        /// <param name="ghxmnmList"></param>
-        int submitOutpatGhCharge(string orgId, string fph, DateTime? sfrq, OutpatientSettFeeRelatedDTO feeRelated, IList<int> ghxmnmList);
-        /// <summary>
-        /// 不结算挂号接口
-        /// </summary>
-        /// <param name="orgId"></param>
-        /// <param name="patid"></param>
-        /// <param name="kh"></param>
-        /// <param name="ghly"></param>
-        /// <param name="mjzbz"></param>
-        /// <param name="ks"></param>
-        /// <param name="ys"></param>
-        /// <param name="ksmc"></param>
-        /// <param name="ysmc"></param>
-        /// <param name="ghxm"></param>
-        /// <param name="zlxm"></param>
-        /// <param name="fph"></param>
-        /// <param name="sfrq"></param>
-        /// <param name="isCkf"></param>
-        /// <param name="isGbf"></param>
-        /// <param name="jzxh"></param>
-        /// <param name="ghpbId"></param>
-        /// <param name="feeRelated"></param>
-        /// <param name="brxz"></param>
-        /// <param name="ybjsh"></param>
-        /// <param name="mzh"></param>
-        /// <param name="jzyy"></param>
-        /// <param name="jzid"></param>
-        /// <param name="jzlx"></param>
-        /// <param name="bzbm"></param>
-        /// <param name="bzmc"></param>
-        /// <param name="mzyyghId"></param>
-        /// <param name="newJszbInfo"></param>
-        void UnSettSave(string orgId, int patid, string kh, string ghly, string mjzbz,
-          string ks, string ys, string ksmc, string ysmc, string ghxm, string zlxm, bool isCkf, bool isGbf
-          , int jzxh
-          , int ghpbId, string brxz
-          , string ybjsh, string mzh
-          , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, string mzyyghId, out object newJszbInfo);
+            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, string mzyyghId,string isjm, out object newJszbInfo);
 
         /// <summary>
         /// 
@@ -192,28 +143,14 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="OrganizeId"></param>
         /// <param name="UserCode"></param>
         /// <returns></returns>
-        Tuple<short, string> GetCQMzhJzxh(int patid, string ghpbId, string ks, string ys, string OrganizeId, string UserCode, string mjzbz, string QueueNo, string OutDate);
-        CqybGjbmInfoVo GetDepartmentDoctorIdC(string orgId, string ks, string ys);
+        Tuple<short, string> GetCQMzhJzxh(int patid, string ghpbId, string ks, string ys, string OrganizeId, string UserCode,string mjzbz,string QueueNo,string OutDate);
+        CqybGjbmInfoVo GetDepartmentDoctorIdC(string orgId, string ks,string ys);
         List<GhJzInfo> GetRegListJson(Inparameter inparameter, string orgid);
-
-        List<DailyFeeDataGirdDto> GetDailyFeeListByCreateCode(string orgId, string czr, DateTime kssj, DateTime jssj, string isJZ, string qsfph, string jsfph);
-
-        List<DailyFeeOfDoneDataGirdDto> GetDailyFeeListOfDoneByCreateCode(string orgId, string czr, DateTime ksjzsj, DateTime jsjzsj);
-
-        List<DailyFeeCancelDataGridDto> GetDailyFeeList(string czr, string orgId);
-
         /// <summary>
-        /// 获取当天可以撤销的交账数据
-        /// </summary>
-        void CancelDailyFee(string Id);
-
-
-        /// <summary>
-        /// 转诊
+        /// 获取医保就诊登记所需信息
         /// </summary>
         /// <param name="mzh"></param>
-        /// <param name="ghks"></param>
-        /// <param name="pbId"></param>
-        void submitReferralForm(int patid, string ks, string ys, string OrganizeId, string UserCode, int ghnm, string mzh, string zzyy, string ghpbId);
+        /// <param name="orgId"></param>
+        CqybGjbmInfoVo GetYbjzdjVo(string mzh,string orgId);
     }
 }

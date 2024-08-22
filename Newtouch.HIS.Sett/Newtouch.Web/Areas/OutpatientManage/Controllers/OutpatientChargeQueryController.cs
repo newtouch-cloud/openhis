@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Web.Mvc;
 using System.Linq;
+using System.Configuration;
 
 namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 {
@@ -55,12 +56,12 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="syy"></param>
         /// <returns></returns>
         [HandlerAjaxOnly]
-        public ActionResult SelectRegChargeQuery(Pagination pagination, DateTime? createTimestart, DateTime? createTimeEnd, DateTime? sfrqTimestart, DateTime? sfrqTimeEnd, string kh = "", string fph = "",string jsfph="", string xm = "", string syy = "",string zxlsh="")
+        public ActionResult SelectRegChargeQuery(Pagination pagination, DateTime? createTimestart, DateTime? createTimeEnd, DateTime? sfrqTimestart, DateTime? sfrqTimeEnd, string kh = "", string fph = "", string jsfph = "", string xm = "", string syy = "", string zxlsh = "")
         {
             IList<OutPatientRegChargeMVO> list;
             var chargeQueryList = new
             {
-                rows = (list = _outPatienChargeQueryDmnService.RegChargeQuery(pagination, kh, fph,jsfph, xm, syy, createTimestart, createTimeEnd, sfrqTimestart, sfrqTimeEnd,zxlsh)),
+                rows = (list = _outPatienChargeQueryDmnService.RegChargeQuery(pagination, kh, fph, jsfph, xm, syy, createTimestart, createTimeEnd, sfrqTimestart, sfrqTimeEnd, zxlsh)),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records
@@ -170,7 +171,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             _outPatienChargeQueryApp.PrintInvoice(jsnm, isGh);
             return Success();
         }
-
+         
         /// <summary>
         /// 补打
         /// </summary>

@@ -8,6 +8,7 @@ using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.ValueObjects;
+using Newtouch.Infrastructure.Model;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using System;
@@ -15,7 +16,6 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Newtouch.HIS.DomainServices
 {
@@ -266,7 +266,7 @@ and js.jsnm not in (select cxjsnm from zy_js where OrganizeId = @orgId
             sql.Append(@"select zyjs.jsnm, zybrxx.zyh, zybrxx.xm, brxz.brxzmc , zybrxx.ryrq, zybrxx.cyrq, zyjs.fph
 , zyjs.zje, zyjs.xjzf, zyjs.CreatorCode, zyjs.CreateTime,case zybrxx.xb when '1' then '男' else '女' end xb,
 zybrxx.zjh,convert(varchar(50),zybrxx.csny,120) csrq,'否' isxsr,isnull(mz.mzmc,'汉族') mz,uf.Name zzys,case brxxk.cyfs when '1' then '治愈' when '2' then '好转' when '3' then '转院' when '4' then '死亡' else '好转' end gz
-,case brxxk.cyfs when '3' then '医嘱转院' when '4' then '死亡' else '正常离院' end lyfs,brxxk.cyzdmc cyzd,zybrxx.hu_sheng+zybrxx.hu_shi+zybrxx.hu_xian+zybrxx.hu_dz jtzd
+,case brxxk.cyfs when '3' then '医嘱转院' when '4' then '死亡' else '正常离院' end lyfs,brxxk.cyzdmc cyzd,zybrxx.hu_sheng+zybrxx.hu_shi+zybrxx.hu_xian+zybrxx.hu_dz jtzd,ybjs.setl_id zxlsh
 from zy_js zyjs
 inner join zy_brjbxx zybrxx
 on zybrxx.zyh = zyjs.zyh and zybrxx.OrganizeId = zyjs.OrganizeId
@@ -277,6 +277,7 @@ LEFT JOIN xt_brjbxx xx ON xx.patid = zybrxx.patid  AND xx.zt='1'
 LEFT JOIN [NewtouchHIS_Base]..V_S_xt_mz mz on mz.mzCode=zybrxx.mz and mz.zt='1'
 LEFT JOIN [NewtouchHIS_Base]..V_C_Sys_UserStaff uf on uf.gh=zybrxx.doctor and uf.OrganizeId=zybrxx.OrganizeId and uf.zt='1'
 left join [Newtouch_CIS].[dbo].[zy_brxxk] brxxk on brxxk.zyh=zybrxx.zyh and brxxk.OrganizeId=zybrxx.OrganizeId and brxxk.zt='1'
+LEFT JOIN [NewtouchHIS_Sett].[dbo].[drjk_zyjs_output] ybjs  ON ybjs.setl_id = zyjs.ybjslsh AND ybjs.zt = '1'
 where zyjs.OrganizeId = @orgId
 and zyjs.zt = '1' and zyjs.jszt = '1'
 and zyjs.jsnm not in (select cxjsnm from zy_js where jszt = '2' and OrganizeId = @orgId)");
@@ -333,7 +334,6 @@ left join [NewtouchHIS_Base]..V_S_xt_sfdl sfdl
 on sfdl.dlCode = dljf.dl and sfdl.OrganizeId = @orgId";
             return this.FindList<HospSettlementClassificationFeeVO>(sql, new[] { new SqlParameter("@orgId", organizeId), new SqlParameter("@jsnm", jsnm) });
         }
-
         /// <summary>
         /// 出院结算查询 费用明细
         /// </summary>
@@ -412,107 +412,7 @@ select sfdl.dlCode as dlCode, sfxm.sfxmmc AS sfxmmc,sfxm.dw AS jfdw, sfdl.dlmc a
 
                 db.Commit();
             }
-        }
-
-        /// <summary>
-        /// 病人分类收费汇总
-        /// </summary>
-        /// <param name="organizeId"></param>
-        /// <param name="zyh"></param>
-        /// <returns></returns>
-        public async Task<IList<HospSettlementClassificationFeeVO>> SettlementDetailsQueryAsync(string organizeId, string zyh)
-        {
-            var sql = @"
-SELECT a.sfrq, a.dlCode, a.dlmc, SUM(a.je) je 
-FROM 
-( 
-	SELECT  CONVERT(VARCHAR(20), a.tdrq, 23) AS sfrq, d.dlCode, d.dlmc
-	, convert(decimal(18,2),a.sl * (a.dj + isnull(a.fwfdj, 0))) AS je
-	FROM dbo.zy_ypjfb(NOLOCK) a                
-	LEFT JOIN [NewtouchHIS_Base].dbo.xt_sfdl(NOLOCK) d ON a.dl = d.dlCode AND a.OrganizeId = d.OrganizeId                
-	WHERE a.zyh = @zyh          
-	AND a.zt = 1          
-	AND a.OrganizeId = @orgId           
-
-	UNION ALL          
-
-	SELECT	CONVERT(VARCHAR(20), a.tdrq, 23) AS sfrq, d.dlCode, d.dlmc 
-	, convert(decimal(18,2),a.sl * (a.dj + isnull(a.fwfdj, 0))) AS je
-	FROM dbo.zy_xmjfb(NOLOCK) a                 
-	LEFT JOIN [NewtouchHIS_Base].dbo.xt_sfdl(NOLOCK) d ON a.dl = d.dlCode  AND a.OrganizeId = d.OrganizeId              
-	WHERE a.zyh = @zyh          
-	AND a.zt = 1          
-	AND a.OrganizeId = @orgId   
-) a
-GROUP BY a.sfrq, a.dlCode, a.dlmc           
-";
-            return this.FindList<HospSettlementClassificationFeeVO>(sql, new[] { new SqlParameter("@orgId", organizeId), new SqlParameter("@zyh", zyh) });
-        }
-
-        /// <summary>
-        /// 计费明细
-        /// </summary>
-        /// <param name="organizeId"></param>
-        /// <param name="zyh"></param>
-        /// <param name="sfrq"></param>
-        /// <param name="dlCode"></param>
-        /// <param name="dlCodes"></param>
-        /// <returns></returns>
-        public async Task<IList<HospItemFeeDetailVO>> HospItemFeeDetailQueryAsync(string organizeId, string zyh, DateTime sfrq, string dlCode = "", List<string> dlCodes = null)
-        {
-            var dlCodesParam = "";
-            if (dlCodes != null && dlCodes.Count > 0)
-            {
-                dlCodesParam = string.Join(",", dlCodes);
-            }
-            var sql = $@"
-SELECT  aa.sfxmmc, aa.gg, sum(aa.sl) sl, aa.dw, CONVERT(DateTime,aa.CreateTime) CreateTime
-, aa.dj, sum(aa.je) je, staff.Name ysmc, aa.bqmc, ks.ksmc, aa.zxbz, js.fph, staff2.name czry, LTRIM(RTRIM(sfdl.dlmc)) dlmc 
-FROM  
-(
-	--项目
-	SELECT CONVERT(VARCHAR(10), xmjfb.tdrq, 120) CreateTime, xmjfb.jfbbh, sfxm.sfxmmc, '' gg, xmjfb.sl, xmjfb.jfdw dw, xmjfb.dj, bq.bqmc
-	, convert(decimal(18,2),xmjfb.sl * (xmjfb.dj + isnull(xmjfb.fwfdj, 0))) AS je	
-	, (CASE WHEN xmjfb.sl > 0 THEN '记'	ELSE '退'	END) zxbz, xmjfb.ys, xmjfb.zxks, a.jsnm, xmjfb.dl
-	FROM	zy_xmjfb(nolock) xmjfb 
-	LEFT JOIN zy_jsmx(nolock) a on xmjfb.jfbbh=a.xmjfbbh and a.zt = '1' and isnull(a.xmjfbbh,0)>0 
-	INNER JOIN 	NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm on sfxm.sfxmCode=xmjfb.sfxm and sfxm.OrganizeId=@orgId
-	LEFT JOIN		NewtouchHIS_Base.dbo.xt_bq bq on bq.bqCode=xmjfb.bq and bq.zt='1'
-	WHERE   xmjfb.OrganizeId=@orgId and xmjfb.zyh=@zyh 
-            and CONVERT(DateTime, CONVERT(VARCHAR(10), xmjfb.tdrq, 120))=@sfrq
-	
-	UNION ALL 
-
-	--药品
-	SELECT CONVERT(VARCHAR(10), ypjf.tdrq, 120) CreateTime, ypjf.jfbbh, yp.ypmc sfxmmc, yp.ypgg gg, ypjf.sl, ypjf.jfdw dw, ypjf.dj, bq.bqmc
-	, convert(decimal(18,2), ypjf.sl * (ypjf.dj + isnull(ypjf.fwfdj, 0))) AS je
-	, (CASE WHEN ypjf.sl > 0 THEN '记'	ELSE '退'	END) zxbz, ypjf.ys, ypjf.ks zxks, a.jsnm, ypjf.dl
-	FROM	zy_ypjfb(nolock) ypjf 
-	LEFT JOIN zy_jsmx(nolock) a on ypjf.jfbbh=a.ypjfbbh and a.zt = '1' and isnull(a.ypjfbbh,0)>0
-	INNER JOIN 	NewtouchHIS_Base.dbo.V_C_xt_yp yp on yp.ypcode=ypjf.yp and yp.zt='1' and yp.OrganizeId=@orgId
-	LEFT JOIN		NewtouchHIS_Base.dbo.xt_bq bq on bq.bqCode=ypjf.bq and bq.zt='1'
-	WHERE   ypjf.OrganizeId=@orgId and ypjf.zyh=@zyh 
-            and CONVERT(DateTime, CONVERT(VARCHAR(10), ypjf.tdrq, 120))=@sfrq
-) aa 
-LEFT JOIN 	zy_js(nolock) js on js.jsnm=aa.jsnm and js.zyh=@zyh and js.OrganizeId=@orgId  
-LEFT JOIN	lis_sys_kssz ks on ks.ksdm=aa.zxks and ks.OrganizeId=@orgId
-LEFT JOIN	NewtouchHIS_Base.dbo.Sys_Staff staff on staff.gh=aa.ys and staff.OrganizeId=@orgId
-LEFT JOIN	NewtouchHIS_Base.dbo.Sys_Staff staff2 on staff2.gh=js.CreatorCode and staff.OrganizeId=@orgId
-LEFT JOIN   [NewtouchHIS_Base]..V_S_xt_sfdl sfdl on sfdl.dlCode = aa.dl and sfdl.zt='1' and sfdl.OrganizeId = @orgId
-WHERE       aa.CreateTime<>'' {(string.IsNullOrWhiteSpace(dlCode) || dlCode == "undefined" ? "" : "and aa.dl=@dl")} {(string.IsNullOrWhiteSpace(dlCodesParam) ? "" : $"and aa.dl in (SELECT  * FROM  dbo.f_split(@dlCodesParam, ','))")}
-GROUP BY    aa.sfxmmc, aa.gg, aa.dw, aa.CreateTime, aa.dj, staff.Name, aa.bqmc, ks.ksmc, aa.zxbz, js.fph, staff2.name, aa.dl, sfdl.dlmc
-ORDER BY aa.CreateTime, aa.dl
-";
-            return this.FindList<HospItemFeeDetailVO>(sql,
-                new[] {
-                    new SqlParameter("@orgId", organizeId),
-                    new SqlParameter("@zyh", zyh),
-                    new SqlParameter("@dl", dlCode=="undefined"?"":dlCode),
-                    new SqlParameter("@sfrq", sfrq),
-                    new SqlParameter("@dlCodesParam", dlCodesParam),
-                }
-            );
-        }
+        }  
     }
 
 }

@@ -38,8 +38,8 @@ namespace Newtouch.HIS.Domain.Entity.DeanInquiryManage
         public string Name { get; set; }
         [DecimalPrecision(11, 4)]
         public decimal zje { get; set; }
-        public int sl { get; set; }
-
+        [DecimalPrecision(11, 4)]
+        public decimal sl { get; set; }
 
     } 
 }

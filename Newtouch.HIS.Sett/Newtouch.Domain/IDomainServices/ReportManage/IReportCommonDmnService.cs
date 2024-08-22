@@ -1,4 +1,5 @@
-﻿using Newtouch.HIS.Domain.Entity;
+﻿using Newtouch.Core.Common;
+using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.ValueObjects;
 using Newtouch.HIS.Domain.ValueObjects.ReportManage;
 using System;
@@ -44,6 +45,12 @@ namespace Newtouch.HIS.Domain.IDomainServices
 
 		YBSBMX_DCdbfVO yBSBMX_DCdbfs(string types, string ksrq, string jsrq, string orgid);
 
-
-	}
+        IList<getsfxm> Getsfxm(Pagination pagination, string xzstr,string py,string sfdl,string orgId);
+        IList<GetJyllk> GetJyjlData(Pagination pagination, string ksrq, string jsrq, string orgId);
+        IList<GetJyllk> GetJyjlDatatotxt(string ksrq, string jsrq, string orgId);
+        IList<OutpatientRegistrationVO> GetMjzdbghData(Pagination pagination, string ksrq, string jsrq, string orgId);
+        IList<OutpatientRegistrationVO> GetYbMjzdbghtxt(string ksrq, string jsrq, string orgId);
+        IList<OutpatientSickBedAtHomeVO> GetMjzjcsfData(Pagination pagination, string ksrq, string jsrq, string orgId);
+        IList<OutpatientSickBedAtHomeVO> GetMjzjcsfDatatxt(string ksrq, string jsrq, string orgId);
+    }
 }

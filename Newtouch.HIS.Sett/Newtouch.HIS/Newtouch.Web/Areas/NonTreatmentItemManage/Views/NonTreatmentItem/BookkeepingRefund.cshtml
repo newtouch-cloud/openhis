@@ -1,0 +1,386 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "BookkeepingRefund";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form name="form1">
+    <div class="panel panel-default" style="margin-bottom: 10px;">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle" id="th_zyh" style="display:none">住院号：</th>
+                    <td class="formValue" id="td_zyh" style="display:none">
+                        <input type="text" class="form-control" id="zyh" placeholder="" />
+                    </td>
+                    <th class="formTitle">病历号：</th>
+                    <td class="formValue" colspan="2">
+                        <input type="text" class="form-control" id="blh" placeholder="" style="width: 48%; float: left;" />
+                        <input type="button" class="btn btn-default btn-md btn-default-color" style="width: 15%;margin-left: 2%;" title="选择病人" value="查询" onclick="GetPatSerarchView($('#blh').val(), $('#kehu').val());">
+                    </td>
+                    <th class="formTitle">客户姓名：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="kehu" placeholder="" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">售卖人员：</th>
+                    <td class="formValue">
+                        <input type="text" readonly="readonly" class="form-control" id="smry" data-smryCode="@OperatorProvider.GetCurrent().rygh" data-staffId="@OperatorProvider.GetCurrent().StaffId" value=@OperatorProvider.GetCurrent().UserName />
+                    </td>
+                    <th class="formTitle">收费项目：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control form-an" id="keyword" placeholder="代码 名称" />
+                    </td>
+                    <th class="formTitle">记账日期：</th>
+                    <td class="formValue" colspan="3">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker form-an" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:2%;float:left;">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker form-an" style="width :41%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    </td>
+                    <td>
+                        <input type="button" id="btn_search" class="btn btn-primary form-an" style="width:48%;margin-left:10%;" value="查询" />
+                    </td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 4, 6 },
+    F6Text = "退费"
+})
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+        gridList();
+    })
+
+    //病历号回车
+    $('#blh').keydownEnterEvent(function () {
+        if (!$("#blh").val().trim()) {
+            return;
+        }
+        var blh = $("#blh").val();
+        $('#blh').val(blh.toUpperCase());
+        $("#btn_search").trigger('click');
+    })
+
+    //住院号开关
+    var isShowZyh = '@ViewBag.IsShowZyh';
+    if (isShowZyh == 'ON') {
+        $('#th_zyh').css('display', 'table-cell');
+        $('#td_zyh').css('display', 'table-cell');
+        //住院号回车
+        $('#zyh').keydownEnterEvent(function () {
+            if (!$("#zyh").val().trim()) {
+                return;
+            }
+            var zyh = $("#zyh").val();
+            $('#zyh').val(zyh.toUpperCase());
+            $("#btn_search").trigger('click');
+        })
+    }
+
+    //病人查询
+    function GetPatSerarchView(blh, xm) {
+        if (!!!blh) {
+            blh = '';
+        };
+        if (!!!xm) {
+            xm = '';
+        };
+        $.modalOpen({
+            id: "patSearch",
+            title: "患者查询",
+            url: "/PatientManage/AccountManage/PatOnlyBlhSearchView?t=" + Math.random() + "&blh=" + blh + "&xm=" + xm,
+            width: "700px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatDbGrid();
+            }//窗口点确定的回调函数
+        });
+    }
+
+    //选择的病人 callback
+    function getPatInfoAjax(selePatInfo) {
+        $('#blh').val(selePatInfo.blh)
+        $('#blh').attr('data-patId', selePatInfo.patId);
+        $('#kehu').val(selePatInfo.xm);
+    }
+
+    //姓名回车
+    $('#kehu').keydownEnterEvent(function () {
+        if (!$("#kehu").val().trim()) {
+            return;
+        }
+        $("#btn_search").trigger('click');
+    })
+
+    //默认
+    var Editing_ysList = []; //编辑域中的人员
+    Editing_ysList = [{ id: $('#smry').attr('data-staffId'), gh: $('#smry').attr('data-smryCode'), Name: $('#smry').val(), ks: $('#smks').attr('data-smksCode'), ksmc: $('#smks').val() }];
+
+    //绑定 人员 树
+    $('#smry').click(function () {
+        var initIdSelected = "";
+        $.each(Editing_ysList, function () {
+            initIdSelected += this.id + ",";
+        })
+        $.modalOpen({
+            id: "StaffCorrelation",
+            title: "选择售卖人员",
+            url: "/SystemManage/SysStaff/Selector?single=true&isContansChildOrg=false&callbackType=json&dutyCode=RehabDoctor&initIdSelected=" + initIdSelected,
+            showleftlalbel: false,
+            width: "650px",
+            height: "570px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (data) {
+                    staffTreeCallback(data);
+                });
+            }
+        });
+    });
+
+    //人员树 选择 回调
+    function staffTreeCallback(treeSeleData) {
+        Editing_ysList = [];
+        $.each(treeSeleData, function () {
+            Editing_ysList.push({ id: treeSeleData[0].id, gh: treeSeleData[0].value, Name: treeSeleData[0].text, ks: treeSeleData[0].Ex1, ksmc: treeSeleData[0].Ex2 });
+        })
+        if (treeSeleData[0]) {
+            $('#smry').attr('data-staffId', treeSeleData[0].id)
+                .attr('data-smryCode', treeSeleData[0].value)
+                .val(treeSeleData[0].text);
+
+        } else {
+            $('#smry').attr('data-staffId', '')
+                .attr('data-smryCode', '')
+                .val('');
+        }
+    }
+
+    //明细
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            treeGridModel: "adjacency",
+            url: "/NonTreatmentItemManage/NonTreatmentItem/SelectRefundItemList?t=" + Math.random(),
+            postData: getSearchPostData(),
+            height: $(window).height() - 235,
+            editurl: "clientArray",
+            colModel: [
+            { label: "jfbId", name: "jfbId", width: 25, align: "left", hidden: true },
+            { label: "dlCode", name: "dlCode", width: 100, align: "left", hidden: true },
+            { label: "住院号", name: "zyh", width: 60, align: "left" },
+            { label: "病历号", name: "blh", width: 60, align: "left" },
+            { label: "客户姓名", name: "xm", width: 100, align: "left" },
+            { label: "项目分类", name: "dlName", width: 100, align: "left" },
+            { label: "项目名称", name: "sfxmName", width: 100, align: "left" },
+            { label: "sfxmCode", name: "sfxmCode", width: 25, align: "left", hidden: true },
+            { label: "数量", name: "sl", width: 75, align: "left" },
+            {
+                label: "单价", name: "dj", width: 80, align: "left",
+                formatter: function (val) {
+                    if (val) {
+                        return val.toFixed(4);
+                    } else {
+                        return '';
+                    }
+                }
+            },
+            {
+                label: "金额", name: "je", width: 80, align: "left",
+                formatter: function (val) {
+                    if (val) {
+                        return val.toFixed(2);
+                    } else {
+                        return '';
+                    }
+                }
+            },
+            { label: "退数量", name: "tsl", width: 120, editable: true, editrules: { integer: true, minValue: 1 }, align: "left" },
+            { label: "退金额", name: "tje", width: 25, align: "left", hidden: true },
+            { label: "售卖科室", name: "smksName", width: 100, align: "left" },
+            { label: "smksCode", name: "smksCode", width: 25, align: "left", hidden: true },
+            { label: "售卖人员", name: "smryName", width: 90, align: "left" },
+            { label: "smry", name: "smry", width: 25, align: "left", hidden: true },
+            {
+                label: "记账日期", name: "jzrq", width: 150, align: "left",
+                formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' }
+            },
+            { label: "blh", name: "blh", width: 25, align: "left", hidden: true },
+            { label: "patId", name: "patId", width: 25, align: "left", hidden: true },
+            { label: "tjr", name: "tjr", width: 25, align: "left", hidden: true }
+            ],
+            multiselect: true,
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+            onSelectRow: function (rowid) {
+                $("#" + $.jgrid.jqID(rowid) + "_tsl").focus();
+            },
+            gridComplete: function () {
+                //启用行内编辑框
+                EnableInlineEditBox();
+            }
+        });
+        $("#btn_search").click(function () {
+            if ($('#kssj').val() && $('#jssj').val() && ($('#kssj').val() > $('#jssj').val())) {
+                $.modalAlert("开始记账日期不能大于结束记账时间", 'warning');
+                return;
+            }
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData(),
+                page: 1,
+            }).trigger('reloadGrid');
+        })
+    }
+
+    //启用行内编辑框
+    function EnableInlineEditBox() {
+        //Grid加载完成开启行内编辑   1.先获取所有行Id  2.遍历调用editRow方法
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+
+            $("#gridList").jqGrid('editRow', rowIds[i], true, null, null, null, null, function (callbackRowId) {     //true: when set to true we can use [Enter] key to save the row and [Esc] to cancel editing.
+            });
+        }
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var keyword = $("#keyword").val();
+        var smry = "";
+        if ($("#smry").val()) {
+            smry = $("#smry").attr('data-smryCode');
+        }
+        var zyh = $("#zyh").val();
+        var blh = $("#blh").val();
+        var kehu = $("#kehu").val();
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        return { zyh: zyh, blh: blh, kehu: kehu, keyword: keyword, smry: smry, kssj: kssj, jssj: jssj };
+    };
+
+    //退费确认
+    function newtouch_event_f6() {
+        //获取选中行Id
+        var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds.length == 0) {
+            $.modalAlert("请先选中需退费的信息", 'warning');
+            return;
+        }
+        //获取所有行Id，遍历使编辑框处于保存状态
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+            $("#gridList").saveRow(rowIds[i], null, null, null, function (callbackRowId) {
+
+            }, null, null);
+        }
+
+        //判断退数量
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+            if (!rowData) {
+                break;
+            }
+            if (rowData.tsl.replace(/(^\s*)|(\s*$)/g, "") == "") {
+                $.modalAlert("项目（" + rowData.sfxmName + "）退数量为空，请确认。", 'warning');
+                //启用行内编辑框
+                EnableInlineEditBox();
+                return;
+            }
+            if (rowData.tsl <= 0 || isNaN(rowData.tsl) || rowData.tsl == "") {
+                //启用行内编辑框
+                EnableInlineEditBox();
+                return;
+            }
+            if (parseFloat(rowData.tsl) > parseFloat(rowData.sl)) {
+                $.loading(false);
+                $.modalAlert("项目（" + rowData.sfxmName + "）退数量大于记账数量，请确认。", 'warning');
+                //启用行内编辑框
+                EnableInlineEditBox();
+                return;
+            }
+        }
+
+        //true:选中行
+        var data = $("#gridList").jqGrid('getRowData_AllLine', true, false);
+        //setItem/getItem
+        localStorage.setItem("needRefundData", data);
+        //弹出退费确认窗体
+        $.modalOpen({
+            id: "FormShowRefundConfirmDialog",
+            title: "退费明细确认",
+            url: "/NonTreatmentItemManage/NonTreatmentItem/RefundDetailConfirmForm",
+            width: "500px",
+            height: "550px",
+            callBack: function (iframeId) {
+                $.loading(true, "正在请求数据...");
+                RefundMethod();
+            },
+            //弹窗点“X”事件和'关闭按钮'事件
+            cancelCallBack: function (iframeId) {
+                //启用行内编辑框
+                EnableInlineEditBox();
+            }
+        });
+    }
+
+
+    //具体保存执行
+    function RefundMethod() {
+        //获取所有选中行数据
+        var needRefundData = $("#gridList").jqGrid('getRowData_AllLine', true);
+        for (var i = 0; i < needRefundData.length; i++) {
+            var je = roundingBy4she6ru5chengshuang((parseFloat(needRefundData[i].dj) * parseFloat(needRefundData[i].tsl)), 2);
+            //给Grid里的字段退金额赋值
+            $('#gridList').jqGrid('setCell', needRefundData[i].jqRowId, 'tje', je);
+        }
+        var lastdata = $("#gridList").jqGrid('getRowData_AllLine', true, false);
+        $.najax({
+            url: "/NonTreatmentItemManage/NonTreatmentItem/SaveRefund",
+            dataType: "json",
+            data: { data: lastdata },
+            type: "POST",
+            async: false,
+            success: function (data) {
+                top.top.window.frames['FormShowRefundConfirmDialog'].$.modalClose();
+                $.loading(false);
+                $.modalAlert("保存成功", 'success');
+                //清空Grid
+                $('#gridList').jqGrid("clearGridData");
+                $("#btn_search").trigger('click');
+                $.loading(false);
+            },
+            errCallback: function (err) {
+                $.loading(false);
+            },
+            complete: function () {
+                $.loading(false);
+            }
+        });
+    }
+
+    //清除
+    function newtouch_event_f4() {
+        $('#gridList').jqGrid("clearGridData");
+        $('#kssj').val('@DateTime.Now.ToString("yyyy-MM-01")');
+        $('#jssj').val('@DateTime.Now.ToString("yyyy-MM-dd")');
+    }
+
+</script>
+

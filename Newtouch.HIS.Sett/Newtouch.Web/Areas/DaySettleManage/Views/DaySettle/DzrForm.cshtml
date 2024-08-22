@@ -1,8 +1,8 @@
 ﻿
 @{
-	ViewBag.Title = "DzrForm";
-	Layout = "~/Views/Shared/_Form.cshtml";
-	var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+    ViewBag.Title = "DzrForm";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
 <form name="form1">
@@ -10,11 +10,16 @@
 		<table class="form">
 			<tr>
 				<th class="formTitle" id="thCZRQ">对账日期：</th>
-				<td class="formValue" colspan="2">
-					<input id="txtCreateTime" type="text" class="form-control input-wdatepicker formClearIgnore" style="width :20%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
-					<input type="button" id="btn_search_csfy" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" onclick="clickcssj()" value="产生" />
-					<input type="button" id="btn_search_dzz" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" onclick="dzqq()" value="对帐" />
-				</td>
+                <td class="formValue" colspan="2">
+                    <input id="txtCreateTime" type="text" class="form-control input-wdatepicker formClearIgnore" style="width :20%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <input type="button" id="btn_search_csfy" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" onclick="clickcssj()" value="产生" />
+                    <input type="button" id="btn_search_dzz" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" onclick="dzqq()" value="对帐" />
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <input type="button" id="btn_search_ls" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" value="历史" />
+                    <input type="button" id="btn_search_lsmx" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" value="明细" />
+                    <input type="button" id="btn_search_mxhd" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" value="核对" />
+
+                </td>
 				<td class="formValue"><input type="hidden" id="daycollate" /></td>
 			</tr>
 		</table>
@@ -152,19 +157,19 @@
 			</table>
 		</div>
 	</div>
-	<div>
-		<div class="panel panel-default">
-			<div class="panel-heading navb-bg">
-				对账结果
-			</div>
-			<table class="form" >
-				<tr>
-					<th class="formTitle">对账结果：</th>
-					<td class="formValue" ><input type="tel" id="dzjg"  style="width:800px; height:60px;" /></td>
-				</tr>
-			</table>
-		</div>
-	</div>
+    <div>
+        <div class="panel panel-default">
+            <div class="panel-heading navb-bg">
+                对账结果
+            </div>
+            <table class="form">
+                <tr>
+                    <th class="formTitle">对账结果：</th>
+                    <td class="formValue"><input type="tel" id="dzjg" style="width:800px; height:60px;" /></td>
+                </tr>
+            </table>
+        </div>
+    </div>
 	
 </form>
 
@@ -220,7 +225,11 @@
 			}
 		});
 	}
-	function dzqq() {
+    function dzqq() {
+        if ($("#daycollate").val() == null || $("#daycollate").val()=="") {
+            $.modalAlert("请选择产生按钮生成数据进行对账！", 'warning');
+            return;
+        }
 		$.loading(true, "对账请求开始 请稍等！！");
 
 		var dzsjinput = {
@@ -245,10 +254,14 @@
 			dataType: "json",
 			async: false,
 			success: function (data) {
-				var refinfo = data;
-				console.log("对账返回：",refinfo);
-				$("#dzjg").val(refinfo);
-
+                var refinfo = eval('(' + data + ')');;
+                console.log("对账返回：", refinfo);
+                $("#dzjg").val(data);
+                if (refinfo.xxfhm == "P900") {
+                    $.modalAlert(refinfo.fhxx, 'warning');
+                } else {
+                    $.modalAlert("对账成功", 'success');
+                }
 			},
 			error: function (ex) {
 				console.log("对账请求报错返回：", ex);
@@ -258,8 +271,63 @@
 		setTimeout(function () {
 			$.loading(false);
 		},3000);
-	}
+    }
+    $("#btn_search_ls").click(function () {
+        $.modalOpen({
+            id: "DzrHistory",
+            title: "对账历史",
+            url: "/DaySettleManage/DaySettle/DzrHistory",
+            width: "1200px",
+            height: "650px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function (feeRelated) {
+                    console.log("对账入参信息：", feeRelated);
+                });
+            },
+            cancelCallBack: function (iframeId) {
 
+                $.loading(false);
+            }
+        });
+
+
+    });
+    $("#btn_search_lsmx").click(function () {
+        $.modalOpen({
+            id: "DzrIndex",
+            title: "对账明细",
+            url: "/DaySettleManage/DaySettle/DzrIndex",
+            width: "1000px",
+            height: "650px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function (feeRelated) {
+                    console.log("对账入参信息：", feeRelated);
+                });
+            },
+            cancelCallBack: function (iframeId) {
+
+                $.loading(false);
+            }
+        });
+    });
+    $("#btn_search_mxhd").click(function () {
+        $.modalOpen({
+            id: "DzrCheck",
+            title: "对账明细",
+            url: "/DaySettleManage/DaySettle/DzrCheck",
+            width: "1200px",
+            height: "650px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function (feeRelated) {
+                    console.log("对账入参信息：", feeRelated);
+                });
+            },
+            cancelCallBack: function (iframeId) {
+
+                $.loading(false);
+            }
+        });
+    });
 	function AcceptClick(callBack) {
 		var dzsjinput = {
 			daycollate: $("#daycollate").val(), //对帐日 日期格式 8 非空

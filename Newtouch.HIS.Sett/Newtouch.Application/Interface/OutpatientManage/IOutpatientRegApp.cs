@@ -1,7 +1,6 @@
 ﻿using Newtouch.HIS.Domain.DTO;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Sett.Request.Patient;
 using System;
 using System.Collections.Generic;
 
@@ -56,43 +55,22 @@ namespace Newtouch.HIS.Application.Interface
             , string fph, DateTime? sfrq, bool isCkf, bool isGbf, int ghpbId
             , OutpatientSettFeeRelatedDTO feeRelated, string brxz
             , string ybjsh, string mzyyghId, ref short? qzjzxh, ref string qzmzh
-            , string jzyy,string jzid, string jzlx, string bzbm, string bzmc, out object newJszbInfo);
-
-        /// <summary>
-        /// 不收费挂号
-        /// </summary>
-        /// <param name="patid"></param>
-        /// <param name="kh"></param>
-        /// <param name="ghly"></param>
-        /// <param name="mjzbz"></param>
-        /// <param name="ks"></param>
-        /// <param name="ys"></param>
-        /// <param name="ksmc"></param>
-        /// <param name="ysmc"></param>
-        /// <param name="ghxm"></param>
-        /// <param name="zlxm"></param>
-        /// <param name="isCkf"></param>
-        /// <param name="isGbf"></param>
-        /// <param name="ghpbId"></param>
-        /// <param name="brxz"></param>
-        /// <param name="ybjsh"></param>
-        /// <param name="mzyyghId"></param>
-        /// <param name="qzjzxh"></param>
-        /// <param name="qzmzh"></param>
-        /// <param name="jzyy"></param>
-        /// <param name="jzid"></param>
-        /// <param name="jzlx"></param>
-        /// <param name="bzbm"></param>
-        /// <param name="bzmc"></param>
-        /// <param name="newJszbInfo"></param>
-        void UnSettSave(int patid, string kh, string ghly, string mjzbz,
-            string ks, string ys, string ksmc, string ysmc, string ghxm, string zlxm, bool isCkf, bool isGbf, int ghpbId, string brxz
-            , string ybjsh, ref short? qzjzxh, ref string qzmzh
-            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, out object newJszbInfo);
+            , string jzyy,string jzid, string jzlx, string bzbm, string bzmc,string isjm, out object newJszbInfo);
 
         long Book(OutpatientRegistEntity gh, decimal ssk, string fph, bool isCkf, bool isGbf, string updateBrxz);
 
         void CheckBrxz(string kh, string updateBrxz);
 
+        /// <summary>
+        /// 预约挂号
+        /// </summary>
+        /// <param name="zjlx"></param>
+        /// <param name="zjh"></param>
+        /// <param name="blh"></param>
+        /// <param name="ksCode"></param>
+        /// <param name="mzlx"></param>
+        /// <param name="ysgh"></param>
+        /// <returns></returns>
+        string BespeakRegister(int? zjlx, string zjh, string blh, string ksCode, int mzlx, string ysgh);
     }
 }

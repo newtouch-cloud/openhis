@@ -1,0 +1,69 @@
+﻿
+@{
+    ViewBag.Title = "TradeRefund";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="formRefund">
+    <div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">剩余可退：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" style="border: none;" readonly="readonly" id="maxrfd"/>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span style="color:red">*</span>退款原因：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control"  id="Reason"/>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span style="color:red">*</span>退款金额：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control required"  id="Amt" />
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</form>
+<script>
+    var keyValue = $.request('outtradeno');
+    var maxrfdAmt = $.request('maxrfd'); //剩余可退
+    var totalAmt = $.request('total'); //剩余可退
+
+    $(function() {
+        $("#maxrfd").val(maxrfdAmt + " (元)");
+    });
+
+    function submitForm(callback) {
+        var refundAmt = $("#Amt").val();
+        var reason = $("#Reason").val();
+        var reg = new RegExp("^[0-9]+(.[0-9]{1,3})?$");
+        if (!reg.test(refundAmt)) {
+            $.modalAlert('请输入正确金额', 'error');
+            return;
+        }
+        else if (refundAmt > maxrfdAmt) {
+            $.modalAlert('退款金额不得大于剩余可退金额', 'error');
+            return;
+        }
+        if (reason == null || reason == undefined) {
+            $.modalAlert('请输入退款原因', 'error');
+            return;
+        }
+
+        $.submitForm({
+            url: "/PayManage/MicroPay/Opr_TradeRefund?outTradeNo=" + keyValue + "&refundAmount=" + refundAmt + "&Reason=" + reason,
+            loading: "正在申请退款，请稍后...",  
+            success: function (ajaxresp) {
+                
+                //$.currentWindow().$("#gridListRefd").resetSelection();
+                //$.currentWindow().$("#gridListRefd").trigger("reloadGrid");
+                callback();
+            }
+        });
+    }
+</script>

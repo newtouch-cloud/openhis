@@ -19,7 +19,7 @@ using System.Linq;
 
 namespace Newtouch.HIS.DomainServices.API
 {
-    public class BookingDmnService : DmnServiceBase, IBookingDmnService
+    public class BookingDmnService: DmnServiceBase, IBookingDmnService
     {
         public BookingDmnService(IDefaultDatabaseFactory databaseFactory)
             : base(databaseFactory)
@@ -44,16 +44,13 @@ namespace Newtouch.HIS.DomainServices.API
         /// <param name="ks"></param>
         /// <param name="ksmc"></param>
         /// <returns></returns>
-        public IList<SysDepartmentInfo> GetDepartmentInfo(string orgId, string ks, string ksmc)
+        public IList<SysDepartmentInfo> GetDepartmentInfo(string orgId,string ks,string ksmc)
         {
 
             List<SqlParameter> para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));
 
-            string sql = @"select OrganizeId,Name as ksmc,Code as ks,mzzybz 
-from [NewtouchHIS_Base].[dbo].[V_S_Sys_Department] 
-where zt='1' and organizeId=@orgId
-and mzzybz in(" + (int)Enummzzybz.mz + "," + (int)Enummzzybz.ty + ")";
+            string sql = @"select OrganizeId,Name as ksmc,Code as ks,mzzybz from [NewtouchHIS_Base].[dbo].[V_S_Sys_Department] where 1=1 and zt='1' and organizeId=@orgId";
 
 
             if (!string.IsNullOrEmpty(ks))
@@ -65,8 +62,7 @@ and mzzybz in(" + (int)Enummzzybz.mz + "," + (int)Enummzzybz.ty + ")";
             {
                 sql += " and name=@name ";
                 para.Add(new SqlParameter("@name", ksmc));
-            }
-            return this.FindList<SysDepartmentInfo>(sql, para.ToArray());
+            }return this.FindList<SysDepartmentInfo>(sql, para.ToArray());
 
         }
 
@@ -79,10 +75,10 @@ and mzzybz in(" + (int)Enummzzybz.mz + "," + (int)Enummzzybz.ty + ")";
         /// <returns></returns>
         public IList<SysStaffVO> GetStaffInfo(string orgId, string gh, string staffName)
         {
-            List<SqlParameter> para = new List<SqlParameter>();
-            para.Add(new SqlParameter("@orgId", orgId));
+                List<SqlParameter> para = new List<SqlParameter>();
+                para.Add(new SqlParameter("@orgId", orgId));
 
-            string sql = @"  select staff.organizeId,departmentCode,department.Name as departmentName,staff.Name as staffName,Gender,gh,DutyId ,duty.Name as dutyName
+                string sql = @"  select staff.organizeId,departmentCode,department.Name as departmentName,staff.Name as staffName,Gender,gh,DutyId ,duty.Name as dutyName
   from [NewtouchHIS_Base].[dbo].[Sys_Staff] staff
   left join [NewtouchHIS_Base].[dbo].[Sys_Department] department on
   department.code=staff.departmentCode
@@ -91,18 +87,18 @@ and mzzybz in(" + (int)Enummzzybz.mz + "," + (int)Enummzzybz.ty + ")";
   left join [NewtouchHIS_Base].[dbo].[Sys_Duty] duty on
   duty.id=staffduty.dutyId 
   where 1=1 and staff.zt='1' and staff.organizeId=@orgId";
-
-            if (!string.IsNullOrEmpty(gh))
-            {
-                sql += " and gh=@gh ";
-                para.Add(new SqlParameter("@gh", gh));
-            }
-            if (!string.IsNullOrEmpty(staffName))
-            {
-                sql += " and staff.Name=@staffName ";
-                para.Add(new SqlParameter("@staffName", staffName));
-            }
-            return this.FindList<SysStaffVO>(sql, para.ToArray());
+                
+                if (!string.IsNullOrEmpty(gh))
+                {
+                    sql += " and gh=@gh ";
+                    para.Add(new SqlParameter("@gh", gh));
+                }
+                if (!string.IsNullOrEmpty(staffName))
+                {
+                    sql += " and staff.Name=@staffName ";
+                    para.Add(new SqlParameter("@staffName", staffName));
+                }
+                return this.FindList<SysStaffVO>(sql, para.ToArray());
         }
 
         /// <summary>
@@ -113,20 +109,20 @@ and mzzybz in(" + (int)Enummzzybz.mz + "," + (int)Enummzzybz.ty + ")";
         /// <param name="zjh"></param>
         /// <param name="xm"></param>
         /// <returns></returns>
-        public IList<SysPatInfoVO> GetPatInfo(string orgId, string kh, string zjh, string xm)
+        public IList<SysPatInfoVO> GetPatInfo(string orgId,string kh, string zjh, string xm)
         {
-
+            
             List<SqlParameter> para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));
 
-            string sql = @"select a.organizeId,a.patid, c.brxzmc brxz, blh,a.xm,xb,csny, zjh,dh,mz,zy,b.cardno kh,b.cardtypename klx
+            string sql = @"select a.organizeId,a.patid, c.brxzmc brxz, blh,a.xm,xb,csny, zjh,dh,dz,mz,zy,b.cardno kh,b.cardtypename klx
 from xt_brjbxx a with(nolock)
 left join xt_card b with(nolock) on a.organizeID=b.organizeid and a.patid=b.patid and b.zt='1'
-left join dbo.xt_brxz c with(nolock) on b.organizeID=c.organizeid and b.brxz=c.brxz and c.zt='1'
+left join dbo.xt_brxz c with(nolock) on a.organizeID=c.organizeid and a.brxz=c.brxz and c.zt='1'
 where a.zt='1' and a.organizeId=@orgId
 ";
 
-            if (!string.IsNullOrEmpty(kh))
+            if(!string.IsNullOrEmpty(kh))
             {
                 sql += " and b.cardno=@kh ";
                 para.Add(new SqlParameter("@kh", kh));
@@ -141,7 +137,7 @@ where a.zt='1' and a.organizeId=@orgId
                 sql += " and a.xm=@xm ";
                 para.Add(new SqlParameter("@xm", xm));
             }
-            sql += " group by a.organizeId,a.patid, c.brxzmc, blh,xm,xb,csny, zjh,dh,mz,zy,b.cardno,b.cardtypename ";
+            sql += " group by a.organizeId,a.patid, c.brxzmc, blh,xm,xb,csny, zjh,dh,dz,mz,zy,b.cardno,b.cardtypename ";
             return this.FindList<SysPatInfoVO>(sql, para.ToArray());
 
         }
@@ -157,7 +153,7 @@ where zt='1'
                 sql += " and catecode=@code  ";
             }
 
-            return FindList<SysItemDetailVO>(sql, new SqlParameter[] { new SqlParameter("@code", cateCode ?? "") });
+            return FindList<SysItemDetailVO>(sql, new SqlParameter[] {new SqlParameter("@code", cateCode ?? "")});
         }
 
 
@@ -206,7 +202,7 @@ where zt='1'
         /// <param name="sfxmCode"></param>
         /// <param name="sfxmmc"></param>
         /// <returns></returns>
-        public IList<SysMedicalVO> GetMedicalInfo(string orgId, int sfxmId, string sfxmCode, string sfxmmc)
+        public IList<SysMedicalVO> GetMedicalInfo(string orgId, int sfxmId, string sfxmCode,string sfxmmc)
         {
 
             List<SqlParameter> para = new List<SqlParameter>();
@@ -216,9 +212,8 @@ where zt='1'
   left join [NewtouchHIS_Base].[dbo].[V_S_xt_sfdl] sfdl 
   on sfxm.sfdlCode=sfdl.dlCode and sfdl.organizeId=@orgId 
   where 1=1 and sfxm.zt='1' and sfxm.organizeId=@orgId";
-
-            if (sfxmId != 0)
-            {
+            
+            if (sfxmId != 0) {
 
                 sql += " and sfxmId=@sfxmId ";
                 para.Add(new SqlParameter("@sfxmId", sfxmId));
@@ -246,14 +241,14 @@ where zt='1'
         /// <param name="sfxmCode"></param>
         /// <param name="sfxmmc"></param>
         /// <returns></returns>
-        public IList<SysDiseaseVO> GetDiseaseInfo(string orgId, string zdCode, string zdmc, string icd10)
+        public IList<SysDiseaseVO> GetDiseaseInfo(string orgId, string zdCode, string zdmc,string icd10)
         {
 
             List<SqlParameter> para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));
 
             string sql = @"  select zdCode,zdmc,icd10 from [NewtouchHIS_Base].[dbo].[V_S_xt_zd] where 1=1 ";
-
+            
             if (!string.IsNullOrEmpty(zdCode))
             {
                 sql += " and zdCode=@zdCode ";
@@ -285,7 +280,7 @@ where zt='1'
         /// <param name="ghpbid"></param>
         /// <param name="ScheduId"></param>
         /// <returns></returns>
-        public IList<MzpbScheduleVO> GetMzpbSchedule(string orgId, string OutDate, string czks, string ysgh, string RegType, string ghpbid, string ScheduId, string FromOutDate = null, int pblx = 1)
+        public IList<MzpbScheduleVO> GetMzpbSchedule(string orgId,string OutDate,string czks, string ysgh,string RegType,string ghpbid,string ScheduId,string FromOutDate = null,int pblx=1)
         {
             string sql = @"select convert(varchar(20),ScheduId) ScheduId,a.[OrganizeId],convert(varchar(10),[OutDate],120)[OutDate],[ysgh],
 [ysxm],[czks],[czksmc],[RegType],[Title],[Period],[PeriodDesc],[TotalNum]
@@ -295,11 +290,11 @@ from mz_ghpb_schedule a with(nolock)
 left join [NewtouchHIS_Base].dbo.[V_S_xt_sfxm] d with(nolock) on a.organizeid =d.organizeid and d.zt='1' and a.ghlx=d.sfxmcode
 left join [NewtouchHIS_Base].dbo.[V_S_xt_sfxm] e with(nolock) on a.organizeid =e.organizeid and d.zt='1' and a.zlxm=d.sfxmcode
 where a.[OrganizeId]=@orgId and a.zt='1' and OutDate>=@limitdate and IsBook='1' and IsCancel='0' ";
-            List<SqlParameter> para = new List<SqlParameter>();
-            para.Add(new SqlParameter("@orgId", orgId));
+            List<SqlParameter> para=new List<SqlParameter>();
+            para.Add(new SqlParameter("@orgId",orgId));
             para.Add(new SqlParameter("@limitdate", DateTime.Now.ToString("yyyy-MM-dd")));
 
-            if (pblx == (int)EnumMzpblx.yy)
+            if (pblx == (int) EnumMzpblx.yy)
             {
                 sql += " and IsBook=1 ";
             }
@@ -391,8 +386,7 @@ where a.[OrganizeId]=@orgId and a.zt='1' and OutDate>=@limitdate and IsBook='1' 
         /// <param name="cfnm"></param>
         /// <returns></returns>
 
-        public IList<SysRecipeDrugVO> GetRecipeDrugInfo(string orgId, string cfmxId, string cfnm)
-        {
+        public IList<SysRecipeDrugVO> GetRecipeDrugInfo(string orgId,string cfmxId,string cfnm) {
 
             List<SqlParameter> para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));
@@ -429,8 +423,14 @@ left join [NewtouchHIS_Base].[dbo].[V_S_xt_ypjx] c
         /// <param name="BookId"></param>
         /// <param name="yyzt"></param>
         /// <returns></returns>
-        public IList<MzghBookRecordVO> OutbookRecord(string orgId, string kh, string xm, string lxdh, string BookId, int? yyzt, string ksrq, string jsrq, string ks, string ysgh, string appId)
+        public IList<MzghBookRecordVO> OutbookRecord(string orgId,string kh,string xm,string lxdh,string BookId,int? yyzt,string ksrq,string jsrq,string ks,string ysgh,string appId)
         {
+//            string sql = @"SELECT [OrganizeId],[BookId],[yyzt],[ScheduId],[ghxz],[patid],[xm],[xb],[lxdh],[kh],[ks],[ys],[OutDate]
+//,[RegType],[Period],[PeriodStart],[PeriodEnd],[QueueNo],[RegFee],[PayFee],[PayLsh],[PayTime]
+//,[CancelReason],[CancelTime],[mzh],[ghrq],[AppId],yynr
+//from [mz_gh_book] a with(nolock)
+//where a.zt='1' and a.OrganizeId=@orgId ";
+
             string sql = @"SELECT a.[OrganizeId],[BookId],
 (case [yyzt] when 1 then (case when datediff(dd,getdate(),a.outdate)>=0 then '已预约' else '已作废' end) 
 when 2 then '已挂号' when 3 then '预约取消' when 4 then '已作废' end)yyzt,
@@ -450,10 +450,10 @@ where a.zt='1'
             para.Add(new SqlParameter("@orgId", orgId));
 
             sql += " and a.OutDate>=@ksrq and a.OutDate<@jsrq ";
-            if (!string.IsNullOrWhiteSpace(ksrq) && !string.IsNullOrWhiteSpace(jsrq))
+            if (!string.IsNullOrWhiteSpace(ksrq)&& !string.IsNullOrWhiteSpace(jsrq))
             {
                 var jstime = Convert.ToDateTime(jsrq).AddDays(1).ToString("yyyy-MM-dd");
-
+                
                 para.Add(new SqlParameter("@ksrq", ksrq));
                 para.Add(new SqlParameter("@jsrq", jstime));
             }
@@ -482,7 +482,7 @@ where a.zt='1'
                 sql += " and a.BookId=@BookId ";
                 para.Add(new SqlParameter("@BookId", BookId));
             }
-            if (yyzt != null)
+            if (yyzt!=null)
             {
                 sql += " and a.yyzt=@yyzt ";
                 para.Add(new SqlParameter("@yyzt", yyzt));
@@ -499,7 +499,7 @@ where a.zt='1'
             }
 
             sql += @"
-order by a.outdate desc ";
+order by a.outdate desc " ;
             return FindList<MzghBookRecordVO>(sql, para.ToArray());
 
         }
@@ -545,7 +545,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
         {
             //获取剩余号源
             var syhy = GetScheduleDetail(req.OrgId, pbvo.ScheduId).FirstOrDefault();
-            if (syhy != null)
+            if (syhy!=null)
             {
                 if (syhy.BookNum == 0)
                 {
@@ -561,11 +561,11 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
             //申请预约
             if (req != null && patvo != null && pbvo != null)
             {
-                var queno = _OutPatientDmnService.GetJzxh(req.ScheduId, pbvo.czks, pbvo.ysgh, "", req.AppId, req.OrgId);
+                var queno= _OutPatientDmnService.GetJzxh(req.scheduId, pbvo.czks, pbvo.ysgh, "", req.AppId, req.OrgId);
                 var bookId = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_gh_book");
                 MzghbookEntity yyety = new MzghbookEntity();
                 yyety.BookId = bookId;
-                yyety.ScheduId = Convert.ToDecimal(req.ScheduId);
+                yyety.ScheduId = Convert.ToDecimal(req.scheduId);
                 yyety.kh = req.kh;
                 yyety.AppId = req.AppId;
                 yyety.OutDate = Convert.ToDateTime(pbvo.OutDate);
@@ -583,9 +583,9 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                 yyety.xm = patvo.xm;
                 yyety.xb = patvo.xb;
                 yyety.yynr = pbvo.Title;
-
+                
                 yyety.OrganizeId = req.OrgId;
-                yyety.yyzt = ((int)EnumMzyyzt.book).ToString();
+                yyety.yyzt = ((int) EnumMzyyzt.book).ToString();
 
 
                 yyety.Create();
@@ -609,17 +609,17 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
         /// <param name="kh"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public APIOutputDto OutpatRegApply(string bookId, string kh, string orgId, string payFee, string payLsh, string user)
+        public APIOutputDto OutpatRegApply(string bookId, string kh,string orgId, string payFee, string payLsh, string user)
         {
-            APIOutputDto res = new APIOutputDto();
-            SysPatInfoVO patvo = new SysPatInfoVO();
-            MzghbookEntity bookRecord = new MzghbookEntity();
+            APIOutputDto res =new APIOutputDto();
+            SysPatInfoVO patvo=new SysPatInfoVO();
+            MzghbookEntity bookRecord=new MzghbookEntity();
 
             int patid = -1;
             if (!string.IsNullOrWhiteSpace(bookId))
             {
-                string yyzt = ((int)EnumMzyyzt.book).ToString();
-                DateTime datevalid = DateTime.Now.Date;
+                string yyzt = ((int) EnumMzyyzt.book).ToString();
+                DateTime datevalid=DateTime.Now.Date;
                 bookRecord = _MzghbookRepo.FindEntity(p =>
                     p.BookId.ToString() == bookId && p.yyzt == yyzt && p.zt == "1" && p.OrganizeId == orgId &&
                     p.OutDate >= datevalid);
@@ -648,33 +648,33 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
             if (!string.IsNullOrWhiteSpace(kh))
             {
                 patvo = GetPatInfo(orgId, kh, null, null).FirstOrDefault();
-                if (patvo != null)
+                if (patvo!=null)
                 {
                     if (patid == -1)
                     {
                         patid = patvo.patid;
                     }
-                    else if (patid != patvo.patid)
+                    else if(patid!=patvo.patid)
                     {
                         res.code = 0;
                         res.msg = "预约信息与卡信息不符，请重试。";
                     }
 
                 }
-                else
+                else 
                 {
                     res.code = 0;
                     res.msg = "卡信息异常，请联系管理员。";
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(res.msg) && patvo != null && bookRecord != null)
+            if (string.IsNullOrWhiteSpace(res.msg) && patvo!=null && bookRecord!=null)
             {
                 //获取门诊号
                 string mzh = _OutPatientSettleDmnService.GetRegMzh(patid, bookRecord.ScheduId.ToString(), bookRecord.ks, orgId, null,
                     bookRecord.QueueNo, bookRecord.OutDate.ToString("yyyy-MM-dd"));
                 var scheduety = GetMzpbSchedule(orgId, null, null, null, null, null, bookRecord.ScheduId.ToString()).FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(mzh) && scheduety != null)
+                if (!string.IsNullOrWhiteSpace(mzh) && scheduety!=null)
                 {
                     try
                     {
@@ -687,31 +687,31 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                         feeRelated.xjzfys = bookRecord.RegFee;
                         var scheduId = Convert.ToInt32(scheduety.ScheduId);
                         string ghly = "1";
-                        SysCashPaymentModelEntity zffsEty = new SysCashPaymentModelEntity();
+                        SysCashPaymentModelEntity zffsEty=new SysCashPaymentModelEntity();
                         if (bookRecord.AppId == EnumMzghly.WeChat.ToString())
                         {
                             zffsEty = _sysForCashPayRepository.FindEntity(p =>
                                 p.xjzffsmc.Contains("微信") && p.zt == "1");
-                            ghly = ((int)EnumMzghly.WeChat).ToString();
+                            ghly = ((int) EnumMzghly.WeChat).ToString();
                         }
                         else if (bookRecord.AppId == EnumMzghly.Alipay.ToString())
                         {
                             zffsEty = _sysForCashPayRepository.FindEntity(p =>
                                 p.xjzffsmc.Contains("支付宝") && p.zt == "1");
-                            ghly = ((int)EnumMzghly.Alipay).ToString();
+                            ghly = ((int) EnumMzghly.Alipay).ToString();
                         }
                         feeRelated.zffs1 = zffsEty == null ? "" : zffsEty.xjzffs;
                         feeRelated.zfje1 = zffsEty == null ? null : bookRecord.RegFee;
 
                         _OutPatientSettleDmnService.Save(orgId, patid, kh, ghly, scheduety.RegType,
                             scheduety.czks, "", scheduety.czksmc, "", scheduety.ghlx, scheduety.zlxm, null, null, false,
-                            false, bookRecord.QueueNo, scheduId, feeRelated, bookRecord.ghxz, null, mzh, "0", null, null, null, null, null,
+                            false, bookRecord.QueueNo, scheduId, feeRelated, bookRecord.ghxz, null, mzh, "0", null,null,null,null,null,null,
                             out regobj);
 
                         var regEty =
                             _outpatientRegRepo.FindEntity(p => p.mzh == mzh && p.zt == "1" && p.OrganizeId == orgId);
                         if (regEty != null)
-                        {
+                        { 
                             regEty.ghrq = bookRecord.OutDate;
                             _outpatientRegRepo.Update(regEty);
 
@@ -719,8 +719,8 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                             bookRecord.PayLsh = payLsh;
                             bookRecord.LastModifyTime = DateTime.Now;
                             bookRecord.LastModifierCode = user;
-                            bookRecord.yyzt = ((int)EnumMzyyzt.reg).ToString();
-                            bookRecord.ghrq = bookRecord.OutDate;
+                            bookRecord.yyzt= ((int)EnumMzyyzt.reg).ToString();
+                            bookRecord.ghrq= bookRecord.OutDate;
                             bookRecord.mzh = mzh;
                             _MzghbookRepo.Update(bookRecord);
 
@@ -751,12 +751,12 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                 }
 
             }
-
+            
 
             return res;
         }
 
-        public APIOutputDto OutPatRegCancel(string orgId, string user, string mzh, string kh, string appId)
+        public APIOutputDto OutPatRegCancel(string orgId, string user, string mzh,string kh,string appId)
         {
             APIOutputDto res = new APIOutputDto();
             object newJszbInfo;
@@ -768,17 +768,17 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
 
                 var regEty = _outpatientRegRepo.FindEntity(p =>
                     p.mzh == mzh && p.zt == "1" && p.OrganizeId == orgId && p.CreatorCode == user &&
-                    p.ghly != ((int)EnumMzghly.His).ToString());
+                    p.ghly != ((int) EnumMzghly.His).ToString());
                 if (regEty != null)
                 {
                     var isTody = Convert.ToDateTime(DateTime.Now.ToString("yyyy-MM-dd"));
                     //待就诊 且已结
-                    if (regEty.jzbz == ((int)EnumOutpatientJzbz.Djz).ToString() && regEty.ghzt == "1" &&
+                    if (regEty.jzbz == ((int) EnumOutpatientJzbz.Djz).ToString() && regEty.ghzt == "1" &&
                         regEty.ghrq == isTody)
                     {
                         var jsEty = _outpatientSettlementRepo.FindEntity(p =>
                             p.OrganizeId == orgId && p.ghnm == regEty.ghnm &&
-                            p.jslx == ((int)EnumJslx.GH).ToString() && p.jszt == (int)Constants.jsztEnum.YJ &&
+                            p.jslx == ((int) EnumJslx.GH).ToString() && p.jszt == (int) Constants.jsztEnum.YJ &&
                             p.tbz != 1);
                         if (jsEty != null)
                         {
@@ -801,7 +801,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                                 }
 
                                 //预约挂号只能当前平台退号
-                                var yyzt = ((int)EnumMzyyzt.reg).ToString();
+                                var yyzt = ((int) EnumMzyyzt.reg).ToString();
                                 var bookRecord = _MzghbookRepo.FindEntity(p =>
                                     p.OrganizeId == orgId && p.mzh == mzh && p.zt == "1" && p.yyzt == yyzt);
                                 if (bookRecord != null)
@@ -814,12 +814,12 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                                             null, null, null, null);
                                         var newjsEty = _outpatientSettlementRepo.FindEntity(p =>
                                             p.OrganizeId == orgId && p.ghnm == regEty.ghnm &&
-                                            p.jslx == ((int)EnumJslx.GH).ToString() &&
-                                            p.jszt == (int)Constants.jsztEnum.YT &&
+                                            p.jslx == ((int) EnumJslx.GH).ToString() &&
+                                            p.jszt == (int) Constants.jsztEnum.YT &&
                                             p.tbz == 1);
                                         if (newjsEty != null)
                                         {
-                                            bookRecord.yyzt = ((int)EnumMzyyzt.regcancel).ToString();
+                                            bookRecord.yyzt = ((int) EnumMzyyzt.regcancel).ToString();
                                             bookRecord.LastModifyTime = DateTime.Now;
                                             bookRecord.LastModifierCode = user;
                                             _MzghbookRepo.Update(bookRecord);
@@ -903,7 +903,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
             return res;
         }
 
-        public APIOutputDto OutpatReg(string kh, string orgId, string ghrq, string ghxz, string ks, string user, string AppId, string ghlybz)
+        public APIOutputDto OutpatReg(string kh, string orgId, string ghrq, string ghxz, string ks,string user,string AppId, string ghlybz)
         {
             APIOutputDto res = new APIOutputDto();
             SysPatInfoVO patvo = new SysPatInfoVO();
@@ -927,7 +927,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
             string dtnow = DateTime.Now.ToString("yyyy-MM-dd");
 
             var con = ConfigurationHelper.GetAppConfigValue("RegLimit");
-            if (con == "1")
+            if (con=="1")
             {
                 var reginfo = RegPermitCheck(patvo.blh, orgId, ks, dtnow);
                 if (reginfo == false)
@@ -941,8 +941,8 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
             {
                 string mzh = "";
                 int jzxh = 0;
-
-                if (string.IsNullOrWhiteSpace(ghxz))
+                
+                if(string.IsNullOrWhiteSpace(ghxz))
                 {
                     ghxz = ((int)EnumGhxz.PTGH).ToString();
                 }
@@ -953,8 +953,8 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                 {
                     //获取门诊号 就诊序号
                     var mjz = ((int)EnumOutPatientType.generalOutpat).ToString();
-                    var ghready = _OutPatientSettleDmnService.GetCQMzhJzxh(patvo.patid, scheduety.ScheduId, ks, null, orgId, user, mjz, null, ghrq);
-                    if (ghready != null)
+                    var ghready = _OutPatientSettleDmnService.GetCQMzhJzxh(patvo.patid,scheduety.ScheduId,ks,null,orgId, user, mjz,null,ghrq);
+                    if(ghready!=null)
                     {
                         jzxh = ghready.Item1;
                         mzh = ghready.Item2;
@@ -1004,7 +1004,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
 
                             _OutPatientSettleDmnService.Save(orgId, patid, kh, ghly, scheduety.RegType,
                                 scheduety.czks, "", scheduety.czksmc, "", null, null, null, null, false,
-                                false, jzxh, scheduId, feeRelated, ghxz, null, mzh, "0", null, null, null, null, null,
+                                false, jzxh, scheduId, feeRelated, ghxz, null, mzh, "0",null, null,null,null,null, null,
                                 out regobj);
 
                             var regEty =
@@ -1016,7 +1016,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                                     regEty.ghlybz = ghly;
                                     _outpatientRegRepo.Update(regEty);
                                 }
-
+                                
                                 res.data = regobj;
                                 res.code = 1;
                                 res.msg = "挂号成功。";
@@ -1047,7 +1047,7 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
                     res.code = 0;
                     res.msg = "该科室当日无相关排班。";
                 }
-
+             
 
             }
 
@@ -1056,21 +1056,21 @@ a.RegFee,a.IsBook,a.ghlx,a.zlxm,a.weekdd,a.IsCancel ";
 
         }
 
-        public bool RegPermitCheck(string blh, string orgId, string ks, string ghrq)
+        public bool RegPermitCheck(string blh,string orgId,string ks,string ghrq)
         {
             string sql = @"
             select mzh 
             from mz_gh with(nolock)
             where organizeid=@orgId and blh=@blh and ks=@ks and convert(date,ghrq)=convert(date,@ghrq) and ghzt=0 ";
 
-            var list = this.FindList<OutPatientRegInfoVO>(sql, new SqlParameter[] {
+            var list= this.FindList<OutPatientRegInfoVO>(sql, new SqlParameter[] {
                 new SqlParameter("@orgId",orgId),
                 new SqlParameter("@blh",blh),
                 new SqlParameter("@ks",ks),
                 new SqlParameter("@ghrq",ghrq),
             });
 
-            if (list != null && list.Count > 0)
+            if(list!=null && list.Count>0)
             {
                 return false;
             }
@@ -1118,7 +1118,7 @@ WHERE js.OrganizeId=@orgId and js.zt= '1'
 --未退
 and ISNULL(js.tbz, 0)=0  ";
 
-            if (!string.IsNullOrWhiteSpace(kh))
+            if(!string.IsNullOrWhiteSpace(kh))
             {
                 sql += " and gh.kh=@kh ";
             }
@@ -1127,13 +1127,13 @@ and ISNULL(js.tbz, 0)=0  ";
                 sql += " and gh.mzh=@mzh ";
             }
 
-            var list = this.FindList<OutPatientChargeMainDto>(sql, new SqlParameter[] {
+            var list= this.FindList<OutPatientChargeMainDto>(sql, new SqlParameter[] {
                 new SqlParameter("@orgId",orgId),
                 new SqlParameter("@kh",kh),
                 new SqlParameter("@mzh",mzh),
             });
 
-            if (list != null && list.Count > 0)
+            if(list!=null && list.Count>0)
             {
                 foreach (var item in list)
                 {
@@ -1141,13 +1141,13 @@ and ISNULL(js.tbz, 0)=0  ";
                     dto.MainRecords = new List<OutPatientChargeMainDto>();
                     dto.DetailRecords = new List<OutPatientRegChargeDetailsVO>();
                     dto.MainRecords.Add(item);
-                    var delist = OutpatChargeDetail(orgId, item.jsnm.ToString());
-                    if (delist != null && delist.Count > 0)
+                    var delist= OutpatChargeDetail(orgId,item.jsnm.ToString());
+                    if(delist!=null && delist.Count>0)
                     {
-                        foreach (var s in delist)
+                        foreach(var s in delist)
                         {
                             dto.DetailRecords.Add(s);
-                        }
+                        }                       
                     }
 
                     dtoList.Add(dto);
@@ -1159,7 +1159,7 @@ and ISNULL(js.tbz, 0)=0  ";
 
         }
 
-        public IList<OutPatientRegChargeDetailsVO> OutpatChargeDetail(string orgId, string jsnm)
+        public IList<OutPatientRegChargeDetailsVO> OutpatChargeDetail(string orgId,string jsnm)
         {
             string sql = @"exec spSelectRecordsDetailByJsnm @jsnm=@jsnm,@OrganizeId=@OrganizeId ";
             return this.FindList<OutPatientRegChargeDetailsVO>(sql, new SqlParameter[] {
@@ -1167,9 +1167,5 @@ and ISNULL(js.tbz, 0)=0  ";
                 new SqlParameter("@OrganizeId",orgId)
             });
         }
-
-
-
-
     }
 }

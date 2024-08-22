@@ -19,5 +19,6 @@ namespace Newtouch.HIS.Domain.IRepository
 
         void ExecPartialSettleFeeDetail(string zyh,string jsnm,string czlx);
         void Updatezy_brxxexpand(string OrganizeId, string zyh);
+        void Updatezyaddfee(string OrganizeId, decimal sl, string yfbm, string ypdm);
     }
 }

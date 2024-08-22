@@ -42,7 +42,8 @@ namespace Newtouch.HIS.DomainServices.PatientManage
                             b.xjzffsmc ,
                             b.xjzffs,
 		                    a.Id,
-                            a.memo
+                            a.memo,
+                            a.outTradeNo
                     FROM    zy_zhszjl a WITH ( NOLOCK )
                             LEFT JOIN xt_xjzffs b WITH ( NOLOCK ) ON a.xjzffs = b.xjzffs
 		                    LEFT JOIN NewtouchHIS_Base..V_C_Sys_UserStaff s WITH ( NOLOCK ) ON  s.Account=a.CreatorCode

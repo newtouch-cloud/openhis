@@ -120,7 +120,7 @@ namespace Newtouch.HIS.Web.Areas.DRGManage.Controllers
             string[] zdList = zdlist.Split(',');
             string[] ssList = sslist.Split(',');
             var data = new {
-                version = "chs_drg_11",
+                version = "",
                 Index = patxx.bah,
                 gender = patxx.xb,
                 age = patxx.nl,
@@ -138,7 +138,7 @@ namespace Newtouch.HIS.Web.Areas.DRGManage.Controllers
                 AppId = ConfigurationManager.AppSettings["AppId"],
                 OrganizeId = this.OrganizeId,
                 Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                Data = "API.Manage"
+                Data = ""
             };
             string token = "";
             var tokenstr = "";
@@ -160,7 +160,7 @@ namespace Newtouch.HIS.Web.Areas.DRGManage.Controllers
                 OrganizeId= OrganizeId,
                 Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
-            var outstr = HttpTpClientHelper.Post(reqObj.ToJson(), ConfigurationManager.AppSettings["SiteManageAPIHost"] + "api/DRGGrouper/DrgGroupByMedRecord", token);
+            var outstr = HttpTpClientHelper.Post(reqObj.ToJson(), ConfigurationManager.AppSettings["SiteDRGAPIHost"] +"api/DRGGrouper/DrgGroupByMedRecord", token);
             return Content(outstr);
         }
         /// <summary>
@@ -193,23 +193,20 @@ namespace Newtouch.HIS.Web.Areas.DRGManage.Controllers
                 medicalLists.remark = "";
                 medicalList.Add(medicalLists);
                 medicalRecordDeptVOs.medicalList = medicalList;
-                medicalRecordDeptVOs.version = "chs_drg_11";
             }
             var tokendata = new
             {
                 AppId = ConfigurationManager.AppSettings["AppId"],
                 OrganizeId = this.OrganizeId,
                 Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                Data = "API.Manage"
+                Data = ""
             };
             string token = "";
             var tokenstr = "";
             tokenstr = RedisHelper.StringGet("DrgGetTokenKey");
-            var tokenhost = ConfigurationManager.AppSettings["SiteDRGAPIHost"] + "api/Auth/GetAppToken";
             if (tokenstr == null || tokenstr == "" || tokenstr == "null")
             {
-                tokenstr = HttpTpClientHelper.Post(tokendata.ToJson(), tokenhost, null);
-                MedicalRecordInputTokenVO Token = JsonConvert.DeserializeObject<MedicalRecordInputTokenVO>(tokenstr);
+                tokenstr = HttpTpClientHelper.Post(tokendata.ToJson(), ConfigurationManager.AppSettings["SiteDRGAPIHost"] +"api/Auth/GetAppToken", null);              MedicalRecordInputTokenVO Token = JsonConvert.DeserializeObject<MedicalRecordInputTokenVO>(tokenstr);
                 RedisHelper.StringSet("DrgGetTokenKey", Token.BusData.data.Token, new TimeSpan(0, 20, 0));
                 token = Token.BusData.data.Token;
             }
@@ -217,8 +214,6 @@ namespace Newtouch.HIS.Web.Areas.DRGManage.Controllers
             {
                 token = tokenstr;
             }
-            string[] a = {};
-            medicalRecordDeptVOs.medicalArr = a;
             var reqObj = new
             {
                 Data = medicalRecordDeptVOs,
@@ -226,20 +221,20 @@ namespace Newtouch.HIS.Web.Areas.DRGManage.Controllers
                 OrganizeId = OrganizeId,
                 Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
-            var outstr = HttpTpClientHelper.Post(reqObj.ToJson(), ConfigurationManager.AppSettings["SiteManageAPIHost"] + "api/DRGGrouper/DrgGroupByMedRecordList", token);
+            var outstr = HttpTpClientHelper.Post(reqObj.ToJson(), ConfigurationManager.AppSettings["SiteDRGAPIHost"] + "api/DRGGrouper/DrgGroupByMedRecordList", token);
             return Content(outstr);
         }
         
-        //public ActionResult InHosPatInfo(string zyh, string ward)
-        //{
-        //    var list = _patientCenterDmnService.PatientBasic(zyh, null, null, null, OrganizeId, "zy", ward);
-        //    if (list == null || list.zyinfolist.Count == 0)
-        //    {
-        //        return Error("未找到患者住院基本信息");
-        //    }
-        //    var pat = _patientCenterDmnService.GetDiagLsit()
-        //    return Content("");
-        //}
+        public ActionResult InHosPatInfo(string zyh, string ward)
+        {
+            //var list = _patientCenterDmnService.PatientBasic(zyh, null, null, null, OrganizeId, "zy", ward);
+            //if (list == null || list.zyinfolist.Count == 0)
+            //{
+            //    return Error("未找到患者住院基本信息");
+            //}
+            //var pat=_patientCenterDmnService.GetDiagLsit()
+            return Content("");
+        }
         public ActionResult GetOpList(string ssmc)
         {
             var list = _medicalRecordDmnService.GetAllOpVOList(ssmc, OrganizeId);

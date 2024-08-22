@@ -1,0 +1,137 @@
+﻿
+@{
+    ViewBag.Title = "JCSFQueryUpload";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+}
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="ksrqjcsf" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-01")" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jsrqjcsf" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </td>
+                <th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_searchjcsf" onclick="jyjlsearchjcsf();" class="btn btn-primary btn-md" value="产生" style="width:55px" />
+                    <input type="button" id="btn_searchtotxtjcsf" onclick="searchtotxtjcsf();" class="btn btn-primary btn-md" value="上传" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <div class="gridPanel">
+        <table id="gridListjcsf"></table>
+        <div id="gridPagerjcsf"></div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        gridListjcsf();
+    });
+    function gridListjcsf() {
+        var $gridList = $("#gridListjcsf");
+        $gridList.dataGrid({
+            url: "/ReportManage/Report/GetMjzjcsfData",
+            height: $(window).height() - 200,
+            postData: getpostDatajcsf(),
+            colModel: [
+                { label: '流水号', name: 'yblsh', width: 60, align: 'left' },
+                { label: '卡号', name: 'kh', width: 60, align: 'left' },
+                { label: '科室编码', name: 'ksbm', width: 60, align: 'left' },
+                { label: '科室名称', name: 'ksmc', width: 60, align: 'left' },
+                { label: '医生工号', name: 'ysgh', width: 60, align: 'left' },
+                { label: '医生姓名', name: 'ysxm', width: 60, align: 'left' },
+                { label: '处方编号', name: 'cfbh', width: 60, align: 'left' },
+                { label: '费用类别', name: 'fylb', width: 60, align: 'left' },
+                { label: '项目名称', name: 'xmmc', width: 60, align: 'left' },
+                { label: '项目单位', name: 'xmdw', width: 60, align: 'left' },
+                { label: '项目单价', name: 'xmdj', width: 60, align: 'left' },
+                { label: '项目数量', name: 'xmsl', width: 60, align: 'left' },
+                { label: '项目金额', name: 'xmje', width: 60, align: 'left' },
+                { label: '交易金额', name: 'jyje', width: 60, align: 'left' },
+                { label: '报销标志', name: 'bxbz', width: 60, align: 'left' },
+                { label: '医保范围金额', name: 'ybfwje', width: 60, align: 'left' },
+                { label: '交易时间', name: 'jysj', width: 60, align: 'left' },
+                { label: '医保类型', name: 'yblx', width: 60, align: 'left' },
+                { label: '结算类型', name: 'jslx', width: 60, align: 'left' },
+                { label: '退费标志', name: 'tfbz', width: 60, align: 'left' },
+                { label: '流水号', name: 'lsh', width: 60, align: 'left' },
+                { label: '细分流水号', name: 'xflsh', width: 60, align: 'left' },
+                { label: '药品通用名/医用材料品牌', name: 'yptym', width: 60, align: 'left' },
+                { label: '注册证号', name: 'zczh', width: 60, align: 'left' },
+                { label: '明细项目规格', name: 'mxxmgg', width: 60, align: 'left' },
+
+            ],
+            pager: "#gridPagerjcsf",
+            sortname: 'jysj desc',
+            viewrecords: true,
+        });
+
+        $("#btn_searchjcsf").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getpostDatajcsf(),
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+    function getpostDatajcsf() {
+        return {
+            ksrq: $("#ksrqjcsf").val(), jsrq: $("#jsrqjcsf").val()
+        };
+    }
+    function searchtotxtjcsf() {
+        $.najax({
+            type: "POST",
+            url: "/ReportManage/Report/GetMjzjcsfDatatxt",
+            data: { ksrq: $("#ksrqjcsf").val(), jsrq: $("#jsrqjcsf").val() },
+            dataType: "json",
+            success: function (ajaxresp) {
+                var strtxt = "";
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    strtxt += ajaxresp[i].yblsh + "    ";
+                    strtxt += ajaxresp[i].kh + "    ";
+                    strtxt += ajaxresp[i].ksbm + "    ";
+                    strtxt += ajaxresp[i].ksmc + "    ";
+                    strtxt += ajaxresp[i].ysgh + "    ";
+                    strtxt += ajaxresp[i].ysxm + "    ";
+                    strtxt += ajaxresp[i].cfbh + "    ";
+                    strtxt += ajaxresp[i].fylb + "    ";
+                    strtxt += ajaxresp[i].xmmc + "    ";
+                    strtxt += ajaxresp[i].xmdw + "    ";
+                    strtxt += ajaxresp[i].xmdj + "    ";
+                    strtxt += ajaxresp[i].xmsl + "    ";
+                    strtxt += ajaxresp[i].xmje + "    ";
+                    strtxt += ajaxresp[i].jyje + "    ";
+                    strtxt += ajaxresp[i].ybfwje + "    ";
+                    strtxt += ajaxresp[i].bxbz + "    ";
+                    strtxt += ajaxresp[i].jysj + "    ";
+                    strtxt += ajaxresp[i].yblx + "    ";
+                    strtxt += ajaxresp[i].jslx + "    ";
+                    strtxt += ajaxresp[i].tfbz + "    ";
+                    strtxt += ajaxresp[i].lsh + "    ";
+                    strtxt += ajaxresp[i].xflsh + "    ";
+                    strtxt += ajaxresp[i].yptym + "    ";
+                    strtxt += ajaxresp[i].zczh + "    ";
+                    strtxt += ajaxresp[i].mxxmgg + "    ";
+                    strtxt += "\t\n";
+                }
+                var blob = new Blob([strtxt], { type: "text/plain;charset=utf-8" });
+                saveAs(blob, "门急诊大病家床收费库.txt");
+            }
+        });
+    }
+</script>

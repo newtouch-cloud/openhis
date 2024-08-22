@@ -4,6 +4,8 @@ using Newtouch.Core.Common.Exceptions;
 using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.DTO;
 using Newtouch.HIS.Domain.DTO.OutputDto.OutpatientManage;
+using Newtouch.HIS.Domain.DTO.InputDto;
+using Newtouch.HIS.Application.Implementation.OutpatientManage.MzBespeakRegisterProcess;
 using Newtouch.HIS.Domain.ValueObjects;
 using Newtouch.Infrastructure;
 using System;
@@ -12,8 +14,6 @@ using System.Linq;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
-using Newtouch.HIS.Sett.Request.Patient;
-using Newtouch.Tools;
 
 namespace Newtouch.HIS.Application.Implementation
 {
@@ -89,7 +89,7 @@ namespace Newtouch.HIS.Application.Implementation
             , string fph, DateTime? sfrq, bool isCkf, bool isGbf, int ghpbId
             , OutpatientSettFeeRelatedDTO feeRelated, string brxz
             , string ybjsh, string mzyyghId, ref short? qzjzxh, ref string qzmzh
-            , string jzyy,string jzid, string jzlx, string bzbm, string bzmc, out object newJszbInfo)
+            , string jzyy,string jzid, string jzlx, string bzbm, string bzmc,string isjm, out object newJszbInfo)
         {
             if ((qzjzxh ?? 0) <= 0 || string.IsNullOrWhiteSpace(qzmzh))
             {
@@ -99,24 +99,7 @@ namespace Newtouch.HIS.Application.Implementation
             }
             //保存
             _outPatientSettleDmnService.Save(this.OrganizeId, patid, kh, ghly, mjzbz,
-            ks, ys, ksmc, ysmc, ghxm, zlxm, fph, sfrq, isCkf, isGbf, (int)qzjzxh.Value, ghpbId, feeRelated, brxz, ybjsh, qzmzh, jzyy,jzid,jzlx,bzbm,bzmc, mzyyghId, out newJszbInfo);
-        }
-
-
-        public void UnSettSave(int patid, string kh, string ghly, string mjzbz,
-            string ks, string ys, string ksmc, string ysmc, string ghxm, string zlxm, bool isCkf, bool isGbf, int ghpbId, string brxz
-            , string ybjsh, ref short? qzjzxh, ref string qzmzh
-            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, out object newJszbInfo)
-        {
-            if (( qzjzxh ?? 0) <= 0 || string.IsNullOrWhiteSpace( qzmzh))
-            {
-                var mzhjzxh = _outPatientSettleDmnService.GetMzhJzxh( patid,  ghpbId.ToString(),  ks,  ys, this.OrganizeId, this.UserIdentity.UserCode);
-                 qzjzxh = mzhjzxh.Item1;
-                 qzmzh = mzhjzxh.Item2;
-            }
-            //保存
-            _outPatientSettleDmnService.UnSettSave(this.OrganizeId,  patid,  kh,  ghly,  mjzbz,
-             ks,  ys,  ksmc,  ysmc,  ghxm,  zlxm,  isCkf,  isGbf, (int) qzjzxh.Value,  ghpbId,  brxz,  ybjsh,  qzmzh,  jzyy,  jzid,  jzlx,  bzbm,  bzmc, null, out newJszbInfo);
+            ks, ys, ksmc, ysmc, ghxm, zlxm, fph, sfrq, isCkf, isGbf, (int)qzjzxh.Value, ghpbId, feeRelated, brxz, ybjsh, qzmzh, jzyy,jzid,jzlx,bzbm,bzmc, mzyyghId, isjm, out newJszbInfo);
         }
 
         /// <summary>
@@ -166,6 +149,32 @@ namespace Newtouch.HIS.Application.Implementation
                 throw new FailedCodeException("OUPAT_THE_NATURE_OF_THE_PATIENT_DOES_NOT_APPLY_TO_OUTPATIENT");
             }
 
+        }
+
+
+        /// <summary>
+        /// 预约挂号
+        /// </summary>
+        /// <param name="zjlx"></param>
+        /// <param name="zjh"></param>
+        /// <param name="blh"></param>
+        /// <param name="ksCode"></param>
+        /// <param name="mzlx">门诊挂号类型 1:普通门诊  2:急诊  3:专家门诊</param>
+        /// <param name="ysgh"></param>
+        /// <returns></returns>
+        public string BespeakRegister(int? zjlx, string zjh, string blh, string ksCode, int mzlx, string ysgh)
+        {
+            var param = new BespeakRegisterParamDTO
+            {
+                blh = blh,
+                ksCode = ksCode,
+                mzlx = mzlx,
+                ysgh = ysgh,
+                zjh = zjh,
+                zjlx = zjlx
+            };
+            var result = new MzBespeakRegisterProcess(param).Process();
+            return result.ResultMsg;
         }
     }
 }

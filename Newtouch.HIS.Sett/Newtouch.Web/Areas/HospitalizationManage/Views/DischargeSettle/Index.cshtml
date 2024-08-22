@@ -187,12 +187,10 @@
             data: obj,
             dataType: "json",
             success: function (ajaxresp) {
-                debugger;
                 //住院病人信息
                 patModel = ajaxresp.data.InpatientSettPatInfo;
                 cqPatInfo.zymzh = patModel.zyh;//住院号
                 $('#search_zyh').val(patModel.zyh);
-
                 isYbjyjz = openYbSett && (patModel.brxzlb != '0');
                 isXnhjyjz = openXnhSett && patModel.brxz == '8' && patModel.CardType == "@((int)Newtouch.Infrastructure.EnumCardType.XNHJYK)";
 
@@ -207,8 +205,8 @@
                 $('#ryrq').html(patModel.ryrq ? patModel.ryrq.substring(0, 10) : '');
                 $('#cyrq').html(patModel.cyrq ? patModel.cyrq.substring(0, 10) : '');
                 if (isYbjyjz) {
-                    var bkbz = cqPatInfo.accountattr ? cqPatInfo.accountattr.substr(11, 1) : "";
-                    var gbbz = cqPatInfo.accountattr ? cqPatInfo.accountattr.substr(1, 1) : "";//干保 1
+                    var bkbz =cqPatInfo.accountattr ? cqPatInfo.accountattr.substr(11, 1):"";
+                    var gbbz =cqPatInfo.accountattr ? cqPatInfo.accountattr.substr(1, 1) :"";//干保 1
                     if (bkbz == "G" || bkbz == "A" || gbbz == "1") {
                         isnewyb = "1";
                     }
@@ -283,7 +281,6 @@
 
     //保存结算
     function newtouch_event_f8() {
-        debugger;
         if (!patModel || !patModel.zyh) {
             $.modalAlert("住院号为空", 'warning');
             return;
@@ -297,6 +294,22 @@
             $.modalAlert("入院日期为空", 'warning');
             return;
         }
+
+        //LIS PACS 返回报告状态后才能收费
+         $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+             url: "/DischargeSettle/CountLisIncompletezy",
+             data: { "zyh": patModel.zyh },
+            async: false,
+            success: function (data) {
+                var num = data.num;
+                if (num > 0) {
+                    $.modalAlert("存在未完成报告,不能结算", 'warning');
+                    return;
+                }
+            }
+        });
 
         if (isYbjyjz) {
             if (!ybIsReadCard) {
@@ -423,12 +436,12 @@
 
                             //打印发票
                             if (ajaxresp.data && ajaxresp.data.jsnm) {
-                                if ('@(autoPrintFP)' == 'True') {
+                                //广西医保特有
+                                //openInvoice(zyh, ajaxresp.data.jsnm);
+                                @*if ('@(autoPrintFP)' == 'True') {
                                     //否则报表打印
                                     var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + ajaxresp.data.jsnm;
-                                    window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
-                                    
-                                }
+                                    window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");}*@
                             }
                         }
                     });
@@ -527,12 +540,12 @@
 
                             //打印发票
                             if (ajaxresp.data && ajaxresp.data.jsnm) {
-                                if ('@(autoPrintFP)' == 'True') {
+                                openInvoice(zyh, ajaxresp.data.jsnm);
+                                @*if ('@(autoPrintFP)' == 'True') {
                                     //否则报表打印
-                                    var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + ajaxresp.data.jsnm;
+                                   var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + ajaxresp.data.jsnm;
                                     window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
-                                    
-                                }
+                                 }*@
                             }
                         }
                     });
@@ -561,6 +574,70 @@
 	                    }
 	                    $.loading(false);
                 }
+            }
+        });
+    }
+    //开票
+    function openInvoice(zyh, jsnm) {
+        var requestJson = { "BusinessName": "开票", "paySerialNo": zyh, "paySettlementNo": jsnm, "type": "住院", "PlaceCode": "003" };//开票点先写死003
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") {
+                   $.loading(true, '正在开据电子票据，请稍后...');
+                   setTimeout(function () {
+                   if ('@(autoPrintFP)' === 'True')
+                   window.open(data.data.pictureUrl,"_blank",
+                       "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                       $.loading(false);
+                   }, 3000);
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert('开具票据失败[' + data.mes + ']', 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('开具票据异常[' + ex + ']', 'error');
+                return;
+            }
+        });
+    }
+    //打印发票
+    function printFp(jsnm) {
+        var requestJson = { "BusinessName": "查看发票", "paySettlementNo": jsnm}
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") {
+                    window.open(data.data.pictureUrl,
+                        "_blank",
+                        "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("未查询到住院缴费电子票据信息[" +data.mes + "]", 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('未查询到住院缴费电子票据信息[' + ex + ']', 'error');
+                return;
             }
         });
     }
@@ -733,7 +810,7 @@
 	            }
 	        }
 	    });
-	    
+
 	    $.loading(false);
 	    if (funcSuccCallback && isuccer) {
 		    setTimeout(function () {
@@ -820,12 +897,12 @@
         }
 
     }
-    function CQybjs(jzxx,mxxx) {
-        var jzlx = cqPatInfo.jzlx
+    function CQybjs(jzxx, mxxx) {
+        var jzlx = cqPatInfo.mdtrt_cert_type
         var predata = {
             psn_no: cqPatInfo.grbh,
             mdtrt_cert_type:jzlx,
-            mdtrt_cert_no: jzlx == "3" ? cqPatInfo.ecToken : (jzlx == "4" ? cqPatInfo.sfzh : cqPatInfo.sbkh),
+            mdtrt_cert_no: jzlx == "01" ? cqPatInfo.ecToken : (jzlx == "02" ? cqPatInfo.sfzh : cqPatInfo.sbkh),
             medfee_sumamt: mxxx.ybzje,
             psn_setlway: "01",
             mdtrt_id: jzxx.mdtrt_id,
@@ -838,6 +915,12 @@
             acct_used_flag: "1",
             dscgTime: mxxx.cyrq
         };
+        var ret = CQGetFph();
+        if (!ret.rs) {
+            $.modalAlert("获取发票号失败:" + rs.msg, 'error');
+            return;
+        }
+        predata.invono = ret.fph;
         var ybjsSettReturn1;
         var ybjsSettReturn;
         $.ajax({
@@ -920,6 +1003,37 @@
                 }
             }
         });
+    }
+    /* 获取发票号 */
+    function CQGetFph() {
+        var rs = false;
+        var msg = "";
+        var fph = "";
+
+        $.ajax({
+            type: "POST",
+            url: "/OutpatientManage/OutpatientReg/GetInvoice?r=" + Math.random(),
+            data: {},
+            dataType: "text",
+            async: false,
+            success: function (data) {
+                if (!!!data) {
+                    msg = "HIS服务(获取发票号)返回信息为空";
+                    return;
+                }
+                if (data.indexOf("{") >= 0 || data.indexOf("<") >= 0) {
+                    msg = "HIS服务(获取发票号)返回内容错误：" + data;
+                    return;
+                }
+                rs = true;
+                fph = data;
+            },
+            error: function (request, error, ex) {
+                msg = "HIS服务(获取发票号)不可访问：[" + ex + "]";
+            }
+        });
+
+        return { rs: rs, fph: fph, msg: msg };
     }
 
     function upLoadReturnData(retdata) {
@@ -1199,17 +1313,17 @@
                 url: "@Url.Action("GetZyhByGrbm")",
                 data: { xnhgrbm: obj.xnhgrbm, sfjs: "0" },
             dataType: "json",
-            async: false,
-            success: function (resp) {
-                if (!!resp.data) {
-                    ajaxLoadDataResult({ zyh: resp.data });
+                async: false,
+                success: function (resp) {
+                    if (!!resp.data) {
+                        ajaxLoadDataResult({ zyh: resp.data });
+                    }
+                    else {
+                        $.modalAlert("新农合个人编码【" + obj.xnhgrbm + "】没有查询到已出区、待结账的住院患者,请确认该患者已出区！", 'warning');
+                        return;
+                    }
                 }
-                else {
-                    $.modalAlert("新农合个人编码【" + obj.xnhgrbm+"】没有查询到已出区、待结账的住院患者,请确认该患者已出区！", 'warning');
-                    return;
-                     }
-            }
-         });
+            });
         }
     }
 </script>

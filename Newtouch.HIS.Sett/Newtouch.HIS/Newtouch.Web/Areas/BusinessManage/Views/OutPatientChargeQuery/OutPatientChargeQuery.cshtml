@@ -1,0 +1,281 @@
+﻿
+@{
+    ViewBag.Title = "OutPatienChargeQuery";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form name="form1">
+    <div class="panel panel-default" style="margin-top:10px;">
+        <div class="panel-heading">
+            挂号收费查询
+        </div>
+        <div style="padding: 2px;padding-right:20px;">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">卡号:</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtkh" name="txtkh" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" class="btn btn-default btn-md" value=". . ." onclick="" />
+                    </td>
+                    <th class="formTitle">发票号：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtfph" name="txtfph" />
+                    </td>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtxm" name="txtxm" />
+                    </td>
+                    <th></th>
+                    <td class="formValue" rowspan="2">
+                        <input type="button" id="btn_search" class="btn btn-default btn-md" style="width:50px; height:45px;" value="查询" />
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">收银员:</th>
+                    <td class="formValue">
+                        <input type="text" class="form-control" id="txtsyy" name="txtsyy" value=@Newtouch.Infrastructure.Operator.NewOperatorProvider.Provider.GetCurrent().UserCode />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" class="btn btn-default btn-md" value=". . ." onclick="" />
+                    </td>
+                    <th class="formTitle">收费日期：起</th>
+                    <td class="formValue">
+                        <input size="16" type="text" readonly class="form_datetime form-control" id="txtCreateTimestart">
+                    </td>
+                    <th class="formTitle">止：</th>
+                    <td class="formValue">
+                        <input size="16" type="text" readonly class="form_datetime form-control" id="txtCreateTimeEnd">
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+        <div>
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#">门诊结算</a></li>
+            </ul>
+            <div style="background-color: #fff;width:99%;">
+                <table id="gridJSList" ></table>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#">门诊结算明细</a></li>
+            </ul>
+            <div style="background-color: #fff;">
+                <table id="gridJSMXList"></table>
+            </div>
+        </div>
+        <div class="panel panel-default" style="margin-top:10px;">
+            <div class="panel-heading">
+                合计
+            </div>
+            <div id="HjDiv" style="padding: 2px;padding-right:20px;"></div>
+        </div>
+    <div class="gridPanel">
+        <table id="gridJSList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+
+<script>
+    $(function () {
+        gridJSListData();
+        //回车
+        enterEvent();
+    })
+    $(".form_datetime").datetimepicker({
+        //defaultDate: new Date(),
+        format: 'yyyy-mm-dd',
+        minView: 2,
+        autoclose: true
+    });
+    //门诊挂号结算查询
+    function gridJSListData() {
+        var $gridJSList = $("#gridJSList");
+        $gridJSList.dataGrid({
+            height: 150,
+            url: "/BusinessManage/OutPatientChargeQuery/SelectRegChargeQuery",
+            colModel: [
+                { label: '卡号', name: 'kh', width: 80, align: 'left' },
+                { label: '姓名', name: 'xm', width: 80, align: 'left' },
+                { label: '挂号内码', name: 'ghnm', hidden:true, align: 'left' },
+                { label: '发票号', name: 'fph', width: 100, align: 'left' },
+                { label: '收费员', name: 'CreatorCode', width: 100, align: 'left' },
+                { label: '收费日期', name: 'CreateTime', width: 150, align: 'left' },
+                { label: '挂号科目', name: 'sfxmmc', width: 150, align: 'left' },
+                { label: '医生', name: 'ys', width: 80, align: 'left' },
+                { label: 'JSNM', name: 'jsnm', hidden: true, align: 'left' },
+                {
+                    label: '退', name: 'isreturned', width: 60, align: 'left', formatter: function (cellvalue)
+                    {
+                        return cellvalue == "1" ? "是" : "否";
+                    }
+                },
+                {
+                    label: '重打', name: 'isxfph', width: 60, align: 'left', formatter: function (cellvalue)
+                    {
+                        return cellvalue == "1" ? "是" : "否";
+                    }
+                },
+                { label: '退费员', name: 'tCreatorCode', width: 80, align: 'left' },
+                { label: 'color', name: 'isRed', hidden: true, align: 'left' }
+
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true,
+
+            ////单击事件
+            //onSelectRow: function ()
+            //{
+            //    debugger;
+            //    //每次双击，先清空上一条明细 和合计
+            //    $('#gridJSMXList').jqGrid("clearGridData");
+            //    $("#table_HJ").remove();
+            //    $.ajax({
+            //        type: "POST",
+            //        url: "/BusinessManage/OutPatientChargeQuery/GetRecordsByJsnm",
+            //        data: { jsnm: $("#gridJSList").jqGridRowValue().jsnm },
+            //        dataType: "json",
+            //        success: function (ajaxresp) {
+            //            if (ajaxresp.state == 'success') {
+            //                $('#gridJSMXList').newtouchLocalDataGrid(null, ajaxresp.data.ghRecordsDetails);
+            //                //动态加载合计信息
+            //                $("#HjDiv").append("<table class='form' id='table_HJ'>")
+            //                $("#table_HJ").append(" <tr>");
+            //                //加载页面下方的费用大类合计
+            //                for (i = 0; i < ajaxresp.data.dlhj.length; i++) {
+            //                    $("#table_HJ").append("<th class='formTitle'>" + ajaxresp.data.dlhj[i].dlmc + "</th>");
+            //                    $("#table_HJ").append("<td class='formValue'><label>" + ajaxresp.data.dlhj[i].jehj + "</label></td>");
+            //                }
+            //                $("#table_HJ").append(" </tr>");
+            //                $("#table_HJ").append(" </table>");
+            //            }
+            //        }
+            //    });
+            //},
+            //Grid 加载完成后调用
+            gridComplete: function () {
+                 afterCompleteFunction();
+            },
+        });
+        $("#btn_search").click(function () {
+            $gridJSList.jqGrid('setGridParam', {
+                postData: { kh: $("#txtkh").val(), fph: $("#txtfph").val(), xm: $("#txtxm").val(), syy: $("#txtsyy").val(), CreateTimestart: $("#txtCreateTimestart").val(), CreateTimeEnd: $("#txtCreateTimeEnd").val() },
+            }).trigger('reloadGrid');
+        });
+
+    }
+
+    //已退/重打 背景色为红色 
+    function afterCompleteFunction()
+    {
+        var ids = $("#gridJSList").getDataIDs();
+        for (i = 0; i < ids.length; i++) {
+            var rowData = $("#gridJSList").getRowData(ids[i]);
+            if (rowData.isRed == "1")
+            {
+                $("#" + ids[i]).find("td").css("background-color", "rgb(244, 120, 110)");
+            }
+        }
+    }
+
+    //双击事件
+    function btn_edit()
+    {
+        ////每次双击，先清空上一条明细 和合计
+        $('#gridJSMXList').jqGrid("clearGridData");
+        $("#table_HJ").remove();
+        $.ajax({
+            type: "POST",
+            url: "/BusinessManage/OutPatientChargeQuery/GetRecordsByJsnm",
+            data: { jsnm: $("#gridJSList").jqGridRowValue().jsnm },
+            dataType: "json",
+            success: function (ajaxresp) {
+                if (ajaxresp.state == 'success') {
+                    $('#gridJSMXList').newtouchLocalDataGrid(null, ajaxresp.data.ghRecordsDetails);
+                    //动态加载合计信息
+                    $("#HjDiv").append("<table class='form' id='table_HJ'>")
+                    $("#table_HJ").append(" <tr>");
+                    //加载页面下方的费用大类合计
+                    for (i = 0; i < ajaxresp.data.dlhj.length; i++) {
+                        $("#table_HJ").append("<th class='formTitle'>" + ajaxresp.data.dlhj[i].dlmc + "</th>");
+                        $("#table_HJ").append("<td class='formValue'><label>" + ajaxresp.data.dlhj[i].jehj + "</label></td>");
+                    }
+                    $("#table_HJ").append(" </tr>");
+                    $("#table_HJ").append(" </table>");
+                }
+            }
+        });
+    }
+
+    //门诊结算明细 jGrid声明
+    $('#gridJSMXList').newtouchLocalDataGrid({
+        height: 100,
+        unwritten: false,
+        sortable: false,
+        colModel: [
+            { label: '处方号', name: 'chufanghao',width:150, key: true },
+            { label: '项目代码', name: 'sfxm', width: 150, align: 'left' },
+            { label: '项目名称', name: 'ypmc', width: 150, align: 'left' },
+            { label: '单位', name: 'danwei', width: 150, align: 'left' },
+            { label: '项目大类', name: 'dlmc', width: 150, align: 'left' },
+            { label: '单价', name: 'dj', width: 150, align: 'left' },
+            { label: '数量', name: 'sl', width: 150, align: 'left' },
+            { label: '金额', name: 'je', width: 150, align: 'left' }
+
+        ]
+    });
+
+    //回车 跳到下一个控件
+    function enterEvent()
+    {
+        //回车键
+        $("#txtkh").keypress(function (e) {
+            if (e.keyCode == 13) {
+                if ($("#txtkh").val().trim().length == 28) {
+                    $("#txtkh").val().substring(0, 10);
+                }
+                $("#txtfph").focus();
+            }
+
+        });
+        $("#txtfph").keypress(function (e) {
+            if (e.keyCode == 13) {
+                $("#txtxm").focus();
+            }
+        });
+        $("#txtxm").keypress(function (e) {
+            if (e.keyCode == 13) {
+                $("#txtsyy").focus();
+            }
+        });
+        $("#txtsyy").keypress(function (e) {
+            if (e.keyCode == 13) {
+                $("#txtCreateTimestart").focus();
+            }
+        });
+        $("#txtCreateTimestart").keypress(function (e) {
+            if (e.keyCode == 13) {
+                $("#txtCreateTimeEnd").focus();
+            }
+        });
+        $("#txtCreateTimeEnd").keypress(function (e) {
+            if (e.keyCode == 13) {
+                $("#btn_search").focus();
+            }
+        });
+        $("#btn_search").keypress(function (e) {
+            if (e.keyCode == 13) {
+                gridJSListData();
+            }
+        });
+    }
+
+</script>
+
+

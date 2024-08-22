@@ -12,7 +12,6 @@ using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.IRepository.OutpatientManage;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Domain.ValueObjects.DaySettleManage;
 using Newtouch.HIS.Domain.ValueObjects.OutpatientManage;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
@@ -21,8 +20,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
-using System.Security.Cryptography;
 using System.Text;
 using static Newtouch.Infrastructure.Constants;
 
@@ -60,15 +57,15 @@ namespace Newtouch.HIS.DomainServices
         /// <param name="isCkf">磁卡费</param>
         /// <param name="isGbf">工本费</param>
         /// <returns></returns>
-        public GHZGroupAndFeesVO GetOutpatientFees(string ghxm, string zlxm, bool isCkf, bool isGbf, string orgId = null)
+        public GHZGroupAndFeesVO GetOutpatientFees(string ghxm, string zlxm, bool isCkf, bool isGbf,string orgId=null)
         {
             var fee = new GHZGroupAndFeesVO();
             var sfxmList = new Dictionary<string, SysChargeItemVEntity>();
-            if (string.IsNullOrEmpty(orgId))
-            {
-                orgId = OperatorProvider.GetCurrent().OrganizeId;
-            }
-            if (!string.IsNullOrWhiteSpace(ghxm))
+			if (string.IsNullOrEmpty(orgId))
+			{
+				orgId = OperatorProvider.GetCurrent().OrganizeId;
+			}
+			if (!string.IsNullOrWhiteSpace(ghxm))
             {
                 //获取挂号费
                 var ghsfxmSql = new StringBuilder(@"select * from NewtouchHIS_Base..V_S_xt_sfxm where sfxmCode in('" + ghxm + "') and OrganizeId=@OrganizeId");
@@ -147,7 +144,7 @@ namespace Newtouch.HIS.DomainServices
             {
                 //获取挂号费
                 var ghsfxmSql = new StringBuilder(@"select * from NewtouchHIS_Base..V_S_xt_sfxm where sfxmCode in('" + ghxm + "') and OrganizeId=@OrganizeId");
-                var ghsfxmEntity = FindList<SysChargeItemVEntity>(ghsfxmSql.ToString(), new SqlParameter[] { new SqlParameter("OrganizeId", orgId) });
+                var ghsfxmEntity = FindList<SysChargeItemVEntity>(ghsfxmSql.ToString(), new SqlParameter[] { new SqlParameter("OrganizeId", orgId)});
                 if (ghsfxmEntity != null && ghsfxmEntity.Count > 0)
                 {
                     foreach (var g in ghsfxmEntity)
@@ -174,8 +171,7 @@ where sfxmCode in( select zlxm from mz_gh_zlxmzh with(nolock) where zt='1' and O
                         fee.zlfPrice += z.dj;
                     }
                 }
-                else if (zlsfxmEntity.Count > 0)
-                {
+                else if(zlsfxmEntity.Count>0) {
                     fee.zlfPrice = zlsfxmEntity.FirstOrDefault().dj;
                 }
                 sfxmzhList.Add("zlsfxm", zlsfxmEntity);
@@ -232,8 +228,8 @@ where sfxmCode in( select zlxm from mz_gh_zlxmzh with(nolock) where zt='1' and O
         {
             var sb = new StringBuilder();
             var pars = new List<SqlParameter>();
-            var GhSelectOnlyCreator = _sysConfigRepo.GetValueByCode("GhSelectOnlyCreator", orgId);
-            sb.Append(@"select staff.Name ysmc,dept.Name ksmc,brxz.brxzmc,* 
+	        var GhSelectOnlyCreator = _sysConfigRepo.GetValueByCode("GhSelectOnlyCreator", orgId);
+			sb.Append(@"select staff.Name ysmc,dept.Name ksmc,brxz.brxzmc,* 
 from mz_gh(nolock) gh
 left join [NewtouchHIS_Base]..V_S_Sys_Staff staff
 on staff.gh = gh.ys and staff.Organizeid = gh.OrganizeId
@@ -247,13 +243,13 @@ left join xt_brjbxx jbxx
 on jbxx.patid = gh.patid and jbxx.zt = '1' and jbxx.OrganizeId = gh.OrganizeId
 where gh.OrganizeId = @orgId  and gh.zt = '1'
 and gh.CreateTime >= CONVERT(varchar(100), GETDATE(), 23) ");
-            if (!string.IsNullOrEmpty(creatorCode) && GhSelectOnlyCreator == "ON")
-            {
-                sb.Append(@" and gh.CreatorCode = @creatorCode ");
-                pars.Add(new SqlParameter("@creatorCode", creatorCode));
-            }
-            sb.Append(@" order by gh.CreateTime desc ");
-            pars.Add(new SqlParameter("@orgId", orgId));
+	        if (!string.IsNullOrEmpty(creatorCode) && GhSelectOnlyCreator=="ON")
+	        {
+		        sb.Append(@" and gh.CreatorCode = @creatorCode ");
+		        pars.Add(new SqlParameter("@creatorCode", creatorCode));
+			}
+	        sb.Append(@" order by gh.CreateTime desc ");
+			pars.Add(new SqlParameter("@orgId", orgId));
 
             return this.FindList<OutPatientRegInfoVO>(sb.ToString(), pars.ToArray());
         }
@@ -568,19 +564,13 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
             , int ghpbId
             , OutpatientSettFeeRelatedDTO feeRelated, string brxz
             , string ybjsh, string mzh
-            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, string mzyyghId, out object newJszbInfo)
+            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, string mzyyghId,string isjm, out object newJszbInfo)
         {
             newJszbInfo = null;
             //门诊号检重
             if (_outpatientRegRepo.IQueryable(p => p.mzh == mzh).Any())
             {
                 throw new FailedException("门诊号重复");
-            }
-            //病人性质校验
-            var brxzval = EnumHelper.GetEnumDic<EnumBrxz>().FirstOrDefault(p => p.Key.ToString() == brxz);
-            if (string.IsNullOrWhiteSpace(brxzval.Value))
-            {
-                throw new FailedException("病人性质异常：" + brxz);
             }
             //要返回（作为发票打印的入参）
             int jsnm = 0;
@@ -611,11 +601,11 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                 fzbz = _outpatientRegRepo.IQueryable(p => p.patid == patid && p.zt == "1" && p.ghzt != "2").Any() ? (byte)1 : (byte)0,
                 kh = kh,
                 ScheduId = Convert.ToDecimal(ghpbId),
-                jzid = jzid,
-                jzpzlx = jzlx,
-                bzbm = bzbm,
-                bzmc = bzmc,
-                ecToken = feeRelated?.ecToken
+                jzid=jzid,
+                jzpzlx=jzlx,
+                bzbm=bzbm,
+                bzmc=bzmc,
+                ecToken= feeRelated.ecToken
             };
             var cardEntity = _sysCardRepo.GetCardEntity(gh.kh, brjbxxEntity.OrganizeId);
             gh.CardType = cardEntity != null ? cardEntity.CardType : "";
@@ -634,8 +624,8 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
             gh.gbf = ghFeeResult.gbfPrice;
             //notSett true暂时不结（门诊收费时一起结），否则结
             bool? notSett = null;
-            var medicalInsurance = _sysConfigRepo.GetValueByCode("Outpatient_MedicalInsurance", orgId);
-            if (brxz != "0" && gh.CardType == ((int)EnumCardType.YBJYK).ToString())
+	        var medicalInsurance = _sysConfigRepo.GetValueByCode("Outpatient_MedicalInsurance", orgId);
+			if (brxz != "0" && gh.CardType == ((int)EnumCardType.YBJYK).ToString())
             {
                 //非自费（不用医保卡） 且多加一层判断 用了医保卡
                 notSett = (_sysConfigRepo.GetBoolValueByCode("Outpatient_ChargeFee_OpenYbSett", orgId) ?? false) && (_sysConfigRepo.GetBoolValueByCode("Outpatient_ChargeFee_yb_SettOnce", orgId) ?? false);
@@ -643,16 +633,16 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
             if (!(notSett == true))
             {
                 //贵安 门诊挂号 不结算
-
-                if (medicalInsurance == "guian")
-                {
-                    notSett = true;
-                }
-                if (medicalInsurance == "chongqing")
-                {
-                    notSett = false;
-                }
-            }
+                
+	            if (medicalInsurance == "guian")
+				{
+					notSett = true;
+				}
+	            if (medicalInsurance == "chongqing")
+	            {
+		            notSett = false;
+	            }
+			}
             if (notSett == true)
             {
                 //待结状态
@@ -667,17 +657,17 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
             using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
             {
                 gh.Create();
-                #region 照顾自助机接口，获取不到登录用户
-                if (string.IsNullOrEmpty(gh.CreatorCode))
-                {
-                    gh.CreatorCode = "zzjadmin";//如果为空，设置为自助机挂号（接口）
-                }
-                if (string.IsNullOrEmpty(gh.CreateTime.ToString()))
-                {
-                    gh.CreateTime = DateTime.Now;
-                }
-                #endregion
-                db.Insert(gh);
+				#region 照顾自助机接口，获取不到登录用户
+				if (string.IsNullOrEmpty(gh.CreatorCode))
+				{
+					gh.CreatorCode = "zzjadmin";//如果为空，设置为自助机挂号（接口）
+				}
+				if (string.IsNullOrEmpty(gh.CreateTime.ToString()))
+				{
+					gh.CreateTime = DateTime.Now;
+				}
+				#endregion
+				db.Insert(gh);
 
                 if (xmList != null && xmList.Count > 0)
                 {
@@ -693,17 +683,17 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                             xmItem.ysmc = ysmc;
                             xmItem.ksmc = ksmc;
                             xmItem.Create();
-                            #region 照顾自助机接口，获取不到登录用户
-                            if (string.IsNullOrEmpty(xmItem.CreatorCode))
-                            {
-                                xmItem.CreatorCode = "zzjadmin";//如果为空，设置为自助机挂号（接口）
-                            }
-                            if (string.IsNullOrEmpty(xmItem.CreateTime.ToString()))
-                            {
-                                xmItem.CreateTime = DateTime.Now;
-                            }
-                            #endregion
-                            db.Insert(xmItem);
+							#region 照顾自助机接口，获取不到登录用户
+							if (string.IsNullOrEmpty(xmItem.CreatorCode))
+							{
+								xmItem.CreatorCode = "zzjadmin";//如果为空，设置为自助机挂号（接口）
+							}
+							if (string.IsNullOrEmpty(xmItem.CreateTime.ToString()))
+							{
+								xmItem.CreateTime = DateTime.Now;
+							}
+							#endregion
+							db.Insert(xmItem);
                         }
                     }
                     else
@@ -789,11 +779,12 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                             jmje = feeRelated.zkje ?? 0,
                             xjzf = feeRelated.xjzfys ?? 0,
                             zje = mxzje,
-                            xjzffs = feeRelated.zffs1,
+                            xjzffs= feeRelated.zffs1,
                             //记账部分 等
                             ysk = feeRelated.ssk,
                             zl = feeRelated.zhaoling,
-                            ybjslsh = feeRelated.ybjslsh
+                            ybjslsh=feeRelated.ybjslsh,
+                            isjm = isjm
                         };
                         jszbEntity.Create();
                         #region 照顾自助机接口，获取不到登录用户
@@ -819,38 +810,39 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                             }
                         }
                         UpdateCurrentFinancialInvoice(db, orgId, fph);
-                        if (medicalInsurance != "chongqing") //里面代码觉得有问题，恒会报错，暂时跳过 lixin 20191216 重庆医保
-                        {
-                            //if (feeRelated.orglxjzfys.HasValue && feeRelated.xjzfys.HasValue)
-                            //{
-                            //	//要减去记账部分 等金额
-                            //	if (feeRelated.orglxjzfys.Value != jszbEntity.zje - 0)
-                            //	{
-                            //		throw new FailedException("ERROR_SETT_JE_ERROR", "结算金额异常" + feeRelated.orglxjzfys.Value.ToString() + "不等于" + jszbEntity.zje.ToString());
-                            //	}
-                            //	//orglxjzfys xjzfys zkbl zkje要保持一致性
-                            //	var zkje = feeRelated.orglxjzfys.Value * Math.Abs(feeRelated.zkbl ?? 0) + Math.Abs(feeRelated.zkje ?? 0);
-                            //	if (Math.Abs(zkje + feeRelated.xjzfys.Value - feeRelated.orglxjzfys.Value) > (decimal)0.01)
-                            //	{
-                            //		throw new FailedException("ERROR_ZKJE_ZFJE_ERROR", "折扣金额异常");
-                            //	}
-                            //}
-                            //else
-                            //{
-                            //	//要减去记账部分 等金额
-                            //	jszbEntity.xjzf = jszbEntity.zje - 0;
-                            //}
-                        }
-
+						if (medicalInsurance != "chongqing") //里面代码觉得有问题，恒会报错，暂时跳过 lixin 20191216 重庆医保
+						{
+							//if (feeRelated.orglxjzfys.HasValue && feeRelated.xjzfys.HasValue)
+							//{
+							//	//要减去记账部分 等金额
+							//	if (feeRelated.orglxjzfys.Value != jszbEntity.zje - 0)
+							//	{
+							//		throw new FailedException("ERROR_SETT_JE_ERROR", "结算金额异常" + feeRelated.orglxjzfys.Value.ToString() + "不等于" + jszbEntity.zje.ToString());
+							//	}
+							//	//orglxjzfys xjzfys zkbl zkje要保持一致性
+							//	var zkje = feeRelated.orglxjzfys.Value * Math.Abs(feeRelated.zkbl ?? 0) + Math.Abs(feeRelated.zkje ?? 0);
+							//	if (Math.Abs(zkje + feeRelated.xjzfys.Value - feeRelated.orglxjzfys.Value) > (decimal)0.01)
+							//	{
+							//		throw new FailedException("ERROR_ZKJE_ZFJE_ERROR", "折扣金额异常");
+							//	}
+							//}
+							//else
+							//{
+							//	//要减去记账部分 等金额
+							//	jszbEntity.xjzf = jszbEntity.zje - 0;
+							//}
+						}
+                        
 
                         if (feeRelated.ssk.HasValue && feeRelated.zhaoling.HasValue)
                         {
+                            jszbEntity.xjwc =(decimal)feeRelated.xjwc;
                             //现金误差 收到的-应收的
-                            jszbEntity.xjwc = jszbEntity.xjzf - (feeRelated.ssk.Value - feeRelated.zhaoling.Value);
-                            if (Math.Abs(jszbEntity.xjwc) >= (decimal)0.1)
-                            {
-                                throw new FailedException("ERROR_SSK_ZHAOLING", "实收找零金额异常");
-                            }
+                            //jszbEntity.xjwc = jszbEntity.xjzf - (feeRelated.ssk.Value - feeRelated.zhaoling.Value);
+                            //if (Math.Abs(jszbEntity.xjwc) >= (decimal)0.1)
+                            //{
+                            //    throw new FailedException("ERROR_SSK_ZHAOLING", "实收找零金额异常");
+                            //}
                         }
 
                         PaymentModelAccountReserveII(db, jszbEntity, feeRelated);
@@ -859,7 +851,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                 //else 否则没有费用明细 没必要生成结算
 
                 //新增服务费项目(取消)
-                var result = db.Commit();
+               var result = db.Commit();
                 // SiteCISAPIHelper.KeepAnAppointment(mzyyghId, DateTime.Now, gh.CreatorCode);
             }
 
@@ -874,227 +866,6 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
             };
         }
 
-        public int submitOutpatGhCharge(string orgId, string fph, DateTime? sfrq, OutpatientSettFeeRelatedDTO feeRelated, IList<int> ghxmnmList)
-        {
-            try
-            {
-                using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
-                {
-                    var xmList = db.IQueryable<OutpatientItemEntity>(p => ghxmnmList.Contains(p.xmnm)).ToList();
-                    var ghnm = xmList.FirstOrDefault()?.ghnm;
-                    if (!xmList.Any() || ghnm == null)
-                        return 0;
-                    var magh = db.IQueryable<OutpatientRegistEntity>(p => p.ghnm == ghnm).FirstOrDefault();
-                    var jsnm = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt(OutpatientSettlementEntity.GetTableName());
-                    var jsrq = DateTime.Now;
-                    //总金额
-                    decimal mxzje = 0;
-                    //挂号收费
-                    var jslx = ((int)EnumJslx.GH).ToString();
-                    foreach (var xmItem in xmList)
-                    {
-                        mxzje += xmItem.je;
-                        //门诊结算明细
-                        var jsmxEntity = new OutpatientSettlementDetailEntity
-                        {
-                            jsmxnm = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt(OutpatientSettlementDetailEntity.GetTableName()),
-                            jsnm = jsnm,
-                            mxnm = xmItem.xmnm,
-                            sl = xmItem.sl,
-                            jslx = jslx,
-                            jyje = xmItem.je,
-                            OrganizeId = orgId
-                        };
-                        //处方明细内码
-                        jsmxEntity.Create();
-                        db.Insert(jsmxEntity);
-                        xmItem.xmzt = "1";
-                        xmItem.jsnm = jsnm;
-                        db.Update(xmItem);
-                    }
-                    feeRelated.ssk = feeRelated.ssk - mxzje;
-                    feeRelated.zje = feeRelated.zje - mxzje;
-                    feeRelated.xjzfys = feeRelated.xjzfys - mxzje;
-                    feeRelated.orglxjzfys = feeRelated.orglxjzfys - mxzje;
-                    feeRelated.djjess = feeRelated.djjess - mxzje;
-                    //门诊结算主表
-                    var jszbEntity = new OutpatientSettlementEntity
-                    {
-                        jsnm = jsnm,
-                        OrganizeId = orgId,
-                        patid = magh.patid,
-                        brxz = magh.brxz,
-                        jslx = jslx,
-                        fph = fph,
-                        jszt = (int)EnumJieSuanZT.YJ,
-                        ghnm = magh.ghnm,
-                        xm = magh.xm,
-                        xb = magh.xb,
-                        csny = magh.csny,
-                        blh = magh.blh,
-                        zjh = magh.zjh,
-                        zjlx = magh.zjlx,
-                        jzsj = sfrq,
-                        jmbl = 0,
-                        jmje = 0,
-                        xjzf = mxzje,
-                        zje = mxzje,
-                        xjzffs = feeRelated.zffs1,
-                        //记账部分 等
-                        ysk = mxzje,
-                        zl = 0,
-                        ybjslsh = feeRelated.ybjslsh
-                    };
-                    jszbEntity.Create();
-                    if (!string.IsNullOrWhiteSpace(feeRelated.yjjzfje.ToString()) && (feeRelated.yjjzfje ?? 0) > 0)
-                    {
-                        jszbEntity.xjzffs = xtzffs.ZYYJZHZF;
-                    }
-                    if (!string.IsNullOrWhiteSpace(feeRelated.djjess.ToString()) && (feeRelated.djjess ?? 0) > 0)
-                    {
-                        jszbEntity.xjzffs = feeRelated.djjesszffs;
-                    }
-                    db.Insert(jszbEntity);
-                    var result = db.Commit();
-                    return jsnm;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new FailedException($"挂号费收费失败：{ex.Message}");
-            }
-
-        }
-
-        public void UnSettSave(string orgId, int patid, string kh, string ghly, string mjzbz,
-          string ks, string ys, string ksmc, string ysmc, string ghxm, string zlxm, bool isCkf, bool isGbf
-          , int jzxh
-          , int ghpbId, string brxz
-          , string ybjsh, string mzh
-          , string jzyy, string jzid, string jzlx, string bzbm, string bzmc, string mzyyghId, out object newJszbInfo)
-        {
-            newJszbInfo = null;
-            //门诊号检重
-            if (_outpatientRegRepo.IQueryable(p => p.mzh == mzh).Any())
-            {
-                throw new FailedException("门诊号重复");
-            }
-            //要返回（作为发票打印的入参）
-            int jsnm = 0;
-            //根据patid获取 病人基本信息 实体
-            var brjbxxEntity = _sysPatBasicInfoRepository.GetInfoByPatid(patid.ToString(), orgId);
-            if (brjbxxEntity == null)
-            {
-                throw new FailedCodeException("OUTPAT_NO_PATIENT_INFORMATION");
-            }
-            //构造mz_gh Entity
-            var gh = new OutpatientRegistEntity
-            {
-                ghnm = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt(OutpatientRegistEntity.GetTableName()),
-                ybjsh = ybjsh,
-                jzyy = jzyy,
-                OrganizeId = orgId,
-                ghly = ghly,
-                mjzbz = mjzbz,
-                ks = ks,
-                ys = ys,
-                jzbz = ((int)EnumOutpatientJzbz.Djz).ToString(),
-                jzxh = (short)jzxh,
-                yyghId = mzyyghId,
-                //门诊号
-                mzh = mzh,
-                ghlx = ghxm,
-                //要排除已退的
-                fzbz = _outpatientRegRepo.IQueryable(p => p.patid == patid && p.zt == "1" && p.ghzt != "2").Any() ? (byte)1 : (byte)0,
-                kh = kh,
-                ScheduId = Convert.ToDecimal(ghpbId),
-                jzid = jzid,
-                jzpzlx = jzlx,
-                bzbm = bzbm,
-                bzmc = bzmc,
-                //ecToken = feeRelated.ecToken
-            };
-            var cardEntity = _sysCardRepo.GetCardEntity(gh.kh, brjbxxEntity.OrganizeId);
-            gh.CardType = cardEntity != null ? cardEntity.CardType : "";
-            gh.CardTypeName = cardEntity != null ? cardEntity.CardTypeName : "";
-            gh.ghrq = DateTime.Now;
-            gh.patid = patid;
-            gh.brxz = brxz;
-            AssembleGhInfo(brjbxxEntity, gh);
-            //获取挂号、诊疗项目list
-            GHZGroupAndFeesVO ghFeeResult;
-            //可能返回Count=0 挂空号
-            var xmList = GetXmList(gh, isCkf, isGbf, out ghFeeResult, ghxm, zlxm, orgId);
-            gh.ghf = ghFeeResult.ghfPrice;
-            gh.zlf = ghFeeResult.zlfPrice;
-            gh.ckf = ghFeeResult.ckfPrice;
-            gh.gbf = ghFeeResult.gbfPrice;
-            //待结状态
-            gh.ghzt = "0";
-            using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
-            {
-                gh.Create();
-                db.Insert(gh);
-                if (xmList != null && xmList.Count > 0)
-                {
-                    if (gh.ghzt == "0")
-                    {
-                        //ghzt待结 //有计费项目，但此时不结算，作为门诊收费时 带入 之
-                        foreach (var xmItem in xmList)
-                        {
-                            xmItem.ghnm = gh.ghnm;
-                            xmItem.xmzt = "0";  //mz_xm明细处于待结状态
-                            xmItem.ys = ys;
-                            xmItem.ks = ks;
-                            xmItem.ysmc = ysmc;
-                            xmItem.ksmc = ksmc;
-                            xmItem.Create();
-                            db.Insert(xmItem);
-                        }
-                    }
-                }
-                //else 否则没有费用明细 没必要生成结算
-
-                //新增服务费项目(取消)
-                var result = db.Commit();
-                // SiteCISAPIHelper.KeepAnAppointment(mzyyghId, DateTime.Now, gh.CreatorCode);
-            }
-        }
-
-
-        /// <summary>
-        /// 转诊
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="ghks"></param>
-        /// <param name="pbId"></param>
-        public void submitReferralForm(int patid, string ks, string ys, string OrganizeId, string UserCode, int ghnm, string mzh, string zzyy, string ghpbId)
-        {
-            using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
-            {
-                // 一次挂号只能允许最多一次转诊
-                var oldzzjl = db.IQueryable<OutpatientReferralEntity>(p => p.ghnm == ghnm && p.zt == "1").FirstOrDefault();
-                if (oldzzjl != null)
-                {
-                    oldzzjl.zt = "0";
-                    db.Update(oldzzjl);
-                }
-                var zzjl = new OutpatientReferralEntity();
-                zzjl.ks = ks;
-                zzjl.ys = ys;
-                zzjl.OrganizeId = OrganizeId;
-                zzjl.patid = patid;
-                zzjl.zzyy = zzyy;
-                zzjl.ghnm = ghnm;
-                zzjl.mzh = mzh;
-                zzjl.scheduid = ghpbId;
-                zzjl.zt = "1";
-                zzjl.Create();
-                db.Insert(zzjl);
-                db.Commit();
-            }
-        }
-
         /// <summary>
         /// 生成唯一门诊号、就诊序号
         /// </summary>
@@ -1103,7 +874,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="ks"></param>
         /// <param name="ys"></param>
         /// <returns></returns>
-        public Tuple<short, string> GetMzhJzxh(int patid, string ghpbId, string ks, string ys, string OrganizeId, string UserCode)
+        public Tuple<short, string> GetMzhJzxh(int patid, string ghpbId, string ks, string ys,string OrganizeId,string UserCode)
         {
             //验证病人性质是否适用于门诊
             //CheckBrxz(gh.kh, updateBrxz);
@@ -1155,7 +926,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="jzxh"></param>
         /// <param name="jzrq"></param>
         /// <returns></returns>
-        public string GetRegMzh(int patid, string ghpbId, string ks, string OrganizeId, string UserCode, int jzxh, string jzrq)
+        public string GetRegMzh(int patid, string ghpbId, string ks, string OrganizeId, string UserCode,int jzxh,string jzrq)
         {
             //验证病人性质是否适用于门诊
             //CheckBrxz(gh.kh, updateBrxz);
@@ -1208,10 +979,10 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="UserCode"></param>
         /// <param name="mjzbz"></param>
         /// <returns></returns>
-        public Tuple<short, string> GetCQMzhJzxh(int patid, string ghpbId, string ks, string ys, string OrganizeId, string UserCode, string mjzbz, string QueueNo, string OutDate)
+        public Tuple<short, string> GetCQMzhJzxh(int patid, string ghpbId, string ks, string ys, string OrganizeId, string UserCode,string mjzbz,string QueueNo,string OutDate)
         {
-            short jzxh = 0;
-            string mzh = "";
+            short jzxh=0;
+            string mzh="";
             //该患者是否已预约挂号
             //var isAppointment = _outPatientDmnService.GetIsMzghBookSchedule(mjzbz, patid.ToString(),OrganizeId);
             if (!string.IsNullOrWhiteSpace(QueueNo))
@@ -1226,7 +997,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                 jzxh = mzhjzxh.Item1;
                 mzh = GetRegMzh(patid, ghpbId, ks, OrganizeId, UserCode, jzxh, DateTime.Now.ToString());
             }
-
+            
             return Tuple.Create(jzxh, mzh);
         }
 
@@ -1347,11 +1118,11 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="ghxmList"></param>
         private static long OrderBookProcess(OutpatientRegistEntity gh, OutpatientSettlementEntity mzjs, List<OutpatientItemEntity> ghxmList)
         {
-            //var result = Proxy.CreateOrderProxy.Instance.Book(gh, mzjs, ghxmList);
-            //if (result != null && result.ResponseStatus.IsSucceed)
-            //{
-            //    return result.OrderId;
-            //}
+            var result = Proxy.CreateOrderProxy.Instance.Book(gh, mzjs, ghxmList);
+            if (result != null && result.ResponseStatus.IsSucceed)
+            {
+                return result.OrderId;
+            }
             return 0;
         }
 
@@ -1361,7 +1132,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="gh"></param>
         private static void OrderCommitProcess(OutpatientRegistEntity gh)
         {
-            //Proxy.CreateOrderProxy.Instance.Commit(gh.OrderId);
+            Proxy.CreateOrderProxy.Instance.Commit(gh.OrderId);
         }
 
         #endregion
@@ -1414,7 +1185,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="isCkf">磁卡费</param>
         /// <param name="isGbf">工本费</param>
         /// <returns></returns>
-        public List<OutpatientItemEntity> GetXmList(OutpatientRegistEntity gh, bool isCkf, bool isGbf, out GHZGroupAndFeesVO ghFeeResult, string ghxm, string zlxm, string orgId = null)
+        public List<OutpatientItemEntity> GetXmList(OutpatientRegistEntity gh, bool isCkf, bool isGbf, out GHZGroupAndFeesVO ghFeeResult, string ghxm, string zlxm,string orgId=null)
         {
             //挂号项目
             var xmList = new List<OutpatientItemEntity>();
@@ -1500,10 +1271,10 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                     xm.je = sfxm.dj * xm.sl;
                     xmList.Add(xm);
                 }
-            }
-
-
-
+            }                
+            
+            
+            
             return xmList;
         }
         /// <summary>
@@ -1512,11 +1283,11 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
         /// <param name="orgId"></param>
         /// <param name="ks"></param>
         /// <returns></returns>
-        public CqybGjbmInfoVo GetDepartmentDoctorIdC(string orgId, string ks, string ys)
+        public CqybGjbmInfoVo GetDepartmentDoctorIdC(string orgId, string ks,string ys)
         {
             CqybGjbmInfoVo vo = new CqybGjbmInfoVo();
             string sql = "";
-            if (ys != null)
+            if (ys!=null)
             {
                 sql = @"select zjh,gjybdm,b.ybksbm,a.gh,a.name,b.Name ksmc
  from [NewtouchHIS_Base].[dbo].[V_S_Sys_Staff]  a
@@ -1527,8 +1298,7 @@ select '1' from mz_cf(nolock)  where patid = @patid and OrganizeId = @orgId and 
                 vo = this.FirstOrDefault<CqybGjbmInfoVo>(sql, new[] { new SqlParameter("@ysgh", ys), new SqlParameter("@orgId", orgId) });
 
             }
-            else
-            {
+            else {
                 sql = @"select isnull(a.zjh,'') zjh  ,gjybdm,dept.ybksbm,b.gh,b.name,dept.Name ksmc  from [dbo].[Sys_DepartmentBinding] a
 left join [NewtouchHIS_Base]..V_S_Sys_Staff b on a.gh=b.gh and a.OrganizeId=b.OrganizeId 
 left join  NewtouchHIS_Base.dbo.V_S_Sys_Department dept on dept.code=a.ks and dept.OrganizeId=a.OrganizeId and dept.zt='1'
@@ -1704,10 +1474,8 @@ where ks=@ks and a.OrganizeId=@orgId and a.zt=1";
             }
             OutpatientSettlementPaymentModelEntity mzzfEntity1 = null;
             OutpatientSettlementPaymentModelEntity mzzfEntity2 = null;
-            bool isnew = false;
             if (feeRelated.yjjzfje.Value > 0)
             {
-                isnew = true;
                 mzzfEntity1 = new OutpatientSettlementPaymentModelEntity();
                 mzzfEntity1.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
                 mzzfEntity1.OrganizeId = jszbEntity.OrganizeId;
@@ -1719,59 +1487,29 @@ where ks=@ks and a.OrganizeId=@orgId and a.zt=1";
                 db.Insert(mzzfEntity1);
                 jszbEntity.xjzffs = xtzffs.ZYYJZHZF;
             }
-            if (feeRelated.djjess.Value > 0)
+            if (feeRelated.patZflist.Count() > 0)
             {
-                isnew = true;
-                mzzfEntity2 = new OutpatientSettlementPaymentModelEntity();
-                mzzfEntity2.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
-                mzzfEntity2.OrganizeId = jszbEntity.OrganizeId;
-                mzzfEntity2.jsnm = jszbEntity.jsnm;
-                mzzfEntity2.xjzffs = feeRelated.djjesszffs;
-                mzzfEntity2.zfje = feeRelated.xjzfys.Value - feeRelated.yjjzfje.Value;
-                mzzfEntity2.zt = "1";
-                mzzfEntity2.Create();
-                #region 照顾自助机接口，获取不到登录用户
-                if (string.IsNullOrEmpty(mzzfEntity2.CreatorCode))
-                {
-                    mzzfEntity2.CreatorCode = "zzjadmin";//如果为空，设置为自助机挂号（接口）
-                }
-                #endregion
-                mzzfEntity2.CreateTime = DateTime.Now.AddSeconds(1);
-                db.Insert(mzzfEntity2);
-                jszbEntity.xjzffs = feeRelated.djjesszffs;
-            }
-            if (!isnew)
-            {
-                if (!string.IsNullOrWhiteSpace(feeRelated.zffs1) && (feeRelated.zfje1 ?? 0) > 0)
-                {
-                    mzzfEntity1 = new OutpatientSettlementPaymentModelEntity();
-                    mzzfEntity1.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
-                    mzzfEntity1.OrganizeId = jszbEntity.OrganizeId;
-                    mzzfEntity1.jsnm = jszbEntity.jsnm;
-                    mzzfEntity1.xjzffs = feeRelated.zffs1;
-                    mzzfEntity1.zfje = feeRelated.zfje1.Value;
-                    mzzfEntity1.zt = "1";
-                    mzzfEntity1.Create();
-                    db.Insert(mzzfEntity1);
-                }
-                if (!string.IsNullOrWhiteSpace(feeRelated.zffs2) && (feeRelated.zfje2 ?? 0) > 0)
+                foreach (var item in feeRelated.patZflist)
                 {
                     mzzfEntity2 = new OutpatientSettlementPaymentModelEntity();
                     mzzfEntity2.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
                     mzzfEntity2.OrganizeId = jszbEntity.OrganizeId;
                     mzzfEntity2.jsnm = jszbEntity.jsnm;
-                    mzzfEntity2.xjzffs = feeRelated.zffs2;
-                    mzzfEntity2.zfje = feeRelated.zfje2.Value;
+                    mzzfEntity2.xjzffs = item.zffsmc;
+                    mzzfEntity2.zfje = (decimal)item.zfje;
                     mzzfEntity2.zt = "1";
                     mzzfEntity2.Create();
+                    #region 照顾自助机接口，获取不到登录用户
+                    if (string.IsNullOrEmpty(mzzfEntity2.CreatorCode))
+                    {
+                        mzzfEntity2.CreatorCode = "zzjadmin";//如果为空，设置为自助机挂号（接口）
+                    }
+                    #endregion
                     mzzfEntity2.CreateTime = DateTime.Now.AddSeconds(1);
                     db.Insert(mzzfEntity2);
                 }
+                jszbEntity.xjzffs = feeRelated.djjesszffs;
             }
-
-
-
-
             //预交金支付 构建账户收支  //预交金支付 一定作为第一支付方式
             if (mzzfEntity1 != null && mzzfEntity1.xjzffs == xtzffs.ZYYJZHZF)
             {
@@ -1909,177 +1647,14 @@ where gh.OrganizeId = @orgId  and gh.zt = '1'
             return this.FindList<GhJzInfo>(sb.ToString(), pars.ToArray());
         }
 
-        public List<DailyFeeDataGirdDto> GetDailyFeeListByCreateCode(string orgId, string czr, DateTime kssj, DateTime jssj, string isJZ, string qsfph, string jsfph)
+        public CqybGjbmInfoVo GetYbjzdjVo(string mzh, string orgId)
         {
-            StringBuilder strSql = new StringBuilder();
-            strSql.Append(@"SELECT js.jsnm,js.jzsj,js.CreateTime,js.OrganizeId,brxz.brxzmc,gh.mzh,gh.xm,gh.xb,gh.nlshow,js.fph,ISNULL(SUM(ISNULL(zje, 0)),0) jszje , 
-ISNULL(SUM(ISNULL(zje, 0)) - SUM(ISNULL(xjzf, 0)),0) ybbx , ISNULL(SUM(ISNULL(xjzf,0)),0) jsxjzf , dbo.fn_getformatmoney(ISNULL(SUM(ISNULL(zje, 0)),0)) zjedx 
-FROM dbo.mz_js js left join mz_gh gh on js.ghnm=gh.ghnm AND gh.OrganizeId=js.OrganizeId LEFT JOIN xt_brxz brxz on brxz.brxz = js.brxz and brxz.zt = '1' 
-and brxz.OrganizeId = js.OrganizeId WHERE
-js.CreatorCode=@czr and js.OrganizeId=@orgId and js.OrganizeId=@orgId
-											 AND js.CreateTime >= @kssj
-                                             AND js.CreateTime <= @jssj AND ISNULL(isJZ, 0)!='1'");
-            //已交账
-            //if (isJZ == "1")
-            //{
-            //    strSql.Append(" AND ISNULL(isJZ, 0)='1' ");
-            //}
-            //else if (isJZ == "0") //未交账
-            //{
-            //    strSql.Append(" AND ISNULL(isJZ, 0)!='1' ");
-            //}
-            List<SqlParameter> param = new List<SqlParameter>()
-                {
-                    new SqlParameter("@orgId",orgId),
-                    new SqlParameter("@czr",czr),
-                    new SqlParameter("@kssj",kssj),
-                    new SqlParameter("@jssj",jssj)
-                };
-            if (!string.IsNullOrWhiteSpace(qsfph) && !string.IsNullOrWhiteSpace(jsfph))
-            {
-                int qs = qsfph.ToInt();
-                int js = jsfph.ToInt();
-                param.Add(new SqlParameter("@qsfph", qs));
-                param.Add(new SqlParameter("@jsfph", js));
-                strSql.Append(@" and (CAST(SUBSTRING(fph,2,len(fph)) as int))> @qsfph and (CAST(SUBSTRING(fph,2,len(fph)) as int))<@jsfph");
-            }
-
-            strSql.Append(@" and isnull(fph,'')<>'' group by js.jzsj,js.jsnm,gh.xb,js.CreateTime,js.OrganizeId,brxz.brxzmc,gh.mzh,gh.xm,gh.nlshow,js.fph having ISNULL(SUM(ISNULL(zje, 0)),0)>0 order by fph");
-
-            return this.FindList<DailyFeeDataGirdDto>(strSql.ToString(), param.ToArray());
-        }
-
-        public List<DailyFeeOfDoneDataGirdDto> GetDailyFeeListOfDoneByCreateCode(string orgId, string czr, DateTime ksjzsj, DateTime jsjzsj)
-        {
-            StringBuilder strSql = new StringBuilder();
-            //已交账
-            strSql.Append(@"select rjb.*,rjbmx.fpd1,dbo.fn_getformatmoney(ISNULL(rjb.zje,0)) zjedx from rpt_mz_rjb rjb
-left join rpt_mz_rjbfpmx rjbmx on rjbmx.mainId=rjb.Id and rjbmx.zt=1
-where rjb.czr=@czr and rjb.zt=1 and (ISNULL(@ksjzsj,'')='' or rjb.CreateTime>=@ksjzsj) and (ISNULL(@jsjzsj,'')='' or rjb.CreateTime<=@jsjzsj)
-order by rjb.CreateTime desc");
-
-
-            List<SqlParameter> param = new List<SqlParameter>()
-                {
-                    new SqlParameter("@orgId",orgId),
-                    new SqlParameter("@czr",czr),
-                    new SqlParameter("@ksjzsj",ksjzsj),
-                    new SqlParameter("@jsjzsj",jsjzsj)
-                };
-            var list = this.FindList<DailyFeeOfDoneDataGirdDto>(strSql.ToString(), param.ToArray());
-            if (list.Count > 0)
-            {
-                var dict = new Dictionary<string, List<string>>();
-
-                foreach (var item in list)
-                {
-                    if (!string.IsNullOrWhiteSpace(item.fpd1))
-                    {
-                        if (item.fpd1.IndexOf('/') != -1)
-                        {
-                            var arr = item.fpd1.Split('/');
-                            var stuff = "";
-                            if (arr != null && arr.Length >= 2)
-                            {
-                                var fphLength = arr[0].Length;
-                                if (!long.TryParse(arr[0], out long start))
-                                {
-                                    stuff = arr[0][0].ToString();
-                                    long.TryParse(arr[0].Substring(1), out start);
-                                }
-
-                                if (!long.TryParse(arr[1], out long end))
-                                {
-                                    long.TryParse(arr[1].Substring(1), out end);
-                                }
-
-                                for (long i = start; i <= end; i++)
-                                {
-                                    var fph = $"{stuff}{i.ToString().PadLeft(fphLength - stuff.Length, '0')}";
-                                    if (dict.ContainsKey(item.fpd1))
-                                    {
-                                        dict[item.fpd1].Add(fph);
-                                    }
-                                    else
-                                    {
-                                        dict.Add(item.fpd1, new List<string> { fph });
-                                    }
-
-                                }
-                            }
-
-
-                        }
-                        else
-                        {
-                            dict.Add(item.fpd1, new List<string> { item.fpd1 });
-                        }
-                    }
-                }
-
-                //已交账时间
-                var fphArr = new List<string>();
-                foreach (var item in dict)
-                {
-                    fphArr.AddRange(item.Value);
-                }
-                //var jsParam = new List<SqlParameter>() { new SqlParameter("@fphArr", ) };
-                var jsSql = $@"select * from mz_js js
-where js.fph in ({string.Join(",", fphArr.Select(p => $"'{p}'"))}) and js.jszt=1 and js.isJZ=1
-order by js.jzsj";
-
-                var jsList = FindList<DailyFeeMzjsDataGirdDto>(jsSql);
-
-                foreach (var item in list)
-                {
-                    if (dict.ContainsKey(item.fpd1))
-                    {
-
-                        var relatedJS = jsList.Where(p => dict[item.fpd1].Contains(p.fph)).OrderBy(p => p.jzsj).ToList();
-                        if (relatedJS.Count == 1)
-                        {
-                            item.kssfsj = relatedJS[0].jzsj;
-                            item.jssfsj = relatedJS[0].jzsj;
-                        }
-                        else if (relatedJS.Count > 1)
-                        {
-                            item.kssfsj = relatedJS[0].jzsj;
-                            item.jssfsj = relatedJS[relatedJS.Count - 1].jzsj;
-                        }
-                    }
-                }
-            }
-
-            return list;
-        }
-
-
-        public List<DailyFeeCancelDataGridDto> GetDailyFeeList(string orgId, string czr)
-        {
-            StringBuilder strSql = new StringBuilder();
-            strSql.Append(@"select a.Id,a.kssj,a.jssj,a.zje,a.xjzf,b.fpd1,b.cnt from rpt_mz_rjb a left join rpt_mz_rjbfpmx b on a.Id=b.mainId and a.OrganizeId=b.OrganizeId 
-                        where a.zt='1' and b.fplx='1' and a.CreatorCode=@czr and a.OrganizeId=@orgId and CONVERT(VARCHAR(10), a.CreateTime, 120)=CONVERT(VARCHAR(10), GETDATE(), 120)
-                        order by a.CreateTime desc");
-            SqlParameter[] param =
-            {
-                    new SqlParameter("@orgId",orgId),
-                    new SqlParameter("@czr",czr)
-                };
-            return this.FindList<DailyFeeCancelDataGridDto>(strSql.ToString(), param);
-        }
-
-        /// <summary>
-        /// 获取当天可以撤销的交账数据
-        /// </summary>
-        public void CancelDailyFee(string Id)
-        {
-            StringBuilder strSql = new StringBuilder();
-            strSql.Append(@"exec rpt_Outpatient_CancelDailyFee @Id");
-            SqlParameter[] param =
-            {
-                    new SqlParameter("@Id",Id)
-                };
-            this.ExecuteSqlCommand(strSql.ToString(), param);
+            string sqlstr = @" select staff.zjh,staff.gjybdm,staff.gh,staff.name,mzgh.ks,dept.ybksbm,dept.Name ksmc,jzid
+from mz_gh mzgh (nolock)
+left join NewtouchHIS_Base..V_S_Sys_Staff staff on staff.gh=mzgh.ys and staff.OrganizeId=mzgh.OrganizeId and staff.zt='1'
+left join NewtouchHIS_Base.dbo.V_S_Sys_Department dept on dept.code=mzgh.ks and dept.OrganizeId=mzgh.OrganizeId and dept.zt='1'
+where mzgh.mzh=@mzh and mzgh.OrganizeId=@orgId and mzgh.zt='1' ";
+            return  this.FirstOrDefault<CqybGjbmInfoVo>(sqlstr, new[] { new SqlParameter("@mzh", mzh), new SqlParameter("@orgId", orgId) });
         }
     }
 }

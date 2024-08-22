@@ -1313,7 +1313,7 @@ AND NOT EXISTS(SELECT 1 FROM dbo.mz_ghth(NOLOCK) y WHERE xm.ghnm=y.ghnm)
         /// <param name="cardType"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public List<OutpatAccInfoDto> GetpatientAccountList(DateTime kssj, DateTime jssj, string kh, string zjh, string cardType, string orgId)
+        public List<OutpatAccInfoDto> GetpatientAccountList(DateTime kssj, DateTime jssj, string kh, string zjh,string cardType, string orgId)
         {
             const string sql = @"
 SELECT  A.patid ,
@@ -1372,7 +1372,7 @@ AND gh.ghrq BETWEEN @kssj AND DATEADD(DAY,1,CONVERT(DATETIME,@jssj))
         /// <param name="cardType"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public List<OutpatAccInfoDto> GetOutpatChargePatInfoInAcc(string mzh, string kh, string zjh, string cardType, string orgId)
+        public List<OutpatAccInfoDto> GetOutpatChargePatInfoInAcc(string mzh, string kh,string zjh, string cardType, string orgId)
         {
             if (string.IsNullOrWhiteSpace(mzh) && (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(cardType)) && string.IsNullOrWhiteSpace(zjh))
             {
@@ -1411,7 +1411,9 @@ LEFT JOIN xt_brxz xz ON xz.brxz = gh.brxz AND xz.OrganizeId = gh.OrganizeId
 WHERE A.zt = '1' 
 and xz.zt = '1' and gh.zt = '1'
 and a.OrganizeId = @OrganizeId 
-and (gh.mzh=@mzh or (gh.kh = @kh and gh.CardType = @CardType) or (gh.zjh=@zjh and gh.CardType=@CardType))");
+and (gh.mzh=@mzh or (gh.kh = @kh and gh.CardType = @CardType) or (gh.zjh=@zjh and gh.CardType=@CardType))
+order by gh.ghrq
+");
             DbParameter[] par1 =
             {
                 new SqlParameter("@mzh",(mzh??"")),
@@ -1433,17 +1435,19 @@ and (gh.mzh=@mzh or (gh.kh = @kh and gh.CardType = @CardType) or (gh.zjh=@zjh an
         /// <param name="orgId"></param>
         /// <param name="cardType"></param>
         /// <returns></returns>
-        public OutpatAccInfoDto GetChargePatInfoInRegister(string kh, string blh, string zjh, string orgId, string cardType, string ly, string CardId)
+        public OutpatAccInfoDto GetChargePatInfoInRegister(string kh, string blh, string zjh, string orgId, string cardType,string ly,string CardId)
         {
             OutpatAccInfoDto patxx = new OutpatAccInfoDto();
             if (ly != null)
             {
-                string yktsql = @" select patid from [dbo].[xt_brjbxx](NOLOCK)  where zjh=@zjh and OrganizeId = @OrganizeId  and zt=1 ";
+                string yktsql = @" select patid from [dbo].[xt_brjbxx](NOLOCK)
+      where zjh=@zjh and OrganizeId = @OrganizeId  and zt=1
+";
                 DbParameter[] par1 =
-                {
-                    new SqlParameter("@OrganizeId", orgId),
-                    new SqlParameter("@zjh", zjh??""),
-                };
+               {
+                new SqlParameter("@OrganizeId", orgId),
+                new SqlParameter("@zjh", zjh??""),
+            };
                 patxx = FindList<OutpatAccInfoDto>(yktsql.ToString(), par1).FirstOrDefault();
                 if (patxx == null)
                 {
@@ -1451,74 +1455,67 @@ and (gh.mzh=@mzh or (gh.kh = @kh and gh.CardType = @CardType) or (gh.zjh=@zjh an
                 }
             }
             string strSql = @"
-            SELECT  A.patid ,
-	            a.blh ,
-	            A.xm ,
-	            A.xb ,
-	            A.csny ,
-	            A.zjh ,
-	            A.zjlx ,
-	            A.zjh ,
-	            C.CardType,
-	            C.CardTypeName,
-	            c.CardNo kh ,
-	            CAST( FLOOR(datediff(DY,a.csny,getdate())/365.25) as int) nl,
-	            xz.brxz,
-	            xz.brxzmc,
-	            xz.brxzbh ,
-	            yb.sycs,
-	            A.dh,
-	            A.dybh,
-	            A.brly,
-	            A.phone,
-	            a.jjllrgx lxrgx,
-	            a.jjlldh lxrdh,
-	            a.jjllr lxr,
-	            '' db ,
-	            '' dbzd,A.hf,
-	            A.gj gjCode, A.mz mzCode, gj.gjmc, mz.mzmc, c.CardNo sbbh,c.cblb,A.xian_sheng+xian_shi+xian_xian+xian_dz dz,
-                c.grbh 
-            FROM [dbo].[xt_brjbxx](NOLOCK) A  
-	            INNER JOIN dbo.xt_card(NOLOCK) c ON c.patid = a.patid AND A.OrganizeId = c.OrganizeId and c.zt=1
-	            LEFT JOIN xt_brxz(NOLOCK) xz ON xz.brxz = c.brxz AND xz.OrganizeId = c.OrganizeId and xz.zt=1
-	            LEFT JOIN xt_ybbab(NOLOCK) yb ON yb.patid = a.patid AND xz.OrganizeId = yb.OrganizeId 
-	            LEFT JOIN [NewtouchHIS_Base]..V_S_xt_gj gj ON gj.gjCode = A.gj 
-	            LEFT JOIN [NewtouchHIS_Base]..V_S_xt_mz mz ON mz.mzCode = A.mz 
+                    SELECT  A.patid ,
+	                    a.blh ,
+	                    A.xm ,
+	                    A.xb ,
+	                    A.csny ,
+	                    A.zjh ,
+	                    A.zjlx ,
+	                    A.zjh ,
+	                    C.CardType,
+	                    C.CardTypeName,
+	                    c.CardNo kh ,
+	                    CAST( FLOOR(datediff(DY,a.csny,getdate())/365.25) as int) nl,
+	                    xz.brxz,
+	                    xz.brxzmc,
+	                    xz.brxzbh ,
+                        xz.brxzlb,
+	                    yb.sycs,
+	                    A.dh,
+	                    A.dybh,
+	                    A.brly,
+	                    A.phone,
+	                    a.jjllrgx lxrgx,
+	                    a.jjlldh lxrdh,
+	                    a.jjllr lxr,
+	                    '' db ,
+	                    '' dbzd,A.hf,
+	                    A.gj gjCode, A.mz mzCode, gj.gjmc, mz.mzmc, c.CardNo sbbh,c.cblb,A.xian_sheng+xian_shi+xian_xian+xian_dz dz
+                    FROM [dbo].[xt_brjbxx](NOLOCK) A  
+	                    INNER JOIN dbo.xt_card(NOLOCK) c ON c.patid = a.patid AND A.OrganizeId = c.OrganizeId and c.zt=1
+	                    LEFT JOIN xt_brxz(NOLOCK) xz ON xz.brxz = c.brxz AND xz.OrganizeId = c.OrganizeId and xz.zt=1
+	                    LEFT JOIN xt_ybbab(NOLOCK) yb ON yb.patid = a.patid AND xz.OrganizeId = yb.OrganizeId 
+	                    LEFT JOIN [NewtouchHIS_Base]..V_S_xt_gj gj ON gj.gjCode = A.gj 
+	                    LEFT JOIN [NewtouchHIS_Base]..V_S_xt_mz mz ON mz.mzCode = A.mz 
 
                     ";
-            var pars = new List<SqlParameter>
-            {
-                new SqlParameter("@kh", kh ?? ""),
-                new SqlParameter("@cardType", cardType ?? ""),
-                new SqlParameter("@zjh", zjh ?? ""),
-                new SqlParameter("@OrganizeId", orgId)
-            };
+            var pars = new List<SqlParameter>();
+            pars.Add(new SqlParameter("@kh", kh ?? ""));
+            pars.Add(new SqlParameter("@cardType", cardType ?? ""));
+            pars.Add(new SqlParameter("@zjh", zjh ?? ""));
+            pars.Add(new SqlParameter("@OrganizeId", orgId));
             if (ly == null)
             {
-                strSql += @" 
-            WHERE   (@kh='' or (c.CardType = @cardType and c.CardNo = @kh)) 
-                    AND (A.blh = @blh OR @blh = '') 
-                    AND (c.CardId = @CardId OR @CardId = '') 
-                    AND ((A.zjh = @zjh and c.CardType = @cardType) or (@zjh = '' and @cardType = @cardType))
-	                AND a.OrganizeId = @OrganizeId AND A.zt = '1'
-            ORDER BY A.CreateTime DESC";
+                strSql += @" WHERE (@kh='' or (c.CardType = @cardType and c.CardNo = @kh)) 
 
+    AND(A.blh = @blh OR @blh = '') AND(c.CardId = @CardId OR @CardId = '') AND((A.zjh = @zjh and c.CardType = @cardType) or(@zjh = '' and @cardType = @cardType))
+	AND a.OrganizeId = @OrganizeId AND A.zt = '1'
+ORDER BY A.CreateTime DESC";
+               
                 pars.Add(new SqlParameter("@blh", blh ?? ""));
                 pars.Add(new SqlParameter("@CardId", CardId ?? ""));
             }
-            else
-            {
-                strSql += @" 
-            WHERE   (@kh='' or (c.CardType = @cardType and c.CardNo = @kh)) 
-                    AND(A.zjh = @zjh )
-                    AND a.OrganizeId = @OrganizeId AND A.zt = '1'
-            ORDER BY A.CreateTime DESC
-";
+            else {
+                strSql += @" WHERE (@kh='' or (c.CardType = @cardType and c.CardNo = @kh)) 
+    AND(A.zjh = @zjh )
+	AND a.OrganizeId = @OrganizeId AND A.zt = '1'
+ORDER BY A.CreateTime DESC";
 
             }
 
             var patChargeVo = FindList<OutpatAccInfoDto>(strSql, pars.ToArray()).FirstOrDefault();
-
+           
             if (patChargeVo == null && !string.IsNullOrWhiteSpace(kh) && !string.IsNullOrWhiteSpace(cardType))
             {
                 throw new FailedCodeException("OUTPAT_REGIST_ISINVALID");
@@ -2790,23 +2787,23 @@ select tt.xm,tt.blh,tt.mzh,xx.py from
 (
 SELECT  distinct gh.xm,
         gh.blh,
-        gh.mzh, isnull(gh.ghrq,gh.CreateTime) CreateTime
+        gh.mzh, gh.ghrq
 FROM    mz_gh(NOLOCK) gh
         join mz_cf(NOLOCK) cf ON cf.ghnm = gh.ghnm
-WHERE   gh.OrganizeId = @orgId AND ISNULL(gh.mzh, '') != '' AND ISNULL(cf.cfzt, 0) = 0 AND cf.zt = '1' and gh.zt = '1' and isnull(gh.ghzt,'0') != '2' and (1 = @isContainsJZJS or isnull(gh.jzbz, '') <> '3')
+WHERE   gh.OrganizeId = @orgId AND ISNULL(gh.mzh, '') != '' AND cf.cfzt = '0' AND cf.zt = '1' and gh.zt = '1' and isnull(gh.ghzt,'0') != '2' and (1 = @isContainsJZJS or isnull(gh.jzbz, '') <> '3')
 
 union
 --20181010添加代收费项目
 SELECT  distinct gh.xm,
         gh.blh,
-        gh.mzh, isnull(gh.ghrq,gh.CreateTime) CreateTime
+        gh.mzh, gh.ghrq
 FROM    mz_gh(NOLOCK) gh
         join mz_xm(NOLOCK) xm ON xm.ghnm = gh.ghnm
-WHERE   gh.OrganizeId = @orgId AND ISNULL(gh.mzh, '') != '' AND ISNULL(xm.xmzt, 0) = 0 AND xm.zt = '1' and gh.zt = '1' and isnull(gh.ghzt,'0') != '2' and (1 = @isContainsJZJS or isnull(gh.jzbz, '') <> '3')
-) as tt  LEFT JOIN dbo.xt_brjbxx xx ON xx.blh = tt.blh
+WHERE   gh.OrganizeId = @orgId AND ISNULL(gh.mzh, '') != '' AND xm.xmzt = '0' AND xm.zt = '1' and gh.zt = '1' and isnull(gh.ghzt,'0') != '2' and (1 = @isContainsJZJS or isnull(gh.jzbz, '') <> '3')
+) as tt  LEFT JOIN dbo.xt_brjbxx(NOLOCK) xx ON xx.blh = tt.blh
                                       AND xx.OrganizeId = @orgId and   xx.zt = '1'
-where DATEDIFF(d,tt.CreateTime,getdate())<@lastviewday
-order by tt.CreateTime desc");
+where tt.ghrq > DATEADD(DAY,-@lastviewday,GETDATE())
+order by tt.ghrq desc");
             DbParameter[] par =
             {
                 new SqlParameter("@orgId", orgId),
@@ -2821,19 +2818,18 @@ select xm, blh, mzh, patid,py  from
 select DISTINCT
 	   gh.xm,
        gh.blh,
-       gh.mzh, isnull(gh.ghrq,gh.CreateTime) CreateTime,
+       gh.mzh, gh.ghrq,
        gh.patid,
        xx.py
-from mz_js(nolock) js
-LEFT JOIN mz_gh (NOLOCK) gh ON gh.ghnm = js.ghnm
-                                                   AND gh.OrganizeId = @orgId
-                    LEFT JOIN dbo.xt_brjbxx xx ON xx.blh = gh.blh
+from mz_gh(NOLOCK) gh
+INNER JOIN mz_js(nolock) js ON js.ghnm = gh.ghnm
+                    LEFT JOIN dbo.xt_brjbxx(NOLOCK) xx ON xx.blh = gh.blh
                                                   AND xx.OrganizeId = @orgId
                                                     and xx.zt='1'
-where js.isQfyj = 1 and isnull(js.tbz, 0) <> 1 and js.zt = '1' and js.OrganizeId = @orgId and gh.zt = '1' and isnull(gh.ghzt,'0') != '2' and (1 = @isContainsJZJS or isnull(gh.jzbz, '') <> '3')
+where js.isQfyj = 1 and isnull(js.tbz, 0) <> 1 and js.zt = '1' and gh.OrganizeId = @orgId and gh.zt = '1' and isnull(gh.ghzt,'0') != '2' and (1 = @isContainsJZJS or isnull(gh.jzbz, '') <> '3')
 ) as ttt
-where DATEDIFF(d,ttt.CreateTime,getdate())<@lastviewday
-order by CreateTime desc");
+where ttt.ghrq > DATEADD(DAY,-@lastviewday,GETDATE())
+order by ttt.ghrq desc");
             DbParameter[] par2 =
             {
                 new SqlParameter("@orgId", orgId),
@@ -3030,113 +3026,96 @@ and xm.cfnm in ({0})", cfnm);
         /// <param name="orgId">机构ID</param>
         /// <returns></returns>
         public IList<ChargeRightDto> GetNewAllUnSettedListByMzh(string mzh, string cfnms, string orgId)
-        {          
-            const string strSql = @"select * from( 
-select cfh,cfnm,sfxmmc,sfxmCode,sum(dj) dj,sum(sl) sl,sum(zje) zje,dw,yzlx,ks,ys,ysmc,ztId,ztmc,cflx from( 
-SELECT  cf.cfh ,cf.cfnm ,yp.ypmc sfxmmc ,mx.yp sfxmCode, 
-	sum(ISNULL(mx.dj, 0.00)) dj , sum(ISNULL(CAST(mx.sl AS INT), 0)) sl , sum(ISNULL(mx.je, 0.00)) zje , 
-	mx.dw, '1' yzlx, 
-	cf.ks, cf.ys, cf.ysmc,null ztId,null ztmc,cf.cflx  
-	FROM mz_cf(NOLOCK) cf  
-	INNER JOIN mz_cfmx(NOLOCK) mx ON cf.cfnm = mx.cfnm AND mx.OrganizeId=cf.OrganizeId AND mx.zt = '1' 
-	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=cf.ghnm AND gh.zt='1' AND gh.OrganizeId=cf.OrganizeId 
-	LEFT JOIN NewtouchHIS_Base.dbo.V_C_xt_yp yp ON yp.ypCode=mx.yp AND yp.OrganizeId=cf.OrganizeId AND yp.zt='1' 
-	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode=mx.dl AND dl.OrganizeId=cf.OrganizeId AND dl.zt='1' 
-	WHERE cf.OrganizeId = @orgId		 
-	AND cf.zt= '1' AND cf.cfzt = '0' --处方有效且未收费 
-	AND gh.mzh=@mzh 
-    AND cf.cfnm IN (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码 
-	group by cf.cfh,cf.cfnm,yp.ypmc,mx.yp,mx.dw,cf.ks,cf.ys,cf.ysmc,cf.cflx 
-) b 
-group by cfh ,cfnm,ztmc,ztId,ks,ys, ysmc,sfxmmc,sfxmCode,dw,yzlx,cflx 
- union all 
-select cfh,cfnm,sfxmmc,sfxmCode,sum(dj) dj,sum(sl) sl,sum(zje) zje,dw,yzlx,ks,ys,ysmc,ztId,ztmc,cflx from( 
-SELECT cf.cfh ,cf.cfnm , (case when xm.ztmc is not null then xm.ztmc else sfxm.sfxmmc end) sfxmmc , (case when xm.ztId is not null then xm.ztId else sfxm.sfxmCode end) sfxmCode , 
-	sum(ISNULL(xm.dj, 0.00)) dj , sum(ISNULL(CAST(xm.sl AS INT), 0)) sl , sum(ISNULL(xm.je, 0.00)) zje ,(case when xm.ztId is not null then '组套' else xm.dw end) dw, 
-	'2' yzlx, 
-	xm.ks, xm.ys, xm.ysmc,xm.ztId,xm.ztmc,cf.cflx   
-	FROM dbo.mz_xm(NOLOCK) xm 
-	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=xm.ghnm and gh.OrganizeId=xm.OrganizeId AND gh.zt='1' 
-	LEFT JOIN dbo.mz_cf(NOLOCK) cf ON cf.cfnm = xm.cfnm AND cf.OrganizeId = xm.OrganizeId 
-	LEFT JOIN NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm ON sfxm.sfxmCode = xm.sfxm AND sfxm.OrganizeId = xm.OrganizeId 
-	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode = xm.dl AND dl.OrganizeId = xm.OrganizeId AND dl.zt='1' 
-	WHERE xm.OrganizeId = @orgId	 
-	AND xm.zt = '1' and xm.xmzt = '0' --有效且未收费	 
-	and (cf.zt is null or (cf.zt= '1' and cf.cfzt = '0')) --未关联处方 或 处方有效且未收费 
-	AND gh.mzh=@mzh 
-    AND cf.cfnm IN  (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码 
-	group by cf.cfh ,cf.cfnm,xm.ztmc,xm.ztId,xm.ks, xm.ys, xm.ysmc,sfxm.sfxmmc,sfxm.sfxmCode,xm.dw,cf.cflx 
-	)  a 
-	group by cfh ,cfnm,ztmc,ztId,ks,ys, ysmc,sfxmmc,sfxmCode,dw,yzlx,cflx 
-) z 
-ORDER by isnull(cfh, 'ZZZZ') ";
+        {
+            string flagstr = _sysConfigRepo.GetValueByCode("sfxmztbs", orgId);
+            string strSql = "";
+            if (flagstr == "true")
+            {
+                strSql = @"select * from( 
+                select cfh,cfnm,sfxmmc,sfxmCode,sum(dj) dj,sum(sl) sl,sum(zje) zje,dw,yzlx,ks,ys,ysmc,ztId,ztmc,cflx from( 
+                SELECT  cf.cfh ,cf.cfnm ,yp.ypmc sfxmmc ,mx.yp sfxmCode, 
+	                sum(ISNULL(mx.dj, 0.00)) dj , sum(ISNULL(CAST(mx.sl AS INT), 0)) sl , sum(ISNULL(mx.je, 0.00)) zje , 
+	                mx.dw, '1' yzlx, 
+	                cf.ks, cf.ys, cf.ysmc,null ztId,null ztmc,cf.cflx  
+	                FROM mz_cf(NOLOCK) cf  
+	                INNER JOIN mz_cfmx(NOLOCK) mx ON cf.cfnm = mx.cfnm AND mx.OrganizeId=cf.OrganizeId AND mx.zt = '1' 
+	                INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=cf.ghnm AND gh.zt='1' AND gh.OrganizeId=cf.OrganizeId 
+	                LEFT JOIN NewtouchHIS_Base.dbo.V_C_xt_yp yp ON yp.ypCode=mx.yp AND yp.OrganizeId=cf.OrganizeId AND yp.zt='1' 
+	                LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode=mx.dl AND dl.OrganizeId=cf.OrganizeId AND dl.zt='1' 
+	                WHERE cf.OrganizeId = @orgId		 
+	                AND cf.zt= '1' AND cf.cfzt = '0' --处方有效且未收费 
+	                AND gh.mzh=@mzh 
+                    AND cf.cfnm IN (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码 
+	                group by cf.cfh,cf.cfnm,yp.ypmc,mx.yp,mx.dw,cf.ks,cf.ys,cf.ysmc,cf.cflx 
+                ) b 
+                group by cfh ,cfnm,ztmc,ztId,ks,ys, ysmc,sfxmmc,sfxmCode,dw,yzlx,cflx 
+                 union all 
+                select cfh,cfnm,sfxmmc,sfxmCode,sum(dj) dj,case when ztId is not null then 1 else  sum(sl) end sl,sum(zje) zje,dw,yzlx,ks,ys,ysmc,ztId,ztmc,cflx from( 
+                SELECT cf.cfh ,cf.cfnm , (case when xm.ztmc is not null then xm.ztmc else sfxm.sfxmmc end) sfxmmc , (case when xm.ztId is not null then xm.ztId else sfxm.sfxmCode end) sfxmCode , 
+	                sum(ISNULL(xm.dj, 0.00)) dj , sum(ISNULL(CAST(xm.sl AS INT), 0)) sl , sum(ISNULL(xm.je, 0.00)) zje ,(case when xm.ztId is not null then '组套' else xm.dw end) dw, 
+	                '2' yzlx, 
+	                xm.ks, xm.ys, xm.ysmc,xm.ztId,xm.ztmc,cf.cflx   
+	                FROM dbo.mz_xm(NOLOCK) xm 
+	                INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=xm.ghnm and gh.OrganizeId=xm.OrganizeId AND gh.zt='1' 
+	                LEFT JOIN dbo.mz_cf(NOLOCK) cf ON cf.cfnm = xm.cfnm AND cf.OrganizeId = xm.OrganizeId 
+	                LEFT JOIN NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm ON sfxm.sfxmCode = xm.sfxm AND sfxm.OrganizeId = xm.OrganizeId 
+	                LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode = xm.dl AND dl.OrganizeId = xm.OrganizeId AND dl.zt='1' 
+	                WHERE xm.OrganizeId = @orgId	 
+	                AND xm.zt = '1' and xm.xmzt = '0' --有效且未收费	 
+	                and (cf.zt is null or (cf.zt= '1' and cf.cfzt = '0')) --未关联处方 或 处方有效且未收费 
+	                AND gh.mzh=@mzh 
+                    AND cf.cfnm IN  (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码 
+	                group by cf.cfh ,cf.cfnm,xm.ztmc,xm.ztId,xm.ks, xm.ys, xm.ysmc,sfxm.sfxmmc,sfxm.sfxmCode,xm.dw,cf.cflx 
+	                )  a 
+	                group by cfh ,cfnm,ztmc,ztId,ks,ys, ysmc,sfxmmc,sfxmCode,dw,yzlx,cflx 
+                ) z 
+                ORDER by isnull(cfh, 'ZZZZ') ";
+            }
+            else {
+                strSql = @"
+                SELECT * 
+                FROM (
+                	SELECT  cf.cfh ,cf.cfnm ,mx.dl sfdlCode,dl.dlmc sfdlmc,	yp.ypmc sfxmmc ,mx.yp sfxmCode,
+                	ISNULL(mx.dj, 0.00) dj , ISNULL(CAST(mx.sl AS INT), 0) sl , ISNULL(mx.je, 0.00) zje ,
+                	mx.dw, mx.zfbl, mx.zfxz,null dczll, null zxcs,null xmnm, mx.cfmxId cfmxId, mx.CreateTime klsj,'1' yzlx,
+                	cf.ks, cf.ys, cf.ysmc, yp.ybdm ybdm,yp.ybbz, mx.cfmxId mxId, yp.ypgg gg, ISNULL(yp.gjybdm,'') xnhybdm
+                	FROM mz_cf(NOLOCK) cf 
+                	INNER JOIN mz_cfmx(NOLOCK) mx ON cf.cfnm = mx.cfnm AND mx.OrganizeId=cf.OrganizeId AND mx.zt = '1'
+                	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=cf.ghnm AND gh.zt='1' AND gh.OrganizeId=cf.OrganizeId
+                	LEFT JOIN NewtouchHIS_Base.dbo.V_C_xt_yp yp ON yp.ypCode=mx.yp AND yp.OrganizeId=cf.OrganizeId AND yp.zt='1'
+                	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode=mx.dl AND dl.OrganizeId=cf.OrganizeId AND dl.zt='1'
+                	WHERE cf.OrganizeId = @orgId		
+                	AND cf.zt= '1' AND cf.cfzt = '0' --处方有效且未收费
+                	AND gh.mzh=@mzh
+                    AND cf.cfnm IN (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码
+
+                	UNION ALL
+
+                	SELECT cf.cfh ,cf.cfnm ,xm.dl sfdlCode ,dl.dlmc sfdlmc ,sfxm.sfxmmc sfxmmc , sfxm.sfxmCode sfxmCode ,
+                	ISNULL(xm.dj, 0.00) dj , ISNULL(CAST(xm.sl AS INT), 0) sl , ISNULL(xm.je, 0.00) zje ,xm.dw, xm.zfbl, xm.zfxz,
+                	xm.dczll,xm.zxcs,xm.xmnm xmnm, null cfmxId, xm.CreateTime klsj,	'2' yzlx,
+                	xm.ks, xm.ys, xm.ysmc, sfxm.ybdm ybdm,sfxm.ybbz, xm.xmnm mxId, ISNULL(sfxm.gg,'') gg, ISNULL(sfxm.gjybdm,'') xnhybdm
+                	FROM dbo.mz_xm(NOLOCK) xm
+                	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=xm.ghnm and gh.OrganizeId=xm.OrganizeId AND gh.zt='1'
+                	LEFT JOIN dbo.mz_cf(NOLOCK) cf ON cf.cfnm = xm.cfnm AND cf.OrganizeId = xm.OrganizeId
+                	LEFT JOIN NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm ON sfxm.sfxmCode = xm.sfxm AND sfxm.OrganizeId = xm.OrganizeId
+                	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode = xm.dl AND dl.OrganizeId = xm.OrganizeId AND dl.zt='1'
+                	WHERE xm.OrganizeId = @orgId	
+                	AND xm.zt = '1' and xm.xmzt = '0' --有效且未收费	
+                	and (cf.zt is null or (cf.zt= '1' and cf.cfzt = '0')) --未关联处方 或 处方有效且未收费
+                	AND gh.mzh=@mzh
+                    AND cf.cfnm IN  (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码
+                ) as alldata 
+                ORDER by isnull(cfh, 'ZZZZ'),klsj  ---ZZZ排在最后
+                ";
+            }
+             
             var par = new DbParameter[] {
                 new SqlParameter("@orgId", orgId),
                 new SqlParameter("@mzh", mzh),
                 new SqlParameter("@cfnms", cfnms)
             };
             return FindList<ChargeRightDto>(strSql, par);
-        }
-        /// <summary>
-        /// 获取待收费的处方明细列表
-        /// 接口版
-        /// </summary>
-        /// <param name="mzh">门诊号</param>
-        /// <param name="cfnms">逗号分隔的处方内码</param>
-        /// <param name="orgId">机构ID</param>
-        /// <returns></returns>
-        public IList<PresSettleInfoVO> GetNewAllUnSettedList(string mzh, string cfnms, string orgId)
-        {
-            string wherecfnm = "";
-            if (!string.IsNullOrWhiteSpace(cfnms))
-            {
-                wherecfnm = " AND cf.cfnm IN (SELECT * FROM dbo.f_split(@cfnms, ',')) --选择的处方内码 ";
-            }
-            string strSql = @"select cfh,cfnm,sfxmmc,sfxmCode,dj, sl,zje,dw,convert(varchar(2),yzlx)yzlx,ks,ksmc,ys,ysmc,ztId,ztmc,convert(int,cflx)cflx,kh from( 
-select cfh,cfnm,sfxmmc,sfxmCode,sum(dj) dj,sum(sl) sl,sum(zje) zje,dw,yzlx,ks,ksmc,ys,ysmc,ztId,ztmc,cflx,kh from( 
-SELECT  cf.cfh ,cf.cfnm ,yp.ypmc sfxmmc ,mx.yp sfxmCode, 
-	sum(ISNULL(mx.dj, 0.00)) dj , sum(ISNULL(CAST(mx.sl AS INT), 0)) sl , sum(ISNULL(mx.je, 0.00)) zje , 
-	mx.dw, cflx yzlx, 
-	cf.ks,cf.ksmc, cf.ys, cf.ysmc,null ztId,null ztmc,cflxxf cflx ,gh.kh 
-	FROM mz_cf(NOLOCK) cf  
-	INNER JOIN mz_cfmx(NOLOCK) mx ON cf.cfnm = mx.cfnm AND mx.OrganizeId=cf.OrganizeId AND mx.zt = '1' 
-	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=cf.ghnm AND gh.zt='1' AND gh.OrganizeId=cf.OrganizeId 
-	LEFT JOIN NewtouchHIS_Base.dbo.V_C_xt_yp yp ON yp.ypCode=mx.yp AND yp.OrganizeId=cf.OrganizeId AND yp.zt='1' 
-	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode=mx.dl AND dl.OrganizeId=cf.OrganizeId AND dl.zt='1' 
-	WHERE cf.OrganizeId = @orgId		 
-	AND cf.zt= '1' AND cf.cfzt = '0' --处方有效且未收费 
-	AND gh.mzh=@mzh
-    " + wherecfnm + @"
-	group by cf.cfh,cf.cfnm,yp.ypmc,mx.yp,mx.dw,cf.ks,cf.ksmc,cf.ys,cf.ysmc,cflxxf,cflx ,gh.kh
-) b 
-group by cfh ,cfnm,ztmc,ztId,ks,ksmc,ys, ysmc,sfxmmc,sfxmCode,dw,yzlx,cflx ,kh
- union all 
-select cfh,cfnm,sfxmmc,sfxmCode,sum(dj) dj,sum(sl)/count(sfxmCode) sl,sum(zje) zje,dw,yzlx,ks,ksmc,ys,ysmc,ztId,ztmc,cflx,kh from( 
-SELECT cf.cfh ,cf.cfnm , (case when xm.ztmc is not null then xm.ztmc else sfxm.sfxmmc end) sfxmmc , (case when xm.ztId is not null then xm.ztId else sfxm.sfxmCode end) sfxmCode , 
-	sum(ISNULL(xm.dj, 0.00)) dj , sum((case when ztid>'' then isnull(ztsl,sl) else ISNULL(CAST(xm.sl AS INT), 0) end)) sl , sum(ISNULL(xm.je, 0.00)) zje ,(case when xm.ztId is not null then '组套' else xm.dw end) dw, 
-	'2' yzlx, 
-	xm.ks,xm.ksmc, xm.ys, xm.ysmc,xm.ztId,xm.ztmc,cflxxf cflx  ,gh.kh 
-	FROM dbo.mz_xm(NOLOCK) xm 
-	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=xm.ghnm and gh.OrganizeId=xm.OrganizeId AND gh.zt='1' 
-	LEFT JOIN dbo.mz_cf(NOLOCK) cf ON cf.cfnm = xm.cfnm AND cf.OrganizeId = xm.OrganizeId 
-	LEFT JOIN NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm ON sfxm.sfxmCode = xm.sfxm AND sfxm.OrganizeId = xm.OrganizeId 
-	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode = xm.dl AND dl.OrganizeId = xm.OrganizeId AND dl.zt='1' 
-	WHERE xm.OrganizeId = @orgId	 
-	AND xm.zt = '1' and xm.xmzt = '0' --有效且未收费	 
-	and (cf.zt is null or (cf.zt= '1' and cf.cfzt = '0')) --未关联处方 或 处方有效且未收费 
-	AND gh.mzh=@mzh
-    " + wherecfnm + @"
-	group by cf.cfh ,cf.cfnm,xm.ztmc,xm.ztId,xm.ks,xm.ksmc, xm.ys, xm.ysmc,sfxm.sfxmmc,sfxm.sfxmCode,xm.dw,cflxxf ,cflx,gh.kh
-	)  a 
-	group by cfh ,cfnm,ztmc,ztId,ks,ksmc,ys, ysmc,sfxmmc,sfxmCode,dw,yzlx,cflx ,kh
-) z 
-ORDER by isnull(cfh, 'ZZZZ')";
-            var par = new DbParameter[] {
-                new SqlParameter("@orgId", orgId),
-                new SqlParameter("@mzh", mzh),
-                new SqlParameter("@cfnms", cfnms??"")
-            };
-            return FindList<PresSettleInfoVO>(strSql, par);
         }
 
         /// <summary>
@@ -3180,32 +3159,6 @@ FROM (
 	AND gh.mzh=@mzh
 ) as alldata 
 ORDER by isnull(cfh, 'ZZZZ'),klsj  ---ZZZ排在最后
-";
-            var par = new DbParameter[] {
-                new SqlParameter("@orgId", orgId),
-                new SqlParameter("@mzh", mzh)
-            };
-            return FindList<ChargeRightDto>(strSql, par);
-        }
-
-
-        public IList<ChargeRightDto> GetUnSettGhfByMzh(string mzh, string orgId)
-        {
-            const string strSql = @"
-SELECT cf.cfh ,cf.cfnm ,xm.dl sfdlCode ,dl.dlmc sfdlmc ,sfxm.sfxmmc sfxmmc , sfxm.sfxmCode sfxmCode ,
-	ISNULL(xm.dj, 0.00) dj , ISNULL(CAST(xm.sl AS INT), 0) sl , ISNULL(xm.je, 0.00) zje ,xm.dw, xm.zfbl, xm.zfxz,
-	xm.dczll,xm.zxcs,xm.xmnm xmnm, null cfmxId, xm.CreateTime klsj,	'2' yzlx,
-	xm.ks, xm.ys, xm.ysmc, sfxm.ybdm ybdm,sfxm.ybbz, xm.xmnm mxId, ISNULL(sfxm.gg,'') gg, ISNULL(sfxm.xnhybdm,'') xnhybdm,'1' ghfy
-	FROM dbo.mz_xm(NOLOCK) xm
-	INNER JOIN dbo.mz_gh(NOLOCK) gh ON gh.ghnm=xm.ghnm and gh.OrganizeId=xm.OrganizeId AND gh.zt='1'
-	LEFT JOIN dbo.mz_cf(NOLOCK) cf ON cf.cfnm = xm.cfnm AND cf.OrganizeId = xm.OrganizeId
-	LEFT JOIN NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm ON sfxm.sfxmCode = xm.sfxm AND sfxm.OrganizeId = xm.OrganizeId
-	LEFT JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) dl ON dl.dlCode = xm.dl AND dl.OrganizeId = xm.OrganizeId AND dl.zt='1'
-	WHERE xm.OrganizeId = @orgId	
-	AND xm.zt = '1' and xm.xmzt = '0' --有效且未收费	
-	and xm.dl = (select top 1 dlcode from NewtouchHIS_Base..xt_sfdl_lx lx where lx.Type='OutpatientReg' and lx.OrganizeId= @orgId)
-	and (cf.zt is null or (cf.zt= '1' and cf.cfzt = '0')) --未关联处方 或 处方有效且未收费
-	AND gh.mzh=@mzh
 ";
             var par = new DbParameter[] {
                 new SqlParameter("@orgId", orgId),
@@ -3438,16 +3391,16 @@ AND gh.mzh=@mzh
         }
 
 
-        #region 重庆医保
-        /// <summary>
-        /// 获取医保待结
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        public IList<UploadPrescriptionsListInPut> GetCQYBUnSettedListByMzh(Pagination pagination, string mzh, string orgId)
-        {
-            const string strSql = @"
+		#region 重庆医保
+	    /// <summary>
+	    /// 获取医保待结
+	    /// </summary>
+	    /// <param name="mzh"></param>
+	    /// <param name="orgId"></param>
+	    /// <returns></returns>
+	    public IList<UploadPrescriptionsListInPut> GetCQYBUnSettedListByMzh(Pagination pagination, string mzh, string orgId)
+	    {
+		    const string strSql = @"
 			SELECT    cf.cfh ,
                     CONVERT(VARCHAR(20),mx.CreateTime,120)  kfrq ,
                     yp.ybdm xmyblsh ,
@@ -3574,22 +3527,22 @@ AND gh.mzh=@mzh
                         ) --未关联处方 或 处方有效且未收费
                     AND gh.mzh = @mzh
 			";
-            IList<SqlParameter> inSqlParameterList = null;
-            inSqlParameterList = new List<SqlParameter>();
-            inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
-            inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
-            return this.QueryWithPage<UploadPrescriptionsListInPut>(strSql.ToString(), pagination, inSqlParameterList.ToArray()).ToList();
-        }
+		    IList<SqlParameter> inSqlParameterList = null;
+			inSqlParameterList = new List<SqlParameter>();
+		    inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
+		    inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
+			return this.QueryWithPage<UploadPrescriptionsListInPut>(strSql.ToString(), pagination, inSqlParameterList.ToArray()).ToList(); 
+	    }
 
-        /// <summary>
-        /// 获取医保费用金额
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        public IList<Input_2204> GetCQZFUnSettedListByMzh(string mzh, string cfnm, string orgId)
-        {
-            const string strSql = @"
+	    /// <summary>
+	    /// 获取医保费用金额
+	    /// </summary>
+	    /// <param name="mzh"></param>
+	    /// <param name="orgId"></param>
+	    /// <returns></returns>
+	    public IList<Input_2204> GetCQZFUnSettedListByMzh(string mzh, string cfnm, string orgId)
+	    {
+		    const string strSql = @"
 			select issc,SUM(je) je from (
 SELECT    ISNULL(mx.sl, 0.00) sl ,
                     ISNULL(mx.dj, 0.00) dj ,
@@ -3640,32 +3593,32 @@ SELECT    ISNULL(mx.sl, 0.00) sl ,
                     AND cf.cfnm IN (SELECT * FROM dbo.f_split(@cfnm, ','))
 					) as t group by issc
 			";
-            IList<SqlParameter> inSqlParameterList = null;
-            inSqlParameterList = new List<SqlParameter>();
-            inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
-            inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
+		    IList<SqlParameter> inSqlParameterList = null;
+		    inSqlParameterList = new List<SqlParameter>();
+		    inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
+		    inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
             inSqlParameterList.Add(new SqlParameter("@cfnm", cfnm));
-            return this.FindList<Input_2204>(strSql.ToString(), inSqlParameterList.ToArray());
-        }
+            return this.FindList<Input_2204>(strSql.ToString(), inSqlParameterList.ToArray()); 
+	    }
 
-        public IList<Input_2204> GetChongQingGHMzjs(string ghxm, string zlxm, bool isCkf, bool isGbf,
-            string orgId = null)
-        {
-            string ckf = "";
-            string gbf = "";
-            if (isCkf)
-            {
-                var pzckf = _sysConfigRepo.GetByCode(Constants.xtmzpz.SFXM_GHCKF, orgId);
-                ckf = pzckf.Value;
-            }
-            if (isGbf)
-            {
-                var pzgbf = _sysConfigRepo.GetByCode(Constants.xtmzpz.SFXM_GHGBF, orgId);
-                gbf = pzgbf.Value;
-            }
-            IList<SqlParameter> inSqlParameterList = null;
-            StringBuilder strBuilder = new StringBuilder();
-            strBuilder.Append(@"
+	    public IList<Input_2204> GetChongQingGHMzjs(string ghxm, string zlxm, bool isCkf, bool isGbf,
+		    string orgId = null)
+	    {
+		    string ckf = "";
+		    string gbf = "";
+			if (isCkf)
+			{
+				var pzckf = _sysConfigRepo.GetByCode(Constants.xtmzpz.SFXM_GHCKF, orgId);
+			    ckf = pzckf.Value;
+			}
+			if (isGbf)
+			{
+				var pzgbf = _sysConfigRepo.GetByCode(Constants.xtmzpz.SFXM_GHGBF, orgId);
+				gbf = pzgbf.Value;
+			}
+			IList<SqlParameter> inSqlParameterList = null;
+			StringBuilder strBuilder = new StringBuilder();
+				strBuilder.Append(@"
 			select issc,SUM(je) je from (
 SELECT  case when isnull(zfxz,'1')!='1' then 1 else 0 end issc,
 		ybbz,ybdm,dj je
@@ -3676,24 +3629,24 @@ and OrganizeId=@orgId and zhcode=@zlxm ) or sfxmCode IN ( @ckf ) or sfxmCode IN 
 )  a group by issc
 
 			");
-            inSqlParameterList = new List<SqlParameter>();
-            inSqlParameterList.Add(new SqlParameter("@ghxm", ghxm));
-            inSqlParameterList.Add(new SqlParameter("@zlxm", zlxm));
-            inSqlParameterList.Add(new SqlParameter("@ckf", ckf));
-            inSqlParameterList.Add(new SqlParameter("@gbf", gbf));
-            inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
-            return this.FindList<Input_2204>(strBuilder.ToString(), inSqlParameterList.ToArray());
-        }
+		    inSqlParameterList = new List<SqlParameter>();
+			inSqlParameterList.Add(new SqlParameter("@ghxm", ghxm));
+			inSqlParameterList.Add(new SqlParameter("@zlxm", zlxm));
+		    inSqlParameterList.Add(new SqlParameter("@ckf", ckf));
+		    inSqlParameterList.Add(new SqlParameter("@gbf", gbf));
+			inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
+		    return this.FindList<Input_2204>(strBuilder.ToString(), inSqlParameterList.ToArray());
+		}
 
-        public Input_2203A GetCQjzdjInfo(string mzh, string orgId)
-        {
-            StringBuilder strSql = new StringBuilder();
-            strSql.Append(@"
+	    public Input_2203A GetCQjzdjInfo(string mzh, string orgId)
+	    {
+			StringBuilder strSql = new StringBuilder();
+		    strSql.Append(@"
 SELECT   
 			b.jzid mdtrt_id,
 			c.grbh psn_no,
 			case b.mjzbz  when '2' then '13' when '4' then '14' when '6' then '14' when '5' then '9901' 
-		    when '7' then '14'  when '8' then '19'  when '9' then '51' when '10' then '9906' else '11' end med_type,
+		    when '7' then '14'  when '8' then '19'  when '9' then '51' when '10' then '9906' else (case when xzlx='390' then '11' else '11' end) end med_type,
             case b.mjzbz when '9'  then '1' else '' end matn_type,
 			case b.mjzbz when '9'  then '9' else '' end birctrl_type, case b.mjzbz when '9'  then convert(varchar(10),getdate(),120) else '' 
 			end birctrl_matn_date,b.bzbm dise_codg,b.bzmc dise_name
@@ -3703,18 +3656,18 @@ SELECT
   WHERE     b.mzh = @mzh
             AND a.OrganizeId = @OrganizeId
             AND a.zt = '1'; ");
-            SqlParameter[] par =
-            {
-                new SqlParameter("@mzh", mzh),
-                new SqlParameter("@OrganizeId", orgId)
-            };
-            return this.FindList<Input_2203A>(strSql.ToString(), par).FirstOrDefault();
-        }
+		    SqlParameter[] par =
+		    {
+			    new SqlParameter("@mzh", mzh),
+			    new SqlParameter("@OrganizeId", orgId)
+		    };
+		    return this.FindList<Input_2203A>(strSql.ToString(), par).FirstOrDefault();
+		}
 
-        public IList<UploadPrescriptionsListInPut> GetCQYBTfListByJsnm(string jsnm, string mzh, string orgId)
-        {
-            //cxmxlsh存放jsmxnm
-            const string strSql = @"
+	    public IList<UploadPrescriptionsListInPut> GetCQYBTfListByJsnm(string jsnm, string mzh, string orgId)
+	    {
+			//cxmxlsh存放jsmxnm
+		    const string strSql = @"
 			SELECT  *
 FROM    ( SELECT    ISNULL(cf.cfh,'YP'+ CONVERT(VARCHAR(50),a.jsmxnm)) cfh ,
                     CONVERT(VARCHAR(20),mx.CreateTime,120)  kfrq ,
@@ -3840,18 +3793,18 @@ FROM    ( SELECT    ISNULL(cf.cfh,'YP'+ CONVERT(VARCHAR(50),a.jsmxnm)) cfh ,
                     AND a.zt = '1'
         ) nn
 			";
-            IList<SqlParameter> inSqlParameterList = new List<SqlParameter>();
-            inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
-            inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
-            inSqlParameterList.Add(new SqlParameter("@jsnm", jsnm));
-            return this.FindList<UploadPrescriptionsListInPut>(strSql.ToString(), inSqlParameterList.ToArray()).ToList();
-        }
+		    IList<SqlParameter> inSqlParameterList = new List<SqlParameter>();
+		    inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
+		    inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
+		    inSqlParameterList.Add(new SqlParameter("@jsnm", jsnm));
+			return this.FindList<UploadPrescriptionsListInPut>(strSql.ToString(), inSqlParameterList.ToArray()).ToList();
+		}
 
-        public IList<UploadPrescriptionsListInPut> GetCQZFTfListByJsnm(string jsnm, string mzh, string orgId)
-        {
-            //cxmxlsh存放jsmxnm
-            //cxmxlsh存放jsmxnm
-            const string strSql = @"
+		public IList<UploadPrescriptionsListInPut> GetCQZFTfListByJsnm(string jsnm, string mzh, string orgId)
+	    {
+			//cxmxlsh存放jsmxnm
+		    //cxmxlsh存放jsmxnm
+		    const string strSql = @"
 			SELECT  *
 FROM    ( SELECT    cf.cfh ,
                     CONVERT(VARCHAR(20),mx.CreateTime,120) kfrq ,
@@ -3976,12 +3929,12 @@ FROM    ( SELECT    cf.cfh ,
                     AND a.zt = '1'
         ) nn
 			";
-            IList<SqlParameter> inSqlParameterList = new List<SqlParameter>();
-            inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
-            inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
-            inSqlParameterList.Add(new SqlParameter("@jsnm", jsnm));
-            return this.FindList<UploadPrescriptionsListInPut>(strSql.ToString(), inSqlParameterList.ToArray());
-        }
+			IList<SqlParameter> inSqlParameterList = new List<SqlParameter>();
+		    inSqlParameterList.Add(new SqlParameter("@mzh", mzh));
+		    inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
+		    inSqlParameterList.Add(new SqlParameter("@jsnm", jsnm));
+			return this.FindList<UploadPrescriptionsListInPut>(strSql.ToString(), inSqlParameterList.ToArray());
+		}
 
         public IList<TbbzmlDto> GetMzbzml(string mllx)
         {

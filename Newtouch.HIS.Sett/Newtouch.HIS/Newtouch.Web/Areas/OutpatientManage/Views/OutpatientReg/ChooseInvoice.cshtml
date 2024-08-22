@@ -1,0 +1,76 @@
+﻿@{
+    ViewBag.Title = "ChooseInvoiceNo";
+    Layout = "~/Views/Shared/_Form.cshtml";
+
+    var from = (ViewBag.from as string) ?? "";
+}
+
+<form id="formReceipt">
+    <div style="margin-top:40px;margin-right:40px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle dialogText">发票号:</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="txtfph" name="txtfph" required value="">
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    //上一个window对象
+    var prevWindow;
+    if ('@(from)' !== '') {
+        prevWindow = top.top.frames['@(from)'];
+    }
+    else {
+        prevWindow = $.currentWindow();
+    }
+
+    $.najax({
+        url: "/OutpatientManage/OutpatientReg/GetInvoice",  //获取
+        dataType: "text",
+        async: false,
+        success: function (data) {
+            $("#txtfph").val(data);
+            prevWindow.$("#txtfph").val(data);
+            prevWindow.$("label#txtfph").html(data);    //text or label
+        }
+    });
+
+    //确认验证发票号
+    function checkFPH() {
+        var ttheFph = $("#txtfph").val();
+        if (!!!ttheFph) {
+            $.modalMsg('请输入发票号', 'warning');
+            return;
+        }
+        $.najax({
+            url: "/OutpatientManage/OutpatientReg/CheckInvoice",
+            data: { inputFPH: ttheFph },
+            type: "POST",
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                if (data.state === "success") {
+                    prevWindow.$("#txtfph").val(ttheFph);
+                    prevWindow.$("label#txtfph").html(ttheFph);
+                    if (prevWindow.chooseFPHSuccessCallback) {
+                        prevWindow.chooseFPHSuccessCallback(ttheFph);
+                    }
+                    $.modalClose();
+                }
+                else {
+                    prevWindow.$("#txtfph").val("");
+                    prevWindow.$("label#txtfph").html("");
+                    $.newtouchAlert(data);
+                }
+            },
+            error: function (data) {
+                $.modalMsg(data.message, data.state);
+            }
+        });
+    }
+
+</script>

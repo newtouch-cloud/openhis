@@ -1,0 +1,215 @@
+﻿@using Newtouch.Common.Operator
+@using Newtouch.Infrastructure;
+@model dynamic
+
+@{
+    ViewBag.Title = "站点统计";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .form .formTitle {
+        position: relative;
+        text-align: right;
+        white-space: nowrap;
+        font-weight: normal;
+        width: 55px;
+        padding-right: 15px;
+    }
+</style>
+<link rel="stylesheet" type="text/css" href="~/Content/css/bootstrap-multiselect.css">
+<script type="text/javascript" src="~/Content/js/bootstrap-multiselect.js"></script>
+<form>
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <td class="formTitle">
+                    机构：
+                </td>
+                <td class="formValue" style="width:125px;">
+                    <select id="siteId" name="siteId" class="form-control" multiple="multiple">
+                    </select>
+                </td>
+                <th class="formTitle">年份：</th>
+                <td class="formValue" style="width:75px;">
+                    <select id="year" name="year" class="form-control" style="width:65px">
+                        <option value="-1">全部</option>
+                    </select>
+                </td>
+                <th class="formTitle">月份：</th>
+                <td class="formValue" style="width:75px;">
+                    <select id="month" name="month" class="form-control" style="width:65px">
+                        <option value="-1">全部</option>
+                    </select>
+                </td>
+                <th class="formTitle">审核状态：</th>
+                <td class="formValue" style="width:65px;">
+                    @Html.DropDownList("shzt", Newtouch.Infrastructure.EnumOrgshzt.DS.ToDescSelectList(), "全部", new { @class = "newform-control form-control required", @style = "width: 100%;" })
+                </td>
+                <td>
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary form-an" value="查询" style="margin-left:35px;width:50px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+<script lang="javascript">
+        //年月下拉初始化
+        (function initYearMonthSelect() {
+            var date = new Date;
+            //默认选择上个月
+            var defaultSelYear = 1900 + date.getYear();
+            var defaultSelMonth = date.getMonth();
+            if (defaultSelMonth == 0) {
+                defaultSelYear--;
+                defaultSelMonth = 12;
+            }
+            //年份
+            $("#year").newtouchBindSelect({
+                datasource: function () {
+                    var resultObjArr = new Array();
+                    if (top.clients.yearArr && top.clients.yearArr.length) {
+                        $.each(top.clients.yearArr, function () {
+                            resultObjArr.push({ id: this, text: this });
+                        });
+                    }
+                    return resultObjArr;
+                },
+                selectedValue: defaultSelYear,
+            });
+            //月份
+            $("#month").newtouchBindSelect({
+                datasource: function () {
+                    var resultObjArr = new Array();
+                    if (top.clients.monthArr && top.clients.monthArr.length) {
+                        $.each(top.clients.monthArr, function () {
+                            resultObjArr.push({ id: this, text: parseInt(this) < 10 ? "0" + this : this });
+                        });
+                    }
+                    return resultObjArr;
+                },
+                selectedValue: defaultSelMonth,
+            });
+
+        })();
+
+    $(function () {
+            $("#siteId").multiselect("destroy").multiselect({
+            url: "@Url.Action("getAllOrgIds")",
+            selectedValue: 'all',
+            includeSelectAllOption: false,
+            enableClickableOptGroups: true,
+            enableCollapsibleOptGroups: true,
+            selectAllText: "全选",
+            nonSelectedText: "未选中",
+            allSelectedText: "全选",
+            nSelectedText:"已选",
+            onBuiltAsyncOptions: function (res) {
+                // 这里的代码是ajax创建完成options之后执行
+                $("#siteId").trigger("change");
+                gridList();
+            },
+        });
+            $('#siteId,#year,#month,#shzt').change(function () {
+                $("#btn_search").trigger("click");
+            });
+            //隐藏未提交选项
+            $("#shzt option[value='@Html.Raw(((int)EnumOrgshzt.WTJ).ToString())']").hide();
+            $("#shzt").val('@Html.Raw(((int)EnumOrgshzt.DS).ToString())').trigger("change");
+        });
+
+        //get data
+        function gridList() {
+            var $gridList = $("#gridList");
+            $gridList.dataGrid({
+                url: "/SiteManage/SiteStatistics/GetIndexGridJson",
+                height: window.$(window).height() - 150,
+                postData: getSearchData(),
+                colModel: [
+                    { label: "主键", name: "Id", hidden: true, key: true },
+                    { label: '站点', name: 'zdmc', width: 150, align: 'left' },
+                    { label: '统计年份', name: 'year', width: 60, align: 'center' },
+                    { label: '统计月份', name: 'month', width: 50, align: 'center' },
+                    {
+                        label: '系统中收入(元)', name: 'zsr', width: 110, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: '核实收入(元)', name: 'hssr', width: 90, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: '差额(元)', name: 'ce', width: 80, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: '共担成本(元)', name: 'gdcb', width: 90, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: 'GRS成本(元)', name: 'grscb', width: 90, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: '机构收入(元)', name: 'jgss', width: 90, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: 'GRS收入(元)', name: 'grsss', width: 90, align: 'right',
+                        formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 }
+                    },
+                    {
+                        label: '审核状态', name: 'shzt', width: 80, align: 'center',
+                        formatter: function (cellvalue) {
+                            return $.enum.getDescByValue("EnumOrgshzt", cellvalue);
+                        }
+                    }
+                ],
+                pager: "#gridPager",
+                sortname: 'Id',
+                viewrecords: true,
+                unwritten: false,
+                ondblClickRow: function (rowid) {
+                    ShowDetail(rowid);
+                }
+            });
+
+            //查询
+            $("#btn_search").click(function () {
+                $("#gridList").jqGrid('setGridParam', {
+                    postData: getSearchData(),
+                }).trigger('reloadGrid');
+            });
+        }
+
+        function getSearchData() {
+            var siteId = $('#siteId').val();
+            var year = $('#year').val();
+            var month = $('#month').val();
+            var shzt = $('#shzt').val();
+            return { siteId: siteId.join(','), year: year, month: month, shzt: shzt, verify: true };
+        }
+
+        //修改
+        function ShowDetail() {
+            var keyValue = $("#gridList").jqGridRowValue().Id;
+            if (!!!keyValue) {
+                $.modalAlert("请选中一条信息", 'warning');
+                return;
+            }
+            $.modalOpen({
+                id: "Form",
+                title: "收支统计明细",
+                url: "/SiteManage/SiteStatistics/VerifySiteStatisticsDetail?keyValue=" + keyValue,
+                width: "1000px",
+                height: "580px",
+                btn: null
+            });
+        }
+</script>

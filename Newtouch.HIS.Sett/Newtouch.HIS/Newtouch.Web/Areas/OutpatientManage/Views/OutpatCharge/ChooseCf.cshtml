@@ -1,0 +1,82 @@
+﻿@{
+    ViewBag.Title = "ChooseCf";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<script>
+    $(function ()
+    {
+        gridList();
+
+        selectGridAll();
+    });
+
+    function selectGridAll()
+    {
+        var jqGrid = $("#chooseCfGrid");
+        // 拿到所有行id
+        var jqGridIDs = jqGrid.getDataIDs();
+        for (var i = 0; i < jqGridIDs.length; i++) {
+            jqGrid.setSelection(jqGridIDs[i], true);
+        }
+    }
+
+    function GetCfInfo()
+    {
+        var PrescriptionInfo = sessionStorage.getItem("CfInfo");
+        if (PrescriptionInfo)
+        {
+            sessionStorage.removeItem("CfInfo")
+            return $.parseJSON(PrescriptionInfo);
+        }
+    }
+
+    function gridList()
+    {
+        var $gridList = $("#chooseCfGrid");
+        $gridList.newtouchLocalDataGrid(
+        {
+            multiselect: true,
+            unwritten: false,
+            height: 150,
+            colModel: [
+                { label: "cfnm", name: "cfnm", key: true, hidden: true },
+                { label: "处方号", name: "cfh", width: 130, align: 'left' },
+                { label: '总金额', name: 'zje', width: 80, align: 'left' },
+                { label: '处方类型', name: 'cflxmc', width: 50, align: 'left' },
+                { label: '科室名称', name: 'ksmc', width: 100, align: 'left' },
+                { label: '医生名称', name: 'ysmc', width: 50, align: 'left' },
+                { label: '开立时间', name: 'klsj', width: 50, align: 'left' }
+            ]
+        });
+        $gridList.newtouchLocalDataGrid(null, GetCfInfo());
+    }
+
+    function submitForm(callback)
+    {
+        //获取选中行Id
+        var selRowIds = $("#chooseCfGrid").jqGrid('getGridParam', 'selarrrow');
+        if (selRowIds.length == 0) {
+            $.modalAlert("请勾选一个或多个处方", 'warning');
+            return;
+        }
+
+        //cflist
+        var cflist = [];//查询处方详情
+        for (var i = 0; i < selRowIds.length; i++) {
+            var rowData = $("#chooseCfGrid").jqGrid('getRowData', selRowIds[i]);
+            if (!rowData) {
+                break;
+            }
+            cflist.push(rowData);
+        }
+
+        callback(cflist);
+
+        $.modalClose();
+    }
+</script>
+
+<div class="gridPanel">
+    <table id="chooseCfGrid"></table>
+</div>

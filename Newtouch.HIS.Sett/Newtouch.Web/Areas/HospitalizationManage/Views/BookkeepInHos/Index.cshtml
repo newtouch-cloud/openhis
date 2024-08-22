@@ -77,7 +77,18 @@
 <div id="BookKeep" class="rows" style="margin-bottom:1%;">
     <div class="panel panel-default" style="margin-bottom: 0;">
         <div class="panel-heading navb-bg">
-            记账项目
+            <table class="form">
+                <tr>
+                    <td class="formValue" colspan="2">
+                        <label class="btn btn-default" style="z-index:100">
+                            <input id="sfxm" type="radio" value="gl" name="optionsRadios" checked="checked" class="optionsRadios" />项目
+                        </label>
+                        <label class="btn btn-default" style="z-index:100">
+                            <input id="cl" type="radio" value="hf" name="optionsRadios" class="optionsRadios" />材料
+                        </label>
+                    </td>
+                </tr>
+            </table>
         </div>
         <table class="form">
             <tr>
@@ -111,7 +122,7 @@
                     <span class="napan">*</span>收费项目：
                 </td>
                 <td class="formValue">
-                    <input id="sfxmmc" type="text" class="form-control form-an" />
+                    <input id="sfxmmc" type="text" class="form-control form-an" autocomplete="off" />
                     <input id="sfxmCode" type="text" style="display:none;" class="form-control" />
                     <input id="sfdlCode" type="text" style="display:none;" class="form-control" />
                     <input id="sfdlmc" type="text" style="display:none;" class="form-control" />
@@ -252,7 +263,7 @@
     function gridListData() {
         var $gridList = $("#gridList");
         $gridList.newtouchLocalDataGrid({
-            height: $(window).height() - 330,
+            height: $(window).height() - 340,
             unwritten: false,
             colModel: [
                 { label: "主键", name: "newid", hidden: true, key: true },
@@ -317,25 +328,28 @@
             }
         });
     }
-
-    //加载收费项目，医生下拉框的值
-    function initControl() {
-        $("#jzrq").val($.getDate());
-        //收费项目 浮层
-        var searchType = "sfxm";
-        var dllb = '2';
-        if ('@(isacountingPageMayMedicine ? "true" : "")' == 'true') {
-            searchType += ',yp';
-            dllb += ",1";
-            if ('@(isMedicineSearchRelatedKC ? "true" : "")' == 'true') {
-                searchType += '.kc';
-            }
-        }
-        $("#sfxmmc").sfxmFloatingSelector({
+    $("#sfxmmc").sfxmFloatingSelector({
             djDecimalPlaces: 4,
-            searchType: searchType,
+            searchType:"sfxm,yp.kc",
             ajaxparameters: function ($thisinput) {
-                return "mzzybz=2&dllb=" + dllb + "&keyword=" + $thisinput.val();
+                 //收费项目 浮层
+
+        var dllb = '2';
+                var parameters = "";
+                if ($("#cl").prop("checked") == true) {
+          if ('@(isacountingPageMayMedicine ? "true" : "")' == 'true') {
+             dllb += ",1";
+             parameters += "mzzybz=2" + "&dlCode=18&sfdllx=WM";
+             parameters += "&dllb=" + dllb
+             }
+                };
+            @*if ('@(isMedicineSearchRelatedKC ? "true" : "")' == 'true') {
+
+            }*@
+        if (parameters=="") {
+            parameters += "mzzybz=2" + "&dllb=" + dllb;
+        }
+                return parameters+"&keyword=" + $thisinput.val();
             },
             itemdbclickhandler: function ($thistr) {
                 if (!selectedZyh) {
@@ -356,11 +370,15 @@
                 if ($("#yzlx").val() == "1") //若为药品则默认药房为执行科室
                 {
                     $("#zxks").val("");
-                  
+
                 }
                 return;
             }
         });
+    //加载收费项目，医生下拉框的值
+    function initControl() {
+        $("#jzrq").val($.getDate());
+
 
         $('#jzks').newtouchFloatingSelector({
             width: 400,
@@ -460,11 +478,11 @@
         $("#zxks").val('@ViewBag.staffDeptName');
         $("#zxks").attr("data-label", '@ViewBag.staffDept');
     }
-    
+
 
     //保存操作
     function btn_Save() {
-        debugger 
+        debugger
         if (!selectedZyh) {
             $.modalAlert("病人基本信息不能为空", 'warning');
             return;
@@ -575,7 +593,7 @@
     }
 
     function newtouch_event_f2() {
-        debugger 
+        debugger
         var newRowData = getEditRowData();
         if (!(checkEditingRowData(newRowData))) {
             //数据是否完善，检查必填项
@@ -588,7 +606,7 @@
         fillDataToGrid();
         clearJZInfo();
 
-        setTimeout("$('#sfxmmc').trigger('focus');$('#sfxmmc').trigger('click');", 100);
+        //setTimeout("$('#sfxmmc').trigger('focus');$('#sfxmmc').trigger('click');", 100);
     }
 
     $('#sl').keydownEnterEvent(function (event) {
@@ -685,7 +703,7 @@
 
                 bottomButtonsReset();
 
-                setTimeout("$('#sfxmmc').trigger('focus');$('#sfxmmc').trigger('click');", 100);
+                //setTimeout("$('#sfxmmc').trigger('focus');$('#sfxmmc').trigger('click');", 100);
             }
             if (data && (parseFloat(data.dj) < '0' || parseFloat(data.dj) == '0')) {
                 $.modalConfirm("单价为0，确认是否修改", function (flag) {
@@ -790,7 +808,7 @@
         }
         else if (!((/^[0-9]+([.]{1}[0-9]{1,2})?$/).test(rowData.sl)) || rowData.sl < 0) {
             $.modalAlert("数量为整数或小数点后两位", 'warning');
-        } 
+        }
         else {
             return true;
         }
@@ -815,7 +833,7 @@
 
         bottomButtonsReset();
 
-        setTimeout("$('#sfxmmc').trigger('focus');$('#sfxmmc').trigger('click');", 100);
+        //setTimeout("$('#sfxmmc').trigger('focus');$('#sfxmmc').trigger('click');", 100);
     }
 
 </script>

@@ -1,0 +1,115 @@
+﻿
+@{
+	ViewBag.Title = "DBGHQueryUpload";
+	Layout = "~/Views/Shared/_Form.cshtml";
+	var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+}
+
+<div class="rows">
+	<div class="panel panel-default">
+		<table class="form">
+			<tr>
+				<th class="formTitle">开始日期：</th>
+				<td class="formValue">
+					<input id="ksrqdbgh" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-01")" />
+				</td>
+				<th class="formTitle">结束日期：</th>
+				<td class="formValue">
+					<input id="jsrqdbgh" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+				</td>
+				<th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_searchdbgh" onclick="jyjlsearchdbgh();" class="btn btn-primary btn-md" value="产生" style="width:55px" />
+                    <input type="button" id="btn_searchtotxtdbgh" onclick="searchtotxtdbgh();" class="btn btn-primary btn-md" value="上传" style="width:55px" />
+                </td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <div class="gridPanel">
+        <table id="gridListdbgh"></table>
+        <div id="gridPagerdbgh"></div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        gridListdbgh();
+    });
+    function gridListdbgh() {
+        var $gridList = $("#gridListdbgh");
+        $gridList.dataGrid({
+            url: "/ReportManage/Report/GetMjzdbghData",
+            height: $(window).height() - 200,
+            postData: getpostDatadbgh(),
+            colModel: [
+                { label: '流水号', name: 'lsh', width: 60, align: 'left' },
+                { label: '卡号', name: 'kh', width: 80, align: 'left' },
+                { label: '科室编码', name: 'ksbm', width: 60, align: 'left' },
+                { label: '科室名称', name: 'ksmc', width: 60, align: 'left' },
+                { label: '挂号费', name: 'ghf', width: 60, align: 'left' },
+                { label: '诊疗费', name: 'zlf', width: 60, align: 'left' },
+                { label: '交易总费用', name: 'jyzfy', width: 60, align: 'left' },
+                { label: '医保范围总额', name: 'ybfwze', width: 60, align: 'left' },
+                { label: '非医保范围总额', name: 'fybfwze', width: 60, align: 'left' },
+                { label: '交易时间', name: 'jysj', width: 120, align: 'left' },
+                { label: '医保类型', name: 'yblx', width: 60, align: 'left' },
+                { label: '结算类型', name: 'jslx', width: 60, align: 'left' },
+                { label: '退费标志', name: 'tfbz', width: 60, align: 'left' },
+                { label: '就诊流水号', name: 'jzlsh', width: 60, align: 'left' },
+            ],
+            pager: "#gridPagerdbgh",
+            sortname: 'jysj desc',
+            viewrecords: true,
+        });
+
+        $("#btn_searchdbgh").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getpostDatadbgh(),
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+    function getpostDatadbgh() {
+        return {
+            ksrq: $("#ksrqdbgh").val(), jsrq: $("#jsrqdbgh").val()
+        };
+    }
+    function searchtotxtdbgh() {
+        $.najax({
+            type: "POST",
+            url: "/ReportManage/Report/YbMjzdbghtxt",
+            data: { ksrq: $("#ksrqdbgh").val(), jsrq: $("#jsrqdbgh").val() },
+            dataType: "json",
+            success: function (ajaxresp) {
+                var strtxt = "";
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    strtxt += ajaxresp[i].lsh + "    ";
+                    strtxt += ajaxresp[i].kh + "    ";
+                    strtxt += ajaxresp[i].ksbm + "    ";
+                    strtxt += ajaxresp[i].ksmc + "    ";
+                    strtxt += ajaxresp[i].ghf + "    ";
+                    strtxt += ajaxresp[i].zlf + "    ";
+                    strtxt += ajaxresp[i].jyzfy + "    ";
+                    strtxt += ajaxresp[i].ybfwze + "    ";
+                    strtxt += ajaxresp[i].fybfwze + "    ";
+                    strtxt += ajaxresp[i].jysj + "    ";
+                    strtxt += ajaxresp[i].yblx + "    ";
+                    strtxt += ajaxresp[i].jslx + "    ";
+                    strtxt += ajaxresp[i].tfbz + "    ";
+                    strtxt += ajaxresp[i].jzlsh + "    ";
+                    strtxt += "\t\n";
+                }
+                var blob = new Blob([strtxt], { type: "text/plain;charset=utf-8" });
+                saveAs(blob, "门急诊大病挂号库.txt");
+            }
+        });
+    }
+</script>

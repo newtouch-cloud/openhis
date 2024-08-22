@@ -12,4 +12,11 @@ namespace Newtouch.HIS.Domain.ValueObjects.ReportManage
 
 		public string dlmc { get; set; }
 	}
+    public class getsfxm {
+        public string sfxmcode { get; set; }
+
+        public string sfxmmc { get; set; }
+        public string dw { get; set; }
+        public decimal dj { get; set; }
+    }
 }

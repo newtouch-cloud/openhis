@@ -1,0 +1,84 @@
+﻿@{
+    ViewBag.Title = "";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    //报表链接
+    var reportUrl = SysConfigReader.OrgReportLink("OutpatientXnhBcsqd");
+}
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" value="@(DateTime.Now.ToString("yyyy-MM-01 00:00:00"))" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" value="@(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"))" />
+                </td>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+                <td class="formValue"></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+<script type="text/javascript">
+
+
+    function submit() {
+
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        var url = getUrl();
+        var usercode = '@ViewBag.usercode';
+        url += "&kssj=" + $('#kssj').val();
+        url += "&jssj=" + $('#jssj').val();
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+
+        setTimeout(function () { submit(); }, 100);
+    });
+
+    function getUrl() {
+        var srcUrl = '@Html.Raw(reportUrl)';
+
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:Stylesheet') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+
+        return srcUrl;
+    }
+
+</script>

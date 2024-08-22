@@ -81,6 +81,26 @@ namespace Newtouch.HIS.Repository
             }
                
         }
+        //住院补计费扣掉相应库存
+        public void Updatezyaddfee(string OrganizeId, decimal sl,string yfbm,string ypdm)
+        {
+            try
+            {
+                string sql = @" update [NewtouchHIS_PDS].[dbo].[xt_yp_kcxx] set kcsl-=@sl   where ypdm=@ypdm and yfbmcode=@yfbmcode'
+and organizeid=@orgId and zt='1'";
+                SqlParameter[] para ={
+                new SqlParameter("@orgId",OrganizeId),
+                 new SqlParameter("@sl",sl),
+                 new SqlParameter("@ypdm",ypdm),
+                 new SqlParameter("@yfbmcode",yfbm)
+                };
+                int i = this.ExecuteSqlCommand(sql, para);
+            }
+            catch (Exception ex)
+            {
+            }
+
+        }
     }
 }
 

@@ -32,6 +32,7 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string lyfs { get; set; }
         public string cyzd { get; set; }
         public string jtdz { get; set; }
+        public string zxlsh { get; set; }
     }
 
     /// <summary>
@@ -43,11 +44,6 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string dlcode { get; set; }
 
         public decimal je { get; set; }
-
-        /// <summary>
-        /// 收费日期（yyyy-MM-dd）
-        /// </summary>
-        public string sfrq { get; set; }
 
     }
 

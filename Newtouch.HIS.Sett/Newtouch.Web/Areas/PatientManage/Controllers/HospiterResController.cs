@@ -21,9 +21,8 @@ using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using Newtouch.HIS.Proxy.guian.DTO;
 using Newtouch.HIS.Domain.IDomainServices.HospitalizationManage;
-using Newtouch.HIS.Domain.Entity.BaseData;
-using Newtouch.HIS.Domain.DTO.OutputDto.OutpatientManage;
 using Newtouch.HIS.Domain.ValueObjects.OutpatientManage;
+using Newtouch.HIS.Domain.IRepository.PatientManage;
 
 namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
 {
@@ -53,6 +52,7 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
         private readonly IOutPatientSettleDmnService _outPatientSettleDmnService;
         private readonly ICommonDmnService _commonDmnService;
         private readonly ISysPatientNatureRepo _SysPatiNatureRepo;
+        private readonly IG_yb_daysrg_trt_list_bRepo _iG_yb_daysrg_trt_list_bRepo;
         #region 新农合 
 
         private readonly IGuianXnhS04InfoRepo _iGuianXnhS04InfoRepo;
@@ -130,6 +130,85 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
         public ActionResult YbPatientBasicInfo()
         {
             return View();
+        }
+        
+        /// <summary>
+        /// 医保目录下载 查询 字典
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult MedicalInsuranceCatalogue()
+        {
+            return View();
+        }
+
+        //加载数据
+        public ActionResult CatalogueData(Pagination pagination, string tbname, string key)
+        {
+            var datapan = new
+            {
+                rows = _iG_yb_daysrg_trt_list_bRepo.Get_G_yb_mluCommon_Info(pagination, tbname, key),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(datapan.ToJson());
+        }
+
+        public ActionResult GetVer(string tbname)
+        {
+
+            switch (tbname)
+            {
+                case "1301":
+                    tbname = "G_yb_wm_tcmpat_info_b";
+                    break;
+                case "1302":
+                    tbname = "G_yb_tcmherb_info_b";
+                    break;
+                case "1303":
+                    tbname = "G_yb_selfprep_info_b";
+                    break;
+                case "1305":
+                    tbname = "G_yb_trt_serv_b";
+                    break;
+                case "1306":
+                    tbname = "G_yb_mcs_info_b";
+                    break;
+                case "1307":
+                    tbname = "G_yb_diag_list_b";
+                    break;
+                case "1308":
+                    tbname = "G_yb_oprn_std_b";
+                    break;
+                case "1309":
+                    tbname = "G_yb_opsp_dise_list_b";
+                    break;
+                case "1310":
+                    tbname = "G_yb_dise_setl_list_b";
+                    break;
+                case "1311":
+                    tbname = "G_yb_daysrg_trt_list_b";
+                    break;
+                case "1313":
+                    tbname = "G_yb_tmor_mpy_b";
+                    break;
+                case "1314":
+                    tbname = "G_yb_tcm_diag_b";
+                    break;
+                case "1315":
+                    tbname = "G_yb_tcmsymp_type_b";
+                    break;
+                case "1320":
+                    tbname = "G_yb_zypfklmu_list_b";
+                    break;
+                case "1321":
+                    tbname = "G_yb_ylfuxm_new_list_b";
+                    break;
+                default:
+                    break;
+            }
+            var data = _iG_yb_daysrg_trt_list_bRepo.Header(tbname.Trim()) ?? "0000";
+            return Content(data == "null" ? "0000" : data);
         }
 
         public ActionResult YibaoInterfaceCancel()

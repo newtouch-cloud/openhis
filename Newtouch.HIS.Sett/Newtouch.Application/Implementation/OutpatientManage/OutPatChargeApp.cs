@@ -48,21 +48,23 @@ namespace Newtouch.HIS.Application.Implementation
         private readonly ISysPatientBasicInfoRepo _sysPatiInfoRepo; //病人基本信息
         private readonly IBookkeepInHosDmnService _hosTempRepo; //收费模版
         private readonly IOutPatChargeDmnService _outChargeDmnService;
-        private readonly IPatientBasicInfoDmnService _patientBasicInfoDmnService;
+	    private readonly IPatientBasicInfoDmnService _patientBasicInfoDmnService;
         private readonly IOutPatientSettleDmnService _outPatientSettleDmnService;
+        private readonly ISysCardRepo _sysCardRepo;
+
         #region 门诊收费2018
         private readonly IOutPatientUniversalDmnService _outPatientUniversalDmnService;
         private readonly IOutpatientPrescriptionRepo _outpatientPrescriptionRepo;
         #endregion
 
-        private readonly ICqybUploadInPres04Repo _cqybUploadInPres04Repo;
-        /// <summary>
-        /// 根据卡号或病历号获取病人信息
-        /// </summary>
-        /// <param name="kh">卡号</param>
-        /// <param name="brxz">病人性质</param>
-        /// <returns></returns>
-        public OutPatChargeInfoVO GetOutPatChargeInfo(string kh, string brxz)
+	    private readonly ICqybUploadInPres04Repo _cqybUploadInPres04Repo;
+		/// <summary>
+		/// 根据卡号或病历号获取病人信息
+		/// </summary>
+		/// <param name="kh">卡号</param>
+		/// <param name="brxz">病人性质</param>
+		/// <returns></returns>
+		public OutPatChargeInfoVO GetOutPatChargeInfo(string kh, string brxz)
         {
             OutPatChargeInfoVO outchargeInfoVo;
             if (string.IsNullOrEmpty(kh))
@@ -954,14 +956,14 @@ namespace Newtouch.HIS.Application.Implementation
         /// <param name="zjh">证件号</param>
         /// <param name="cardType">卡类型</param>
         /// <returns></returns>
-        public OutpatAccInfoDto GetOutPatBasicInfoInRegister(string blh, string kh, string zjh, string cardType, string ly, string CardId)
+        public OutpatAccInfoDto GetOutPatBasicInfoInRegister(string blh, string kh, string zjh, string cardType,string ly,string CardId)
         {
             if (string.IsNullOrWhiteSpace(blh) && string.IsNullOrWhiteSpace(zjh) && (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(cardType)))
             {
                 throw new FailedException("缺少查询参数：病历号或卡号");
             }
             //获取挂号收费病人基本信息
-            var outPatBasicInfoInAcc = _outChargeDmnService.GetChargePatInfoInRegister(kh, blh, zjh, OrganizeId, cardType, ly, CardId);
+            var outPatBasicInfoInAcc = _outChargeDmnService.GetChargePatInfoInRegister(kh, blh, zjh, OrganizeId, cardType,ly,CardId);
             if (outPatBasicInfoInAcc == null)
             {
                 throw new FailedCodeException("OUTPAT_PATIENT_BASICINFO_IS_NOT_EXIST");
@@ -1093,14 +1095,14 @@ namespace Newtouch.HIS.Application.Implementation
             //
             if (extxmnmList != null && extxmnmList.Count > 0)
             {
-
+                
                 xmnmList = xmnmList.Union(extxmnmList).ToList();
             }
             //
             if (cfnmList != null && cfnmList.Count() > 0)
             {
                 cfnmList = cfnmList.ToList().Union(cfnmadd.ToList()).ToList();
-
+                
             }
             else
             {
@@ -1121,11 +1123,6 @@ namespace Newtouch.HIS.Application.Implementation
             };
             jsnmList = _outPatientUniversalDmnService.AddSettlement(orgId, bacDto.mzh, settAddBO, feeRelated, ybfeeRelated, xnhybfeeRelated, outTradeNo);
             return true;
-        }
-
-        public int submitOutpatGhCharge(string orgId,string fph, DateTime? sfrq, OutpatientSettFeeRelatedDTO feeRelated, IList<int> ghxmnmList)
-		{
-            return _outPatientSettleDmnService.submitOutpatGhCharge(orgId, fph, sfrq, feeRelated, ghxmnmList);
         }
 
         /// <summary>
@@ -1554,17 +1551,17 @@ namespace Newtouch.HIS.Application.Implementation
 
             return guianMainAllOfMzjsModel;
         }
-
+        
         #region 重庆医保
 
         public void GetChongQingMainOfMzjs(string mzh, string cfnm, out decimal ybzje, out decimal zfzje)
-        {
-            var data = _outChargeDmnService.GetCQZFUnSettedListByMzh(mzh, cfnm, this.OrganizeId);
+	    {
+		    var data = _outChargeDmnService.GetCQZFUnSettedListByMzh( mzh, cfnm, this.OrganizeId);
 
             ybzje = Convert.ToDecimal(0.0000);
-            zfzje = Convert.ToDecimal(0.0000);
-            foreach (var item in data)
-            {
+		    zfzje = Convert.ToDecimal(0.0000);
+		    foreach (var item in data)
+		    {
                 if (item.issc == 1)
                 {
                     ybzje += Convert.ToDecimal(item.je);
@@ -1573,98 +1570,98 @@ namespace Newtouch.HIS.Application.Implementation
                 {
                     zfzje += Convert.ToDecimal(item.je);
                 }
-            }
-        }
+		    }
+		}
 
-        public UploadPrescriptionsInPut GetCQDetailsMzjsYbTfh(string mzh, string jsnm,
-            Dictionary<string, decimal> tjsxmDict, out decimal ybzje, out decimal zfzje, out decimal tfzje)
-        {
-            var ybdata = _outChargeDmnService.GetCQYBTfListByJsnm(jsnm, mzh, this.OrganizeId);
-            var zfdata = _outChargeDmnService.GetCQZFTfListByJsnm(jsnm, mzh, this.OrganizeId);
-            List<UploadPrescriptionsListInPut> yblist = new List<UploadPrescriptionsListInPut>();
+	    public UploadPrescriptionsInPut GetCQDetailsMzjsYbTfh(string mzh, string jsnm,
+		    Dictionary<string, decimal> tjsxmDict, out decimal ybzje, out decimal zfzje, out decimal tfzje)
+	    {
+			var ybdata = _outChargeDmnService.GetCQYBTfListByJsnm(jsnm, mzh, this.OrganizeId);
+		    var zfdata = _outChargeDmnService.GetCQZFTfListByJsnm(jsnm, mzh, this.OrganizeId);
+		    List<UploadPrescriptionsListInPut> yblist = new List<UploadPrescriptionsListInPut>();
             ybzje = Convert.ToDecimal(0.0000);
-            tfzje = Convert.ToDecimal(0.0000);
-            zfzje = Convert.ToDecimal(0.0000);
-            foreach (var item in ybdata)
-            {
-
-                foreach (var itemtf in tjsxmDict)
-                {
-                    if (itemtf.Key == item.cxmxlsh)
-                    {
-                        item.sl = Convert.ToDecimal(item.sl) - itemtf.Value;//
-                        tfzje += (itemtf.Value * item.dj);
-                    }
-                }
-                item.cxmxlsh = "";//存放jsmxnm，该字段可能恒为null，为了分页获取数据（明细上传个数限制）
-                item.jbr = this.UserIdentity.UserCode;
+		    tfzje = Convert.ToDecimal(0.0000);
+			zfzje = Convert.ToDecimal(0.0000);
+		    foreach (var item in ybdata)
+		    {
+			    
+				foreach (var itemtf in tjsxmDict)
+			    {
+				    if (itemtf.Key == item.cxmxlsh)
+				    {
+					    item.sl = Convert.ToDecimal(item.sl) - itemtf.Value;//
+					    tfzje += (itemtf.Value * item.dj);
+				    }
+			    }
+			    item.cxmxlsh = "";//存放jsmxnm，该字段可能恒为null，为了分页获取数据（明细上传个数限制）
+			    item.jbr = this.UserIdentity.UserCode;
                 if (!string.IsNullOrEmpty(item.sl.ToString()) && !string.IsNullOrEmpty(item.je.ToString()) && Convert.ToDecimal(item.sl) > 0 && Convert.ToDecimal(item.je) > 0)
-                {
-                    item.je = Convert.ToDecimal(item.sl * item.dj);
+				{
+					item.je = Convert.ToDecimal(item.sl * item.dj);
                     ybzje += Convert.ToDecimal(item.je);
-                    yblist.Add(item);
-                }
-            }
+				    yblist.Add(item);
+			    }
+		    }
+		  
+				foreach (var item in zfdata)
+				{
+					foreach (var itemtf in tjsxmDict)
+					{
+						if (itemtf.Key == item.cxmxlsh)
+						{
+							item.sl = Convert.ToDecimal(item.sl) - itemtf.Value;//
+							tfzje += (itemtf.Value * item.dj);
+						}
+					}
+					if (!string.IsNullOrEmpty(item.sl.ToString()) && !string.IsNullOrEmpty(item.je.ToString()) && Convert.ToDecimal(item.sl) > 0 && Convert.ToDecimal(item.je) > 0)
+					{
+						item.je = Convert.ToDecimal(item.sl * item.dj);
+						zfzje += Convert.ToDecimal(item.je);
+					}
+				}
+			
+		   
+		    UploadPrescriptionsInPut ChongQingMainAllOfMzjsModel = new UploadPrescriptionsInPut()
+		    {
+			    zymzh = mzh,
+			    cflist = yblist
+			};
 
-            foreach (var item in zfdata)
-            {
-                foreach (var itemtf in tjsxmDict)
-                {
-                    if (itemtf.Key == item.cxmxlsh)
-                    {
-                        item.sl = Convert.ToDecimal(item.sl) - itemtf.Value;//
-                        tfzje += (itemtf.Value * item.dj);
-                    }
-                }
-                if (!string.IsNullOrEmpty(item.sl.ToString()) && !string.IsNullOrEmpty(item.je.ToString()) && Convert.ToDecimal(item.sl) > 0 && Convert.ToDecimal(item.je) > 0)
-                {
-                    item.je = Convert.ToDecimal(item.sl * item.dj);
-                    zfzje += Convert.ToDecimal(item.je);
-                }
-            }
+		    return ChongQingMainAllOfMzjsModel;
+		}
 
+	    public void SaveCqybUploadInPres(List<UploadPrescriptionsListInPut> cflist, string zymzh, string jytype)
+	    {
+		    List<CqybUploadInPres04Entity> entitylist = new List<CqybUploadInPres04Entity>();
+			if (cflist != null && cflist.Count>0)
+		    {
+			    foreach (var item in cflist)
+			    {
+				    //if (entitylist.FindAll(p=>p.cfh==item.cfh && p.OrganizeId==this.OrganizeId).Count<1)
+				    //{
 
-            UploadPrescriptionsInPut ChongQingMainAllOfMzjsModel = new UploadPrescriptionsInPut()
-            {
-                zymzh = mzh,
-                cflist = yblist
-            };
-
-            return ChongQingMainAllOfMzjsModel;
-        }
-
-        public void SaveCqybUploadInPres(List<UploadPrescriptionsListInPut> cflist, string zymzh, string jytype)
-        {
-            List<CqybUploadInPres04Entity> entitylist = new List<CqybUploadInPres04Entity>();
-            if (cflist != null && cflist.Count > 0)
-            {
-                foreach (var item in cflist)
-                {
-                    //if (entitylist.FindAll(p=>p.cfh==item.cfh && p.OrganizeId==this.OrganizeId).Count<1)
-                    //{
-
-                    CqybUploadInPres04Entity entity = new CqybUploadInPres04Entity();
-                    entity.OrganizeId = this.OrganizeId;
-                    entity.zt = "1";
-                    entity.cfh = item.cfh;
-                    entity.jytype = jytype;
-                    entity.zymzh = zymzh;
-                    entity.je = item.je;
-                    entity.ysbm = item.ysbm;
-                    entity.gjmldm = item.gjmldm;
-                    entity.gjysbm = item.gjysbm;
-                    entity.Create();
-                    entitylist.Add(entity);
-                    //}
-                }
-                _cqybUploadInPres04Repo.SaveCqybUploadInPres(entitylist);
-            }
+						CqybUploadInPres04Entity entity = new CqybUploadInPres04Entity();
+					    entity.OrganizeId = this.OrganizeId;
+					    entity.zt = "1";
+                        entity.cfh = item.cfh;
+					    entity.jytype = jytype;
+					    entity.zymzh = zymzh;
+                        entity.je = item.je;
+                        entity.ysbm = item.ysbm;
+                        entity.gjmldm = item.gjmldm;
+                        entity.gjysbm = item.gjysbm;
+					    entity.Create();
+					    entitylist.Add(entity);
+				    //}
+				}
+			    _cqybUploadInPres04Repo.SaveCqybUploadInPres(entitylist);
+		    }
         }
         public void SaveCqybUploadInPres(string zymzh, string jytype, string cfh, string pch)
         {
             List<CqybUploadInPres04Entity> entitylist = new List<CqybUploadInPres04Entity>();
             var cfhs = cfh.Split(',');
-            for (int i = 0; i < cfhs.Length; i++)
+            for (int i=0;i<cfhs.Length;i++)
             {
                 CqybUploadInPres04Entity entity = new CqybUploadInPres04Entity();
                 entity.OrganizeId = this.OrganizeId;
@@ -1679,18 +1676,17 @@ namespace Newtouch.HIS.Application.Implementation
             }
             _cqybUploadInPres04Repo.SaveCqybUploadInPres(entitylist);
         }
-        public void UpdateCqyb04InPres(string zymzh, string cfh, string orgId)
+        public void UpdateCqyb04InPres(string zymzh, string cfh,string orgId)
         {
             var entity = _cqybUploadInPres04Repo.FindEntity(p => p.zymzh == zymzh && p.cfh == cfh && p.zt == "1" && p.OrganizeId == orgId);
-            if (entity != null)
+            if (entity!=null)
             {
                 entity.zt = "0";
                 entity.Modify();
                 _cqybUploadInPres04Repo.Update(entity);
             }
         }
-        public void UpDateUploadPch(string zymzh, string cfh, string pch, string orgId)
-        {
+        public void UpDateUploadPch(string zymzh, string cfh, string pch, string orgId) {
             var entity = _cqybUploadInPres04Repo.FindEntity(p => p.zymzh == zymzh && p.cfh == cfh && p.pch == pch && p.zt == "1" && p.OrganizeId == orgId);
             if (entity != null)
             {
@@ -1705,122 +1701,103 @@ namespace Newtouch.HIS.Application.Implementation
         /// <param name="zymzh"></param>
         /// <param name="type">1门诊 2住院</param>
         /// <returns></returns>
-        public List<RefundPrescriptionsInPut> GetCqyb10Data(string zymzh, string type)
-        {
-            return _outPatientDmnService.GetCqyb10Data(zymzh, this.OrganizeId, type);
-        }
+        public List<RefundPrescriptionsInPut> GetCqyb10Data(string zymzh,string type)
+	    {
+		    return _outPatientDmnService.GetCqyb10Data(zymzh, this.OrganizeId, type);
+	    }
 
-        public List<Input_2205> GetCqybMxCxData(string zymzh, string type, string ybver)
-        {
-            return _outPatientDmnService.GetCqybMxCxData(zymzh, this.OrganizeId, type, ybver);
+        public List<Input_2205> GetCqybMxCxData(string zymzh, string type, string ybver) {
+            return _outPatientDmnService.GetCqybMxCxData(zymzh, this.OrganizeId, type,ybver);
         }
 
 
         public object ZFToYB_Step_1(string mzh)
-        {
-            if (string.IsNullOrWhiteSpace(mzh))
-            {
-                throw new FailedException("缺少参数.门诊号");
-            }
-            var orgId = this.OrganizeId;
-            var ghxx = _outPatRegRepo.IQueryable().Where(p => p.mzh == mzh && p.OrganizeId == orgId).FirstOrDefault();
-            if (ghxx == null)
-            {
-                throw new FailedException("住院信息未找到");
-            }
-            if (ghxx.zt == "0")
-            {
-                throw new FailedException("本次挂号已作废");
-            }
-            if (!(ghxx.brxz == "0"))
-            {
-                throw new FailedException("当前非自费");
-            }
+	    {
+		    if (string.IsNullOrWhiteSpace(mzh))
+		    {
+			    throw new FailedException("缺少参数.门诊号");
+		    }
+		    var orgId = this.OrganizeId;
+			var ghxx = _outPatRegRepo.IQueryable().Where(p => p.mzh == mzh && p.OrganizeId == orgId).FirstOrDefault();
+		    if (ghxx == null)
+		    {
+			    throw new FailedException("住院信息未找到");
+		    }
+		    if (ghxx.zt == "0")
+		    {
+			    throw new FailedException("本次挂号已作废");
+		    }
+		    if (!(ghxx.brxz == "0"))
+		    {
+			    throw new FailedException("当前非自费");
+		    }
 
-            return new object();
-        }
-        public object ZFToYB_Step_2(string zyh)
-        {
-            var orgId = this.OrganizeId;
-            //var hasNonYbFee = _hospFeeDmnService.CheckHasNonYbFee(zyh, orgId);
-            //if (hasNonYbFee)
-            //{
-            //    throw new FailedException("已产生非医保相关费用");
-            //}
+		    return new object();
+	    }
+	    public object ZFToYB_Step_2(string zyh)
+	    {
+		    var orgId = this.OrganizeId;
+		    //var hasNonYbFee = _hospFeeDmnService.CheckHasNonYbFee(zyh, orgId);
+		    //if (hasNonYbFee)
+		    //{
+		    //    throw new FailedException("已产生非医保相关费用");
+		    //}
 
-            return new object();
-        }
+		    return new object();
+	    }
 
-        public object ZFToYB_Step_3(string mzh, string sbbh, string xm)
-        {
-            var orgId = this.OrganizeId;
-            var ghxx = _outPatRegRepo.IQueryable().Where(p => p.mzh == mzh && p.OrganizeId == orgId).FirstOrDefault();
+	    public object ZFToYB_Step_3(string mzh, string sbbh, string xm)
+	    {
+		    var orgId = this.OrganizeId;
+		    var ghxx = _outPatRegRepo.IQueryable().Where(p => p.mzh == mzh && p.OrganizeId == orgId).FirstOrDefault();
 
-            int patid = ghxx.patid;
+		    int patid = ghxx.patid;
             SysPatientBasicInfoEntity xtbrxx = null;
-
-            //var xtbrxxList = _sysPatiInfoRepo.IQueryable().Where(p => p.sbbh == sbbh && p.brxz == "1" && p.OrganizeId == orgId && p.zt == "1").ToList();
-            //if (xtbrxxList.Count == 1)
-            //{
-            // //if (xtbrxxList[0].patid != ghxx.patid)
-            // //{
-            // // throw new FailedException("该社保卡在系统里已绑定其他身份,不能再用来转该患者医保信息，请使用医保卡重新挂号就诊！社保编号：" + sbbh.ToString());
-            // //}
-            // xtbrxx = xtbrxxList[0];
-            //}
-            //else if (xtbrxxList.Count == 0)
-            //{
-            // xtbrxx = _sysPatiInfoRepo.IQueryable().Where(p => p.patid == patid && p.OrganizeId == orgId && p.zt == "1").First();
-            // if (!string.IsNullOrWhiteSpace(xtbrxx.sbbh) && xtbrxx.sbbh != sbbh)
-            // {
-            //  throw new FailedException("该住院患者已绑定其他社保卡");
-            // }
-            //}
-            //else
-            //{
-            // throw new FailedException("数据异常，该社保卡在基础信息中存在多条，无法定位");
-            //}
-
+            SysCardEntity kxx = null;
+		    var xtbrxxList = _sysCardRepo.IQueryable().Where(p => p.CardNo == sbbh && p.brxz != "0" && p.OrganizeId == orgId && p.zt == "1").ToList();
+		    if (xtbrxxList.Count == 1)
+		    {
+                kxx = xtbrxxList[0];
+		    }
+            xtbrxx = _sysPatiInfoRepo.IQueryable().Where(p => p.patid == patid && p.OrganizeId == orgId && p.zt == "1").First();
             if (xtbrxx.xm != xm)
-            {
-                throw new FailedException("异常，就诊姓名与医保卡姓名不一致，请先修改患者姓名");
-            }
+		    {
+			    throw new FailedException("异常，就诊姓名与医保卡姓名不一致，请先修改患者姓名");
+		    }
 
-            //var ryzd1 = _hospMultiDiagnosisRepo.IQueryable().Where(p => p.zyh == zyh && p.zt == "1" && p.OrganizeId == orgId).OrderBy(p => p.zdpx).FirstOrDefault();
+			//var ryzd1 = _hospMultiDiagnosisRepo.IQueryable().Where(p => p.zyh == zyh && p.zt == "1" && p.OrganizeId == orgId).OrderBy(p => p.zdpx).FirstOrDefault();
 
-            //var ksmc = _sysDepartmentRepo.GetNameByCode(zybrxx.ks, orgId);
+			//var ksmc = _sysDepartmentRepo.GetNameByCode(zybrxx.ks, orgId);
             //国家编码
             var ysInfo = _outPatientSettleDmnService.GetDepartmentDoctorIdC(orgId, ghxx.ks, ghxx.ys);
             return new
-            {
-                patid = xtbrxx.patid,//patid,
+			{
+				patid = xtbrxx.patid,//patid,
                 ghxx = ghxx,
-                xtbrxx = xtbrxx,
-                yllb = ghxx.mjzbz,
-                rygjysbm = ysInfo
+				xtbrxx = xtbrxx,
+                yllb= ghxx.mjzbz,
+                rygjysbm= ysInfo
             };
-        }
+		}
 
-        public object ZFToYB_Step_6(string mzh, int patid, ZYToYBDto patInfo)
-        {
-            var orgId = this.OrganizeId;
+	    public object ZFToYB_Step_6(string mzh, int patid, ZYToYBDto patInfo)
+	    {
+		    var orgId = this.OrganizeId;
 
-            _patientBasicInfoDmnService.OutPatZFchangetoYB(orgId, mzh, patid, patInfo);
+		    _patientBasicInfoDmnService.OutPatZFchangetoYB(orgId, mzh, patid, patInfo);
 
-            return new object();
-        }
+		    return new object();
+	    }
 
-        public object ZFToYB_Step_8(string mzh)
-        {
-            UpdatebrxzRequest par = new UpdatebrxzRequest { zyh = mzh, brxzCode = "1", brxzmc = "医保病人" };
-            //同步数据至CPOE
-            SiteCISAPIHelper.UpdatebrxzInfo(par);
-            return new object();
-        }
+	    public object ZFToYB_Step_8(string mzh)
+	    {
+		    UpdatebrxzRequest par = new UpdatebrxzRequest {mzh=mzh, zyh = mzh, brxzCode = "1", brxzmc = "普通医保" };
+		    //同步数据至CPOE
+		    SiteCISAPIHelper.UpdatebrxzInfo(par);
+		    return new object();
+	    }
 
         #endregion
-
-
 
     }
 }

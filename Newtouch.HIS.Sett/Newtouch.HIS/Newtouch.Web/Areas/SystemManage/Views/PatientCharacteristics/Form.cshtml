@@ -1,0 +1,142 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "病人性质";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 30px;" id="basicInfo">
+                <table class="form">
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>性质名称：</td>
+                        <td class="formValue">
+                            <input id="brxzmc" name="brxzmc" type="text" class="form-control required" placeholder="请输入名称" />
+                        </td>
+                        <td class="formTitle"><span class="required">*</span>首拼：</td>
+                        <td class="formValue">
+                            <input id="py" name="py" type="text" class="form-control required" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle"><span class="required">*</span>性质代码：</td>
+                        <td class="formValue">
+                            <input id="brxz" name="brxz" type="text" class="form-control required" placeholder="请输入编码" />
+                        </td>
+                        <th class="formTitle">性质类别(卡)：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="brxzlb" class="form-control form-an">
+                                <option value="0">==全部==</option>
+                                <option value="1">仅医保卡</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">医保交易类型：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="ybjylx" name="ybjylx" class="form-control" data-EnumType="EnumYBJYLX">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                        @*<th class="formTitle">医保特殊待遇：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="ybtsdy" name="ybtsdy" class="form-control" data-EnumType="EnumYBTSDY">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>*@
+                    </tr>
+                    <tr>
+                        <th class="formTitle">上级：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="ParentId" name="ParentId" class="form-control">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        @*<th class="formTitle">凭证标志：</th>
+                        <td class="formValue">
+                            <div class="ckbox">
+                                <input id="pzbz" name="pzbz" type="checkbox" checked="checked"><label for="pzbz">有效</label>
+                            </div>
+                        </td>*@
+                        <th class="formTitle"><span class="required">*</span>门诊住院标志：</th>
+                        <td class="formValue formDdlSelectorTd">
+                            <select id="mzzybz" name="mzzybz" class="form-control required" data-EnumType="Enummzzybz">
+                                <option value="">==请选择==</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle" style="height: 35px;"><span class="required">*</span>状态：</th>
+                        <td class="formValue" style="padding-top: 1px;">
+                            <div class="ckbox">
+                                <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">排序：</th>
+                        <td class="formValue">
+                            <input id="px" name="px" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">备注：</th>
+                        <td class="formValue" colspan="3">
+                            <input id="bz" name="bz" type="text" class="form-control" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.ajax({
+                url: "/SystemManage/PatientCharacteristics/GetFormJson",
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+
+        //根据姓名获得拼音
+        $('#brxzmc').blur(function () {
+            $('#py').val($(this).toShouPin());
+
+        });
+    });
+
+    function initControl() {
+        $("#ParentId").bindSelect({
+            url: "/SystemManage/PatientCharacteristics/GetTreeSelectJson"
+        });
+        $('#brxzlb').bindSelect();
+    }
+
+    function submitForm(leftlabel) {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var postData = $("#form1").formSerialize();
+        $.submitForm({
+            url: "/SystemManage/PatientCharacteristics/SubmitForm?keyValue=" + keyValue,
+            param: postData,
+            close: leftlabel,
+            success: function () {
+                newtouch_globalevent_f4();
+                $.currentWindow().$("#gridList").resetSelection();
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        });
+    }
+</script>

@@ -116,6 +116,15 @@ namespace Newtouch.HIS.Domain.ValueObjects.DaySettleManage
 		public decimal jjzfje { get; set; }
 
 		/// <summary>
+		/// 个人账户支付
+		/// </summary>
+		public decimal acct_pay { get; set; }
+		/// <summary>
+		/// 个人支付现金
+		/// </summary>
+		public decimal psn_cash_pay { get; set; }
+
+		/// <summary>
 		/// 共济支付金额
 		/// </summary>
 		public decimal gjje { get; set; }
@@ -207,6 +216,56 @@ namespace Newtouch.HIS.Domain.ValueObjects.DaySettleManage
 		/// 结束日期
 		/// </summary>
 		public DateTime jsrq { get; set; }
+	}
+
+	/// <summary>
+	/// 对账成功保存
+	/// </summary>
+	public class ybqssq
+	{
+		public string qslb { get; set; }
+		public string xz { get; set; }
+		public string sfyd { get; set; }
+		public string ksrq { get; set; }
+		public string jsrq { get; set; }
+		public decimal zfy { get; set; }
+		public decimal jjzfje { get; set; }
+		public decimal grzh { get; set; }
+		public decimal ybrkfyze { get; set; }
+		public decimal xjzfze { get; set; }
+		public int qsrc { get; set; }
+		public string qsny { get; set; }
+		public decimal czzgtcjj { get; set; }/*城镇职工基本医疗保险统筹基金*/
+		public int czzgtcjjrc { get; set; }/*城镇职工基本医疗保险统筹基金人次*/
+		public decimal czzgzhjj { get; set; }/*城镇职工基本医疗保险个人账户基金*/
+		public int czzgzhjjrc { get; set; }/*城镇职工基本医疗保险个人账户基金*/
+		public decimal gywbzjj { get; set; }/*公务员医疗补助基金*/
+		public int gywbzjjrc { get; set; }/*公务员医疗补助基金*/
+		public decimal deylbzjj { get; set; }/*大额医疗费用补助基金*/
+		public int deylbzjjrc { get; set; }/*大额医疗费用补助基金*/
+		public decimal lxrybzjj { get; set; }/*离休人员医疗保障基金*/
+		public int lxrybzjjrc { get; set; }/*离休人员医疗保障基金*/
+		public decimal cjbzjj { get; set; }/*一至六级残疾军人医疗补助基金*/
+		public int cjbzjjrc { get; set; }/*一至六级残疾军人医疗补助基金*/
+		public decimal qybzyljj { get; set; }/*企业补充医疗保险基金*/
+		public int qybzyljjrc { get; set; }/*企业补充医疗保险基金*/
+		public decimal cxjmjbyljj { get; set; }/*城乡居民基本医疗保险基金*/
+		public int cxjmjbyljjrc { get; set; }/*城乡居民基本医疗保险基金*/
+		public decimal cxjmdbyljj { get; set; }/*城乡居民大病医疗保险基金*/
+		public int cxjmdbyljjrc { get; set; }/*城乡居民大病医疗保险基金*/
+		public decimal yljzjj { get; set; }/*医疗救助基金*/
+		public int yljzjjrc { get; set; }/*医疗救助基金人次*/
+		public decimal yfjj { get; set; }/*优抚基金*/
+		public int yfjjrc { get; set; }/*优抚基金人次*/
+		public decimal syjj { get; set; }/*生育基金*/
+		public int syjjrc { get; set; }/*生育基金人次*/
+		public decimal qtjj { get; set; }/*其他基金*/
+		public int qtjjrc { get; set; }/*其他基金人次*/
+		public decimal eyjj { get; set; }/*二乙基金*/
+		public int eyjjrc { get; set; }/*二乙基金人次*/
+		public string create_user { get; set; }
+		public int sqzt { get; set; }
+
 	}
 
 	/// <summary>
@@ -549,4 +608,25 @@ namespace Newtouch.HIS.Domain.ValueObjects.DaySettleManage
 		/// </summary>
 		public decimal totalfybjsfw { get; set; }
 	}
+
+    public class HistoryCheckVO
+    {
+        public string lsh {get;set;}
+        public string cardid { get; set; }
+        public DateTime jysj { get; set; }
+        public string lx { get; set; }
+        public decimal dn { get; set; }
+        public decimal ln { get; set; }
+        public decimal xj { get; set; }
+        public decimal tc { get; set; }
+        public int df { get; set; }
+        public decimal flzf { get; set; }
+        public decimal grzf { get; set; }
+        public string xm { get; set; }
+        public string mzbh { get; set; }
+        public string hm { get; set; }
+        public string zd { get; set; }
+        public string bz { get; set; }
+
+    }
 }

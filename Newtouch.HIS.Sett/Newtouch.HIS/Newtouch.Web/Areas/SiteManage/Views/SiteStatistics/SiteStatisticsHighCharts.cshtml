@@ -1,0 +1,616 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "站点收支统计图标";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/charts/Chart.js")"></script>
+<script src="~/Content/js/highcharts/highcharts.js"></script>
+<script src="https://img.hcharts.cn/highcharts/highcharts-more.js"></script>
+<div class="panel-body" style="padding: 0 0 15px 0px !important">
+    <div class="dashboard-stats">
+        <div class="dashboard-stats-item">
+            <div class="m-top-none">
+                <span>机构总数</span>
+            </div>
+            <div class="m-bottom-none">
+                <span>8</span>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-stats" style="width:230px">
+        <div class="dashboard-stats-item">
+            <div class="m-top-none">
+                <span>年度总收入（单位：万元）</span>
+            </div>
+            <div class="m-bottom-none">
+                <span style="left:45px !important">200</span>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-stats" style="width:270px !important;margin-right:20px !important">
+        <div class="dashboard-stats-item">
+            <div class="m-top-none" style="width:270px">
+                <span>年度收入对比（单位：万元）</span>
+            </div>
+            <div class="m-bottom-none" style="height:100px;">
+                <div id="ndsrdb" style="height:100px; width:270px"></div>
+            </div>
+        </div>
+    </div>
+    <div class="dashboard-stats" style="width:270px !important">
+        <div class="dashboard-stats-item">
+            <div class="m-top-none" style="width:270px;">
+                <span>收费/已执行费用对比</span>
+            </div>
+            <div class="m-bottom-none" style="height:100px; width:270px;">
+                <div id="sfzxfydb" style="min-width: 110px; max-width: 270px; height: 100px; margin: 0 auto"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<form id="form1">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                收支比例与访问人次
+            </div>
+            <div style="padding-right:10px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">统计时间：</th>
+                        <td class="formValue formDdlSelectorTd" style="width:50px">
+                            <select id="ddlRKFS" class="form-control required">
+                                <option value="1">2015</option>
+                                <option value="2">2016</option>
+                                <option value="3">2017</option>
+                                <option value="4" selected>2018</option>
+                            </select>
+                        </td>
+                        <th class="formTitle"></th>
+                        <td class="formValue">
+                        </td>
+                    </tr>
+                </table>
+                <div style="width:100%;height:400px;">
+                    <div id="yfsrdb" style="height: 200px; float:left; width:50%;"></div>
+                    <div id="yfrcdb" style="height: 200px; float: right;width:50%;"></div>
+                    <div id="ndsrtj" style="height: 200px;width:49%;float:left"></div>
+                    <div id="ndrctj" style="height: 200px; width: 49%; float:right"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </form>
+<script>
+        $(document).ready(function () {
+
+        });
+
+        //随机组成4位数
+        function sjs() {
+            var arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            var str = '';
+            for (var j = 0; j < 5; j++) {
+                var singstr = '';
+                for (var i = 0; i < 5; i++) {
+                    singstr += '' + arr[Math.floor(Math.random() * arr.length)];
+                }
+                str += singstr + ',';
+            }
+            str = str.substr(0, str.length - 1);
+            return str;
+        }
+
+        //随机组成3位数
+        function twsjs() {
+            var arr = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            var str = '';
+            for (var j = 0; j < 5; j++) {
+                var singstr = '';
+                for (var i = 0; i < 3; i++) {
+                    singstr += '' + arr[Math.floor(Math.random() * arr.length)];
+                }
+                str += singstr + ',';
+            }
+            str = str.substr(0, str.length - 1);
+            return str;
+        }
+
+        //总收入
+        var d = { zsr: "78000, 62000, 98000, 23000, 56000" };
+        //年度收入对比
+        Highcharts.chart('ndsrdb', {
+            chart: {
+                type: 'column'
+            },
+            credits: {
+                enabled: false
+            },
+            title: {
+                text: ' ',
+                floating: true
+            },
+            legend: { enabled: false },
+            xAxis: {
+                categories: [
+                    '门诊', '住院'
+                ],
+                crosshair: true
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: '',
+                    floating: true
+                }
+            },
+            tooltip: {
+                // head + 每个 point + footer 拼接成完整的 table
+                headerFormat: '<table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:10">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} 万元</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: '收入',
+                data: [83.6, 78.8]
+            }]
+        });
+        //月份收入对比
+        Highcharts.chart('yfsrdb', {
+            chart: {
+                type: 'column'
+            },
+            credits: {
+                enabled: false
+            },
+            title: {
+                text: ' ',
+                floating: true
+            },
+            legend: { enabled: false },
+            //subtitle: {
+            //    text: '数据来源: newtouch.com'
+            //},
+            xAxis: {
+                categories: [
+                    '一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月'
+                ],
+                crosshair: true
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: '月份收入金额 (元)'
+                }
+            },
+            tooltip: {
+                // head + 每个 point + footer 拼接成完整的 table
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} 元</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    borderWidth: 0
+                },
+                series: {
+                    cursor: 'pointer',
+                    events: {
+                        click: function (e) {
+                            $('#ndsrtj').highcharts().series[0].setData(eval("[" + sjs() + "]"));
+                        }
+                    }
+                },
+            }, labels: {
+                items: [{
+                    html: '门诊/住院收入对比',
+                    style: {
+                        left: '220px',
+                        top: '18px',
+                        color: (Highcharts.theme && black)
+                    }
+                }]
+            },
+            series: [{
+                name: '门诊收入',
+                data: [10000, 12000, 12900, 14000, 17000, 19000, 20900, 21000, 28190]
+            }, {
+                type: 'spline',
+                name: '住院收入',
+                    data: [9000, 12080, 12000, 13200, 16900, 18900, 21000, 21600, 28100],
+                marker: {
+                    lineWidth: 2,
+                    lineColor: Highcharts.getOptions().colors[1],
+                    fillColor: 'white'
+                }
+            }, {
+                type: 'pie',
+                name: '总收入',
+                data: [{
+                    name: '门诊总收入',
+                    y: 130000,
+                    color: Highcharts.getOptions().colors[0] // Jane's color
+                }, {
+                    name: '住院总收入',
+                    y: 230000,
+                    color: Highcharts.getOptions().colors[1] // John's color
+                }],
+                center: [140, 20],
+                size: 100,
+                showInLegend: false,
+                dataLabels: {
+                    enabled: false
+                }
+            }]
+        });
+        //月份人次对比
+        Highcharts.chart('yfrcdb', {
+            chart: {
+                type: 'column'
+            },
+            credits: {
+                enabled: false
+            },
+            title: {
+                text: ' ',
+                floating: true
+            },
+            legend: { enabled: false },
+            xAxis: {
+                categories: [
+                    '一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月'
+                ],
+                crosshair: true
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: '月份门诊访问人次 (人/次)'
+                }
+            },
+            tooltip: {
+                // head + 每个 point + footer 拼接成完整的 table
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} 人/次</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: '门诊',
+                data: [49, 71, 106, 129, 134, 145, 158, 216, 176],
+                cursor: 'pointer',
+                events: {
+                    click: function (e) {
+                        $('#ndrctj').highcharts().series[0].setData(eval("[" + twsjs() + "]"));
+                    }
+                }
+            }, {
+                type: 'spline',
+                name: '平均值',
+                data: [49, 71, 106, 129, 134, 145, 158, 216, 176],
+                marker: {
+                    lineWidth: 2,
+                    lineColor: Highcharts.getOptions().colors[1],
+                    fillColor: 'white'
+                }
+            }]
+        });
+
+        Highcharts.chart('ndsrtj', {
+            chart: {
+                type: 'bar'
+            },
+            credits: {
+                enabled: false
+            },
+            title: {
+                text: ' ',
+                floating: true
+            }, legend: { enabled: false },
+            //subtitle: {
+            //    text: '数据来源: newtouch.com'
+            //},
+            xAxis: {
+                categories: [
+                    '秦皇岛', '上海银康', '上海百诺', '北京国门', '广州松鹤'
+                ],
+                crosshair: true,
+                title: { text: "本年度各机构收入对比（元）" }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: '',
+                    floating: true
+                }
+            },
+            tooltip: {
+                // head + 每个 point + footer 拼接成完整的 table
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} 元</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                id: "szsr",
+                name: '总收入',
+                data: eval("[" + d.zsr + "]")
+            }]
+        });
+        Highcharts.chart('ndrctj', {
+            chart: {
+                type: 'bar'
+            },
+            credits: {
+                enabled: false
+            },
+            title: {
+                text: ' ',
+                floating: true
+            }, legend: { enabled: false },
+            xAxis: {
+                categories: [
+                    '秦皇岛', '上海银康', '上海百诺', '北京国门', '广州松鹤'
+                ],
+                crosshair: true,
+                title: {
+                    text: "本年度各机构门诊对比（人/次）"
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: ' ',
+                    floating: true
+                }
+            },
+            tooltip: {
+                // head + 每个 point + footer 拼接成完整的 table
+                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} 人/次</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    borderWidth: 0
+                }
+            },
+            series: [{
+                name: '总人次',
+                data: [49.9, 71.5, 106.4, 129.2, 144.0]
+            }]
+        });
+        Highcharts.chart('sfzxfydb', {
+            chart: {
+                type: 'gauge',
+                plotBackgroundColor: null,
+                plotBackgroundImage: null,
+                plotBorderWidth: 0,
+                plotShadow: false,
+                height: 100
+            }, credits: {
+                enabled: false
+            },
+            title: {
+                text: '',
+                floating: true
+            },
+            pane: [{
+                startAngle: -90,
+                endAngle: 90,
+                background: [{
+                    //backgroundColor: {
+                    //    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    //    stops: [
+                    //        [0, '#FFF'],
+                    //        [1, '#333']
+                    //    ]
+                    //},
+                    //borderWidth: 0,
+                    //outerRadius: '100%'
+                }, {
+                    //backgroundColor: {
+                    //    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    //    stops: [
+                    //        [0, '#333'],
+                    //        [1, '#FFF']
+                    //    ]
+                    //},
+                    //borderWidth: 1,
+                    //outerRadius: '107%'
+                }, {
+                    //backgroundColor: '#DDD',
+                    //borderWidth: 0,
+                    //outerRadius: '105%',
+                    //innerRadius: '103%'
+                }],
+                center: ['50%', '90%'],
+                size: 120
+            }],
+            yAxis: [{
+                min: 0,
+                max: 1000,
+                minorTickInterval: 'auto',
+                minorTickWidth: 1,
+                minorTickLength: 10,
+                minorTickPosition: 'inside',
+                minorTickColor: '#666',
+                tickPixelInterval: 30,
+                tickWidth: 2,
+                tickPosition: 'inside',
+                tickLength: 2,
+                tickColor: '#666',
+                labels: {
+                    rotation: 'auto',
+                    distance: 10
+                },
+                plotBands: [{
+                    from: 0,
+                    to: 300,
+                    color: '#55BF3B' // green
+                }, {
+                    from: 300,
+                    to: 600,
+                    color: '#DDDF0D' // yellow
+                }, {
+                    from: 600,
+                    to: 900,
+                    color: '#DF5353' // red
+                }],
+                title: {
+                    text: '收费/执行费用',
+                    y: 20
+                }
+            }],
+            series: [{
+                name: '执行费用',
+                data: [600],
+                yAxis: 0,
+                tooltip: {
+                    valueSuffix: ' 元'
+                }
+            }]
+        });
+    </script>
+<style>
+    #copyrightcontent {
+        height: 30px;
+        line-height: 29px;
+        overflow: hidden;
+        position: absolute;
+        top: 100%;
+        margin-top: -30px;
+        width: 100%;
+        background-color: #fff;
+        border: 1px solid #e6e6e6;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .dashboard-stats {
+        float: left;
+        width: 20%;
+    }
+
+    .dashboard-stats-item {
+        position: relative;
+        /*overflow: hidden;*/
+        color: black;
+        cursor: pointer;
+        height: 120px;
+        margin-right: 25px;
+        margin-bottom: 10px;
+        /*padding: 20px 20px;*/
+    }
+
+        .dashboard-stats-item .m-top-none {
+            height: 35px;
+            background-color: white;
+            width: 100%;
+        }
+    .m-bottom-none {
+        background-color: white;
+        margin-top: 5px;
+        height: 100px
+    }
+        .m-bottom-none span {
+            font-size: 60px;
+            position: relative;
+            left: 75px;
+        }
+        .dashboard-stats-item .m-top-none span {
+            font-size: medium;
+            position: relative;
+            top: 8px;
+            left: 11px;
+        }
+  
+
+
+        .dashboard-stats-item .stat-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            opacity: .3;
+        }
+
+    .dashboard-stats i.fa.stats-icon {
+        width: 50px;
+        padding: 20px;
+        font-size: 50px;
+        text-align: center;
+        color: #fff;
+        height: 50px;
+        border-radius: 10px;
+    }
+
+    .panel-default {
+        border: none;
+        border-radius: 0px;
+        margin-bottom: 0px;
+        box-shadow: none;
+        -webkit-box-shadow: none;
+    }
+
+        .panel-default > .panel-heading {
+            color: #777;
+            background-color: #fff;
+            border-color: #e6e6e6;
+            padding: 10px 10px;
+        }
+
+        .panel-default > .panel-body {
+            padding: 10px;
+            padding-bottom: 0px;
+        }
+
+            .panel-default > .panel-body ul {
+                overflow: hidden;
+                padding: 0;
+                margin: 0px;
+                margin-top: -5px;
+            }
+
+                .panel-default > .panel-body ul li {
+                    line-height: 27px;
+                    list-style-type: none;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                }
+
+                    .panel-default > .panel-body ul li .time {
+                        color: #a1a1a1;
+                        float: right;
+                        padding-right: 5px;
+                    }
+</style>

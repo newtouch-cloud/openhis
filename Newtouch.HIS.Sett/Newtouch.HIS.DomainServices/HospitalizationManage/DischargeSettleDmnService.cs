@@ -287,7 +287,8 @@ left join Drjk_zyfymxsc_input (NOLOCK) fymx on SUBSTRING(fymx.feedetl_sn,3,50)=x
                             xmjfb.sl ,
                             xmjfb.sl tsl ,
                             ( ISNULL(xmjfb.dj, 0) * ISNULL(xmjfb.sl, 0) ) AS je,
-                            (select top 1 sl from zy_xmjfb where jfbbh=xmjfb.jfbbh) ylsl,sfmb.ztbh,dcztbs,sfmb.ztsl ztylsl,xmjfb.ztsl
+                            (select top 1 sl from zy_xmjfb where jfbbh=xmjfb.jfbbh) ylsl,sfmb.ztbh,sfmb.dcztbs,sfmb.ztsl ztylsl,xmjfb.ztsl,
+							case when lsyz.yzlx in ('6','7') then lsyz.ztmc else lsyz.xmmc end as yzmc
                     FROM    [dbo].[V_C_Sys_WsfZyXmjfb] xmjfb
                                                 LEFT JOIN [NewtouchHIS_Base]..V_S_xt_sfdl sfdl ON xmjfb.dl = sfdl.dlCode
                                                                                                   AND sfdl.OrganizeId = @orgId
@@ -295,6 +296,7 @@ left join Drjk_zyfymxsc_input (NOLOCK) fymx on SUBSTRING(fymx.feedetl_sn,3,50)=x
                                                                                             AND sfxm.OrganizeId = @orgId
 LEFT JOIN (select a.ztbh,b.sfmbmc,b.sfmb,'收费项目组合'sfmblb,a.jfbbh,a.dcztbs,a.ztsl from zy_xmjfb a  with(nolock)
 left join xt_sfmb b on a.ztbh=b.sfmbbh and a.OrganizeId=b.OrganizeId  where a.zyh=@zyh and a. ztbh is not null) sfmb on sfmb.jfbbh=xmjfb.jfbbh
+LEFT JOIN Newtouch_CIS..zy_lsyz lsyz on (lsyz.Id = xmjfb.yzwym)
                     WHERE   xmjfb.OrganizeId = @orgId and xmjfb.zyh=@zyh  ");
 			if (kssj.HasValue)
 			{
@@ -738,7 +740,7 @@ FROM
                     //}
                 }
 
-                if (jslx == "1" && ybfeeRelated != null)
+				if (jslx == "1" && ybfeeRelated != null)
 				{
 					if (medicalInsurance == "chongqing")
 					{
@@ -801,47 +803,7 @@ left join[NewtouchHIS_Base]..V_S_xt_sfdl sfdl
 on sfdl.dlCode = dljf.dl and sfdl.OrganizeId = @orgId";
 			return this.FindList<HospFeeChargeCategoryGroupVO>(sql, new[] { new SqlParameter("@orgId", orgId), new SqlParameter("@zyh", zyh) });
 		}
-        /// <summary>
-        /// 住院未结账费用明细汇总
-        /// </summary>
-        /// <param name="pagination"></param>
-        /// <param name="zyh"></param>
-        /// <param name="orgId"></param>
-        /// <param name="sfdl"></param>
-        /// <returns></returns>
-        public IList<HospFeeChargeCategoryGroupDetailVO> GetHospGroupFeeDetailVOList(string zyh, string orgId, string sfdl)
-        {
-            var sql = @"select dd.dlCode,dd.dlmc,dd.sfxm,dd.sfxmmc,Convert(decimal(18,2),dd.dj)dj,sum(dd.sl)sl,dd.jfdw,dd.zfxz,dd.zfxzcode,dd.zzfbz,dd.zzfbzcode,sum(dd.je)je
-from(
-select dl dlCode,b.dlmc,sfxm,c.sfxmmc,a.dj,sl,jfdw,
-(case a.zfxz when 1 then '自费' when 4 then '甲类' when 5 then '乙类' when 6 then '丙类' end)zfxz,convert(varchar(2),a.zfxz) zfxzcode,
-CONVERT(NUMERIC(10,2), isnull(a.dj, 0) * isnull(sl, 0)) je ,c.gg ,case isnull(zzfbz,0) when '1' then '是' else '否' end zzfbz,convert(varchar(2),isnull(zzfbz,0)) zzfbzcode
-from [V_C_Sys_WsfZyXmjfb] a
-left join NewtouchHIS_Base.dbo.V_S_xt_sfdl b with(nolock) on a.OrganizeId=b.OrganizeId and a.dl=b.dlCode and b.zt='1'
-left join NewtouchHIS_Base.dbo.V_S_xt_sfxm c with(nolock) on a.OrganizeId=c.OrganizeId and a.sfxm=c.sfxmcode and c.zt='1'
-where zyh =@zyh and a.OrganizeId =@orgId and b.zt= '1'
-union all
-select dl dlCode,bb.dlmc,yp,cc.ypmc,aa.dj,sl,jfdw,
-(case aa.zfxz when 1 then '自费' when 4 then '甲类' when 5 then '乙类' when 6 then '丙类' end)zfxz,convert(varchar(2),aa.zfxz) zfxzcode,
-CONVERT(NUMERIC(10,2), isnull(aa.dj, 0) * isnull(sl, 0)) je ,cc.ypgg,case isnull(zzfbz,0) when '1' then '是' else '否' end zzfbz,convert(varchar(2),isnull(zzfbz,0)) zzfbzcode 
-from [V_C_Sys_WsfZyYpjfb] aa
-left join NewtouchHIS_Base.dbo.V_S_xt_sfdl bb with(nolock) on aa.OrganizeId=bb.OrganizeId and aa.dl=bb.dlCode and bb.zt='1'
-left join NewtouchHIS_Base.dbo.V_C_xt_yp cc with(nolock) on aa.OrganizeId=cc.OrganizeId and aa.yp=cc.ypcode and cc.zt='1'
-where zyh = @zyh and aa.OrganizeId = @orgId and bb.zt= '1'
-)dd
-group by  dd.dlCode,dd.dlmc,dd.sfxm,dd.sfxmmc,dd.dj,dd.jfdw,dd.zfxz,dd.zfxzcode,dd.zzfbz,dd.zzfbzcode
-";
-            if (!string.IsNullOrEmpty(sfdl))
-            {
-                sql = "select * from (" + sql + ") r where r.dlCode=@dl ";
-            }
-            return this.FindList<HospFeeChargeCategoryGroupDetailVO>(sql, new[] {
-                new SqlParameter("@orgId", orgId),
-                new SqlParameter("@zyh", zyh),
-                new SqlParameter("@dl", sfdl??"")
-            });
-        }
-        public IList<HospFeeChargeCategoryGroupDetailVO> GetHospGroupFeeVOList(Pagination pagination, string zyh, string orgId, string sfdl)
+		public IList<HospFeeChargeCategoryGroupDetailVO> GetHospGroupFeeVOList(Pagination pagination, string zyh, string orgId, string sfdl)
 		{
 			var sql = @"select dd.dlCode,dd.dlmc,dd.sfxm,dd.sfxmmc,Convert(decimal(18,2),dd.dj)dj,sum(dd.sl)sl,dd.jfdw,dd.zfxz,dd.zzfbz,sum(dd.je)je
 from(
@@ -1198,7 +1160,7 @@ left join Ybjk_SN01_Mxxzy_Input (NOLOCK) fymx on xh=xmjfb.jfbbh and  fymx.mzzyh=
 							.FirstOrDefault();
 
                     szje = preYjjPayEntity.zfje;
-                    if (accountEntity != null)
+					if (accountEntity != null)
 					{
 						var zhszEntity = new InpatientAccountRevenueAndExpenseEntity()
 						{
@@ -1382,25 +1344,24 @@ left join Ybjk_SN01_Mxxzy_Input (NOLOCK) fymx on xh=xmjfb.jfbbh and  fymx.mzzyh=
 		private void PaymentModelAccountReserveII(Infrastructure.EF.EFDbTransaction db, HospSettlementEntity jszbEntity
 			, InpatientSettFeeRelatedDTO feeRelated)
 		{
-            HospSettlementPaymentModelEntity zfEntity1 = null;
-            HospSettlementPaymentModelEntity zfEntity2 = null;
+			HospSettlementPaymentModelEntity zfEntity1 = null;
+			HospSettlementPaymentModelEntity zfEntity2 = null;
 
-            if (feeRelated.yjjzfje.Value > 0)
-            {
-                zfEntity1 = new HospSettlementPaymentModelEntity();
-                zfEntity1.zyjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("zy_jszffs");
-                zfEntity1.OrganizeId = jszbEntity.OrganizeId;
-                zfEntity1.jsnm = jszbEntity.jsnm;
-                zfEntity1.xjzffs = xtzffs.ZYYJZHZF;
-                zfEntity1.zfje = feeRelated.yjjzfje.Value;
-                zfEntity1.zt = "1";
-                zfEntity1.Create();
-                db.Insert(zfEntity1);
-                jszbEntity.xjzffs = xtzffs.ZYYJZHZF;
-            }
-            //if (feeRelated.patZflist.Count() > 0)
-            if (feeRelated.patZflist != null && feeRelated.patZflist.Count() > 0)
-            {
+			if (feeRelated.yjjzfje.Value > 0)
+			{
+				zfEntity1 = new HospSettlementPaymentModelEntity();
+				zfEntity1.zyjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("zy_jszffs");
+				zfEntity1.OrganizeId = jszbEntity.OrganizeId;
+				zfEntity1.jsnm = jszbEntity.jsnm;
+				zfEntity1.xjzffs = xtzffs.ZYYJZHZF;
+				zfEntity1.zfje = feeRelated.yjjzfje.Value;
+				zfEntity1.zt = "1";
+				zfEntity1.Create();
+				db.Insert(zfEntity1);
+				jszbEntity.xjzffs = xtzffs.ZYYJZHZF;
+			}
+			if (feeRelated.patZflist.Count() > 0)
+			{
                 foreach (var item in feeRelated.patZflist)
                 {
                     zfEntity2 = new HospSettlementPaymentModelEntity();
@@ -1414,32 +1375,32 @@ left join Ybjk_SN01_Mxxzy_Input (NOLOCK) fymx on xh=xmjfb.jfbbh and  fymx.mzzyh=
                     zfEntity2.CreateTime = DateTime.Now.AddSeconds(1);
                     db.Insert(zfEntity2);
                 }
-                jszbEntity.xjzffs = feeRelated.djjesszffs;
-            }
+				jszbEntity.xjzffs = feeRelated.djjesszffs;
+			}
 
-            //预交金支付 构建账户收支  //预交金支付 一定作为第一支付方式
-            if (zfEntity1 != null && zfEntity1.xjzffs == xtzffs.ZYYJZHZF)
-            {
-                var patid = db.IQueryable<HospPatientBasicInfoEntity>(p => p.zyh == jszbEntity.zyh && p.OrganizeId == jszbEntity.OrganizeId).Select(p => p.patid).FirstOrDefault();
-                if (patid <= 0)
-                {
-                    return;
-                }
-                decimal tye = 0;
-                if (feeRelated.yjjtye.Value > 0)
-                {
-                    tye = feeRelated.yjjtye.Value;
-                }
-                var accountEntity = db.IQueryable<InpatientAccountEntity>(p => p.patid == patid && p.zhxz == ((int)EnumXTZHXZ.ZYYJKZH) && p.zt == "1" && p.OrganizeId == jszbEntity.OrganizeId).FirstOrDefault();
-                if (accountEntity != null)
-                {
-                    zfEntity1.zh = accountEntity.zhCode;
-                    if (!((zfEntity1.zfje + tye) <= accountEntity.zhye && zfEntity1.zfje <= feeRelated.xjzfys.Value))
-                    {
-                        throw new FailedException("", "预交金账户信息有更新，请重新结算");
-                    }
-                    var zhszEntity = new InpatientAccountRevenueAndExpenseEntity()
-                    {
+			//预交金支付 构建账户收支  //预交金支付 一定作为第一支付方式
+			if (zfEntity1 != null && zfEntity1.xjzffs == xtzffs.ZYYJZHZF)
+			{
+				var patid = db.IQueryable<HospPatientBasicInfoEntity>(p => p.zyh == jszbEntity.zyh && p.OrganizeId == jszbEntity.OrganizeId).Select(p => p.patid).FirstOrDefault();
+				if (patid <= 0)
+				{
+					return;
+				}
+				decimal tye = 0;
+				if (feeRelated.yjjtye.Value > 0)
+				{
+					tye = feeRelated.yjjtye.Value;
+				}
+				var accountEntity = db.IQueryable<InpatientAccountEntity>(p => p.patid == patid && p.zhxz == ((int)EnumXTZHXZ.ZYYJKZH) && p.zt == "1" && p.OrganizeId == jszbEntity.OrganizeId).FirstOrDefault();
+				if (accountEntity != null)
+				{
+					zfEntity1.zh = accountEntity.zhCode;
+					if (!((zfEntity1.zfje + tye) <= accountEntity.zhye && zfEntity1.zfje <= feeRelated.xjzfys.Value))
+					{
+						throw new FailedException("", "预交金账户信息有更新，请重新结算");
+					}
+					var zhszEntity = new InpatientAccountRevenueAndExpenseEntity()
+					{
                         OrganizeId = jszbEntity.OrganizeId,
                         zhCode = accountEntity.zhCode,
                         zyh = accountEntity.zyh,
@@ -1450,48 +1411,48 @@ left join Ybjk_SN01_Mxxzy_Input (NOLOCK) fymx on xh=xmjfb.jfbbh and  fymx.mzzyh=
                         xjzffs = Constants.xtzffs.ZYYJZHZF,
                         jsnm = jszbEntity.jsnm,
                         zt = "1",
-                    };
-                    zhszEntity.Create(true);
-                    db.Insert(zhszEntity);
-                    //
-                    accountEntity.zhye = zhszEntity.zhye;
-                    db.Update(accountEntity);
-                    //预交金支付 账户收支
-                    if (feeRelated.yjjtye.Value > 0 && accountEntity.zhye == feeRelated.yjjtye.Value)
-                    {
-                        //还有一条收支取款（应该是预交金余额全退）
-                        var zhszEntity2 = new InpatientAccountRevenueAndExpenseEntity()
-                        {
-                            OrganizeId = jszbEntity.OrganizeId,
-                            zhCode = accountEntity.zhCode,
+					};
+					zhszEntity.Create(true);
+					db.Insert(zhszEntity);
+					//
+					accountEntity.zhye = zhszEntity.zhye;
+					db.Update(accountEntity);
+					//预交金支付 账户收支
+					if (feeRelated.yjjtye.Value > 0 && accountEntity.zhye == feeRelated.yjjtye.Value)
+					{
+						//还有一条收支取款（应该是预交金余额全退）
+						var zhszEntity2 = new InpatientAccountRevenueAndExpenseEntity()
+						{
+							OrganizeId = jszbEntity.OrganizeId,
+							zhCode = accountEntity.zhCode,
                             zyh = accountEntity.zyh,
                             szje = 0 - feeRelated.yjjtye.Value,
-                            zhye = accountEntity.zhye - feeRelated.yjjtye.Value,
-                            pzh = null,
-                            szxz = (int)EnumSZXZ.zyjsth,
-                            //xjzffs = Constants.xtzffs.ZYYJZHZF,
-                            xjzffs = Constants.xtzffs.XJZF,   //现金
-                            zt = "1",
-                        };
-                        zhszEntity2.Create(true);
-                        zhszEntity2.CreateTime = DateTime.Now.AddSeconds(1);
-                        db.Insert(zhszEntity2);
-                        //
-                        accountEntity.zhye = zhszEntity2.zhye;
-                    }
-                    else if (feeRelated.yjjtye.Value > 0)
-                    {
-                        throw new FailedException("ERROR_ACCOUNT_INFO", "预交账户结算成功，退余额失败");
-                    }
+							zhye = accountEntity.zhye - feeRelated.yjjtye.Value,
+							pzh = null,
+							szxz = (int)EnumSZXZ.zyjsth,
+							//xjzffs = Constants.xtzffs.ZYYJZHZF,
+							xjzffs = Constants.xtzffs.XJZF,   //现金
+							zt = "1",
+						};
+						zhszEntity2.Create(true);
+						zhszEntity2.CreateTime = DateTime.Now.AddSeconds(1);
+						db.Insert(zhszEntity2);
+						//
+						accountEntity.zhye = zhszEntity2.zhye;
+					}
+					else if (feeRelated.yjjtye.Value > 0)
+					{
+						throw new FailedException("ERROR_ACCOUNT_INFO", "预交账户结算成功，退余额失败");
+					}
 
-                    db.Update(accountEntity);
-                }
-                else
-                {
-                    throw new FailedException("ERROR_ACCOUNT_INFO", "获取预交金账户信息失败");
-                }
-            }
-        }
+					db.Update(accountEntity);
+				}
+				else
+				{
+					throw new FailedException("ERROR_ACCOUNT_INFO", "获取预交金账户信息失败");
+				}
+			}
+		}
 
 		#endregion
 
@@ -2646,7 +2607,23 @@ WHERE   xmjfb.zyh = @zyh  and xmjfb.tdrq<@jssj
 				db.Commit();
 			}
 		}
-		#endregion
-	}
+        #endregion
+
+        /// <summary>
+        /// 根据住院号获取LIS/PACS报告未完成数量
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="zyh"></param>
+        /// <returns></returns>
+        public int CountLisIncompletezy(string orgId, string zyh)
+        {
+            string sql = @" 
+select count(*) from [Newtouch_CIS].[dbo].[zy_lsyz] where zyh=@zyh and (syncStatus is null or syncStatus<>2) and yzlx in('6','7') and organizeId=@orgId and zt='1'";
+            var sqlpar = new List<SqlParameter>();
+            sqlpar.Add(new SqlParameter("@zyh", zyh));
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            return this.FirstOrDefault<int>(sql, sqlpar.ToArray());
+        }
+    }
 
 }

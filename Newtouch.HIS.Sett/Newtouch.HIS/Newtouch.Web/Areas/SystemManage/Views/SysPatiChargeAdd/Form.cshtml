@@ -1,0 +1,171 @@
+﻿@using Newtouch.Common.Operator;
+
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding: 20px 35px 0 2px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">病人性质</th>
+                <td class="formValue">
+                    <select class="form-control" name="brxz" id="brxz" required>
+                        <option value="">请选择</option>
+                    </select>
+                </td>
+                <th class="formTitle">大类</th>
+                <td class="formValue">
+                    <select id="dl" name="dl" class="form-control" required>
+                        <option value="">请选择</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">收费项目</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="sfxm" name="sfxm" required/>
+                </td>
+                <th class="formTitle">服务费比例</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="fwfbl" name="fwfbl" required/>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">附加显示分类</th>
+                <td class="formValue formDdlSelectorTd">
+                    <input type="text" class="form-control" id="fjxsdl" name="fjxsdl" required/>
+                </td>
+                <th class="formTitle">有效</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">建档人员</th>
+                <td class="formValue">
+                    <input type="text" class="form-control newtouch_Readonly" id="CreatorCode" name="CreatorCode" value=@OperatorProvider.GetCurrent().UserCode />
+                </td>
+                <th class="formTitle">建档日期</th>
+                <td class="formValue">
+                    <input type="text" class="form-control newtouch_Readonly" id="CreateTime" name="CreateTime" value=@DateTime.Now.ToString("yyyy-MM-dd") />
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        InitControl();
+        if (!!keyValue) {
+            $.ajax({
+                url: "/SystemManage/SysPatiChargeAdd/GetFormJson?r=" + Math.random(),
+                data: { keyValue: keyValue },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $('#sfxm').attr('data-sfxm', data.sfxm)
+                      .val(data.sfxmmc);
+                    $("#fjxsdl").attr('data-fjxsdl', data.fjxsdl)
+                        .val(data.fjxsdlmc);
+                }
+            });
+        }
+    })
+
+    function InitControl() {
+        dlList();
+    }
+
+    function dlList() {
+        $("#dl").bindSelect({
+            url: "/SystemManage/SysPatiChargeLogic/GetdlSelect"
+        });
+    }
+    //病人性质
+    $("#brxz").newtouchBindSelect({
+        datasource: function () {
+            var resultObjArr = new Array();
+            $.each(top.window.clients.sysPatientNatureList, function (idx, val) {
+                resultObjArr.push( { id: val.brxz, text: val.brxzmc });
+            });
+            return resultObjArr;
+        }
+    });
+
+    //收费项目
+    $('#sfxm').newtouchFloatingSelector({
+        width: 600,
+        height: 280,
+        caption: "收费项目",
+        url: '/SystemManage/SysChargeItem/GetChargeItemSelectData',
+        ajaxparameters: function () {
+            if ($.trim($('#sfxm').val()).length == 0) {
+                return;
+            }
+            return "keyword=" + $.trim($('#sfxm').val());
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#sfxm').attr('data-sfxm', $thistr.attr('data-sfxm'))
+                .attr('data-dl', $thistr.attr('data-dl'))
+                .val($thistr.attr('data-sfxmmc'));
+        },
+        colModel: [{ label: '收费项目', name: 'sfxm', widthratio: 10 },
+            { label: '收费项目名称', name: 'sfxmmc', widthratio: 15 },
+            { label: '拼音', name: 'py', widthratio: 10 },
+            { label: '单位', name: 'dw', widthratio: 7 },
+            { label: '单价', name: 'dj', widthratio: 8 },
+            { label: '大类', name: 'dl', widthratio: 10 },
+            { label: '门诊住院标志', name: 'mzzybz', widthratio: 13 }
+        ]
+    });
+
+    //附加显示大类
+    $("#fjxsdl").newtouchFloatingSelector({
+        height: 200,
+        width: 350,
+        id: 'GetfjsfdlList',
+        url: '/SystemManage/SysPatiChargeAdd/GetfjsfdlList',
+        ajaxmethod: 'POST',
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.keyword = $("#fjxsdl").val();
+            return reqData;
+        },
+        caption: "附加收费大类",
+        colModel: [
+            { label: '大类', name: 'dl', widthratio: 25 },
+            { label: '大类名称', name: 'dlmc', widthratio: 25 },
+            { label: '拼音', name: 'py', widthratio: 25 },
+            { label: '门诊住院标志', name: 'mzzybz', widthratio: 25 }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#fjxsdl").attr('data-fjxsdl', $thistr.attr('data-dl'))
+                .val($thistr.attr('data-dlmc'));
+            return;
+        }
+
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        params['sfxm'] = $('#sfxm').attr('data-sfxm');
+        params['fjxsdl'] = $('#fjxsdl').attr('data-fjxsdl');
+        $.submitForm({
+            url: "/SystemManage/SysPatiChargeAdd/SubmitForm?keyValue=" + keyValue,
+            param: params,
+            success: function () {
+                $.currentWindow().window.frames['iframeExpenseManage'].$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

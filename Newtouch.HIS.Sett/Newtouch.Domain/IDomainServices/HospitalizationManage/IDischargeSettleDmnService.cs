@@ -71,14 +71,6 @@ namespace Newtouch.HIS.Domain.IDomainServices.HospitalizationManage
             , string outTradeNo,string jslx, out int jsnm);
 
         /// <summary>
-        /// 获取按大类分组费用明细
-        /// </summary>
-        /// <param name="zyh"></param>
-        /// <param name="orgId"></param>
-        /// <param name="sfdl"></param>
-        /// <returns></returns>
-        IList<HospFeeChargeCategoryGroupDetailVO> GetHospGroupFeeDetailVOList(string zyh, string orgId, string sfdl);
-        /// <summary>
         /// 获取按大类分组费用
         /// </summary>
         /// <param name="zyh"></param>
@@ -86,7 +78,7 @@ namespace Newtouch.HIS.Domain.IDomainServices.HospitalizationManage
         /// <returns></returns>
         IList<HospFeeChargeCategoryGroupVO> GetHospGroupFeeVOList(string zyh, string orgId, string ver);
         /// <summary>
-        /// 获取按大类分组费用-明细费用分页
+        /// 获取按大类分组费用-明细费用
         /// </summary>
         /// <param name="zyh"></param>
         /// <param name="orgId"></param>
@@ -226,5 +218,6 @@ namespace Newtouch.HIS.Domain.IDomainServices.HospitalizationManage
         string ValialPartialUploadData(string zyh, string orgId, DateTime jssj);
         InpatIentFeeInfo GetCQAlreadyUploadFeeDetailsV2(string zyh, string orgId, DateTime jssj);
         #endregion
+        int CountLisIncompletezy(string orgId, string zyh);
     }
 }

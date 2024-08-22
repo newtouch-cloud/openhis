@@ -63,7 +63,9 @@ namespace Newtouch.HIS.Domain.IDomainServices
 		/// <param name="ksrq">开始日期</param>
 		/// <param name="jsrq">结束日期</param>
 		/// <returns></returns>
-		IList<Qsdzz> GetQsdzzs(string organizeId, string ksrq, string jsrq);
+		IList<Qsdzz> GetQsdzzs(string organizeId, string ksrq, string jsrq, string qslx, string xz);
+
+		int inserqssq(System.Xml.XmlDocument ybqssq, string orgid);
 
 		/// <summary>
 		/// 获取清算明细（上半部分）
@@ -116,5 +118,14 @@ namespace Newtouch.HIS.Domain.IDomainServices
 		IList<RdrlsList> lsdzList(string orgid, string ksrq, string jsrq);
 
 		IList<RdrNewList> Newdzfysj(string orgid, string rq);
-	}
+        /// <summary>
+        /// 获取本地对账明细数据
+        /// </summary>
+        /// <param name="orgid"></param>
+        /// <param name="ksrq"></param>
+        /// <param name="jsrq"></param>
+        /// <returns></returns>
+        IList<HistoryCheckVO> GetHistoryCheckList(string orgid, string ksrq, string jsrq);
+        
+    }
 }

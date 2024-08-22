@@ -1,0 +1,109 @@
+﻿
+@{
+    ViewBag.Title = "";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                </td>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+                <td class="formValue"></td>
+            </tr>
+
+        </table>
+    </div>
+</div>
+
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    var isHospAdministrator = '@(ViewBag.IsHospAdministrator)';
+    var curUserCode = '@(ViewBag.CurUserCode)';
+
+    var uri = 'ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f%e8%b4%ab%e5%9b%b0%e4%ba%ba%e5%8f%a3%e5%b0%b1%e8%af%8a%e7%bb%9f%e8%ae%a1%e8%a1%a8&rs:Command=Render';
+   
+    function submit() {
+
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        var url = getUrl();
+
+        url += "&ksrq=" + $('#kssj').val();
+        url += "&jsrq=" + $.getDate({ date: $('#jssj').val() }) + ' 23:59:59';
+
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+       
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+
+        
+    }
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+    
+
+        setTimeout(function () { submit(); }, 100);
+    });
+
+    function getUrl() {
+        if (uri.StartWith('/')) {
+            uri = uri.substr(1);
+        }
+        var srcUrl = uri;
+        srcUrl = reportServerHOST + srcUrl;
+
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "orgId=";
+            srcUrl += orgId;
+        }
+        return srcUrl;
+    }
+
+</script>
+
+

@@ -3,8 +3,11 @@ using System.Web.Mvc;
 using FrameworkBase.MultiOrg.Domain.IRepository;
 using Newtouch.Common.Operator;
 using Newtouch.Core.Common.Utils;
+using Newtouch.HIS.Application.Implementation.OutpatientManage.MzBespeakRegisterProcess;
 using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.DTO;
+using Newtouch.HIS.Domain.DTO.InputDto;
+using Newtouch.HIS.Domain.DTO.OutputDto.OutpatientManage;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IDomainServices.OutpatientManage;
@@ -34,38 +37,25 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         private readonly IRefundDmnService _refundDmnService;
         private readonly ISysConfigRepo _sysConfigRepo;
         private readonly IprintOutpatientChargeBillDmnService _iprintOutpatientChargeBillDmnService;
-        private readonly ICqybMedicalReg02Repo _iCqybMedicalReg02Repo;
-        private readonly ICqybUploadInPres04Repo _iCqybUploadInPres04Repo;
-        private readonly IOutPatChargeDmnService _iOutPatChargeDmnService;
+	    private readonly ICqybMedicalReg02Repo _iCqybMedicalReg02Repo;
+	    private readonly ICqybUploadInPres04Repo _iCqybUploadInPres04Repo;
+		private readonly IOutPatChargeDmnService _iOutPatChargeDmnService;
         private readonly IOutPatientDmnService _iOutPatientDmnService;
         private readonly IMzghbookRepo _iMzghBookRepo;
         private readonly ICqybMedicalInPut02Repo _cqybmedicalInput02Repo;
 
-        #region 挂号排班
-
-        /// <summary>
-        /// 挂号排班List
-        /// </summary>
-        /// <param name="keyword">科室/医生</param>
-        /// <param name="mzlx">门诊类型 普通门诊/急症/专家门诊</param>
-        /// <param name="withFees"></param>
-        /// <returns></returns>
-        [HttpPost]
+		#region 挂号排班
+		/// <summary>
+		/// 挂号排班List
+		/// </summary>
+		/// <param name="keyword">科室/医生</param>
+		/// <param name="mzlx">门诊类型 普通门诊/急症/专家门诊</param>
+		/// <returns></returns>
+		[HttpPost]
         [HandlerAjaxOnly]
-        public JsonResult GetRegScheduleList(string keyword, string mzlx, bool? withFees)
+        public JsonResult GetRegScheduleList(string keyword, string mzlx)
         {
             var data = _outpatientRegApp.GetRegScheduleList(keyword, mzlx);
-            if (withFees != null && data != null)
-            {
-                if (withFees.Value)
-                {
-                    data = data.FindAll(p => (p.sfxmdj + p.zlxmdj) > 0).ToList();
-                }
-                else
-                {
-                    data = data.FindAll(p => (p.sfxmdj + p.zlxmdj) <= 0).ToList();
-                }
-            }
             return Json(data);
         }
 
@@ -77,24 +67,13 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <returns></returns>
         public JsonResult GetNewRegScheduleList(string keyword, string mzlx)
         {
-            var data = _iOutPatientDmnService.GetNewRegScheduleList(keyword, mzlx, this.OrganizeId);
+            var data = _iOutPatientDmnService.GetNewRegScheduleList(keyword,mzlx,this.OrganizeId);
             return Json(data);
         }
-
-        public ActionResult GetNewRegSchedulebyGroupList(string keyword, string pbks, string mzlx, DateTime? OutDate, string ys, bool? withFees)
+        
+        public ActionResult GetNewRegSchedulebyGroupList(string keyword, string pbks, string mzlx,DateTime? OutDate,string ys)
         {
-            var data = _iOutPatientDmnService.GetRegScheduleListbyGroup(keyword, mzlx, pbks, this.OrganizeId, OutDate, ys);
-            if (withFees != null && data != null)
-            {
-                if (withFees.Value)
-                {
-                    data = data.FindAll(p => p.RegFee > 0).ToList();
-                }
-                else
-                {
-                    data = data.FindAll(p => p.RegFee <= 0).ToList();
-                }
-            }
+            var data = _iOutPatientDmnService.GetRegScheduleListbyGroup(keyword,mzlx,pbks,this.OrganizeId, OutDate, ys);
             return Content(data.ToJson());
         }
         /// <summary>
@@ -104,19 +83,19 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="patid"></param>
         /// <returns></returns>
         [HandlerAjaxOnly]
-        public ActionResult GetIsMzghBook(Pagination pagination, string mzlx, string patid, string isfeegroup, string yyzt, string ghly, string keyValue, string ks,
+        public ActionResult GetIsMzghBook(Pagination pagination,string mzlx,string patid,string isfeegroup, string yyzt, string ghly, string keyValue,string ks,
             DateTime? yykssj = null, DateTime? yyjssj = null)
         {
-            if (pagination.sidx == null)
+            if (pagination.sidx==null)
             {
                 pagination.sidx = "Outdate";
                 pagination.sord = "desc";
                 pagination.rows = 20;
                 pagination.page = 1;
-                var record = _iOutPatientDmnService.GetIsMzghBookSchedule(pagination, mzlx, patid, this.OrganizeId, isfeegroup, yyzt, ghly, keyValue, ks, yykssj, yyjssj);
+                var record= _iOutPatientDmnService.GetIsMzghBookSchedule(pagination, mzlx, patid, this.OrganizeId, isfeegroup, yyzt, ghly, keyValue,ks, yykssj, yyjssj);
                 return Content(record.ToJson());
             }
-            var list = _iOutPatientDmnService.GetIsMzghBookSchedule(pagination, mzlx, patid, this.OrganizeId, isfeegroup, yyzt, ghly, keyValue, ks, yykssj, yyjssj);
+            var list = _iOutPatientDmnService.GetIsMzghBookSchedule(pagination,mzlx,patid,this.OrganizeId,isfeegroup,yyzt,ghly,keyValue,ks,yykssj,yyjssj);
             var data = new
             {
                 rows = list,
@@ -153,11 +132,18 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="ks"></param>
         /// <param name="zje"></param>
         /// <returns></returns>
-        public ActionResult UpdateMzGhBook(string jsnm, string mzh, string patid, string ks, string zje, string outdate, string mzlx, string ghf)
+        public ActionResult UpdateMzGhBook(string jsnm,string mzh,string patid,string ks,string zje,string outdate,string mzlx,string ghf)
         {
-            _iMzghBookRepo.UpdateMzGhAppointment(jsnm, mzh, Convert.ToInt32(patid), ks, zje, "His", this.OrganizeId, outdate, mzlx, ghf);
+            _iMzghBookRepo.UpdateMzGhAppointment(jsnm,  mzh, Convert.ToInt32(patid),  ks,  zje,  "His",this.OrganizeId,outdate,mzlx,ghf);
             return Success();
         }
+
+		public ActionResult FZsjTB()
+		{
+			string ghrq = DateTime.Now.ToString("yyyy-MM-dd");
+			_iMzghBookRepo.FZsjTB(ghrq,this.UserIdentity.rygh,this.OrganizeId);
+			return Success();
+		}
         /// <summary>
         /// 预约挂号签到
         /// </summary>
@@ -245,43 +231,6 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             return View();
         }
 
-
-        /// <summary>
-        /// 门诊挂号页面---先挂号后结算页面，供cis调用
-        /// </summary>
-        /// <returns></returns>
-        public ActionResult OutpatientRegForCis2018(string mzh)
-        {
-            ViewBag.ReportServerHOST = ConfigurationHelper.GetAppConfigValue("ReportServer.HOST");
-            ViewBag.OrgId = this.OrganizeId;
-            //开关：预约挂号
-            var brSwitch = (bool)_sysConfigRepo.GetBoolValueByCode("BespeakRegisterSwitch", OrganizeId, false);
-            ViewBag.ISOpenBespeakRegister = brSwitch ? "true" : "false";
-            var userInfoModel = _outpatientRegistRepo.GetBasicInfoPatInfoInRegister(mzh, OrganizeId);
-            return View(userInfoModel);
-        }
-
-
-        /// <summary>
-        /// 转诊
-        /// </summary>
-        public ActionResult ReferralForm(string mzh)
-        {
-            ViewBag.ReportServerHOST = ConfigurationHelper.GetAppConfigValue("ReportServer.HOST");
-            ViewBag.OrgId = this.OrganizeId;
-            //开关：预约挂号
-            var brSwitch = (bool)_sysConfigRepo.GetBoolValueByCode("BespeakRegisterSwitch", OrganizeId, false);
-            ViewBag.ISOpenBespeakRegister = brSwitch ? "true" : "false";
-            var userInfoModel = _outpatientRegistRepo.GetBasicInfoPatInfoInRegister(mzh, OrganizeId);
-            return View(userInfoModel);
-        }
-
-        public ActionResult submitReferralForm(int patid, string ks, string ys, int ghnm, string mzh, string zzyy,string ghpbId)
-        {
-            _outPatientSettleDmnService.submitReferralForm(patid, ks, ys, OrganizeId, this.UserIdentity.UserCode, ghnm, mzh, zzyy, ghpbId);
-            return Success(null);
-        }
-
         /// <summary>
         /// 判断是否重复挂号
         /// </summary>
@@ -292,7 +241,16 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             var result = _outpatientRegistRepo.AllowRegh(blh, OrganizeId);
             return Content(result.ToJson());
         }
-
+        /// <summary>
+        /// 修改手机号
+        /// </summary>
+        /// <param name="blh"></param>
+        /// <returns></returns>
+        public ActionResult UpdatePatPhone(string patid,string phone)
+        {
+            var result = _outpatientRegistRepo.UpdatePatPhone(patid, phone,UserIdentity.rygh, OrganizeId);
+            return Content(result.ToJson());
+        }
         /// <summary>
         /// 病人查询浮层
         /// </summary>
@@ -335,7 +293,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="ys"></param>
         /// <param name="QueueNo">预约就诊序号</param>
         /// <returns></returns>
-        public ActionResult GetNewMzhJzxh(int patid, string ghpbId, string ks, string ys, string mjzbz, string QueueNo, string OutDate, bool isybjy)
+        public ActionResult GetNewMzhJzxh(int patid,string ghpbId,string ks,string ys,string mjzbz,string QueueNo,string OutDate,bool isybjy)
         {
             var ysxx = new CqybGjbmInfoVo();
             if (patid <= 0 || string.IsNullOrWhiteSpace(ghpbId) || string.IsNullOrWhiteSpace(ks))
@@ -351,7 +309,20 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             {
                 jzxh = mzhjzxh.Item1,
                 mzh = mzhjzxh.Item2,
-                ysxx = ysxx,
+                ysxx= ysxx,
+            };
+            return Success(null,data);
+        }
+        /// <summary>
+        /// 获取医保就诊登记所需信息
+        /// </summary>
+        /// <param name="mzh"></param>
+        /// <returns></returns>
+        public ActionResult GetYbjzdjVo(string mzh)
+        {
+            var data = new
+            {
+                ysxx = _outPatientSettleDmnService.GetYbjzdjVo(mzh,this.OrganizeId)
             };
             return Success(null, data);
         }
@@ -382,7 +353,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="qzjzxh">前置就诊序号</param>
         /// <param name="qzmzh">前置门诊号</param>
         /// <returns></returns>
-        //[HandlerAjaxOnly]
+        [HandlerAjaxOnly]
         public ActionResult Save(int patid, string kh, string ghly, string mjzbz,
             string ks, string ys, string ksmc, string ysmc, string ghxm, string zlxm
             , int ghpbId
@@ -393,7 +364,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             , string ybjsh
             , short? qzjzxh
             , string qzmzh
-            , string jzyy, string jzid, string jzlx, string bzbm, string bzmc
+            , string jzyy,string jzid,string jzlx,string bzbm,string bzmc,string isjm
             )
         {
             try
@@ -407,7 +378,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 }
                 object newJszbInfo;
                 _outpatientRegApp.Save(patid, kh, ghly, mjzbz,
-                ks, ys, ksmc, ysmc, ghxm, zlxm, fph, sfrq, isCkf, isGbf, ghpbId, feeRelated, brxz, ybjsh, Request.Params["mzyyghId"], ref qzjzxh, ref qzmzh, jzyy, jzid, jzlx, bzbm, bzmc, out newJszbInfo);
+                ks, ys, ksmc, ysmc, ghxm, zlxm, fph, sfrq, isCkf, isGbf, ghpbId, feeRelated, brxz, ybjsh, Request.Params["mzyyghId"], ref qzjzxh, ref qzmzh, jzyy,jzid,  jzlx,  bzbm,  bzmc, isjm, out newJszbInfo);
 
                 return Success(null, newJszbInfo);
             }
@@ -417,39 +388,8 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 {
                     //医保端已挂号，HIS挂号失败，得取消医保端的挂号，提示其重新挂
                     //20181018在Client调
-                }
-                throw ex;
-            }
-        }
-        [HandlerAjaxOnly]
-        public ActionResult UnSettSave(int patid, string kh, string ghly, string mjzbz,
-           string ks, string ys, string ksmc, string ysmc, string ghxm, string zlxm
-           , int ghpbId
-           , bool isCkf, bool isGbf
-           , string brxz
-           , string ybjsh
-           , short? qzjzxh
-           , string qzmzh
-           , string jzyy, string jzid, string jzlx, string bzbm, string bzmc
-           )
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(mjzbz) || string.IsNullOrWhiteSpace(ks) || string.IsNullOrWhiteSpace(ksmc) || ghpbId < 0
-                    || string.IsNullOrWhiteSpace(brxz))
-                {
-                    //181008必须得传brxz
-                    //zje可以等于0，但不能小于0
-                    return Error("请求数据不完整");
-                }
-                object newJszbInfo;
-                _outpatientRegApp.UnSettSave(patid, kh, ghly, mjzbz,
-                ks, ys, ksmc, ysmc, ghxm, zlxm, isCkf, isGbf, ghpbId, brxz, ybjsh, ref qzjzxh, ref qzmzh, jzyy, jzid, jzlx, bzbm, bzmc, out newJszbInfo);
 
-                return Success(null, newJszbInfo);
-            }
-            catch (Exception ex)
-            {
+                }
                 throw ex;
             }
         }
@@ -466,6 +406,28 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         }
 
         #endregion
+
+        /// <summary>
+        /// 预约挂号
+        /// </summary>
+        /// <param name="zjlx"></param>
+        /// <param name="zjh"></param>
+        /// <param name="blh"></param>
+        /// <returns></returns>
+        public ActionResult BespeakRegister(int? zjlx, string zjh, string blh, string ksCode, int mzlx, string ysgh)
+        {
+            var param = new BespeakRegisterParamDTO
+            {
+                blh = blh,
+                ksCode = ksCode,
+                mzlx = mzlx,
+                ysgh = ysgh,
+                zjh = zjh,
+                zjlx = zjlx
+            };
+            var result = new MzBespeakRegisterProcess(param).Process();
+            return result.IsSucceed ? Success("", result.Data) : Error(result.ResultMsg);
+        }
 
         #endregion
         public ActionResult OutpatientRegSearch()
@@ -531,13 +493,13 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         #region 重庆医保
         public ActionResult SaveCqybMedicalReg(CqybMedicalReg02Entity entity, CqybMedicalInPut02Entity medicalInList)
         {
-
-            if (entity != null)
-            {
-                entity.OrganizeId = this.OrganizeId;
-                entity.zt = "1";
+           
+			if (entity!=null)
+			{
+				entity.OrganizeId = this.OrganizeId;
+				entity.zt = "1";
                 _iCqybMedicalReg02Repo.SaveCqybMedicalReg(entity, null);
-            }
+			}
 
             var jytype = entity.jytype;
             if (medicalInList != null)
@@ -549,44 +511,49 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             }
 
             return Success();
-        }
-        /// <summary>
-        /// 获取挂号费用
-        /// </summary>
-        /// <param name="ghlx"></param>
-        /// <param name="zlxm"></param>
-        /// <param name="isCkf"></param>
-        /// <param name="isGbf"></param>
-        /// <returns></returns>
-        public ActionResult GetOutpatientGhFees(string ghlx, string zlxm, bool isCkf, bool isGbf, string qzmzh, string yszjh, string ksbm, string ksbmmc, string gjysdm)
-        {
-            var ghdata = _iOutPatChargeDmnService.GetChongQingGHMzjs(ghlx, zlxm, isCkf, isGbf, this.OrganizeId);
-            decimal ybje = Convert.ToDecimal(0.0000);
-            decimal zfje = Convert.ToDecimal(0.0000);
-            foreach (var item in ghdata)
-            {
-                //判断项目是医保项目还是自费项目，此处因为sypc肯定为null，故查询时先以此字段作为医保标志字段赋值，可以不再添加新字段
-                if (item.issc == 1)
-                {
-                    ybje += Convert.ToDecimal(item.je);
-                }
-                else
-                {
-                    zfje += Convert.ToDecimal(item.je);
-                }
-            }
-            var retData = new
-            {
-                ybzje = ybje,
-                zfzje = zfje
-            };
-            return Content(retData.ToJson());
-        }
+	    }
+		/// <summary>
+		/// 获取挂号费用
+		/// </summary>
+		/// <param name="ghlx"></param>
+		/// <param name="zlxm"></param>
+		/// <param name="isCkf"></param>
+		/// <param name="isGbf"></param>
+		/// <returns></returns>
+	    public ActionResult GetOutpatientGhFees(string ghlx, string zlxm, bool isCkf, bool isGbf,string qzmzh,string yszjh,string ksbm,string ksbmmc,string gjysdm)
+	    {
+			var ghdata = _iOutPatChargeDmnService.GetChongQingGHMzjs(ghlx, zlxm, isCkf, isGbf, this.OrganizeId);
+		    decimal ybje = Convert.ToDecimal(0.0000);
+		    decimal zfje = Convert.ToDecimal(0.0000);
+			foreach (var item in ghdata)
+		    {
+				//判断项目是医保项目还是自费项目，此处因为sypc肯定为null，故查询时先以此字段作为医保标志字段赋值，可以不再添加新字段
+			    if (item.issc==1)
+			    {
+					ybje += Convert.ToDecimal(item.je);
+			    }
+			    else
+			    {
+					zfje += Convert.ToDecimal(item.je);
+				}
+		    }
+		    var retData = new 
+		    {
+			    ybzje = ybje,
+			    zfzje = zfje
+			};
+			return Content(retData.ToJson());
+	    }
         #endregion
 
 
-
+      
         public ActionResult OutPatientSbkhInput(string from = "")
+        {
+            ViewBag.from = from;
+            return View();
+        }
+        public ActionResult OutPatientSfzhInput(string from = "")
         {
             ViewBag.from = from;
             return View();
@@ -681,16 +648,6 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             {
                 return Content("文件导出失败，请返回列表页重试");
             }
-        }
-        /// <summary>
-        /// 修改手机号
-        /// </summary>
-        /// <param name="blh"></param>
-        /// <returns></returns>
-        public ActionResult UpdatePatPhone(string patid, string phone)
-        {
-            var result = _outpatientRegistRepo.UpdatePatPhone(patid, phone, UserIdentity.rygh, OrganizeId);
-            return Content(result.ToJson());
         }
     }
 }

@@ -85,5 +85,9 @@ namespace Newtouch.HIS.Domain.Entity.PatientManage
         public string zt { get; set; }
         public string memo { get; set; }
 
+        /// <summary>
+        /// 订单号
+        /// </summary>
+        public string outTradeNo { get; set; }
     }
 }

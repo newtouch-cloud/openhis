@@ -273,6 +273,7 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
                         zyYpjfb.cls = (short?)ItemFeeVO[i].cls;
                         zyYpjfb.zxks = ItemFeeVO[i].yfdm; //药品补记账  默认执行科室为
                         _HospMedicinFeeApp.SubmitForm(zyYpjfb, null);
+                        _hospdrugbillingRepo.Updatezyaddfee(OrganizeId, ItemFeeVO[i].sl, ItemFeeVO[i].yfdm, ItemFeeVO[i].sfxm);
                         #endregion
                     }
                 }

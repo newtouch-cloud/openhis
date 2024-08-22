@@ -40,6 +40,7 @@ namespace Newtouch.HIS.Domain.ValueObjects.HospitalizationManage
         /// 
         /// </summary>
         public string ybjylx { get; set; }
+
         public string brxzlb { get; set; }
         /// <summary>
         /// 

@@ -5,7 +5,6 @@
     var invoiceReportUrl = SysConfigReader.OrgReportLink("NewInpatientSett");
     var invoiceReportUrls = SysConfigReader.OrgReportLink("NewInpatientSetts");
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode= Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
@@ -75,11 +74,17 @@
             colModel: [
                 { label: 'jsnm', name: 'jsnm', key: true, hidden: true },
                 {
-                    label: "操作", name: "", width: 100, align: 'left',
+                    label: "操作", name: "", width: 220, align: 'left',
                     formatter: function (cellvalue, options, rowobject) {
                         var str = "";
                         // if (!!rowobject.fph) {
-                        str += '&nbsp;<a class="btn btn-default" title="打印发票" style="width: 80%;" onclick="printFp(\'' + rowobject.jsnm + '\')">打印发票</a>';
+                        str += '&nbsp;<a class="btn btn-default" title="开具票据" style="width: 12%;" onclick="openInvoice(\'' + rowobject.zyh + '\',\'' + rowobject.jsnm + '\')">开票</a>';
+                        str += '&nbsp;<a class="btn btn-default" title="查询打印发票" style="width: 12%;" onclick="printFp(\'' + rowobject.zyh + '\',\'' + rowobject.jsnm + '\')">打票</a>';
+                        str += '<a class="btn btn-default" title="打印小票" style="width: 12%;" onclick="printReceipt(\'' + rowobject.zyh + '\',\'' + rowobject.jsnm + '\')">小票</a>';
+
+                        if (rowobject.zxlsh != null) {
+                            str += '<a class="btn btn-default" title="打印医保结算单" style="width: 30%;" onclick="printybjsd(\'' + rowobject.zxlsh + '\')">医保结算单</a>';
+                        }
                         //}
                         //str += '&nbsp;<a class="btn btn-default" title="发票补打" style="width: 26%;" onclick="supplementprintFp(\'' + rowobject.jsnm + '\')">发票补打</a>';
                         return str;
@@ -104,8 +109,9 @@
                 { label: '总金额', name: 'zje', width: 80, align: 'left', formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 } },
                 { label: '现金支付', name: 'xjzf', width: 80, align: 'left', formatter: 'number', formatoptions: { thousandsSeparator: ",", decimalPlaces: 2 } },
                 { label: '结算人员', name: 'CreatorCode', width: 60, align: 'left' },
-                { label: '结算时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-                
+                { label: '医保结算号', name: 'zxlsh', width: 120, align: 'left' },
+                { label: '结算时间', name: 'CreateTime', width: 120, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }    },
+
             ],
             pager: "#gridPager",
             sortname: 'CreateTime desc',
@@ -191,15 +197,15 @@
             }
         });
     }
-    
+
     //打印汇总清单
 
     var curUserCode = '@(ViewBag.CurUserCode)';
     //打印明细
     var srcUrl = "";
     $("#HZQD").click(function () {
-        
-        var srcUrl = '@reportUrl' + "?tempCode=96" + "&hospitalCode=" + orgId + "&zyh=" + zyhs + "&jsnm=" + jsnms + "&systemCode=" + '@reportSystemCode';
+
+        var srcUrl = '@reportUrl' + "?tempCode=96" + "&hospitalCode=" + orgId + "&zyh=" + zyhs + "&jsnm=" + jsnms;
 
         //var urldy = "/ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f汇总清单统计表&rs:Command=Render&rc:Stylesheet=MyStyleSheet&orgId=" + orgId + "&CZY=" + curUserCode + "&zyh=" + zyhs + "&jsnm=" + jsnms;
         //if (urldy.StartWith('/')) {
@@ -208,38 +214,124 @@
         //srcUrl= urldy;
         //srcUrl = reportServerHOST + srcUrl;
         window.open(srcUrl);
+    })
 
-
-    })    
-        
     //医保出院结算单
     $("#btn_cyjsd_print").click(function () {
         var zyh = $("#gridList").jqGridRowValue().zyh;
+        var brxzmc = $("#gridList").jqGridRowValue().brxzmc;
+
         if (!!zyh) {
-            var jsdurl = reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2fChongqing医保出院结算单&rs:Command=Render&rc:Stylesheet=MyStyleSheet&orgId=" + orgId + "&zyh=" + zyh;
-            window.open(jsdurl);
+            if (brxzmc != "自费") {
+                var srcUrl = '@reportUrl' + "?tempCode=1268" + "&hospitalCode=" + orgId + "&jsnm=" + jsnms;
+                window.open(srcUrl);
+                //var jsdurl = reportServerHOST + "/ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2fChongqing医保出院结算单&rs:Command=Render&rc:Stylesheet=MyStyleSheet&orgId=" + orgId + "&zyh=" + zyh;
+                //window.open(jsdurl);
+            } else {
+                $.modalAlert("请选择医保患者", "warning");
+            }
         }
-        else {
-            $.modalAlert("请选择一条结算记录","warning");
-        }
+            else {
+                $.modalAlert("请选择一条结算记录", "warning");
+            }
     });
-
-
-
-
-
-
-
-
 </script>
 <script type="text/javascript">
-    function printFp(jsnm, ver) {
-        var zyh = $("#gridList").jqGridRowValue().zyh;
+    function printFp(zyh,jsnm, ver) {
+        @*var zyh = $("#gridList").jqGridRowValue().zyh;
         var orgId = '@curOpr.OrganizeId';
-        var uri = '@Html.Raw(reportUrl)' + "?tempCode=05" + "&jsnm=" + jsnm + "&orgId=" + orgId + "&zyh=" + zyh + "&systemCode=" + '@reportSystemCode';
+        var uri = '@Html.Raw(reportUrl)' + "?tempCode=05" + "&jsnm=" + jsnm + "&orgId=" + orgId + "&zyh=" + zyh;
         window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        *@
+        var requestJson = { "BusinessName": "查看发票", "paySettlementNo": jsnm }
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") {
+                    window.open(data.data.pictureUrl,
+                        "_blank",
+                        "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("查询电子票失败[" +data.mes + "]", 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('查询电子票异常[' + ex + ']', 'error');
+                return;
+            }
+        });
     }
-
+    //开票
+    function openInvoice(zyh, jsnm) {
+        var requestJson = { "BusinessName": "开票", "paySerialNo": zyh, "paySettlementNo": jsnm, "type": "住院", "PlaceCode": "003" };//开票点先写死003
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") {
+                    $.loading(true, '正在开据电子票据，请稍后...');
+                    setTimeout(function () {
+                        window.open(data.data.pictureUrl,
+                            "_blank",
+                            "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+                        $.loading(false);
+                    }, 3000);
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert('开具票据失败[' + data.mes + ']', 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('开具票据异常[' + ex + ']', 'error');
+                return;
+            }
+        });
+    }
+    //打印凭条
+    function printReceipt(zyh, jsnm) {
+        $.loading(true, '正在打印电子票据凭条，请稍后...');
+        var requestJson = { "BusinessName": "打印凭条", "paySerialNo": zyh, "paySettlementNo": jsnm, "type": "住院", "PlaceCode": "003" };//开票点先写死003
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") $.loading(false);
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert('打印票据凭条失败[' + data.mes + ']', 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('打印票据凭条失败[' + ex + ']', 'error');
+                return;
+            }
+        });
+    }
     //发票补打
     function supplementprintFp(jsnm) {
         tempJSNM = jsnm;
@@ -267,12 +359,37 @@
             dataType: "json",
             success: function (data) {
                 //打印
-                printFp(tempJSNM,"N");
+                printFp(zyhs,tempJSNM,"N");
             }
         });
     }
 
+    function printybjsd(setlId) {
+    $.loading(true, '正在查询住院医保结算单据，请稍后...');
 
-
-
+    var inputp0001 = { "mzzy_lx": "2", "setlId": setlId, "operatorId": '@curOpr.UserCode', "operatorName": '@curOpr.UserName'  };
+   //  var inputp0001 = { "mzzy_lx": "2", "setlId": setlId, "operatorId": "000000", "operatorName": "admin" };
+    $.ajax({
+        type: "POST",
+        url: "http://127.0.0.1:33333/api/YiBao/Print_P0001",
+        dataType: "json",
+        data: inputp0001,
+        async: false,
+        success: function (data) {
+            if (data.code == "0") $.loading(false);
+            else {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('打开医保结算单失败[' + data.mes + ']', 'error');
+                return;
+            }
+        },
+        error: function (request, error, ex) {
+            $.loading(false);
+            isuccer = false;
+            $.modalAlert('调用医保接口P0001失败！请检查医保接口程序是否已运行。[' + ex + ']', 'error');
+            return;
+        }
+    });
+}
 </script>

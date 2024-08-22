@@ -21,6 +21,8 @@ using FrameworkBase.MultiOrg.Application;
 using FrameworkBase.MultiOrg.Domain.Entity;
 using FrameworkBase.MultiOrg.Domain.IRepository;
 using Newtouch.Core.Common.Exceptions;
+using Microsoft.Office.Interop.Excel;
+using Newtouch.Infrastructure.Model;
 
 namespace Newtouch.HIS.Application.Implementation
 {
@@ -56,7 +58,7 @@ namespace Newtouch.HIS.Application.Implementation
         {
             var chargeDetailsList = _outPatienChargeQueryDmnService.GetRecordsByJsnm(jsnm);
 
-            var mzsfcxdlPzStr = _sysConfigRepo.GetValueByCode(Constants.xtmzpz.MZSFCX_DL, OperatorProvider.GetCurrent().OrganizeId);
+            var mzsfcxdlPzStr = _sysConfigRepo.GetValueByCode(Infrastructure.Constants.xtmzpz.MZSFCX_DL, OperatorProvider.GetCurrent().OrganizeId);
             var arrDl = mzsfcxdlPzStr.TrimEnd(',').Split(',');
 
             var sysDlList = _sysChargeMajorClassRepo.GetLazyList(OperatorProvider.GetCurrent().OrganizeId).Where(p => arrDl.Contains(p.dlCode)).ToList();
@@ -647,7 +649,7 @@ namespace Newtouch.HIS.Application.Implementation
 
             string fpPath = string.Format(@"{0}\17楼明细清单模板.grf", Infrastructure.Constants.ReportTemplateDirUrl);
 
-            var subReportDict = new Dictionary<string, DataTable>();
+            var subReportDict = new Dictionary<string, System.Data.DataTable>();
             if (leftDt != null)
             {
                 subReportDict.Add("leftSubReport", leftDt.ToDataTable());
@@ -717,7 +719,7 @@ namespace Newtouch.HIS.Application.Implementation
 
                 detailSubReportList.Add(detailItem);
             }
-            var subReportDict = new Dictionary<string, DataTable>();
+            var subReportDict = new Dictionary<string, System.Data.DataTable>();
             if (itemSubReportList != null)
             {
                 subReportDict.Add("ItemSubReport", itemSubReportList.ToDataTable());
@@ -757,6 +759,8 @@ namespace Newtouch.HIS.Application.Implementation
 
 
         }
+
+        
         #endregion
 
         #region 补打
@@ -798,7 +802,7 @@ namespace Newtouch.HIS.Application.Implementation
 
                 detailSubReportList.Add(detailItem);
             }
-            var subReportDict = new Dictionary<string, DataTable>();
+            var subReportDict = new Dictionary<string, System.Data.DataTable>();
             if (itemSubReportList != null)
             {
                 subReportDict.Add("ItemSubReport", itemSubReportList.ToDataTable());
@@ -882,7 +886,7 @@ namespace Newtouch.HIS.Application.Implementation
 
                 detailSubReportList.Add(detailItem);
             }
-            var subReportDict = new Dictionary<string, DataTable>();
+            var subReportDict = new Dictionary<string, System.Data.DataTable>();
             if (itemSubReportList != null)
             {
                 subReportDict.Add("ItemSubReport", itemSubReportList.ToDataTable());
@@ -1172,7 +1176,7 @@ namespace Newtouch.HIS.Application.Implementation
                 //判断是否专家挂号
                 bool isZjgh = false;
                 bool isContains = false;
-                var pzmz = _sysConfigRepo.GetByCode(Constants.xtmzpz.GHLX_ZJGH, OperatorProvider.GetCurrent().OrganizeId);
+                var pzmz = _sysConfigRepo.GetByCode(Infrastructure.Constants.xtmzpz.GHLX_ZJGH, OperatorProvider.GetCurrent().OrganizeId);
                 if (pzmz == null)
                 {
                     throw new FailedCodeException("OUTPAT_CONFIGURATIONS_THERE_IS_NO_GHLX_ZJGH_CONFIGURATION_IN_THE_OUTPATIENT_SETTING");
@@ -1430,6 +1434,8 @@ namespace Newtouch.HIS.Application.Implementation
             return obj;
         }
         #endregion
+
+
 
     }
 

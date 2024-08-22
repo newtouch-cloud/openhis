@@ -1,0 +1,271 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "DischargeSettlementIndex";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<div class="rows" style="margin-bottom: 1%;">
+    <div class="panel panel-default" style="margin-bottom:0;">
+        <div class="panel-heading navb-bg">
+            住院患者信息
+        </div>
+        <table class="form" style="width:96%;">
+            <tbody>
+                <tr>
+                    <th class="formTitle">住院号：</th>
+                    <td class="formValue">
+                        <input class="form-control" type="text" id="zyh" value="" />
+                    </td>
+                    <td class="formValue">
+                        <input type="button" class="btn btn-default btn-md btn-default-color" title="选择住院患者" id="zy_btnsyy" value="查询" onclick="GetPatSerarchView($('#zyh').val());">
+                    </td>
+                    <th class="formTitle">出院日期：</th>
+                    <td class="formValue" style="width:143px;">
+                        <input id="cyrq" type="text" class="form-control input-wdatepicker form-an formClearIgnore"
+                               onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" value="@(System.DateTime.Now.ToString("yyyy-MM-dd"))" />
+                    </td>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <label id="zy_xm"></label>
+                    </td>
+                    <th class="formTitle">性别：</th>
+                    <td class="formValue">
+                        <label id="zy_xb"></label>
+                    </td>
+                    <th class="formTitle">年龄：</th>
+                    <td class="formValue">
+                        <label id="zy_nl"></label>
+                    </td>
+                </tr>
+            </tbody>
+            <tbody class="dispTbody" style="display:none;">
+                <tr>
+                    <th class="formTitle">证件号：</th>
+                    <td class="formValue" colspan="2">
+                        <label id="zy_zjh"></label>
+                    </td>
+                    <th class="formTitle">入院诊断：</th>
+                    <td class="formValue">
+                        <label id="zy_ryzd"></label>
+                    </td>
+                    <th class="formTitle">手机号：</th>
+                    <td class="formValue">
+                        <label id="zy_phone"></label>
+                    </td>
+                    <th class="formTitle">出生日期：</th>
+                    <td class="formValue">
+                        <label id="zy_csny"></label>
+                    </td>
+                    <th class="formTitle">入院日期：</th>
+                    <td class="formValue">
+                        <label id="zy_ryrq"></label>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="fa_icontoggle"><i class="fa fa-angle-double-down icontoggle" style="color:rgb(0, 160, 233);cursor:pointer;"></i></div>
+    </div>
+</div>
+<div class="gridPanel" style="margin-top:1%">
+    <table id="gridList"></table>
+</div>
+<div class="rows" style="margin-bottom: 1%;">
+    <div class="panel panel-default" style="margin-bottom:0;padding:10px;">
+        <table class="form" style="width:96%;">
+            <tbody>
+                <tr>
+                    <th class="formTitle">已结费用：</th>
+                    <td class="formValue" style="width:100px;">
+                        <label id="lblSumje" style="color:red;font-weight: bold;font-size: large;"></label>
+                    </td>
+                    <th class="formTitle" style="width:125px;">是否存在未结费用记录：</th>
+                    <td class="formValue">
+                        <label id="isExistUnSetted"></label>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 8 },
+    F8Text = "确认出院"
+})
+<script type="text/javascript">
+
+    $(function () {
+        gridList();
+
+        //去结算
+        $('#isExistUnSetted').parent('td').on('click', 'a', function () {
+            //通过ls把住院号传过去
+            sessionStorage.setItem('zyh', $('#zyh').val());
+            top.top.$.Newtouchtab.triggerMenuItemClick({ m1: "住院管理", m2: "费用结算" });
+        });
+
+    });
+
+    function gridList() {
+        $('#gridList').dataGrid({
+            caption: "已结费用列表",
+            unwritten: false,
+            url: "/HospitalizationManage/BookkeepInHos/GetMidwaySettedListJson",
+            postData: {},
+            height: $(window).height() - 300,
+            sortable: false,
+            colModel: [
+                { label: "jsnm", name: "jsnm", width: 140, align: "left", hidden: true },
+                { label: "住院号", name: "zyh", width: 140, align: "left", hidden: true },
+                {
+                    label: "结算金额", name: "zje", width: 80, align: "left", formatter: "number"
+                    , formatoptions: { decimalPlaces: 2, defaultValue: '0.00' }
+                },
+                {
+                    label: "结算开始时间", name: "jsksrq", width: 140, align: "left",
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                {
+                    label: "结算结束时间", name: "jsjsrq", width: 140, align: "left",
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+                { label: "结算人员", name: "CreatorCode", width: 100, align: "left" },
+                {
+                    label: "结算时间", name: "CreateTime", width: 140, align: "left",
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                }
+            ],
+            viewrecords: true,
+            gridComplete: function (data) {
+                var sumje = 0.00;
+                $.each(data, function () {
+                    sumje += this.zje;
+                });
+                if (sumje != 0) {
+                    $('#lblSumje').html(sumje.toFixed(2));
+                }
+                else {
+                    $('#lblSumje').html('');
+                }
+            }
+        });
+    }
+
+    function reloadGrid() {
+        $("#gridList").jqGrid('setGridParam', {
+            postData: { zyh: $("#zyh").val() },
+        }).trigger('reloadGrid');
+
+        //是否存在未结记录
+        $('#isExistUnSetted').html('');
+        $.najax({
+            url: "/HospitalizationManage/BookkeepInHos/CheckIsExistUnSetted?zyh=" + $("#zyh").val(),
+            success: function (ajaxresp) {
+                if (ajaxresp.data === true) {
+                    $('#isExistUnSetted').html('<a title="点我去结算" style="color:red;cursor:pointer;">是</a>');
+                }
+                else if (ajaxresp.data === false) {
+                    $('#isExistUnSetted').html('否');
+                }
+            },
+        });
+
+    }
+
+    //病人查询
+    function GetPatSerarchView(keyword) {
+        var zyh = keyword;
+        if (!!!keyword) {
+            zyh = '';
+        }
+        $.modalOpen({
+            id: "patSearch",
+            title: "患者查询",
+            url: "/PatientManage/AccountManage/PatSearchView?brzybzType=" + '@((int)EnumZYBZ.Bqz + "," + (int)EnumZYBZ.Djz)' + "&t=" + Math.random() + "&zyh=" + zyh,
+            width: "700px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatDbGrid(); //在弹出窗口事件
+                //调用查询卡号和住院号
+            }//窗口点确定的回调函数
+        });
+
+    }
+
+    //选择的病人 callback
+    function getPatInfoAjax(selePatInfo) {
+        $('#zyh').val(selePatInfo.zyh);
+        ajaxLoadDataResult();
+    }
+
+    //加载住院基本信息
+    function ajaxLoadDataResult() {
+        var zyh = $('#zyh').val();
+        if (zyh) {
+            $.najax({
+                type: "GET",
+                url: "/HospitalizationManage/BookkeepInHos/GetInpatientAccountingStatusDetail?zyh=" + zyh,
+                loading: true,
+                success: function (ajaxresp) {
+                    setPatInfoModel(ajaxresp.data.patInfo);
+
+                    reloadGrid();
+                },
+                errorCallback: function (err) {
+                    newtouch_globalevent_f4();
+                    $('#zyh').trigger('focus');
+                }
+            });
+        }
+        else {
+            GetPatSerarchView();
+        }
+    }
+
+    //初始化病人信息
+    function setPatInfoModel(patModel) {
+        $('#zy_xm').html(patModel.xm);
+        $('#zy_xb').html($.getGender(patModel.xb));
+        $('#zy_nl').html(getAgeFromBirthTime({ begin: patModel.csny }).text);
+        $('#zy_ryzd').html(patModel.ryzdmc);
+        $('#zy_zjh').html(patModel.zjh);
+        $('#zy_phone').html(patModel.phone);
+        $('#zy_csny').html(patModel.csny ? patModel.csny.substring(0, 10) : '');
+        $('#zy_ryrq').html(patModel.ryrq ? patModel.ryrq.substring(0, 10) : '');
+
+    }
+
+    function newtouch_event_f8() {
+        var zyh = $('#zyh').val();
+        if (!!!zyh) {
+            $.modalAlert("请选择住院病人", 'error');
+            return;
+        }
+        var isExistUnSetted = $('#isExistUnSetted').html();
+        if (isExistUnSetted.indexOf('是') != -1) {
+            $.modalConfirm("存在未结费用，前去结算", function (flag) {
+                if (flag) {
+                    $('#isExistUnSetted a').trigger('click');
+                }
+            });
+            return;
+        }
+        var allLine = $("#gridList").jqGrid('getRowData_AllLine', null, true);
+        if (!!!allLine || allLine.length == 0) {
+            $.modalAlert("未产生过费用，不能进行出院", 'error');
+            return;
+        }
+        //提交
+        var postData = { zyh: zyh, cyrq: $('#cyrq').val() };
+        $.submitForm({
+            type: "POST",
+            url: "/HospitalizationManage/BookkeepInHos/DischargeSettlement",
+            param: postData,
+            success: function (ajaxresp) {
+                location.href = location.href;
+            },
+        });
+
+    }
+
+</script>
