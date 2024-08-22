@@ -149,10 +149,10 @@ WHERE
             if (!string.IsNullOrWhiteSpace(xm))
             {
                 //sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or xx.py like @py )");
-                sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or gh.mzh LIKE @xm or xx.py like @xm)");
-                paraList.Add(new SqlParameter("@xm", "%" + xm.Trim() + "%"));
+	            sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or gh.mzh LIKE @xm or xx.py like @xm)");
+				paraList.Add(new SqlParameter("@xm", "%" + xm.Trim() + "%"));
                 paraList.Add(new SqlParameter("@blh", "%" + xm.Trim() + "%"));
-                // paraList.Add(new SqlParameter("@py", "%" + xm.Trim() + "%")); 查询效率过慢 去除 lixin 20200114
+               // paraList.Add(new SqlParameter("@py", "%" + xm.Trim() + "%")); 查询效率过慢 去除 lixin 20200114
             }
             //if (!string.IsNullOrWhiteSpace(kh))  //暂无刷卡功能取消卡号查询
             //{
@@ -163,7 +163,7 @@ WHERE
             if (!string.IsNullOrWhiteSpace(fph))
             {
                 sqlStr.AppendLine("AND js.fph >= @fph");
-                paraList.Add(new SqlParameter("@fph", fph.Trim()));
+                paraList.Add(new SqlParameter("@fph",fph.Trim()));
                 //paraList.Add(new SqlParameter("@fph", "%" + fph.Trim() + "%"));
             }
             if (!string.IsNullOrWhiteSpace(jsfph))
@@ -245,9 +245,9 @@ and mzjszffs.OrganizeId = @orgId";
             if (sfxmztbs=="false")
             {
                 var inParameters = new Dictionary<string, object>
-                {
-
-                };
+            {
+                
+            };
                 var strSql = new StringBuilder();
                 strSql.Append(@"EXEC spSelectRecordsDetailByJsnm @jsnm=@jsnm,@OrganizeId=@OrganizeId");
                 SqlParameter[] para = {

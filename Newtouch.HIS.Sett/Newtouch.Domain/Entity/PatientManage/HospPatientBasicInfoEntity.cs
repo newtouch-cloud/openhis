@@ -410,5 +410,6 @@ namespace Newtouch.HIS.Domain.Entity
         public string tes { get; set; }
         public string zcbz { get; set; }
         public DateTime? syrq { get; set; }
+       // public string BedNo { get; set; }
     }
 }

@@ -260,6 +260,11 @@ namespace Newtouch.Infrastructure
         /// </summary>
         [Description("健康码")]
         XNHJYK = 5,
+        /// <summary>
+        /// 刷脸
+        /// </summary>
+        [Description("刷脸")]
+        YBfACE = 6,
     }
 
     /// <summary>
@@ -920,46 +925,7 @@ namespace Newtouch.Infrastructure
         [Description("治疗项目")]
         Treament,
     }
-    /// <summary>
-    /// 处方类型
-    /// </summary>
-    public enum EnumCflx
-    {
-        /// <summary>
-        /// 西药处方
-        /// </summary>
-        [Description("西药处方")]
-        WMPres = 1,
-        /// <summary>
-        /// 中药处方
-        /// </summary>
-        [Description("中药处方")]
-        TCMPres = 2,
-        /// <summary>
-        /// 康复处方
-        /// </summary>
-        [Description("康复处方")]
-        RehabPres = 3,
-        /// <summary>
-        /// 检验处方
-        /// </summary>
-        [Description("检验处方")]
-        InspectionPres = 4,
-        /// <summary>
-        /// 检查处方
-        /// </summary>
-        [Description("检查处方")]
-        ExaminationPres = 5,
-        /// <summary>
-        /// 常规项目处方
-        /// </summary>
-        [Description("常规项目处方")]
-        RegularItemPres = 6,
 
-        [Description("电子处方")]
-        Dzcf = 7,
-
-    }
     /// <summary>
     /// 收支性质
     /// </summary>
@@ -1150,8 +1116,6 @@ namespace Newtouch.Infrastructure
         Alipay = 5,
         [Description("体检")]
         Tj = 6,
-        [Description("自助机")]
-        SelfTerminal = 7,
     }
     /// <summary>
     /// 医保属性
@@ -1632,25 +1596,25 @@ namespace Newtouch.Infrastructure
         /// 职工医保
         /// </summary>
         [Description("职工医保")]
-        zg = 1,
+        zg = 11,
         /// <summary>
         /// 居民医保
         /// </summary>
         [Description("居民医保")]
-        jm = 2,
+        jm = 12,
         /// <summary>
         /// 离休
         /// </summary>
         [Description("离休")]
-        lx = 3,
+        lx = 13,
         /// <summary>
         /// 普通医保
         /// </summary>
         [Description("普通医保")]
-        pt = 11,
+        pt = 1,
     }
     /// <summary>
-    /// 订单状态0:待支付 1:支付中  2:已支付 3：已退款 4:已作废
+    /// 订单状态0:待支付 1:已支付  2::已退款 3：支付中
     /// </summary>
     public enum EnumOrderStatus
     {
@@ -1660,25 +1624,20 @@ namespace Newtouch.Infrastructure
         [Description("待支付")]
         dzf = 0,
         /// <summary>
-        /// 支付中
-        /// </summary>
-        [Description("支付中")]
-        zfz = 1,
-        /// <summary>
         /// 已支付
         /// </summary>
         [Description("已支付")]
-        yzf = 2,
+        yzf = 1,
         /// <summary>
         /// 已退款
         /// </summary>
         [Description("已退款")]
-        ytk = 3,
+        ytk = 2,
         /// <summary>
-        /// 已作废
+        /// 支付中
         /// </summary>
-        [Description("已作废")]
-        zf = 4,
+        [Description("支付中")]
+        zfz = 3,
     }
     /// <summary>
     /// 交易卡类型
@@ -1695,21 +1654,5 @@ namespace Newtouch.Infrastructure
         /// </summary>
         [Description("医保")]
         yb = 1
-    }
-    /// <summary>
-    /// 订单业务类型
-    /// </summary>
-    public enum EnumOrderType
-    {
-        /// <summary>
-        /// 门诊
-        /// </summary>
-        [Description("门诊")]
-        mz = 1,
-        /// <summary>
-        /// 住院
-        /// </summary>
-        [Description("住院")]
-        zy = 2
     }
 }

@@ -1,0 +1,173 @@
+﻿
+@{
+    ViewBag.Title = "PatOnlyBlhSearchView";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<style>
+    .table-responsive {
+        border: 0px solid #ddd;
+    }
+</style>
+
+<form>
+    <div class="topPanel" style="border-bottom:1px solid rgb(221, 221, 221);margin-bottom: -1%;">
+        <table class="form">
+            <tr>
+                <td style="width:2%">
+                    <div class="toolbar" style="margin-top: 1%;">
+                        <div class="btn-group">
+                            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+                        </div>
+                    </div>
+                </td>
+                <th class="formTitle">病历号：</th>
+                <td class="formValue">
+                    <input id="txt_blh" name="txt_blh" type="text" class="form-control" placeholder="请输入病历号" />
+                </td>
+                <th class="formTitle">姓名：</th>
+                <td class="formValue">
+                    <input id="txt_xm" name="txt_xm" type="text" class="form-control" placeholder="请输入姓名" />
+
+                </td>
+                <td style="padding-left:20px;" class="formValue">
+                    <input type="button" id="btn_search" style="margin-left:3%; width:35%; margin-top:-2%;" class="btn btn-primary" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <!--患者信息 包括卡号 病历号 姓名 -->
+    <div id="formPatSer" class="gridPanel" style="margin-top:1%; margin-left:1%">
+        <table id="patGridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script>
+
+    //上一个window对象
+    var prevWindow;
+
+    var from = $.request("from");
+    if (!!from) {
+        prevWindow = top.top.frames[from];
+    }
+    else {
+        prevWindow = $.currentWindow();
+    }
+
+    $(function () {
+        var obj = new Object;
+        obj.blh = $.request("blh");
+        obj.xm = $.request("xm");
+        var searInfo = new PatSearchInfo();
+        //加载数据
+        searInfo.init(obj);
+
+        //查询
+        $("#btn_search").click(function () {
+            $("#patGridList").jqGrid('setGridParam', {
+                postData: { blh: $("#txt_blh").val(), xm: $("#txt_xm").val(), r: Math.random() },
+            }).trigger('reloadGrid');
+        });
+    });
+
+    //回车
+    $('#txt_blh,#txt_xm').keydownEnterEvent(function () {
+        $("#btn_search").trigger('click');
+    })
+
+    var PatSearchInfo = (function () {
+        //加载列表
+        var loadGrid = function (data) {
+            var $gridList = $("#patGridList");
+            $gridList.dataGrid({
+                height: $(window).height() - 200,
+                autowidth: false,
+                width: $("#formPatSer").width() - 2,
+                url: "/PatientManage/AccountManage/PatOnlyBlhSearchInfo?"+ Math.random(),
+                postData: { blh: $("#txt_blh").val(), xm: $("#txt_xm").val() },
+                caption: '患者信息列表',
+                colModel: [
+                    { label: 'patId', name: 'patId', width: 130, align: 'left',hidden:true },
+                    { label: '病历号', name: 'blh', width: 150, align: 'left' },
+                    { label: '姓名', name: 'xm', width: 140, align: 'left' },
+                    {
+                        label: '性别', name: 'xb', width:70, align: 'left', formatter: function (cellvalue) {
+                            return $.getGender(cellvalue);
+                        }
+                    },
+                    {
+                        label: '年龄', name: 'nlshow', width: 100, align: 'left', formatter: function (cellvalue, a, b) {
+                            //return getAgeFromBirthTime({ begin: b.csny }).text;
+                            return '123';
+                        }
+                    },
+                ],
+                pager: "#gridPager",
+                sortname: 'blh desc',
+                viewrecords: true
+            });
+        };
+        var myPatSearchInfo = function (data) {
+
+        }
+        //加载事件
+        myPatSearchInfo.prototype.init = function (data) {
+            if (!data.blh || data.blh === "null") {
+                $("#txt_blh").val("");
+            } else {
+                $("#txt_blh").val(data.blh);
+            }
+            if (!data.xm || data.xm === "null") {
+                $("#txt_xm").val("");
+            } else {
+                $("#txt_xm").val(data.xm);
+            }
+
+            loadGrid(data);
+        };
+
+        return myPatSearchInfo;
+    }());
+
+    //jqGrid 双击选中某行
+    function btn_edit() {
+        PatSearchConfirm();
+    }
+
+    //确定 主页面调用
+    function PatSearchConfirm() {
+        PatDbGrid();
+    }
+
+    //双击
+    function PatDbGrid() {
+        var $gridList = $("#patGridList");
+        var patId = $gridList.jqGridRowValue().patId;
+        var blh = $gridList.jqGridRowValue().blh;
+        var xm = $gridList.jqGridRowValue().xm;
+        var nlshow = $gridList.jqGridRowValue().nlshow;
+        var obj = new Object();
+        obj.patId = patId;
+        obj.blh = blh;
+        obj.xm = xm;
+        obj.nlshow = nlshow;
+        if (!!!obj.blh) {
+            $.modalMsg("请选择一个病人", "warning");
+            return;
+        }
+        prevWindow.getPatInfoAjax(obj);
+
+        //关闭窗口
+        ReceiptCancle();
+    }
+
+    //取消
+    function ReceiptCancle() {
+        $.modalClose();
+    }
+
+
+</script>
+

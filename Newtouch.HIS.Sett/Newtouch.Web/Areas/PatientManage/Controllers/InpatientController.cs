@@ -197,7 +197,10 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
         {
             return View();
         }
-
+        public ActionResult PatientUploadYbIndex()
+        {
+            return View();
+        }
         /// <summary>
         /// 住院患者查询 数据
         /// </summary>

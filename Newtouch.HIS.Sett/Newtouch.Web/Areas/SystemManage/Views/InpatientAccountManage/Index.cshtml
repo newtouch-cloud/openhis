@@ -5,7 +5,6 @@
     //预交金充值收据报表链接
     //var yjjReportUrl = SysConfigReader.OrgReportLink("yjjsjxdy");
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 
     //预交金退款是否使用凭证号
@@ -330,6 +329,7 @@
                 { label: '支付/退款方式', name: 'xjzffsmc', width: 105, align: 'center' },
                 { label: '收支日期', name: 'CreateTime', width: 125, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
                 { label: '备注', name: 'memo', width: 105, align: 'center' },
+                { label: '订单号', name: 'outTradeNo', width: 125, align: 'center' },
                 {
                     label: '收支性质', name: 'szxz', width: 105, align: 'center',
                     formatter: function (val) {
@@ -410,12 +410,18 @@
             return false;
         }
         if (CheckDeposit()) {
-            PayDepositPost(zffsbh, zffsmc, zfmoney, pzh, patid, zh, zhxz);
+            if ($('#ddlzffs option:selected').val() == '13') {
+                if (CheckPayOK()) {
+
+                }
+            } else {
+                 PayDepositPost(zffsbh, zffsmc, zfmoney, pzh, patid, zh, zhxz);
+            }
         }
     }
 
     //预交金充值
-    function PayDepositPost(zffsbh, zffsmc, zfmoney, pzh, patid,zh, zhxz) {
+    function PayDepositPost(zffsbh, zffsmc, zfmoney, pzh, patid, zh, zhxz, outTradeNo) {
         $.loading(true, "正在请求数据...");
         $.najax({
             type: "POST",
@@ -423,7 +429,7 @@
             data: {
                 zffsbh: zffsbh, zffsmc: zffsmc,zyh:zyh,
                 zfje: zfmoney, pzh: pzh, zh: zh,
-                zhxz: zhxz, patid: patid, szxz:@Html.Raw((int)EnumSZXZ.cz), memo: $("#memo").val()
+                zhxz: zhxz, patid: patid, szxz:@Html.Raw((int)EnumSZXZ.cz), memo: $("#memo").val(), outTradeNo: outTradeNo
             },
             dataType: "json",
             cache: false,
@@ -436,7 +442,7 @@
 
                     var reqzhxz=$.request("zhxz")=='zy'?'住院':'门诊'
                     var orgId = '@curOpr.OrganizeId';
-                    var uri = '@Html.Raw(reportUrl)' + "?tempCode=04" + "&systemCode=" + '@reportSystemCode'+ "&szid=" + resdata.data.szId + "&patId=" + patid + "&orgId=" + orgId;
+                    var uri = '@Html.Raw(reportUrl)' + "?tempCode=04" + "&szid=" + resdata.data.szId + "&patId=" + patid + "&orgId=" + orgId;
                     window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
                 }
             }, errorCallback: function (rtnval) {
@@ -484,11 +490,13 @@
     var gridIMoney = "";//当前选中的收支金额
     var gridIpzh = ""; //当前选中的凭证号
     var gridId = "";//当前选中的Id，是否已退的根据
+    var RefundOutTradeNo = ""; //当前选中的订单号
     //点击事件
     function btn_edit() {
         var szje = $("#gridList").jqGridRowValue().szje;
         var pzh = $("#gridList").jqGridRowValue().pzh;
         gridId = $("#gridList").jqGridRowValue().Id;
+        RefundOutTradeNo = $("#gridList").jqGridRowValue().outTradeNo;
         gridIMoney = szje;
         gridIpzh = pzh;
         if (parseFloat(gridIMoney) > 0) {
@@ -510,7 +518,7 @@
 
         var reqzhxz=$.request("zhxz")=='zy'?'住院':'门诊'
         var orgId = '@curOpr.OrganizeId';
-        var uri = '@Html.Raw(reportUrl)' + "?tempCode=04"+ "&systemCode=" + '@reportSystemCode' + "&szid=" + gridId + "&patId=" + patid + "&orgId=" + orgId;
+        var uri = '@Html.Raw(reportUrl)' + "?tempCode=04" + "&szid=" + gridId + "&patId=" + patid + "&orgId=" + orgId;
         window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
 
     }
@@ -580,7 +588,8 @@
             return false;
         }
         var reg = /^(-?\d+)(\.\d+)?$/;
-        zfmoney = "-" +$("#zhye").val();
+        //zfmoney = "-" +$("#zhye").val();
+        zfmoney = $("#txtmoney").val();
         var ddlzffs = $("#ddlzffs option:selected");//获取选中的项
         zffsbh = ddlzffs.val();//拿到选中项的值
         zffsmc = ddlzffs.text();//拿到选中项的文本
@@ -594,12 +603,12 @@
             url: "/SystemManage/InpatientAccountManage/RefundAccount",
             data: {
                 zffsbh: zffsbh, zffsmc: zffsmc, zfje: zfmoney,zyh:$("#zyh").val(),
-                zh: zh, patid: patid, szxz:@Html.Raw(((int)EnumSZXZ.tye)), memo: $("#memo").val()
+                zh: zh, patid: patid, szxz:@Html.Raw(((int)EnumSZXZ.tye)), memo: $("#memo").val(), outTradeNo: RefundOutTradeNo
             },
             dataType: "json",
             cache: false,
             success: function (resdata) {
-                if (resdata != null) {
+                if (resdata != null && resdata.data) {
                     $.loading(false);
                     ClearMoney();
                     //调用账户收支清单
@@ -633,3 +642,80 @@
     }
 
 </script>
+<script type="text/javascript">
+    //移动支付
+    var payingOrFailed = null;  //true支付中或支付失败
+    function CheckPayOK() {
+
+        var payMoney = 0;
+        var alipayMoney = 0;
+        var wechatMoney = 0;
+
+        var djjesszffs = $('#ddlzffs option:selected').val();
+
+        if (djjesszffs == 13) {
+            payMoney = $("#txtmoney").val();
+        } else {
+            if (djjesszffs == '10') {
+                alipayMoney = $("#txtmoney").val();
+            }
+            else if (djjesszffs == '11') {
+                wechatMoney = $("#txtmoney").val();
+
+            }
+            payMoney = alipayMoney + wechatMoney
+        }
+
+        if (payMoney <= 0) {
+            //不需要移动支付
+            payingOrFailed = null;
+            return true;
+        }
+
+        if ((payingOrFailed === null || payingOrFailed === true) && payMoney > 0) {
+            payMoney = parseFloat(payMoney).toFixed(2);
+            var out_trade_no = (new Date()).getTime().toString();   //是否有问题？
+            ToPay(out_trade_no, '预交金充值', payMoney, djjesszffs);
+            payingOrFailed = true;
+        }
+        return !(payingOrFailed === true); //支付中 返回true，否则返回false
+    }
+    //发起支付
+    function ToPay(out_trade_no, subject, total_amount, djjesszffs) {
+        var title = '付款码支付-' + (subject.length <= 15 ? subject : subject.substring(0, 12) + "...");
+        var url = "/PayManage/MicroPay/MicroPay";
+        url += '?out_trade_no=' + out_trade_no;
+        url += '&subject=' + subject;
+        url += '&total_amount=' + total_amount;
+        url += '&djjesszffs=' + djjesszffs;
+        url += '&patid=' + patid;
+        $.modalOpen({
+            id: "ToPay",
+            title: title,
+            url: url,
+            width: "400px",
+            height: "210px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (data) {
+                    //pay success callback
+                    PaySuccessHandle(data);
+                });
+            }
+        });
+    }
+    //支付成功-继续提交结算
+    var outTradeNo;
+    function PaySuccessHandle(data) {
+        payingOrFailed = false;
+
+        outTradeNo = data.outTradeNo;
+
+
+        PayDepositPost(zffsbh, zffsmc, $("#txtmoney").val(), pzh, patid, zh, zhxz, outTradeNo);
+    }
+
+
+</script>
+
+
+

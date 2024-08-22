@@ -276,18 +276,35 @@ order by q.insutype");
 		/// <param name="ksrq">开始日期</param>
 		/// <param name="jsrq">结束日期</param>
 		/// <returns></returns>
-		public IList<Qsdzz> GetQsdzzs(string organizeId, string ksrq, string jsrq)
+		public IList<Qsdzz> GetQsdzzs(string organizeId, string ksrq, string jsrq, string qslx, string xz)
 		{
 			StringBuilder sqlStr = new StringBuilder();
-			sqlStr.Append(@"exec his_se_qsdzz @organizeId=@organizeId,@ksrq=@ksrq,@jsrq=@jsrq");
+			sqlStr.Append(@"exec his_se_qsdzz @organizeId=@organizeId,@ksrq=@ksrq,@jsrq=@jsrq,@qslx=@qslx,@xz=@xz");
 			SqlParameter[] param =
 			{
 				new SqlParameter("@organizeId", organizeId),
 				new SqlParameter("@ksrq", ksrq),
-				new SqlParameter("@jsrq", jsrq)
+				new SqlParameter("@jsrq", jsrq),
+				new SqlParameter("@qslx", qslx),
+				new SqlParameter("@xz", xz)
 			};
 			var list = this.FindList<Qsdzz>(sqlStr.ToString(), param).ToList();
 			return list;
+		}
+
+		public int inserqssq(System.Xml.XmlDocument ybqssqs, string orgid)
+		{
+			//string jsonstr = Newtonsoft.Json.JsonConvert.SerializeObject(ybqssqs);
+			//System.Xml.XmlDocument xmlstr = (System.Xml.XmlDocument)Newtonsoft.Json.JsonConvert.DeserializeXmlNode(jsonstr, "root");
+			StringBuilder sqlStr = new StringBuilder();
+			sqlStr.Append(@" exec his_se_inserqssq @orgid=@orgids ,@xml=@xmls ");
+			SqlParameter[] param =
+			{
+				new SqlParameter("@orgids", orgid),
+				new SqlParameter("@xmls", ybqssqs.InnerXml),
+				//new SqlParameter("@tfrq", tfsj),
+			};
+			return this.ExecuteSqlCommand(sqlStr.ToString(), param);
 		}
 
 		/// <summary>
@@ -412,5 +429,39 @@ order by q.insutype");
 			var list = this.FindList<RdrNewList>(sqlStr.ToString(), param).ToList();
 			return list;
 		}
-	}
+        /// <summary>
+		/// 日对账历史数据
+		/// </summary>
+		/// <param name="orgid"></param>
+		/// <param name="ksrq"></param>
+		/// <param name="jsrq"></param>
+		/// <returns></returns>
+		public IList<HistoryCheckVO> GetHistoryCheckList(string orgid, string ksrq, string jsrq)
+        {
+            StringBuilder sqlStr = new StringBuilder();
+            sqlStr.Append(@"select  lsh,cardid,czrq jysj,'挂号' lx,curaccountamt dn,hisaccountamt ln,zfdxjzfs+tcdxjzfs+tcdxjzfs xj,
+tczfs tc,0 df,ybjsfwfyze-totalexpense flzf,fjdzhzfs+fjdxjzfs+tcdzhzfs+tcdxjzfs+fybjsfwfyze grzf,gh.xm,gh.mzh mzbh,mzjs.jzdyh hm,'' zd,'' bz
+ from NewtouchHIS_Sett..Ybjk_SH02_Output mzjs
+ inner join mz_gh gh on mzjs.mzh=gh.mzh and gh.zt='1'
+ where mzjs.zt='1'
+ and mzjs.czrq>=@ksrq
+and mzjs.czrq<=@jsrq
+union all
+select  lsh,cardid,czrq jysj,'收费' lx,curaccountamt dn,hisaccountamt ln,zfdxjzfs+tcdxjzfs+tcdxjzfs xj,
+tczfs tc,0 df,ybjsfwfyze-totalexpense flzf,fjdzhzfs+fjdxjzfs+tcdzhzfs+tcdxjzfs+fybjsfwfyze grzf,gh.xm,gh.mzh mzbh,mzjs.jzdyh hm,'' zd,'' bz
+ from NewtouchHIS_Sett..Ybjk_SI12_Output mzjs
+  inner join mz_gh gh on mzjs.mzh=gh.mzh and gh.zt='1'
+   where mzjs.zt='1'
+ and mzjs.czrq>=@ksrq
+and mzjs.czrq<=@jsrq
+");
+            SqlParameter[] param =
+            {
+                new SqlParameter("@ksrq", ksrq),
+                new SqlParameter("@jsrq", jsrq),
+            };
+            var list = this.FindList<HistoryCheckVO>(sqlStr.ToString(), param).ToList();
+            return list;
+        }
+    }
 }

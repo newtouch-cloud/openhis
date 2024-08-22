@@ -1,0 +1,135 @@
+﻿@{
+    ViewBag.Title = "患者查询";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<!DOCTYPE html>
+<script>
+    $(function () {
+        gridList();
+        $('.menuItem').on('click', window.parent.$.Newtouchtab.addTab);
+    });
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Patient/GetGridJson",
+            height: $(window).height() - 128,
+            colModel: [
+                { label: "主键", name: "patid", hidden: true, key: true },
+                { label: '卡号', name: 'CardNo', width: 100, align: 'left' },
+                { label: '病人性质', name: 'brxzmc', width: 100, align: 'left' },
+                { label: '病历号', name: 'blh', width: 100, align: 'left' },
+                { label: '姓名', name: 'xm', width: 50, align: 'left' },
+                { label: '学历', name: 'xl', width: 50, align: 'left' },
+                {
+                    label: '性别', name: 'xb', width: 50, align: 'left',
+                    formatter: function (cellvalue) {
+                        if (cellvalue == "0") {
+                            return "女";
+                        } else if (cellvalue == "1") {
+                            return "男";
+                        } else {
+                            return "";
+                        }
+                    }
+                },
+                { label: '拼音', name: 'py', width: 100, align: 'left' },
+                {
+                    label: '出生年月', name: 'csny', width: 80, align: 'left',
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' }
+                },
+                {
+                    label: '证件类型', name: 'zjlx', width: 50, align: 'left',
+                    formatter: function (cellvalue) {
+                        if (cellvalue) {
+                            if (cellvalue.trim() == "1") {
+                                return "身份证";
+                            } else if (cellvalue.trim() == "2") {
+                                return "护照";
+                            } else if (cellvalue.trim() == "3") {
+                                return "军官证";
+                            } else {
+                                return "其他";
+                            }
+                        }
+                        return "";
+                    }
+                },
+                 { label: '证件号', name: 'zjh', width: 150, align: 'left' },
+                 { label: '年龄', name: 'nl', width: 50, align: 'left' },
+                 { label: '电话', name: 'dh', width: 100, align: 'left' },
+                 { label: '紧急联系人', name: 'jjllr', width: 100, align: 'left' },
+                 { label: '联系人电话', name: 'jjlrdh', width: 100, align: 'left' },
+                 { label: 'CreateTime', name: 'CreateTime', hidden: true },
+
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            rowNum: '10',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "入院登记",
+            url: "/PatientManage/HospiterRes/Register",
+            width: "700px",
+            height: "530px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().patid;
+        $.modalOpen({
+            id: "Details",
+            title: "查看基本信息",
+            url: "/PatientManage/HospiterRes/Register?keyValue=" + keyValue,
+            width: "1200px",
+            height: "700px",
+            btn: null,
+        });
+    }
+</script>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <div class="topPanel">
+        <div class="toolbar">
+            <div class="btn-group">
+                <a id="NF-add" class="menuItem btn btn-primary" data-id="Register" href="/PatientManage/HospiterRes/Register"><i class="fa fa-plus"></i>入院登记</a>
+            </div>
+            <div class="btn-group">
+                <a id="NF-add" class="menuItem btn btn-primary" data-id="Register" href="/PatientManage/HospiterRes/Register"><i class="fa fa-plus"></i>门诊登记</a>
+            </div>
+        </div>
+        <div class="search">
+            <table>
+                <tr>
+                    <td>
+                        <div class="input-group">
+                            <input id="txt_keyword" type="text" class="form-control" placeholder="请输入要查询关键字" style="width: 160px;">
+                            <span class="input-group-btn">
+                                <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+
+</body>
+</html>

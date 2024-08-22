@@ -251,7 +251,8 @@ namespace Newtouch.HIS.Application.Implementation.PatientManage
             payEntity.memo = dto.memo;
             payEntity.zt = "1";
             payEntity.OrganizeId = OrganizeId;
-            ////获取凭证号
+            payEntity.outTradeNo = dto.outTradeNo;
+            ////获取凭证号s
             ////判断静态参数配置
             payEntity.pzh = GetFinRepSJPZH();
             payEntity.Create(true);

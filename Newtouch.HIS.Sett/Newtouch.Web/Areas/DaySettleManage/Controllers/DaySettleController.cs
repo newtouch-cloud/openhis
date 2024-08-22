@@ -1,5 +1,6 @@
 ﻿using Newtouch.Core.Common;
 using Newtouch.HIS.Domain.IDomainServices;
+using Newtouch.HIS.Domain.ValueObjects.DaySettleManage;
 using Newtouch.Tools;
 using System;
 using System.Collections.Generic;
@@ -174,11 +175,20 @@ namespace Newtouch.HIS.Web.Areas.DaySettleManage.Controllers
 		/// <param name="ksrq">开始日期</param>
 		/// <param name="jsrq">结束日期</param>
 		/// <returns></returns>
-		public ActionResult GetQszdd(string ksrq, string jsrq)
+		public ActionResult GetQszdd(string ksrq, string jsrq,string qslx,string xz)
 		{
-			var list = _DaySettleDmnService.GetQsdzzs(this.OrganizeId, ksrq, jsrq);
+			var list = _DaySettleDmnService.GetQsdzzs(this.OrganizeId, ksrq, jsrq, qslx, xz);
 			return Content(list.ToJson());
 		}
+
+		public ActionResult inserqssq(ybqssq ybqssq)
+		{
+			string jsonstr = Newtonsoft.Json.JsonConvert.SerializeObject(ybqssq);
+			System.Xml.XmlDocument xmlstr = (System.Xml.XmlDocument)Newtonsoft.Json.JsonConvert.DeserializeXmlNode(jsonstr, "root");
+			var list = _DaySettleDmnService.inserqssq(xmlstr, this.OrganizeId);
+			return Content(list.ToJson());
+		}
+
 		/// <summary>
 		/// 获取清算明细（上半部分）
 		/// </summary>
@@ -237,8 +247,19 @@ namespace Newtouch.HIS.Web.Areas.DaySettleManage.Controllers
 		{
 			return View();
 		}
-
-		public ActionResult lsdzList(string ksrq, string jsrq)
+        public ActionResult DzrCheck()
+        {
+            return View();
+        }
+        /// <summary>
+        /// 历史对账记录
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult DzrHistory()
+        {
+            return View();
+        }
+        public ActionResult lsdzList(string ksrq, string jsrq)
 		{
 			var list = _DaySettleDmnService.lsdzList(this.OrganizeId, ksrq, jsrq);
 			return Content(list.ToJson());
@@ -249,6 +270,16 @@ namespace Newtouch.HIS.Web.Areas.DaySettleManage.Controllers
 			var list = _DaySettleDmnService.Newdzfysj(this.OrganizeId, rq);
 			return Content(list.ToJson());
 		}
-
-	}
+        /// <summary>
+        /// 获取本地对账数据明细
+        /// </summary>
+        /// <param name="ksrq"></param>
+        /// <param name="jsrq"></param>
+        /// <returns></returns>
+        public ActionResult GetHistoryCheckList(string ksrq, string jsrq)
+        {
+            var list = _DaySettleDmnService.GetHistoryCheckList(this.OrganizeId, ksrq, jsrq);
+            return Content(list.ToJson());
+        }
+    }
 }

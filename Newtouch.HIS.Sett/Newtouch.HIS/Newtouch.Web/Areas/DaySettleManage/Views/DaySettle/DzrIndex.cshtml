@@ -1,0 +1,181 @@
+﻿
+@{
+	ViewBag.Title = "DzrIndex";
+	Layout = "~/Views/Shared/_Index.cshtml";
+	var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+<form name="form1">
+	<div class="panel panel-default">
+		<table class="form">
+			<tr>
+				<th class="formTitle" id="thCZRQ">结算日期：</th>
+				<td class="formValue" colspan="2">
+					<input id="txtCreateTimestart" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:20%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+					<span style="margin-left:2%;float:left;">—</span>
+					<input id="txtCreateTimeEnd" type="text" class="form-control input-wdatepicker formClearIgnore" style="width :20%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+
+					<input type="button" id="btn_search_tj" class="btn btn-primary btn-md" style="margin-left:10px;width:40px;" value="统计" />
+					<input type="button" id="btn_search_dzz" class="btn btn-primary btn-md" style="margin-left:10px;width:50px;" value="对帐" />
+				</td>
+				<td class="formValue"></td>
+			</tr>
+		</table>
+	</div>
+	<div class="gridPanel">
+		<table id="gridJSList"></table>
+		<div id="gridPager"></div>
+	</div>
+</form>
+
+<script>
+    $(function () {
+        //浏览器窗口调整大小时重新加载jqGrid的宽
+        $(window).resize(function () {
+            initLayout("MyTabGrid");
+        });
+
+        //结算主记录
+        gridJSListData();
+    });
+
+    function gridJSListData() {
+        var gridSort = 'CreateTime asc';
+        var $gridJsList = $("#gridJSList");
+        $gridJsList.dataGrid({
+			postData: { ksrq: $("#txtCreateTimestart").val(), jsrq: $("#txtCreateTimeEnd").val()},
+			height: 400,
+			caption: '历史对账数据',
+			url: "/DaySettleManage/DaySettle/lsdzList",
+			colModel: [
+				{ label: '对账时间', name: 'czrq', width: 120, align: 'left' },
+				{ label: '对账日', name: 'daycollate', width: 100, align: 'left' },
+				{ label: '当年帐户支付总额', name: 'totalcuraccpay', width: 100, align: 'left' },
+				{ label: '历年帐户支付总额', name: 'totalhisaccpay', width: 100, align: 'left' },
+				{ label: '现金自负总额', name: 'totalcashpay', width: 100, align: 'left' },
+				{ label: '统筹支付总额', name: 'totaltcpay', width: 100, align: 'left' },
+				{ label: '附加支付总额', name: 'totaldffjpay', width: 100, align: 'left' },
+				{ label: '分类自负总额', name: 'totalflzf', width: 100, align: 'left' },
+				{ label: '全自负费用总额', name: 'totalfybjsfw', width: 140, align: 'left' },
+				{ label: '中心流水号数量', name: 'daycount', width: 100, align: 'left' },
+				{ label: '对账结果', name: 'resultcollate', width: 100, align: 'left' }
+            ],
+            pager: "#gridPager",
+            sortname: gridSort,
+            viewrecords: true,
+            onSelectRow_page: function (rowid) {
+                //console.log(rowid);
+            },
+            gridComplete: function (gridJszbList) {
+                jszbList = null;
+                if (gridJszbList && gridJszbList.rows) {
+                    jszbList = gridJszbList.rows;
+                    console.log(jszbList);
+                }
+            }
+        });
+
+        //查询事件
+        $("#btn_search_tj").click(function () {
+            $('#gridJSMXList').jqGrid("clearGridData");//先清空明细
+            $gridJsList.jqGrid('setGridParam', {
+                postData: { ksrq: $("#txtCreateTimestart").val(), jsrq: $("#txtCreateTimeEnd").val()},
+				url: '/DaySettleManage/DaySettle/lsdzList',
+                //page: 1,
+            }).trigger('reloadGrid');
+        });
+	}
+
+
+	$("#btn_search_dzz").click(function () {
+
+		$.modalOpen({
+			id: "DzrForm",
+			title: "对账请求",
+			url: "/DaySettleManage/DaySettle/DzrForm",
+			width: "1000px",
+			height: "650px",
+			callBack: function (iframeId) {
+				$.currentWindow(iframeId).AcceptClick(function (feeRelated) {
+					console.log("对账入参信息：",feeRelated);
+				});
+			},
+			cancelCallBack: function (iframeId) {
+				
+				$.loading(false);
+			}
+		});
+
+
+	});
+
+	function insertsqb(rowdata) {
+
+		var ksrq = $("#txtCreateTimestart").val();
+		var jsrq = $("#txtCreateTimeEnd").val();
+
+		var date = $("#txtCreateTimestart").val();
+		var datearr = date.split('-');
+
+		var qsny = datearr[0] + datearr[1];
+		var predata = {
+			qslb: rowdata.qslb,
+			sfyd: rowdata.sfyd,
+			ksrq:ksrq,
+			jsrq: jsrq,
+			zfy: rowdata.zfy,
+			jjzfje: rowdata.jjzfje,
+			grzh: rowdata.grzh,
+			ybrkfyze: rowdata.zfy,
+			xjzfze: rowdata.xjzfje,
+			qsrc: rowdata.jsbs,
+			qsny: qsny,
+			czzgtcjj: rowdata.czzgtcjj,/*城镇职工基本医疗保险统筹基金*/
+			czzgtcjjrc: rowdata.czzgtcjjrc,/*城镇职工基本医疗保险统筹基金人次*/
+			czzgzhjj: rowdata.czzgzhjj,/*城镇职工基本医疗保险个人账户基金*/
+			czzgzhjjrc: rowdata.czzgzhjjrc,/*城镇职工基本医疗保险个人账户基金*/
+			gywbzjj: rowdata.gywbzjj,/*公务员医疗补助基金*/
+			gywbzjjrc: rowdata.gywbzjjrc,/*公务员医疗补助基金*/
+			deylbzjj: rowdata.deylbzjj,/*大额医疗费用补助基金*/
+			deylbzjjrc: rowdata.deylbzjjrc,/*大额医疗费用补助基金*/
+			lxrybzjj: rowdata.lxrybzjj,/*离休人员医疗保障基金*/
+			lxrybzjjrc: rowdata.lxrybzjjrc,/*离休人员医疗保障基金*/
+			cjbzjj: rowdata.cjbzjj,/*一至六级残疾军人医疗补助基金*/
+			cjbzjjrc: rowdata.cjbzjjrc,/*一至六级残疾军人医疗补助基金*/
+			qybzyljj: rowdata.qybzyljj,/*企业补充医疗保险基金*/
+			qybzyljjrc: rowdata.qybzyljjrc,/*企业补充医疗保险基金*/
+			cxjmjbyljj: rowdata.cxjmjbyljj,/*城乡居民基本医疗保险基金*/
+			cxjmjbyljjrc: rowdata.cxjmjbyljjrc,/*城乡居民基本医疗保险基金*/
+			cxjmdbyljj: rowdata.cxjmdbyljj,/*城乡居民大病医疗保险基金*/
+			cxjmdbyljjrc: rowdata.cxjmdbyljjrc,/*城乡居民大病医疗保险基金*/
+			yljzjj: rowdata.yljzjj,/*医疗救助基金*/
+			yljzjjrc: rowdata.yljzjjrc,/*医疗救助基金人次*/
+			yfjj: rowdata.yfjj,/*优抚基金*/
+			yfjjrc: rowdata.yfjjrc,/*优抚基金人次*/
+			syjj: rowdata.syjj,/*生育基金*/
+			syjjrc: rowdata.syjjrc,/*生育基金人次*/
+			qtjj: rowdata.qtjj,/*其他基金*/
+			qtjjrc: rowdata.qtjjrc,/*其他基金人次*/
+			eyjj: rowdata.eyjj,/*二乙基金*/
+			eyjjrc: rowdata.eyjjrc,/*二乙基金人次*/
+			sqzt: 0,
+			create_user: '@(opr.rygh)',
+		};
+		//console.log(predata);
+		//$.ajax({
+		//	type: "POST",
+		//	url: "/MedicalInsuranceLiquidation/LiquidationApplication/inserqssq",
+		//	data: predata,
+		//	dataType: "json",
+		//	async: false,
+		//	success: function (data) {
+		//		var refinfo = eval('(' + data + ')');
+		//		//console.log(refinfo);
+
+
+		//	}
+		//});
+
+	}
+
+</script>

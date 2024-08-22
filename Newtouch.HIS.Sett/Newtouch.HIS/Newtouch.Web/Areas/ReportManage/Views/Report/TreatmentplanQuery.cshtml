@@ -1,0 +1,265 @@
+﻿@{
+    ViewBag.Title = "TreatmentplanQuery";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    //报表链接
+    var reportUrl = SysConfigReader.OrgReportLink();
+}
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an" style="width: 140px;"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss'})" value="@(DateTime.Now.ToString("yyyy-MM-01 00:00:00"))" />
+                </td>
+                <th class="formTitle" style="padding-right:5px;">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an" style="width:140px"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' })" value="@(DateTime.Now.ToString("yyyy-MM-dd 23:59:59"))" />
+                </td>
+                <th class="formTitle"><label id="mzzylab">住院号/门诊号：</label></th>
+                <td class="formValue">
+                    <input id="zyh" name="zyh" type="text" class="form-control" />
+                    <input id="mzh" name="mzh" type="text" class="form-control" style="display:none;" />
+                </td>
+                <th class="formTitle">住院/门诊：</th>
+                <td class="formValue">
+                    <select id="mzorzy" onchange="panduan()" class="form-control" >
+                        <option value="">请选择</option>
+                        <option value="mz">门诊</option>
+                        <option value="zy" checked="checked">住院</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">执行医生：</th>
+                <td class="formValue"><input type="text" id="doctormc" name="doctormc" class="form-control form-an" /></td>
+                <th class="formTitle">执行科室：</th>
+                <td class="formValue">
+                    <input type="text" id="jzks" class="form-control formClearIgnore" />
+                </td>
+                <th class="formTitle">项目：</th>
+                <td class="formValue"><input type="text" id="sfxmmc" class="form-control formClearIgnore" /></td>
+                <th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <input type="text" id="zxys" hidden="hidden" />
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+    function panduan() {
+        if ($('#mzorzy').val() == "mz") {
+            $('#mzzylab').text("门诊号:");
+            $('#zyh').css("display", "none");
+            $('#mzh').css("display", "block");
+            $('#zyh').val("");
+        }
+        else if ($('#mzorzy').val() == "zy") {
+            $('#mzzylab').text("住院号:");
+            $('#mzh').css("display", "none");
+            $('#zyh').css("display", "block");
+            $('#mzh').val("");
+        }
+    }
+   
+    //治疗项目选择浮层绑定
+    $('#zyh').newtouchBatchFloatingSelector({
+        width: 500,
+        height: 200,
+        caption: "选择患者",
+        clickautotrigger: true,
+        url: "/ReportManage/Report/GetInpatientcryrq",
+        ajaxparameters: function ($thisinput) {
+            var keyword = $thisinput.val().trim();
+            var zyh = $("#zyh").val();
+            return "zyh=" + zyh;
+        },
+        itemdbclickhandler: function ($thistr, $thisinput) {
+            if (!!$thistr.attr('data-zyh')) {
+                if ($thistr.attr('data-ryrq') !== "" && $thistr.attr('data-ryrq') !== undefined && $thistr.attr('data-ryrq') !== null) {
+                    $('#ksrq').val($.getDate({ date: $thistr.attr('data-ryrq') }));
+                }
+                if ($thistr.attr('data-cyrq') !== "" && $thistr.attr('data-cyrq') !== undefined && $thistr.attr('data-cyrq') !== null) {
+                    $('#jsrq').val($.getDate({ date: $thistr.attr('data-cyrq') }));
+                } else {
+                    $('#jsrq').val($.getDate());
+                }
+                $('#zyh').val($thistr.attr('data-zyh'));
+            }
+        },
+        colModel: [
+            { label: '住院号', name: 'zyh', width: 100 },
+            { label: 'cyrq', name: 'cyrq', hidden: true },
+            { label: 'ryrq', name: 'ryrq', hidden: true },
+            { label: '在院标志', name: 'zybz', width: 100, align: 'left' },
+            { label: '姓名', name: 'xm', width: 120, align: 'left' },
+            { label: '出生年月', name: 'csny', hidden: true, width: 100, align: 'left' },
+            {
+                label: '性别', name: 'xb', width: 50, align: 'left', formatter: function (cellvalue) {
+                    return $.getGender(cellvalue);
+                }
+            },
+            {
+                label: '年龄', name: 'nlshow', width: 50, align: 'left', formatter: function (cellvalue, a, b) {
+                    return getAgeFromBirthTime({ begin: b.csny }).text;
+                }
+            }
+        ]
+    });
+   //治疗项目选择浮层绑定
+    $('#sfxmmc').sfxmFloatingSelector({
+        djDecimalPlaces: 4,
+        searchType: "sfxm",
+        leftshift: 150, //整体左偏移
+        ajaxparameters: function ($thisinput) {
+            return "mzzybz=2&dllb=2&sfdllx=Rehab&keyword=" + $.trim($thisinput.val());
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#sfxmmc').val($thistr.attr('data-sfxmmc'));
+            $("#sfxmmc").attr("data-sfxmmc", $thistr.find("td:eq(0)").html());
+        }
+    });
+
+    $('#jzks').newtouchFloatingSelector({
+            width: 400,
+            height: 180,
+            caption: "科室",
+            clickautotrigger: true,
+            url: '/OutpatientManage/OutpatientRegSchedule/GetSysDepartmentList',
+            ajaxmethod: 'POST',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = '@ViewBag.staffDept';
+                return reqData;
+            },
+            itemdbclickhandler: function ($thistr) {
+                $('#jzks').attr('data-label', $thistr.attr('data-code'))
+                    .val($thistr.attr('data-Name'));
+            },
+            colModel: [{ label: '代码', name: 'Code', widthratio: 30 },
+                { label: '科室名称', name: 'Name', widthratio: 30 },
+                { label: '拼音', name: 'py', widthratio: 30 }
+            ]
+        });
+    $("#doctormc").newtouchFloatingSelector({
+        height: 200,
+        width: 300,
+        clickautotrigger: true,
+        filter: function (keyword) {
+            //遍历数据源，用keyword来筛选出结果
+            var resultObjArr = new Array();
+            $.each(top.window.clients.sysStaffDutyList, function (idx, val) {
+                if (((val.StaffPY && val.StaffPY.toLowerCase().indexOf(keyword.toLowerCase()) >= 0)
+                    || (val.StaffName && val.StaffName.indexOf(keyword.toLowerCase()) >= 0)
+                    || keyword.trim() == "")
+                    && val.DutyCode == "Nurse") {
+                    resultObjArr.push(val);
+                }
+            });
+            return resultObjArr;
+
+        },
+        caption: "医生",
+        colModel: [
+            {
+                label: '工号', name: 'StaffGh', widthratio: 25
+            },
+            {
+                label: '名称', name: 'StaffName', widthratio: 25
+            },
+            { label: '拼音', name: 'StaffPY', widthratio: 25 }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#doctormc").attr("data-label", $thistr.find("td:eq(0)").html());
+            $("#doctormc").val($thistr.find('td:eq(1)').html());
+            return;
+        }
+    });
+    
+
+    function submit() {
+        if ($('#mzorzy').val()=="") {
+            $.modalAlert("请选择门诊或者住院查询！", "error");
+            return;
+        }
+        
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        var zxys = "";
+        var zxks = "";
+        var zlxm = "";
+        if ($("#doctormc").val() != null && $("#doctormc").val() != "") {
+             zxys = $("#doctormc").attr("data-label");
+        }
+        if ($("#jzks").val() != null && $("#jzks").val() != "") {
+            zxks = $("#jzks").attr("data-label");
+        }
+        if ($("#sfxmmc").val() != null && $("#sfxmmc").val() != "") {
+            zlxm = $("#sfxmmc").attr("data-sfxmmc");
+        }
+        var url = getUrl($('#mzorzy').val());
+        if ($('#mzorzy').val() == "zy") {
+            url += "&zyh=" + $('#zyh').val() + "&kssj=" + $('#kssj').val() + "&jssj=" + $('#jssj').val() + "&zxks=" + zxks + "&zxys=" + zxys + "&zxxm=" + zlxm;
+        }
+        else {
+            url += "&mzh=" + $('#mzh').val() + "&kssj=" + $('#kssj').val() + "&jssj=" + $('#jssj').val() + "&zxks=" + zxks + "&zxys=" + zxys + "&zxxm=" + zlxm;
+        }
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+        init();
+    });
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+    function getUrl(mzorzy) {
+        var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+        if (mzorzy == "zy") {
+            reportServerHOST += "/ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f治疗计划查询"
+        }
+        else {
+            reportServerHOST += "/ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f门诊治疗计划查询"
+        }
+        //获取自定义样式
+        if (true) {
+            if (reportServerHOST.indexOf('&rc:Stylesheet') == -1) {
+                reportServerHOST += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+
+        return reportServerHOST;
+    }
+
+</script>

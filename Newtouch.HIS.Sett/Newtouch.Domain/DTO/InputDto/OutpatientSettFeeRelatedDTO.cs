@@ -72,6 +72,7 @@ namespace Newtouch.HIS.Domain.DTO
         /// 电子凭证码
         /// </summary>
         public string ecToken { get; set; }
+
         public List<PatZfList> patZflist { get; set; }
         public decimal? xjwc { get; set; }
     }
@@ -86,6 +87,7 @@ namespace Newtouch.HIS.Domain.DTO
         /// </summary>
         public string zffsmc { get; set; }
     }
+
     /// <summary>
     /// 门诊结算医保相关费用
     /// </summary>

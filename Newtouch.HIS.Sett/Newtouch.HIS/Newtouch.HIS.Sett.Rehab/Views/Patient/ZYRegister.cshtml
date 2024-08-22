@@ -1,0 +1,1113 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "ZYRegister";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<!DOCTYPE html>
+<style type="text/css">
+    .rema {
+        color: red;
+    }
+
+    .btn-group label input {
+        width: 25%;
+        margin: 0;
+    }
+
+    #basicInfo table td, #InHospitalInfo table td {
+        border: 0;
+    }
+
+    /*.active {
+        background: rgb(238, 238, 238) !important;
+    }*/
+</style>
+<script type="text/javascript">
+    var keyValue = $.request("keyValue");
+    $(function () {
+        $("#markdis").hide();
+        if (!!keyValue) {
+            $.ajax({
+                url: "/PatientManage/HospiterRes/GetFormJson?T=" + new Date(),
+                data: { "keyValue": keyValue },
+                dataType: 'json',
+                async: false,
+                success: function (rep) {
+                    $("#form1").formSerialize(rep);
+                    if (rep["jkjl"]) {
+                        $("#jkjlmc").attr("data-label", rep["jkjl"]);
+                    }
+                    if (rep["doctor"]) {
+                        $("#doctormc").attr("data-label", rep["doctor"]);
+                    }
+                    if (rep["brxz"]) {
+                        $("#brxzmc").attr("data-label", rep["brxz"]);
+                    }
+                    if (rep["ryzd1"]) {
+                        $("#zdmc1").attr("data-label", rep["ryzd1"]);
+                    }
+                    if (rep["ryzd2"]) {
+                        $("#zdmc2").attr("data-label", rep["ryzd2"]);
+                    }
+                    if (rep["ryzd3"]) {
+                        $("#zdmc3").attr("data-label", rep["ryzd3"]);
+                    }
+                    if (rep["ks"]) {
+                        $("#ksmc").attr("data-label", rep["ks"]);
+                    }
+                    if (rep["bq"]) {
+                        $("#bqmc").attr("data-label", rep["bq"]);
+                    }
+                    if (rep["mzCode"]) {
+                        $("#mzmc").attr("data-label", rep["mz"]);
+                    }
+                    if (rep["gjCode"]) {
+                        $("#gjmc").attr("data-label", rep["gj"]);
+                    }
+                    if (rep["zjlx"]) {
+                        var type = rep["zjlx"].trim();
+                        switch (type) {
+                            case "1": type = "身份证"; break;
+                            case "2": type = "护照"; break;
+                            case "3": type = "军官证"; break;
+                            default: break;
+
+                        }
+                        $("#zjlx").html("<span class=\"rema\">*</span>" + type);
+                    }
+                    $(".toolbar").hide();
+                    $(".icon").hide();
+                    $("#markdis").show();
+                    $("#noCardRes").attr("disabled", "disabled");
+                }
+            });
+        }
+        $("#ryrq").val($.getDate());
+        $("#bje").val("");
+        //$("#markdis").hide();
+        $("#kh").keydown(function (e) {
+            if (e.keyCode == 13) {
+                $.ajax({
+                    url: "/PatientManage/HospiterRes/CheckCardState",
+                    data: { "kh": $("#kh").val() },
+                    dataType: 'json',
+                    async: false,
+                    success: function (rep) {
+                        if (rep == "0") {
+                            //无卡做免卡登记 
+                            btn_NocardRes();
+                        } else {
+                            //有卡显示基本信息
+                            $("#form1").formSerialize(rep);
+                            if (rep["jkjl"]) {
+                                $("#jkjlmc").attr("data-label", rep["jkjl"]);
+                            }
+                            if (rep["doctor"]) {
+                                $("#doctormc").attr("data-label", rep["doctor"]);
+                            }
+                            if (rep["brxz"]) {
+                                $("#brxzmc").attr("data-label", rep["brxz"]);
+                            }
+                            if (rep["ryzd1"]) {
+                                $("#zdmc1").attr("data-label", rep["ryzd1"]);
+                            }
+                            if (rep["ryzd2"]) {
+                                $("#zdmc2").attr("data-label", rep["ryzd2"]);
+                            }
+                            if (rep["ryzd3"]) {
+                                $("#zdmc3").attr("data-label", rep["ryzd3"]);
+                            }
+                            if (rep["ks"]) {
+                                $("#ksmc").attr("data-label", rep["ks"]);
+                            }
+                            if (rep["bqbh"]) {
+                                $("#bqmc").attr("data-label", rep["bqbh"]);
+                            }
+                            if (rep["mzCode"]) {
+                                $("#mzmc").attr("data-label", rep["mzCode"]);
+                            }
+                            if (rep["gjCode"]) {
+                                $("#gjmc").attr("data-label", rep["gjCode"]);
+                            }
+                            if (rep["zjlx"]) {
+                                var type = rep["zjlx"].trim();
+                                switch (type) {
+                                    case "0": type = "身份证"; break;
+                                    case "1": type = "护照"; break;
+                                    case "2": type = "军官证"; break;
+                                    default: break;
+
+                                }
+                                $("#zjlx").html(type + "<span>*</span>");
+                            }
+                            //禁用系统病人基本信息
+                            DisableSysBasicInfo();
+                        }
+                    }
+                });
+            }
+        });
+
+        $("#disBtn").click(function () {
+            $("#markdis").fadeToggle();//.show();
+            $(".icon").fadeToggle();
+            if ($(this).hasClass("fa-angle-double-up")) {
+                $(this).removeClass("fa-angle-double-up");
+                $(this).addClass("fa-angle-double-down");
+            } else if ($(this).hasClass("fa-angle-double-down")) {
+                $(this).removeClass("fa-angle-double-down");
+                $(this).addClass("fa-angle-double-up");
+            }
+
+        });
+        initControl();
+    });
+
+    function btn_NocardRes() {
+        $.modalOpen({
+            id: "Form",
+            title: "免卡登记",
+            url: "/PatientManage/HospiterRes/PatientBasic",
+            width: "1000px",
+            height: "824px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function initControl() {
+        ///健康教练
+        $("#jkjlmc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysStaffDutyList, function (idx, val) {
+                    if (((val.StaffPY && val.StaffPY.indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "")
+                        && val.DutyCode == "RehabDoctor") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "健康教练",
+            colModel: [
+                {
+                    label: '代码', name: 'StaffGh', widthratio: 25
+                },
+                {
+                    label: '名称', name: 'StaffName', widthratio: 25
+                },
+                { label: '拼音', name: 'StaffPY', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#jkjlmc").attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#jkjlmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+        ///医生
+        $("#doctormc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+
+                $.each(top.window.newtouchclients.sysStaffDutyList, function (idx, val) {
+                    if (((val.StaffPY && val.StaffPY.toLowerCase().indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "")
+                         && val.DutyCode == "Clinician") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "医生",
+            colModel: [
+                {
+                    label: '工号', name: 'StaffGh', widthratio: 25
+                },
+                {
+                    label: '名称', name: 'StaffName', widthratio: 25
+                },
+                { label: '拼音', name: 'StaffPY', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#doctormc").attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#doctormc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+        ///报销政策
+        $("#brxzmc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysPatientNatureList, function (idx, val) {
+                    if ((val.py && val.py.toLowerCase().indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "病人性质",
+            colModel: [
+                {
+                    label: '编号', name: 'brxzbh', widthratio: 25
+                },
+                {
+                    label: '代码', name: 'brxz', widthratio: 25
+                },
+                {
+                    label: '名称', name: 'brxzmc', widthratio: 25
+                },
+                { label: '拼音', name: 'py', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#brxzmc").attr("data-label", $thistr.find("td:eq(0)").html() + "-" + $thistr.find("td:eq(1)").html());
+                $("#brxzmc").val($thistr.find('td:eq(2)').html());
+                return;
+            }
+        });
+        ///入院诊断 zdmc1
+        $("#zdmc1").newtouchFloatingSelector(
+            {
+                height: 200,
+                width: 300,
+                url: "/PatientManage/HospiterRes/GetryzdSelect",
+                ajaxparameters: function () {
+                    return "ryzd=" + $("#zdmc1").val();
+                },
+                caption: "入院诊断",
+                colModel: [
+               {
+                   label: '编号', name: 'zdbh', widthratio: 25
+               },
+               {
+                   label: 'icd10', name: 'icd10', widthratio: 30
+               },
+               {
+                   label: '名称', name: 'zdmc', widthratio: 50
+               },
+               { label: '内码', name: 'zdnm', widthratio: 25 }
+                ],
+                itemdbclickhandler: function (data) {
+                    $("#zdmc1").attr("data-label", data.find("td:eq(0)").html() + "-" + data.find("td:eq(3)").html());
+                    $("#zdmc1").val(data.find('td:eq(2)').html());
+                    return;
+                }
+            });
+        ///入院诊断 zdmc2
+        $("#zdmc2").newtouchFloatingSelector(
+               {
+                   height: 200,
+                   width: 300,
+                   url: "/PatientManage/HospiterRes/GetryzdSelect",
+                   ajaxparameters: function () {
+                       return "ryzd=" + $("#zdmc2").val();
+                   },
+                   caption: "入院诊断",
+                   colModel: [
+                       {
+                           label: '编号', name: 'zdbh', widthratio: 25
+                       },
+                       {
+                           label: 'icd10', name: 'icd10', widthratio: 30
+                       },
+                       {
+                           label: '名称', name: 'zdmc', widthratio: 50
+                       },
+                       { label: '内码', name: 'zdnm', widthratio: 25 }
+                   ],
+                   itemdbclickhandler: function (data) {
+                       $("#zdmc2").attr("data-label", data.find("td:eq(0)").html() + "-" + data.find("td:eq(3)").html());
+                       $("#zdmc2").val(data.find('td:eq(2)').html());
+                       return;
+                   }
+               });
+        ///入院诊断 zdmc3
+        $("#zdmc3").newtouchFloatingSelector(
+                  {
+                      height: 200,
+                      width: 300,
+                      url: "/PatientManage/HospiterRes/GetryzdSelect",
+                      ajaxparameters: function () {
+                          return "ryzd=" + $("#zdmc3").val();
+                      },
+                      caption: "入院诊断",
+                      colModel: [
+                           {
+                               label: '编号', name: 'zdbh', widthratio: 25
+                           },
+                           {
+                               label: 'icd10', name: 'icd10', widthratio: 30
+                           },
+                           {
+                               label: '名称', name: 'zdmc', widthratio: 50
+                           },
+                           { label: '内码', name: 'zdnm', widthratio: 25 }
+                      ],
+                      itemdbclickhandler: function (data) {
+                          $("#zdmc3").attr("data-label", data.find("td:eq(0)").html() + "-" + data.find("td:eq(3)").html());
+                          $("#zdmc3").val(data.find('td:eq(2)').html());
+                          return;
+                      }
+                  });
+        ///科室
+        $("#ksmc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysDepartList, function (idx, val) {
+                    if ((val.py && val.py.indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "科室",
+            colModel: [
+                { label: '编号', name: 'Code', widthratio: 25 },
+                { label: '名称', name: 'Name', widthratio: 25 },
+                { label: '拼音', name: 'py', widthratio: 25, hidden: true }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#ksmc").attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#ksmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+        ///病区
+        $("#bqmc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysPatiAreaList, function (idx, val) {
+                    if ((val.py && val.py.toLowerCase().indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "病区",
+            colModel: [
+                {
+                    label: '编号', name: 'bqCode', widthratio: 25
+                },
+                {
+                    label: '名称', name: 'bqmc', widthratio: 25
+                }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#bqmc").attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#bqmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+        ///民族
+        $("#mzmc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysNationList, function (idx, val) {
+                    if ((val.py && val.py.toLowerCase().indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "民族",
+            colModel: [
+                {
+                    label: '代码', name: 'mzCode', widthratio: 30
+                },
+                {
+                    label: '名称', name: 'mzmc', widthratio: 30
+                },
+                { label: '拼音', name: 'py', widthratio: 30 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#mzmc").attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#mzmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+        ///国籍
+        $("#gjmc").newtouchFloatingSelector({
+            height: 200,
+            width: 300,
+            filter: function (keyword) {
+                if (!keyword) {
+                    return null;
+                }
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.newtouchclients.sysNationalityList, function (idx, val) {
+                    if ((val.py && val.py.indexOf(keyword.toLowerCase()) >= 0) || keyword.trim() == "") {
+                        resultObjArr.push(val);
+                    }
+                });
+                return resultObjArr;
+
+            },
+            caption: "国籍",
+            colModel: [
+                {
+                    label: '代码', name: 'gjCode', widthratio: 25
+                },
+                {
+                    label: '名称', name: 'gjmc', widthratio: 25
+                },
+                { label: '拼音', name: 'py', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#gjmc").attr("data-label", $thistr.find("td:eq(0)").html());
+                $("#gjmc").val($thistr.find('td:eq(1)').html());
+                return;
+            },
+        });
+
+        //职业
+        $("#zy").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.dataItems) {
+                    $.each(top.clients.dataItems, function (idx, val) {
+                        if (idx == "Profession") {
+                            $.each(val, function (key, value) {
+                                $('#zy').append('<option value="' + key + '">' + value + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+
+        //紧急联系人关系
+        $("#lxrgx").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.dataItems) {
+                    $.each(top.clients.dataItems, function (idx, val) {
+                        if (idx == "RelativeType") {
+                            $.each(val, function (key, value) {
+                                $('#lxrgx').append('<option value="' + key + '">' + value + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+
+        //紧急联系人关系
+        $("#lxrgx2").newtouchBindSelect({
+            datasource: function () {
+                var resultObjArr = new Array();
+                if (top.clients.dataItems) {
+                    $.each(top.clients.dataItems, function (idx, val) {
+                        if (idx == "RelativeType") {
+                            $.each(val, function (key, value) {
+                                $('#lxrgx2').append('<option value="' + key + '">' + value + '</option>');
+                            });
+                        }
+                    });
+                }
+                return resultObjArr;
+            }
+        });
+    }
+
+    function btn_Save() {
+        var result = checkNotNull();
+        if (result) {
+            var data = $("#form1").formSerialize();
+            data["jkjl"] = $("#jkjlmc").attr("data-label");
+            data["doctor"] = $("#doctormc").attr("data-label");
+            data["brxz"] = $("#brxzmc").attr("data-label");
+            var zd1 = $("#zdmc1").attr("data-label");
+            data["ryzd1"] = null;
+            if (zd1 && $("#zdmc1").val().trim() != "" && $("#zdmc1").val() != null) {
+                data["ryzd1"] = (zd1.split('-', 1))[0];
+            } else {
+                data["ryzd1"] = null;
+            }
+            var zd2 = $("#zdmc2").attr("data-label");
+            data["ryzd2"] = null;
+            if (zd2 && $("#zdmc2").val().trim() != "" && $("#zdmc1").val() != null) {
+                data["ryzd2"] = (zd2.split('-', 1))[0];
+            } else {
+                data["ryzd2"] = null;
+            }
+            var zd3 = $("#zdmc3").attr("data-label");
+            data["ryzd3"] = null;
+            if (zd3 && $("#zdmc3").val().trim() != "" && $("#zdmc1").val() != null) {
+                data["ryzd3"] = (zd3.split('-', 1))[0];
+            } else {
+                data["ryzd3"] = null;
+            }
+            data["ks"] = $("#ksmc").attr("data-label");
+            data["bq"] = $("#bqmc").attr("data-label");
+            data["mzCode"] = $("#mzmc").attr("data-label");
+            data["gjCode"] = $("#gjmc").attr("data-label");
+            $.submitForm({
+                url: "/PatientManage/HospiterRes/SaveSysHosBasicInfo",
+                loading: "正在提交数据...",
+                param: data,
+                successwithtipmsg: false,
+                success: function (data) {
+                    if (data.message == "操作成功") {
+                        $.modalAlert("入院登记成功！住院号为:" + data.data, 'warning');
+                        ClearAll();
+                    }
+                    $.loading(false);
+                }
+            });
+        }
+    }
+
+    function PrinyZYInfo() {
+        if (!$("#patid").val()) {
+            $.modalAlert("病人基本信息不全，无法打印住院信息", 'error');
+            return;
+        } else {
+            $.modalAlert("功能正在开发中", 'warning');
+            return;
+        }
+        var data = $("#form1").formSerialize();
+        data["ryzd1"] = $("#zdmc1").attr("data-label");
+        data["ryzd2"] = $("#zdmc2").attr("data-label");
+        data["ryzd3"] = $("#zdmc3").attr("data-label");
+        $.ajax({
+            url: "/PatientManage/HospiterRes/PrinyZYInfo",
+            data: data,
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                if (data.message = "打印成功！") {
+                    $.modalAlert(data.message, "success");
+                }
+            }
+        });
+    }
+
+    function PrintWDInfo() {
+
+        if (!$("#patid").val()) {
+            $.modalAlert("病人基本信息不全，无法打印腕带", 'error');
+            return;
+        } else {
+            $.modalAlert("功能正在开发中", 'warning');
+            return;
+        }
+        $.ajax({
+            url: "/PatientManage/HospiterRes/PrintWDInfo",
+            data: $("#form1").formSerialize(),
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                if (data.message = "打印成功！") {
+                    $.modalAlert(data.message, "success");
+                }
+            }
+        });
+    }
+
+    function Cancel() {
+        if (!$("#patid").val()) {
+            $.modalAlert("病人基本信息不全，无法打印住院信息", 'error');
+            return;
+        }
+        $.ajax({
+            url: "/PatientManage/HospiterRes/CancelAdmission?zyh=" + $("#zyh").val(),
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                if (data.message == "取消入院成功！") {
+                    AbledSysBasicInfo();
+                    newtouch_globalevent_f4(event);
+                }
+                $.modalAlert(data.message, "success");
+            }
+        });
+    }
+
+    function DisableSysBasicInfo() {
+        $("#kh").attr("disabled", "disabled");
+        $("#zyh").attr("disabled", "disabled");
+        $("#xm").attr("disabled", "disabled");
+        $("#zjh").attr("disabled", "disabled");
+        $("#csny").attr("disabled", "disabled");
+        $('input[name="xb"]').each(
+            function () {
+                $(this).parent().attr("disabled", "disabled");
+            }
+            );
+        $("#nl").attr("disabled", "disabled");
+        $("#blh").attr("disabled", "disabled");
+        $("#dh").attr("disabled", "disabled");
+        $("#dy").attr("disabled", "disabled");
+        $("#hf").attr("disabled", "disabled");
+    }
+
+    function AbledSysBasicInfo() {
+        $("#kh").removeAttr("disabled");
+        $("#zyh").removeAttr("disabled");
+        $("#xm").removeAttr("disabled");
+        $("#zjh").removeAttr("disabled");
+        $("#csny").removeAttr("disabled");
+        $('input[name="xb"]').each(
+            function () {
+                // $(this).parent().removeAttr("disabled");
+                $(this).parent().removeClass("active");
+            }
+            );
+        $("#nl").removeAttr("disabled");
+        $("#blh").removeAttr("disabled");
+        $("#dh").removeAttr("disabled");
+        $("#dy").removeAttr("disabled");
+        $("#hf").removeAttr("disabled");
+    }
+
+    function ClearAll() {
+        AbledSysBasicInfo();
+        newtouch_globalevent_f4();
+    }
+
+    function newtouch_globalevent_f6() {
+        PrintWDInfo();
+    }
+
+    function newtouch_globalevent_f7() {
+        PrinyZYInfo();
+    }
+
+    function newtouch_globalevent_f8() {
+        btn_Save();
+    }
+
+    function newtouch_globalevent_f9() {
+        Cancel();
+    }
+
+    function newtouch_event_f4() {
+        AbledSysBasicInfo();
+        $("#patid").val("");
+    }
+
+    function checkNotNull() {
+        var patid = $("#patid").val();
+        if (!patid) {
+            $.modalAlert("病人基本信息不存在，无法保存", 'warning');
+            return false;
+        }
+
+        var validator = $('#form1').validate();
+        validator.settings = {
+            rules: {
+                brxzmc: { required: true },
+                ksmc: { required: true },
+                bqmc: { required: true },
+                zy: { required: true },
+                mzmc: { required: true },
+                gjmc: { required: true },
+                bje: { required: true },
+                lxr: { required: true },
+                lxrgx: { required: true },
+                lxrdh: { isMobile: true, required: true },
+                lxrdz: { required: true },
+                kh: { required: true },
+                zdmc1: { required: true }
+            },
+            messages: {
+                brxzmc: { required: "报销政策必须填写" },
+                ksmc: { required: "科室必须填写" },
+                bqmc: { required: "病区必须填写" },
+                mzmc: { required: "民族必须填写" },
+                gjmc: { required: "国籍必须填写" },
+                zy: { required: "职业必须填写" },
+                bje: { required: "报警额必须填写" },
+                lxr: { required: "紧急联系人必须填写" },
+                lxrgx: { required: "紧急联系人关系必须填写" },
+                lxrdh: { isMobile: "移动电话格式不正确", required: "紧急联系人移动电话必须填写" },
+                lxrdz: { required: "紧急联系人地址必须填写" },
+                kh: { required: "卡号必须填写" },
+                zdmc1: { required: "入院诊断一必须选择" }
+            },
+            showErrors: function (errorMap, errorList) {
+                if (!$.isEmptyObject(errorList)) {
+                    $.modalAlert(errorList[0].message, 'warning');
+                }
+            }
+        }
+        if (!validator.form()) {
+            return false;
+        }
+        return true;
+    }
+
+</script>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title></title>
+</head>
+<body>
+    <form id="form1">
+        <div class="rows" style="margin-bottom: 1%;" id="basicInfo">
+            <div class="panel panel-default" style="margin-bottom:0;">
+                <div class="panel-heading navb-bg">
+                    病人基本信息
+                </div>
+                <table class="form" style="width:98%;border:0">
+                    <tr>
+                        <th class="formTitle"><span class="rema">*</span>卡号：</th>
+                        <td class="formValue">
+                            <input type="text" id="kh" name="kh" class="form-control" />
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-default" id="noCardRes" value="免卡登记" onclick="btn_NocardRes()">
+                                免卡登记
+                            </button>
+                        </td>
+                        <td class="formTitle">
+                            <span class="rema">*</span>住院号：
+                        </td>
+                        <td class="formValue"> <input type="text" id="zyh" class="form-control  newtouch_Readonly" /></td>
+                        <td class="formTitle">
+                            姓名：
+                        </td>
+                        <td class="formValue">  <input type="text" id="xm" class="form-control newtouch_Readonly" /></td>
+                        <td class="formTitle">
+
+                            <label id="zjlx"><span class="rema">*</span>身份证号：</label>
+                        </td>
+                        <td class="formValue">
+                            <input type="text" id="zjh" class="form-control newtouch_Readonly" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle">
+                            出生年月：
+                        </td>
+                        <td class="formValue">
+                            @*onfocus="WdatePicker()"*@
+                            <input id="csny" type="text" class="form-control newtouch_Readonly" />
+                        </td>
+                        <td></td>
+                        <td class="formTitle"><span class="rema">*</span>性别：</td>
+                        <td>
+                            <div class="btn-group formValue" data-toggle="buttons">
+                                <label class="btn btn-default" disabled>
+                                    <input type="radio" id="xb" value="1" name="xb" class="form-control" />男
+                                </label>
+                                <label class="btn btn-default" disabled>
+                                    <input type="radio" id="xb" value="0" name="xb" class="form-control" />女
+                                </label>
+                            </div>
+                        </td>
+                        <td class="formTitle"><span class="rema">*</span>年龄：</td>
+                        <td class="formValue">
+                            <input type="text" id="nl" class="form-control newtouch_Readonly" />
+                        </td>
+                        <td class="formTitle">
+                            病历号：
+                        </td>
+                        <td class="formValue">
+                            <input type="text" readonly="readonly" id="blh" class="form-control newtouch_Readonly" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle">电话：</td>
+                        <td class="formValue"><input type="text" id="dh" class="form-control newtouch_Readonly" /></td>
+                        <td></td>
+                        <td class="formTitle">地域：</td>
+                        <td class="formValue">
+                            <select id="dy" class="form-control newtouch_Readonly" style="background-color:rgb(238,238,238)">
+                                <option value=""></option>
+                                <option value="0">本地</option>
+                                <option value="1">外地</option>
+                            </select>
+                        </td>
+                        <td class="formTitle"><span class="rema">*</span>婚姻：</td>
+                        <td class="formValue">
+                            <select id="hf" class="form-control newtouch_Readonly" style="background-color:rgb(238,238,238)">
+                                <option value=""></option>
+                                <option value="0">未婚</option>
+                                <option value="1">已婚</option>
+                            </select>
+                        </td>
+                        <td class="formValue"><input type="hidden" id="patid" /></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div id="InHospitalInfo" class="rows" style="margin-bottom: 1%;">
+            <div class="panel panel-default" style="margin-bottom:0;">
+                <div class="panel-heading navb-bg">住院基本信息</div>
+                <table class="form" style="width:98%;border:0">
+                    <tr>
+                        <td class="formTitle"><span class="rema">*</span>住院号：</td>
+                        <td class="formValue"><input type="text" id="zyh2" class="form-control newtouch_Readonly" readonly="readonly" /></td>
+                        <td class="formTitle">健康教练：</td>
+                        <td class="formValue"><input type="text" id="jkjlmc" class="form-control" /></td>
+                        <td class="formTitle">医生：</td>
+                        <td class="formValue"><input type="text" id="doctormc" class="form-control" /></td>
+                        <td class="formTitle">床位：</td>
+                        <td class="formValue"><input type="text" id="cw" class="form-control" /></td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle"><span class="rema">*</span>报销政策：</td>
+                        <td class="formValue">  <input type="text" id="brxzmc" name="brxzmc" class="form-control" /></td>
+                        <td class="formTitle"><span class="rema">*</span>入院诊断一：</td>
+                        <td class="formValue"><input type="text" id="zdmc1" name="zdmc1" class="form-control" /></td>
+                        <td class="formTitle">入院诊断二：</td>
+                        <td class="formValue"> <input type="text" id="zdmc2" class="form-control" /></td>
+                        <td class="formTitle">入院诊断三：</td>
+                        <td class="formValue"> <input type="text" id="zdmc3" class="form-control" /></td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle"><span class="rema">*</span>入院日期：</td>
+                        <td class="formValue">
+                            @*<input size="16" type="text" id="ryrq" class="form_datetime form-control">*@
+                            <input id="ryrq" type="text" class="form-control input-wdatepicker" onfocus="WdatePicker()" />
+                        </td>
+                        <td class="formTitle"><span class="rema">*</span>科室：</td>
+                        <td class="formValue">   <input type="text" id="ksmc" name="ksmc" class="form-control" /></td>
+                        <td class="formTitle"><span class="rema">*</span>病区：</td>
+                        <td class="formValue"> <input type="text" id="bqmc" name="bqmc" class="form-control" /></td>
+                        <td class="formTitle">过敏史：</td>
+                        <td class="formValue"> <input type="text" id="gms" class="form-control" /></td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle">入院病情：</td>
+                        <td>
+                            <div class="btn-group formValue" data-toggle="buttons">
+                                <label class="btn btn-default">
+                                    <input type="radio" id="rybq" value="0" name="rybq" class="form-control" />一般
+                                </label>
+                                <label class="btn btn-default">
+                                    <input type="radio" id="rybq" value="1" name="rybq" class="form-control" />危急
+                                </label>
+                            </div>
+                        </td>
+                        <td class="formTitle">入院途径：</td>
+                        <td class="formValue">
+                            @Html.DropDownList("rytj", EnumRYTJ.mz.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                        </td>
+                        <td class="formTitle"><span class="rema">*</span>职业：</td>
+                        <td class="formValue">
+                            <select class="form-control" id="zy" name="zy">
+                                <option value="">==请选择==</option>
+                                @*<option value="0">其他</option>
+                                    <option value="1">工人</option>
+                                    <option value="2">退休工人</option>
+                                    <option value="3">干部</option>
+                                    <option value="4">军人</option>
+                                    <option value="5">教师</option>
+                                    <option value="6">农民</option>*@
+                            </select>
+                        </td>
+                        <td class="formTitle">饮食：</td>
+                        <td class="formValue"> <input type="text" id="ys" class="form-control" /></td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle">出生地：</td>
+                        <td class="formValue">
+                            <input type="text" id="cs_sheng" class="form-control" style="width:90px; float:left" />
+                            <p style="float:right">省(区，市)</p>
+                        </td>
+                        @*<td class="formTitle">省(区，市)</td>*@
+                        <td></td>
+                        <td class="formValue">
+                            <input type="text" id="cs_shi" class="form-control" style="width:125px; float:left" />
+                            <p style="float:right">市</p>
+                        </td>
+                        @*<td class="formTitle">市</td>*@
+                        <td></td>
+                        <td class="formValue">
+                            <input type="text" id="cs_xian" class="form-control" style="width:125px; float:left" />
+                            <p style="float:right">县</p>
+                        </td>
+                        @*<td class="formTitle">县</td>*@
+                    </tr>
+                    <tr>
+                        <td class="formTitle">现地址：</td>
+                        <td class="formValue"><input type="text" id="xian_sheng" class="form-control" style="width:90px; float:left" /><p style="float:right">省(区，市)</p></td>
+                        @*<td class="formTitle">省(区，市)</td>*@
+                        <td></td>
+                        <td class="formValue"> <input type="text" id="xian_shi" class="form-control" style="width:125px; float:left" /><p style="float:right">市</p></td>
+                        @*<td class="formTitle">市</td>*@
+                        <td></td>
+                        <td class="formValue"> <input type="text" id="xian_xian" class="form-control" style="width:125px; float:left" /><p style="float:right">县</p></td>
+                        @*<td class="formTitle">县</td>*@
+                        <td class="formTitle">地址：</td>
+                        <td class="formValue"><input type="text" id="xian_dz" class="form-control" /></td>
+                    </tr>
+                    <tr>
+                        <td class="formTitle">户口地址：</td>
+                        <td class="formValue"><input type="text" id="hu_sheng" class="form-control" style="width:90px; float:left" /><p style="float:right">省(区，市)</p></td>
+                        @*<td class="formTitle">省(区，市)</td>*@
+                        <td></td>
+                        <td class="formValue"> <input type="text" id="hu_shi" class="form-control" style="width:125px; float:left" /><p style="float:right">市</p></td>
+                        @*<td class="formTitle">市</td>*@
+                        <td></td>
+                        <td class="formValue"> <input type="text" id="hu_xian" class="form-control" style="width:125px; float:left" /><p style="float:right">县</p></td>
+                        @*<td class="formTitle">县</td>*@
+                        <td class="formTitle">地址：</td>
+                        <td class="formValue"><input type="text" id="hu_dz" class="form-control" /></td>
+                    </tr>
+                    <tr class="icon">
+                        <td class="formTitle"><span class="rema">*</span>民族：</td>
+                        <td class="formValue"> <input type="text" id="mzmc" name="mzmc" class="form-control" /></td>
+                        <td class="formTitle"><span class="rema">*</span>国籍：</td>
+                        <td class="formValue"> <input type="text" id="gjmc" name="gjmc" class="form-control" /></td>
+                        <td class="formTitle"><span class="rema">*</span>婚姻：</td>
+                        <td class="formValue">
+                            @Html.DropDownList("hy", EnumHF.wh.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                        </td>
+                        <td class="formTitle"><span class="rema">*</span>报警额：</td>
+                        <td class="formValue"> <input type="text" id="bje" name="bje" class="form-control" /></td>
+                    </tr>
+                    <tr class="icon">
+                        <td class="formTitle"><span class="rema">*</span>紧急联系人：</td>
+                        <td class="formValue"> <input type="text" id="lxr" name="lxr" class="form-control" /></td>
+                        <td class="formTitle"><span class="rema">*</span>紧急联系人关系：</td>
+                        <td class="formValue">
+                            <select id="lxrgx" name="lxrgx" class="form-control">
+                                <option value="">==请选择==</option>
+                                @*<option value="1">夫妻</option>
+                                    <option value="2">父子</option>
+                                    <option value="3">母子</option>
+                                    <option value="4">父女</option>
+                                    <option value="5">兄弟</option>
+                                    <option value="6">姐弟</option>
+                                    <option value="0">其他</option>*@
+                            </select>
+                        </td>
+                        <td class="formTitle"><span class="rema">*</span>紧急移动电话：</td>
+                        <td class="formValue"><input type="text" id="lxrdh" name="lxrdh" class="form-control" /></td>
+                        <td class="formTitle">紧急家庭电话：</td>
+                        <td class="formValue"> <input type="text" id="lxrjtdh" class="form-control" /></td>
+                    </tr>
+                    <tr class="icon">
+                        <td class="formTitle">紧急联系人微信：</td>
+                        <td class="formValue">  <input type="text" id="lxrWebchat" class="form-control" /></td>
+                        <td class="formTitle">紧急联系人邮箱：</td>
+                        <td class="formValue"><input type="text" id='lxrEmail' class="form-control" /></td>
+                        <td class="formTitle"><span class="rema">*</span>紧急联系人地址：</td>
+                        <td colspan="3" class="formValue">
+                            <input type="text" id="lxrdz" name="lxrdz" class="form-control" style="width:101%" />
+                        </td>
+                    </tr>
+                    <tr class="icon">
+                        <td class="formTitle">第二联系人：</td>
+                        <td class="formValue"> <input type="text" id="lxr2" class="form-control" /></td>
+                        <td class="formTitle">第二联系人关系：</td>
+                        <td class="formValue">
+                            <select id="lxrgx2" class="form-control">
+                                <option value="">==请选择==</option>
+                                @*<option value="0">其他</option>
+                                    <option value="1">夫妻</option>
+                                    <option value="2">父子</option>
+                                    <option value="3">母子</option>
+                                    <option value="4">父女</option>
+                                    <option value="5">兄弟</option>
+                                    <option value="6">姐弟</option>*@
+                            </select>
+                        </td>
+                        <td class="formTitle">第二移动电话：</td>
+                        <td class="formValue"> <input type="text" id="lxryddh2" class="form-control" /></td>
+                        <td class="formTitle">第二家庭电话：</td>
+                        <td class="formValue"> <input type="text" id="lxrjtdh2" class="form-control" /></td>
+                    </tr>
+                    <tr class="icon">
+                        <td class="formTitle">第二联系人微信：</td>
+                        <td class="formValue">  <input type="text" id="lxrWebchat2" class="form-control" /></td>
+                        <td class="formTitle">第二联系人邮箱：</td>
+                        <td class="formValue"> <input type="text" id="lxrEmail2" class="form-control" /></td>
+                        <td class="formTitle">第二联系人地址：</td>
+                        <td colspan="3" class="formValue">
+                            <input type="text" id="lxrdz2" class="form-control" style="width:101%" />
+                            @*<textarea id="lxrdz2" cols="20" class="form-control" rows="1"></textarea>*@
+                        </td>
+                    </tr>
+                    <tr id="markdis">
+                        <td colspan="8">
+                            <div style="background-color:#fcfcfc; color:#00a0ea; height:15px; text-align:center;"><label id="disBtn" class="fa fa-angle-double-down"></label></div>
+                        </td>
+                    </tr>
+                </table>
+                @* <div class="toolbar" style="float:right;margin:10px;">
+                    <a class="btn btn-primary btn-md">
+                         <i class="fa fa-user-md"></i> F8:身份变更
+                     </a>
+                                    <a class="btn btn-primary btn-md" onclick="PrintWDInfo()">
+                                        <i class="fa fa-address-card-o"></i> F6:腕带
+                                    </a>
+                                    <a class="btn btn-primary btn-md" onclick="btn_Save()">
+                                        <i class="fa fa-floppy-o"></i>   F8:保存
+                                    </a>
+                                    <a class="btn btn-primary btn-md" onclick="Cancel()">
+                                        <i class="fa fa-medkit"></i>  F9：取消入院
+                                    </a>
+                                    <a class="btn btn-primary btn-md" onclick="ClearAll()">
+                                        <i class="fa fa-close"></i>  F4:清除
+                                    </a>
+                                    <a class="btn btn-primary btn-md" onclick="PrinyZYInfo()">
+                                        <i class="fa fa-print"></i>
+                                        F7:住院信息打印
+                                    </a>
+                                </div>*@
+            </div>
+        </div>
+        @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+   {
+       ShowKeyList = new int[] { 4, 6, 7, 8, 9 },
+       F6Text = "腕带",
+       F7Text = "住院信息打印",
+       F9Text = "取消入院"
+
+   })
+
+    </form>
+</body>
+</html>
+
+

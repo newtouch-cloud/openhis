@@ -1,0 +1,132 @@
+﻿
+@{
+    ViewBag.Title = "RehabilitationCategoryTreatDetail";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                </td>
+                <th class="formTitle">康复类别：</th>
+                <td class="formValue">
+                    <select id="kflb" name="kflb" class="form-control form-an">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+                <th class="formTitle">治疗师：</th>
+                <td class="formValue">
+                    <select id="zls" name="zls" class="form-control form-an">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+                <th class="formTitle">类型：</th>
+                <td class="formValue">
+                    <select id="type" name="type" class="form-control form-an">
+                        <option value="">==请选择==</option>
+                        <option value="outpatient">门诊</option>
+                        <option value="inpatient">住院</option>
+                    </select>
+                </td>
+                @*<td class="formValue">
+                        <div class="btn-group" data-toggle="buttons" onchange="submit()">
+                            <label class="btn btn-default active">
+                                <input type="radio" name="datatype" id="datatype" checked="checked" class="toggle" value="inpatient">门诊
+                            </label>
+                            <label class="btn btn-default">
+                                <input type="radio" name="datatype" id="datatype" value="住院" class="toggle">住院
+                            </label>
+                        </div>
+                    </td>*@
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+<script type="text/javascript">
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    var isHospAdministrator = '@(ViewBag.IsHospAdministrator)';
+    var curUserCode = '@(ViewBag.CurUserCode)';
+    var curUsergh = '@(ViewBag.curUsergh)';
+    var uri = 'ReportServer/Pages/ReportViewer.aspx?%2FHIS.Report.1%2FRehabilitationCategoryTreatDetail&rs:Command=Render';
+    function submit() {
+        var url = getUrl();
+
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        url += "&kssj=" + $('#kssj').val();
+        url += "&jssj=" + $('#jssj').val();
+        url += "&kflb=" + ($('#kflb').val() == null ? "" : $('#kflb').val());
+        url += "&type=" + ($('#type').val() == null ? "" : $('#type').val());
+
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+
+        //加载康复类别
+        $("#kflb").bindSelect({
+            url: "/Com/GetSelectItemsDetailListByItemCode?code=RehabTreatmentMethod",
+        });
+        setTimeout(function () { submit(); }, 100);
+    });
+
+    function getUrl() {
+        var srcUrl = uri;
+        srcUrl = reportServerHOST + srcUrl;
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "orgId=";
+            srcUrl += orgId;
+        }
+
+        return srcUrl;
+    }
+
+</script>
+

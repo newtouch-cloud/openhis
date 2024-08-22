@@ -18,7 +18,6 @@
     //是否支持处方半退
     var Outpatient_PreRefund_Partreturn = SysConfigReader.Bool("Outpatient_PreRefund_Partreturn");
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
 }
 @Html.Partial("_YibaoCommonView")
 <style>
@@ -38,12 +37,12 @@
                     <input type="text" class="form-control" id="query_mzh" placeholder="" style="float: left;" />
 
                 </td>
-               
+
                 <td class="formTitle">
-                    <input type="button" class="btn btn-default btn-md btn-default-color" id="btnsyy" style="margin-left:10px;" title="选择病人" value="查询" onclick="GetPatSerarchView();">
+                    <input type="button" class="btn btn-default btn-md btn-default-color" id="btnsyy" style="margin-left:10px;" title="选择病人" value="查询" onclick="GetPatSerarchView($('#query_mzh').val());">
                 </td>
                 <td class="formValue">
-                   
+
                     @*<input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" style="margin-left:0px; float: left"  value="证件号输入" onclick="GetPatSbkh();">*@
                     @Html.Partial("YibaoRedCardCommon")
                 </td>
@@ -761,9 +760,7 @@
                             data: { mzh: patModel.mzh, cfhList: pasccfhlist },
                             dataType: "json",
                             async: true,
-                            success: function (repjson) {
-
-                            }
+                            success: function (repjson) { }
                         });
 					}
 
@@ -786,7 +783,7 @@
                     $.currentWindow(iframeId).AcceptClick(function (ajaxresp) {
                         //回收旧发票（作废旧发票）//打印新收费票据
                         if (ajaxresp && ajaxresp.data) {
-                            refundPrintInvoiceReq(thisJszb.fph, patModel, ajaxresp.data);
+                            refundPrintInvoiceReq(thisJszb.fph, patModel, ajaxresp.data); 
                         }
                         if (tjscfh.length>0) {
                             UpdateChargeTbz(tjscfh);
@@ -794,8 +791,8 @@
 
                         //HIS退费成功
                         $.modalAlert(ajaxresp.message, 'success');
-                        newtouch_event_f4();
-
+                        //writeOffEBill(patModel.mzh, thisJszb.jsnm);
+                        newtouch_event_f4(); 
                     });
                 }
             });
@@ -850,6 +847,34 @@
             }
         }
     }
+    function writeOffEBill(mzh, jsnm) {
+        debugger;
+        var requestJson = { "BusinessName": "发票冲红", "paySerialNo": mzh, "paySettlementNo": jsnm, "Operator":"@(opr.UserName)", "Reason": "门诊退费冲红" }
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") {
+                    $.modalAlert("电子票冲红成功", 'success');
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("未查询到门诊缴费电子票据信息[" + data.mes + "]", 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('未查询到门诊缴费电子票据信息[' + ex + ']', 'error');
+                return;
+            }
+        });
+    }
 
     function printNewInvoice(newTempPatModel, newJszbInfo) {
         if (newJszbInfo && !!newJszbInfo.jsnm && !(newJszbInfo.ytw == true)) {
@@ -859,7 +884,7 @@
             }
             else {
                 //则打印RS报表
-                var uri = '@reportUrl' + "?tempCode=02" + "&hospitalCode=" + orgId + "&jsnm=" + newJszbInfo.jsnm + "&systemCode=" + '@reportSystemCode';
+                var uri = '@reportUrl' + "?tempCode=02" + "&hospitalCode=" + orgId + "&jsnm=" + newJszbInfo.jsnm;
                 window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
 
                 @*var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + newJszbInfo.jsnm;
@@ -883,20 +908,20 @@
 @if (openYbSett == true || openXnhSett)
 {
     @*<div id="readCard" style="position: absolute; top: 38px; left: 418px; font-size: 20px; color: orangered; display: none;">
-      
-        <i class="fa fa-id-card" style="font-size: 25px;" title="读卡"></i>
-        <div style="position: absolute; top: 0px; left: 30px; font-size: 12px; width: 35px;">
-            <select id="readCardCardType" class="form-control" style="padding: 0px; height: 22px; margin-left: 1px;">
-                @if (openYbSett == true)
-                {
-                    <option value="03">社</option>
-                }
-                <option value="01">社(电)</option>
-                <option value="02">身</option>
-            </select>
-        </div>
-    </div>*@
-<script type="text/javascript">
+
+            <i class="fa fa-id-card" style="font-size: 25px;" title="读卡"></i>
+            <div style="position: absolute; top: 0px; left: 30px; font-size: 12px; width: 35px;">
+                <select id="readCardCardType" class="form-control" style="padding: 0px; height: 22px; margin-left: 1px;">
+                    @if (openYbSett == true)
+                    {
+                        <option value="03">社</option>
+                    }
+                    <option value="01">社(电)</option>
+                    <option value="02">身</option>
+                </select>
+            </div>
+        </div>*@
+    <script type="text/javascript">
         //医保读卡
         var referDomPoint = getDOMPositionPoint($('#btnsyy')[0]);
         $("#readCard").show();
@@ -930,7 +955,7 @@
 
 		//重庆医保退费
         function chongqingtuifei(tmx) {
-            debugger;
+            
             var tjsxmDictObj = {};
             var tcfArr = new Array();
             var msg = "";
@@ -1025,8 +1050,10 @@
                                                                 UpdateChargeTbz(tjscfh);
                                                             }
                                                         }
-                                                        //
+                                                        //广西电子发票
+                                                        //writeOffEBill(patModel.mzh, thisJszb.jsnm);//发票冲红
                                                         newtouch_event_f4();
+                                                       
                                                     });
                                             },
                                                 50);
@@ -1238,14 +1265,14 @@
         }
 		function CQybjs(mxxx, funcSuccCallback) {
 			var xmzje = ovpraseFloat(mxxx.ybzje) + ovpraseFloat(mxxx.zfzje);
-			var jzlx = $('#readCardCardType').val();
+			var jzlx = cqPatInfo.mdtrt_cert_type;
 			var predata = {
 			    operatorId: '@(opr.rygh)',
 			    operatorName: '@(opr.UserName)',
 			    orgId: '@(opr.OrganizeId)',
 			    insuplc_admdvs: cqPatInfo.xzqh,
 			    psn_no: mxxx.rybh,
-			    mdtrt_cert_type: $('#readCardCardType').val(),
+			    mdtrt_cert_type: cqPatInfo.mdtrt_cert_type,
 			    mdtrt_cert_no: jzlx == "01" ? cqPatInfo.ecToken : (jzlx == "02" ? cqPatInfo.sfzh : cqPatInfo.sbkh),
 			    med_type: mxxx.yllb,
 			    medfee_sumamt: xmzje,
@@ -1617,6 +1644,7 @@
                         //回收旧发票（作废旧发票）//打印新收费票据
                         if (ajaxresp && ajaxresp.data) {
                             refundPrintInvoiceReq(thisJszb.fph, patModel, ajaxresp.data);
+                            //writeOffEBill(patModel.mzh, thisJszb.jsnm); //广西电子发票
                         }
                         //
                         funcSuccCallback(ajaxresp);
@@ -1642,7 +1670,7 @@
             return yyyyMMddHHmmss + '_' + Math.random().toString(36).substr(2, 9);
         };
 
-</script>
+    </script>
 }
 @if (invoicePrintMethod == "ActiveX")
 {

@@ -1,0 +1,258 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .btn-group {
+        float: right;
+        font-size: 12px;
+        font-weight: 200;
+    }
+</style>
+<div class="rows" style="float:left;width:24%;margin-left:1%;">
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg" style="height:23px;">
+            筛选条件
+            <div class="btn-group" data-toggle="buttons" id="status">
+                <label class="btn btn-default active" style="z-index:100">
+                    <input type="radio" value="1" name="optionsRadios" class="optionsRadios" checked="checked" />未确认
+                </label>
+                <label class="btn btn-default" style="z-index:100">
+                    <input type="radio" value="2" name="optionsRadios" class="optionsRadios" />已确认
+                </label>
+            </div>
+        </div>
+        <div style="height:35px;" hidden id="searchDiv">
+            <table class="form" style="margin-left:10px">
+                <tr>
+                    <td class="formValue">
+                        <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:35%; float:left;" value="@DateTime.Now.ToString(" yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <span style="margin-left:5px;float:left;">—</span>
+                        <input id="jssj" type="text" class="form-control input-wdatepicker" style="width: 35%; float: left; margin-left: 5px;" value="@DateTime.Now.ToString(" yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                        <button id="btn_search" type="button" class="btn  btn-default" style="margin-left:10px;"><i class="fa fa-search"></i></button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+    </div>
+</div>
+<div class="rows" style="float:left;width:74%;margin-left:1%;">
+    <div class="panel panel-default" style="height:150px;">
+        <div class="panel-heading navb-bg">
+            基本信息
+        </div>
+        <div style="padding: 20px;padding-right:20px;" id="divPatInfo">
+            <table class="form">
+                <tr>
+                    <th class="formTitle">门诊/住院号：</th>
+                    <td class="formValue">
+                        <label id="type">R25639</label>
+                    </td>
+                    <th class="formTitle">姓名：</th>
+                    <td class="formValue">
+                        <label id="xm">大白</label>
+                    </td>
+                    <th class="formTitle">性别：</th>
+                    <td class="formValue">
+                        <label id="xb">女</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="formTitle">年龄：</th>
+                    <td class="formValue">
+                        <label id="nl">26</label>
+                    </td>
+                    <td class="formTitle">保险号：</td>
+                    <td class="formValue">
+                        <label id="bxh">35010343123456743</label>
+                    </td>
+                    <td class="formTitle">费别：</td>
+                    <td class="formValue">
+                        <label id="fb">自费</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="formTitle">临床诊断：</td>
+                    <td class="formValue">
+                        <label id="lczd">腰痛</label>
+                    </td>
+                    <th class="formTitle">施术部位：</th>
+                    <td class="formValue">
+                        <label id="ssbw">腰背部 膈腧 心腧 督腧</label>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="gridPanel">
+        <table id="gridFeeDetail"></table>
+    </div>
+    <table class="form">
+        <tr>
+            <th class="formTitle">原价：</th>
+            <td class="formValue">
+                <label id="yj">￥2000</label>
+            </td>
+            <th class="formTitle">应收款：</th>
+            <td class="formValue">
+                <label id="ysk">￥1000</label>
+            </td>
+            <th class="formTitle">折扣：</th>
+            <td class="formValue">
+                <input type="text" id="zk" class="form-control"/>
+            </td>
+            <th class="formTitle">实收款：</th>
+            <td class="formValue">
+                <input type="text" id="ssk" class="form-control" />
+            </td>
+            <th class="formTitle">找零：</th>
+            <td class="formValue">
+                <label id="zl">￥1000</label>
+            </td>
+            <td></td>
+        </tr>
+    </table>
+    @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new[] { 8, 9 },
+    F8Text = "确认收费",
+    F9Text = "取消确认"
+})
+</div>
+
+<script>
+    $(function () {
+        //radio选中事件
+        $("input[name='optionsRadios']").off().on("change", function () {
+            $('#gridList').jqGrid("clearGridData");
+            var mydata;
+            if ($(this).val() == "2") {     //已确认
+                $("#searchDiv").show();
+                mydata = getConfirmedData();
+            } else {    //未确认
+                $("#searchDiv").hide();
+                mydata = getNotYetConfirm();
+            }
+            gridList(mydata);
+        })
+
+        var mydata = getNotYetConfirm();
+        gridList(mydata);
+        $("#gridFeeDetail").newtouchLocalDataGrid(null, []);
+    });
+
+    //未确认
+    function getNotYetConfirm() {
+        var mydata = [
+               {
+                   blh: 'R000001', xm: '李小璐', fb: '自费', type: '门诊', qrzt:'false'
+               },
+        ];
+        return mydata;
+    }
+    //已确认
+    function getConfirmedData() {
+        var mydata = [
+               {
+                   blh: 'R000022', xm: '大白', fb: '自费', type: '门诊', qrzt: 'true'
+               },
+               {
+                   blh: 'R000023', xm: '小二', fb: '自费', type: '门诊', qrzt: 'true'
+               },
+        ];
+        return mydata;
+    }
+
+    //患者信息
+    function gridList(mydata) {
+        var $gridList = $("#gridList");
+        $gridList.newtouchLocalDataGrid({
+            height: $(window).height() - 175,
+            caption: "病人信息",
+            unwritten: false,
+            colModel: [
+                { label: '病历号', name: 'blh', width: 40, align: 'left' },
+                { label: '姓名', name: 'xm', width: 40, align: 'left' },
+                { label: '费别', name: 'fb', width: 40, align: 'left' },
+                { label: '门诊/住院', name: 'type', width: 40, align: 'left' },
+                { label: 'qrzt', name: 'qrzt', width: 40, align: 'left',hidden: true },
+
+            ],
+            ondblClickRow: function (rowid) {
+                gridDbclickRow(rowid);
+            },
+            gridComplete: function () {
+                var ids = $("#gridList").getDataIDs();
+                for (i = 0; i < ids.length; i++) {
+                    var rowdata = $("#gridList").getRowData(ids[i]);
+                    if (rowdata && rowdata.qrzt == "true") {
+                        $('#gridList tr[id="' + ids[i] + '"]').addClass('success');
+                    }
+                }
+            }
+        }, mydata);
+    }
+
+    //双击
+    function gridDbclickRow(rowid) {
+        var mydata = [
+           {
+               sfdlmc: '物理治疗', sfxmmc: '普通针刺', sl: '3', dw: '五个穴位', dj: '30.00', zje: '90.00'
+           },
+           {
+               sfdlmc: '物理治疗', sfxmmc: '电针', sl: '2', dw: '二个穴位', dj: '30.00', zje: '60.00'
+           },
+           {
+               sfdlmc: '物理治疗', sfxmmc: '隔物针灸', sl: '3', dw: '次', dj: '15.00', zje: '45.00'
+           }
+        ];
+
+        $('#gridFeeDetail').newtouchLocalDataGrid(null, mydata);
+        $('#btn_bottombutton_f8').addClass('newtouch_Readonly').attr('disabled', 'disabled');
+    }
+
+    $("#gridFeeDetail").newtouchLocalDataGrid({
+        height: $(window).height() - 280,
+        unwritten: false,
+        treeGridModel: "adjacency",
+        colModel: [
+            { label: "类别", name: "sfdlmc", width: 100, align: "left" },
+            { label: "收费项目", name: "sfxmmc", width: 150, align: "left" },
+            { label: "数量", name: "sl", width: 100, align: "left" },
+            { label: "单位", name: "dw", width: 100, align: "left" },
+            { label: "单价(元)", name: "dj", width: 100, align: "left" },
+            { label: "金额(元)", name: "zje", width: 100, align: "left" },
+        ],
+        gridComplete: function () {
+            var ids = $("#gridFeeDetail").getDataIDs();
+            for (i = 0; i < ids.length; i++) {
+                $('#gridFeeDetail tr[id="' + ids[i] + '"]').addClass('info');
+            }
+        }
+    });
+
+    //弹出金额确认窗口
+    function newtouch_event_f8(yj, ysk, ssk, zk, zl) {
+        var url = "/HospitalizationManage/Settlement/SettSuccessDialog?yingshoukuan=" + ysk
+            + "&ssk=" + ssk
+            + "&srce=" + 0.00
+            + "&zhaoling=" + zl;
+        $.modalOpen({
+            id: "FormShowBillSuccessDialog",
+            title: "结算确认",
+            url: url,
+            width: "320px",
+            height: "260px",
+            callBack: function (iframeId) {
+                $.modalClose("FormShowBillSuccessDialog");   //关闭结算金额的窗体
+            }
+        });
+    }
+
+</script>
+
+

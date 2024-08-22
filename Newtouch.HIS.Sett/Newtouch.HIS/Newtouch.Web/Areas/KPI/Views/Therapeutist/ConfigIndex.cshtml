@@ -1,0 +1,125 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div style="margin:5px 100px 0 5px;color:#666;">
+    算法（配置）说明：<span style="color:red;">1</span>) '收费大类 + 治疗师'不可重复配置；<span style="color:red;">2</span>) 比例、固定金额两种方式至少配置一种，都有配置则取和
+</div>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keyword" type="text" class="form-control" placeholder="大类编码/大类名称/治疗师工号/姓名" style="width: 220px;">
+                        <span class="input-group-btn">
+                            <button id="btn_search" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script>
+    $(function () {
+        gridList()
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            postData: { keyword: $("#txt_keyword").val() },
+            url: "/KPI/Therapeutist/GetConfigGridJson",
+            height: $(window).height() - 120,
+            colModel: [
+                 { label: "主键", name: "Id", hidden: true, key: true },
+                 { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                 { label: "收费大类名称", name: "sfdlmc", width: 100, align: 'left' },
+                 { label: "治疗师工号", name: "gh", width: 90, align: 'left' },
+                 { label: "治疗师姓名", name: "zlsxm", width: 90, align: 'left' },
+                 { label: "比例", name: "bl", width: 70, align: 'left', formatter: function (cellvalue) { if (!!cellvalue || cellvalue == 0) { return cellvalue + "%" } else { return ""; } } },
+                 { label: "月超额", name: "yce", width: 70, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue; } else { return ""; } } },
+                 { label: "月超额比例", name: "ycebl", width: 70, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue + "%" } else { return ""; } } },
+                 { label: "第二月超额", name: "deyce", width: 100, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue; } else { return ""; } } },
+                 { label: "第二月超额比例", name: "deycebl", width: 100, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue + "%" } else { return ""; } } },
+                 { label: "第三月超额", name: "dsyce", width: 100, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue; } else { return ""; } } },
+                 { label: "第三月超额比例", name: "dsycebl", width: 100, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue + "%" } else { return ""; } } },
+                 { label: "年超额", name: "nce", width: 70, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue; } else { return ""; } } },
+                 { label: "年超额比例", name: "ncebl", width: 70, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue + "%" } else { return ""; } } },
+                 { label: '固定金额', name: 'blhgdje', width: 100, align: 'left', formatter: function (cellvalue) { if (!!cellvalue) { return cellvalue; } else { return ""; } } },
+                 { label: '备注', name: 'bz', width: 300, align: 'left' },
+                { label: '排序', name: 'px', width: 40, align: 'left' },
+                { label: '创建人', name: 'CreatorCode', width: 100, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 100, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 130, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+            ],
+        });
+        $("#btn_search").click(function () {
+            $("#gridList").jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    function btn_add() {
+        $.modalOpen({
+            id: "Form",
+            title: "新增配置",
+            url: "/KPI/Therapeutist/ConfigForm",
+            width: "800px",
+            height: "570px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改配置",
+            url: "/KPI/Therapeutist/ConfigForm?keyValue=" + keyValue,
+            width: "800px",
+            height: "570px",
+            callBack: function (iframeId) {
+                $.currentWindow(iframeId).AcceptClick(function () {
+                    $("#gridList").resetSelection();
+                    $("#gridList").trigger("reloadGrid");
+                });
+            }
+        });
+    }
+
+</script>
+

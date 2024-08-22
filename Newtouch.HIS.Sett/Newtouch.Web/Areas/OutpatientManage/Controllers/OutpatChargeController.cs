@@ -33,7 +33,8 @@ using Newtouch.HIS.Domain.ValueObjects.YibaoInterfaceManage;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
-using Aop.Api.Domain;
+using Newtouch.Infrastructure.Model;
+using System.Configuration;
 
 namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 {
@@ -53,10 +54,10 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         private readonly IGuiAnOutpatientXnhApp _guiAnOutpatientXnhApp;
         private readonly ISysPatientBasicInfoRepo _sysPatientBasicInfoRepo;
         private readonly IPhysicalexamDmnService _iphysicalexamDmnService;
-        private readonly ICqybUploadPresList04Repo _iCqybUploadPresList04Repo;
-        private readonly ICqybMedicalReg02Repo _cqybMedicalReg02Repo;
+	    private readonly ICqybUploadPresList04Repo _iCqybUploadPresList04Repo;
+	    private readonly ICqybMedicalReg02Repo _cqybMedicalReg02Repo;
         private readonly ICqybMedicalInPut02Repo _cqybMedicalinput02Repo;
-        private readonly ICqybSett05Repo _cqybSett05Repo;
+	    private readonly ICqybSett05Repo _cqybSett05Repo;
         private readonly ICqybSett23Repo _cqybSett23Repo;
         private readonly ICqybUpdateMedicalInput03Repo _cqybupdatemedicalInput03Repo;
 
@@ -266,9 +267,6 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             ViewBag.ReportServerHOST = ConfigurationHelper.GetAppConfigValue("ReportServer.HOST");
             ViewBag.OrgId = this.OrganizeId;
             ViewBag.isOpenQfyj = _sysConfigRepo.GetBoolValueByCode("Outpatient_Charge_Open_Qfyj", this.OrganizeId);
-            //开关：预约挂号
-            ViewBag.ISOpenBespeakRegister = (bool)_sysConfigRepo.GetBoolValueByCode("BespeakRegisterSwitch", OrganizeId, false) ? "true" : "false";
-
             return View();
         }
 
@@ -289,9 +287,9 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="kh"></param>
         /// <param name="cardType"></param>
         /// <returns></returns>
-        public ActionResult GetpatientAccountList(DateTime kssj, DateTime jssj, string kh, string zjh, string cardType)
+        public ActionResult GetpatientAccountList(DateTime kssj, DateTime jssj, string kh,string zjh, string cardType)
         {
-            return Content(_outChargeDmnService.GetpatientAccountList(kssj, jssj, kh, zjh, cardType, OrganizeId).ToJson());
+            return Content(_outChargeDmnService.GetpatientAccountList(kssj, jssj, kh,zjh, cardType, OrganizeId).ToJson());
         }
 
         /// <summary>
@@ -302,16 +300,16 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="cardType"></param>
         /// <param name="isTF">是否是来自退费</param>
         /// <returns></returns>
-        public ActionResult GetpatientAccountInfo(string mzh, string kh, string zjh, string cardType, bool? isTF)
+        public ActionResult GetpatientAccountInfo(string mzh, string kh,string zjh, string cardType, bool? isTF)
         {
-            if (string.IsNullOrWhiteSpace(mzh) && (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(cardType)) && string.IsNullOrWhiteSpace(zjh))
+            if (string.IsNullOrWhiteSpace(mzh) && (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(cardType))&& string.IsNullOrWhiteSpace(zjh))
             {
                 throw new FailedException("缺少查询参数：门诊号或卡号");
             }
             var resultDto = new OutpatOptimAccInfoDto
             {
                 OutpatAccInfoDto = null,
-                OutpatAccListDto = _outChargeDmnService.GetOutpatChargePatInfoInAcc(mzh, kh, zjh, cardType, this.OrganizeId)
+                OutpatAccListDto = _outChargeDmnService.GetOutpatChargePatInfoInAcc(mzh, kh,zjh, cardType, this.OrganizeId)
             };
             if (resultDto.OutpatAccListDto.Count == 1)
             {
@@ -341,12 +339,45 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             resultDto.OutpatAccInfoDto = theInfo;
             return Success(null, resultDto);
         }
-
+        public ActionResult GetpatientAccountInfobykh(string mzh, string kh, string zjh, string cardType, bool? isTF)
+        {
+            if (string.IsNullOrWhiteSpace(mzh) && (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(cardType)) && string.IsNullOrWhiteSpace(zjh))
+            {
+                throw new FailedException("缺少查询参数：门诊号或卡号");
+            }
+            var OutpatAccListDtoList = _outChargeDmnService.GetOutpatChargePatInfoInAcc(mzh, kh, zjh, cardType, this.OrganizeId);
+            var datadsf = _outChargeDmnService.GetPatientGridJson(OrganizeId);//获取待收费门诊号来筛选病人信息
+            var data = datadsf.Serialize().ToObject<List<OutPatientRegVO>>() ?? new List<OutPatientRegVO>();
+            List<OutpatAccInfoDto> patlist = new List<OutpatAccInfoDto>();
+            foreach (var item in data)
+            {
+                var mhzlist = OutpatAccListDtoList.Where(p => p.mzh == item.mzh).FirstOrDefault();
+                if (mhzlist!=null)
+                {
+                    patlist.Add(mhzlist);
+                }
+            }
+            if (patlist.Count < 1) return Error("查询失败");
+            var resultDto = new OutpatOptimAccInfoDto
+            {
+                OutpatAccInfoDto = null,
+                OutpatAccListDto = patlist
+            };
+            if (patlist.Count == 1)
+            {
+                resultDto.OutpatAccInfoDto = patlist.FirstOrDefault();
+                return Success(null, resultDto);
+            }
+            return Success(null, resultDto);
+        }
         public ActionResult ChoosePrescription()
         {
             return View();
         }
-
+        public ActionResult ChooseMzh()
+        {
+            return View();
+        }
         public ActionResult GetPatientGridJson()
         {
             var data = _outChargeDmnService.GetPatientGridJson(OrganizeId);
@@ -385,46 +416,16 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="xnhgrbm"></param>
         /// <returns></returns>
         //public ActionResult GetPatientkh(string xnhgrbm)
-        // {
-        //var brxx = _sysPatientBasicInfoRepo.FindEntity(p => p.xnhgrbm == xnhgrbm
-        //                                                      && p.OrganizeId == OrganizeId
-        //                                                      && p.zt == "1") ?? new SysPatientBasicInfoEntity();
-        //var ghxx = _outpatientRegistRepo.IQueryable(p =>
-        //    p.blh == brxx.blh && p.OrganizeId == brxx.OrganizeId
-        //                      && p.ghzt == "1" && p.zt == "1").OrderByDescending(o => o.CreateTime).FirstOrDefault();
-        //return Content(new { kh = ghxx.kh, cardType = ghxx.CardType }.ToJson());
+       // {
+            //var brxx = _sysPatientBasicInfoRepo.FindEntity(p => p.xnhgrbm == xnhgrbm
+            //                                                      && p.OrganizeId == OrganizeId
+            //                                                      && p.zt == "1") ?? new SysPatientBasicInfoEntity();
+            //var ghxx = _outpatientRegistRepo.IQueryable(p =>
+            //    p.blh == brxx.blh && p.OrganizeId == brxx.OrganizeId
+            //                      && p.ghzt == "1" && p.zt == "1").OrderByDescending(o => o.CreateTime).FirstOrDefault();
+            //return Content(new { kh = ghxx.kh, cardType = ghxx.CardType }.ToJson());
         //}
-        public ActionResult GetpatientAccountInfobykh(string mzh, string kh, string zjh, string cardType, bool? isTF)
-        {
-            if (string.IsNullOrWhiteSpace(mzh) && (string.IsNullOrWhiteSpace(kh) || string.IsNullOrWhiteSpace(cardType)) && string.IsNullOrWhiteSpace(zjh))
-            {
-                throw new FailedException("缺少查询参数：门诊号或卡号");
-            }
-            var OutpatAccListDtoList = _outChargeDmnService.GetOutpatChargePatInfoInAcc(mzh, kh, zjh, cardType, this.OrganizeId);
-            var datadsf = _outChargeDmnService.GetPatientGridJson(OrganizeId);//获取待收费门诊号来筛选病人信息
-            var data = datadsf.Serialize().ToObject<List<OutPatientRegVO>>() ?? new List<OutPatientRegVO>();
-            List<OutpatAccInfoDto> patlist = new List<OutpatAccInfoDto>();
-            foreach (var item in data)
-            {
-                var mhzlist = OutpatAccListDtoList.Where(p => p.mzh == item.mzh).FirstOrDefault();
-                if (mhzlist != null)
-                {
-                    patlist.Add(mhzlist);
-                }
-            }
-            if (patlist.Count < 1) return Error("查询失败");
-            var resultDto = new OutpatOptimAccInfoDto
-            {
-                OutpatAccInfoDto = null,
-                OutpatAccListDto = patlist
-            };
-            if (patlist.Count == 1)
-            {
-                resultDto.OutpatAccInfoDto = patlist.FirstOrDefault();
-                return Success(null, resultDto);
-            }
-            return Success(null, resultDto);
-        }
+
         public ActionResult GetUnSettedPrescriptionBymzh(string mzh)
         {
             var cfList = _outChargeDmnService.GetPrescriptionBymzh(mzh, OrganizeId);
@@ -476,12 +477,6 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             return Content(data.ToJson());
         }
 
-        public ActionResult GetUnSettGhfByMzh(string mzh)
-        {
-            var data = _outChargeDmnService.GetUnSettGhfByMzh(mzh, OrganizeId);
-            return Content(data.ToJson());
-        }
-
         /// <summary>
         /// 未结明细上传
         /// </summary>
@@ -513,61 +508,61 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             return Content(guianMainOfMzjsModel.ToJson());
         }
 
-        #region 重庆医保
-        /// <summary>
-        /// 门诊就诊登记修改获取
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <returns></returns>
-        public ActionResult GetCQjzdjInfo(string mzh)
-        {
-            Input_2203A model = _outChargeDmnService.GetCQjzdjInfo(mzh, this.OrganizeId);
-            return Content(model.ToJson());
-        }
-        /// <summary>
-        /// 获取患者就诊登记的交易流水号
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <returns></returns>
-        public ActionResult GetCQjzdjDataInfo(string zymzh)
-        {
-
-            CqybMedicalReg02Entity entity =
-                _cqybMedicalReg02Repo.FindEntity(p => p.zymzh == zymzh && p.zt == "1" && p.OrganizeId == this.OrganizeId);
-            return Content(entity.ToJson());
-        }
-        /// <summary>
-        /// 获取门诊结算时明细上传明细（ybzje总金额，zfzje为所有自费金额）
-        /// </summary>
-        /// <param name="pagination"></param>
-        /// <param name="mzh"></param>
-        /// <returns></returns>
-        public ActionResult GetChongQingDetailsMzjsYb(string mzh, string cfnm)
-        {
+		#region 重庆医保
+		/// <summary>
+		/// 门诊就诊登记修改获取
+		/// </summary>
+		/// <param name="mzh"></param>
+		/// <returns></returns>
+		public ActionResult GetCQjzdjInfo(string mzh)
+		{
+			Input_2203A model = _outChargeDmnService.GetCQjzdjInfo(mzh, this.OrganizeId);
+			return Content(model.ToJson());
+		}
+	    /// <summary>
+	    /// 获取患者就诊登记的交易流水号
+	    /// </summary>
+	    /// <param name="mzh"></param>
+	    /// <returns></returns>
+	    public ActionResult GetCQjzdjDataInfo(string zymzh)
+	    {
+            
+		    CqybMedicalReg02Entity entity =
+			    _cqybMedicalReg02Repo.FindEntity(p => p.zymzh == zymzh && p.zt == "1" && p.OrganizeId == this.OrganizeId);
+			return Content(entity.ToJson());
+		}
+		/// <summary>
+		/// 获取门诊结算时明细上传明细（ybzje总金额，zfzje为所有自费金额）
+		/// </summary>
+		/// <param name="pagination"></param>
+		/// <param name="mzh"></param>
+		/// <returns></returns>
+		public ActionResult GetChongQingDetailsMzjsYb(string mzh, string cfnm)
+		{
             if (string.IsNullOrWhiteSpace(cfnm))
             {
                 return Error("处方内码(cfnm)参数未传递或值为空");
             }
 
-            decimal ybzje = Convert.ToDecimal(0.0000);
-            decimal zfzje = Convert.ToDecimal(0.0000);
+			decimal ybzje = Convert.ToDecimal(0.0000);
+			decimal zfzje = Convert.ToDecimal(0.0000);
             _outPatChargeApp.GetChongQingMainOfMzjs(mzh, cfnm, out ybzje, out zfzje);
-            var data = new
-            {
-                ybzje = ybzje,
-                zfzje = zfzje,
-                zje = ybzje + zfzje,
+			var data = new
+			{
+				ybzje = ybzje,
+				zfzje= zfzje,
+                zje= ybzje+zfzje,
             };
-            return Success(null, data);
-        }
-
-        public ActionResult SaveChongQingUploadPrescriptions(List<CqybUploadPresList04Entity> entityList, List<UploadPrescriptionsListInPut> cflist, string zymzh, string jytype)
-        {
-            _iCqybUploadPresList04Repo.SaveCqybUploadPresList(entityList, jytype, zymzh, this.OrganizeId);
-            //上传的处方也落地，保存处方号，为了退方
-            _outPatChargeApp.SaveCqybUploadInPres(cflist, zymzh, jytype);
+			return Success(null, data);
+		}
+	    
+		public ActionResult SaveChongQingUploadPrescriptions(List<CqybUploadPresList04Entity> entityList, List<UploadPrescriptionsListInPut> cflist,string zymzh,string jytype)
+	    {
+		    _iCqybUploadPresList04Repo.SaveCqybUploadPresList(entityList, jytype, zymzh,this.OrganizeId);
+			//上传的处方也落地，保存处方号，为了退方
+		    _outPatChargeApp.SaveCqybUploadInPres(cflist, zymzh, jytype);
             return Success();
-        }
+	    }
         public ActionResult SaveUploadPch(string zymzh, string jytype, string cfh, string pch)
         {
             _outPatChargeApp.SaveCqybUploadInPres(zymzh, jytype, cfh, pch);
@@ -623,12 +618,11 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="entity"></param>
         /// <param name="jslb"></param>
         /// <returns></returns>
-        public ActionResult SaveChongQing99HQ(Output_2207VO entity, string jslb)
-        {
-            if (entity != null)
+        public ActionResult SaveChongQing99HQ(Output_2207VO entity,string jslb)
+	    {
+            if (entity!=null)
             {
-                try
-                {
+                try {
                     CqybSett05Entity ybentity = new CqybSett05Entity();
                     ybentity.jylsh = entity.setl_id;
                     ybentity.OrganizeId = this.OrganizeId;
@@ -644,100 +638,99 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                     ybentity.pch = entity.pch;
                     ybentity.yllb = entity.yllb;
                     _cqybSett05Repo.SaveCqybSett(ybentity, null);
-                }
-                catch (Exception e)
+                } catch (Exception e)
                 { }
             }
+           
+		    return Success();
+	    }
+		public ActionResult GetCqyb10Data(string zymzh,string type)
+	    {
+			var data= _outPatChargeApp.GetCqyb10Data(zymzh,type);
+		    return Success(null, data);
+		}
 
-            return Success();
-        }
-        public ActionResult GetCqyb10Data(string zymzh, string type)
+        public ActionResult GetCqybMxCxData(string zymzh, string type,string ybver)
         {
-            var data = _outPatChargeApp.GetCqyb10Data(zymzh, type);
+            var data = _outPatChargeApp.GetCqybMxCxData(zymzh, type,ybver);
             return Success(null, data);
         }
-
-        public ActionResult GetCqybMxCxData(string zymzh, string type, string ybver)
-        {
-            var data = _outPatChargeApp.GetCqybMxCxData(zymzh, type, ybver);
-            return Success(null, data);
-        }
-
+        
         /// <summary>
         /// 获取退费后，重庆医保上传所需数据
         /// </summary>
         /// <param name="mzh"></param>
         /// <returns></returns>
         public ActionResult GetCQDetailsMzjsYbTfh(string mzh, string jsnm, Dictionary<string, decimal> tjsxmDict)
-        {
-            decimal ybzje = Convert.ToDecimal(0.0000);
-            decimal zfzje = Convert.ToDecimal(0.0000);
-            decimal tfzje = Convert.ToDecimal(0.0000);
-            var ybUpList = _outPatChargeApp.GetCQDetailsMzjsYbTfh(mzh, jsnm, tjsxmDict, out ybzje, out zfzje,
-                out tfzje);
+	    {
+			decimal ybzje = Convert.ToDecimal(0.0000);
+		    decimal zfzje = Convert.ToDecimal(0.0000);
+		    decimal tfzje = Convert.ToDecimal(0.0000);
+		    var ybUpList = _outPatChargeApp.GetCQDetailsMzjsYbTfh(mzh, jsnm, tjsxmDict, out ybzje, out zfzje,
+			    out tfzje);
             var model = _outChargeDmnService.GetCQjzdjInfo(mzh, this.OrganizeId);
             //var entity =
             //   _cqybupdatemedicalInput03Repo.FindEntity(p => p.zymzh == mzh && p.zt == "1" && p.OrganizeId == this.OrganizeId);
             var data = new
-            {
-                ybzje = ybzje,
-                zfzje = zfzje,
-                tfzje = tfzje,
-                jzid = model.mdtrt_id,
-                yllb = model.med_type,
-                rybh = model.psn_no,
+		    {
+			    ybzje = ybzje,
+			    zfzje = zfzje,
+				tfzje=tfzje,
+                jzid=model.mdtrt_id,
+                yllb=model.med_type,
+                rybh=model.psn_no,
                 cfh = ybUpList.cflist.Count > 0 ? ybUpList.cflist[0].cfh : ""
             };
-            return Content(data.ToJson());
-        }
+		    return Content(data.ToJson());
+		}
 
-        public ActionResult ZFToYBForm(string mzh)
-        {
-            return View();
-        }
+	    public ActionResult ZFToYBForm(string mzh)
+	    {
+		    return View();
+	    }
 
-        public ActionResult ZFToYB_Step_1(string mzh)
-        {
-            System.Threading.Thread.Sleep(1000 * 3);
-            var data = _outPatChargeApp.ZFToYB_Step_1(mzh);
-            return Success(null, data);
-        }
+	    public ActionResult ZFToYB_Step_1(string mzh)
+	    {
+			System.Threading.Thread.Sleep(1000 * 3);
+		    var data = _outPatChargeApp.ZFToYB_Step_1(mzh);
+		    return Success(null, data);
+		}
 
-        public ActionResult ZFToYB_Step_3(string mzh, string sbbh, string xm)
-        {
-            var data = _outPatChargeApp.ZFToYB_Step_3(mzh, sbbh, xm);
-            return Success(null, data);
-        }
+	    public ActionResult ZFToYB_Step_3(string mzh, string sbbh, string xm)
+	    {
+		    var data = _outPatChargeApp.ZFToYB_Step_3(mzh, sbbh, xm);
+		    return Success(null, data);
+	    }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="zyh"></param>
-        /// <param name="patid"></param>
-        /// <param name="cardInfo"></param>
-        /// <param name="ryblInfo">医保卡信息</param>
-        /// <returns></returns>
-        public ActionResult ZFToYB_Step_6(string mzh, int patid, ZYToYBDto patCardInfo)
-        {
-            var data = _outPatChargeApp.ZFToYB_Step_6(mzh, patid, patCardInfo);
-            return Success(null, data);
-        }
+	    /// <summary>
+	    /// 
+	    /// </summary>
+	    /// <param name="zyh"></param>
+	    /// <param name="patid"></param>
+	    /// <param name="cardInfo"></param>
+	    /// <param name="ryblInfo">医保卡信息</param>
+	    /// <returns></returns>
+	    public ActionResult ZFToYB_Step_6(string mzh, int patid, ZYToYBDto patCardInfo)
+	    {
+		    var data = _outPatChargeApp.ZFToYB_Step_6(mzh, patid, patCardInfo);
+		    return Success(null, data);
+	    }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="zyh"></param>
-        /// <returns></returns>
-        public ActionResult ZFToYB_Step_8(string mzh)
-        {
-            var data = _outPatChargeApp.ZFToYB_Step_8(mzh);
-            return Success(null, data);
-        }
+	    /// <summary>
+	    /// 
+	    /// </summary>
+	    /// <param name="zyh"></param>
+	    /// <returns></returns>
+	    public ActionResult ZFToYB_Step_8(string mzh)
+	    {
+		    var data = _outPatChargeApp.ZFToYB_Step_8(mzh);
+		    return Success(null, data);
+	    }
 
         public ActionResult SaveCqS23(CqybSett23Entity entity)
         {
             entity.OrganizeId = this.OrganizeId;
-            _cqybSett23Repo.SaveCqybS23Sett(entity, "");
+            _cqybSett23Repo.SaveCqybS23Sett(entity,"");
             return Success();
         }
 
@@ -758,18 +751,17 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <param name="xmList">库中尚无</param>
         /// <param name="cfnmList"></param>
         /// <param name="extxmnmList">历史已提交（库中已有）</param>
-        /// <param name="ghxmnmList">挂号费未结算，单独结算</param>
         /// <param name="outTradeNo">支付交易号</param>
         /// <returns></returns>
         public ActionResult SubmitForm(BasicInfoDto2018 bacDto
             , OutpatientSettFeeRelatedDTO feeRelated
             , CQMzjs05Dto ybfeeRelated
             , string isXnhjyjz
-            , List<OutGridInfoDto2018> xmList, IList<int> cfnmList, IList<int> extxmnmList, IList<int> ghxmnmList
-            , string outTradeNo, List<OutGridInfoDto2018> deletelist)
+            , List<OutGridInfoDto2018> xmList, IList<int> cfnmList, IList<int> extxmnmList
+            , string outTradeNo,List<OutGridInfoDto2018> deletelist)
         {
             var accDto = _outPatChargeApp.togetherData(xmList);
-            if (!(accDto != null || (cfnmList != null && cfnmList.Count > 0) || (extxmnmList != null && extxmnmList.Count > 0) || (ghxmnmList != null && ghxmnmList.Count > 0)))
+            if (!(accDto != null || (cfnmList != null && cfnmList.Count > 0) || (extxmnmList != null && extxmnmList.Count > 0)))
             {
                 return Error("收费失败，缺少计费明细");
             }
@@ -789,7 +781,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             }
 
             #region 新农合结算
-             
+
             var xnhybfeeRelated = new S25ResponseDTO();
             var outpId = "";
             if ("1".Equals(isXnhjyjz ?? "0"))
@@ -806,28 +798,11 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 
             try
             {
-                if (deletelist != null)
+                if (deletelist!=null)
                 {
                     _outPatientUniversalDmnService.UpdateYPcfxm(deletelist, this.OrganizeId, this.UserIdentity.UserCode);
                 }
-				if (ghxmnmList != null && ghxmnmList.Count>0)
-				{
-                    // 如果存在需要结算的挂号信息，单独进行结算
-                    var ghjsnm = _outPatChargeApp.submitOutpatGhCharge(this.OrganizeId, bacDto.fph, bacDto.sfrq, feeRelated, ghxmnmList);
-                    if (!(accDto != null || (cfnmList != null && cfnmList.Count > 0) || (extxmnmList != null && extxmnmList.Count > 0)))
-                    {
-						if (ghjsnm == 0)
-                        {
-                            return Error("挂号收费失败");
-                        }
-                        var ghjs = new
-                        {
-                            jsnm = ghjsnm
-                        };
-                        // 如果只有挂号费，收取之后直接返回
-                        return Success("挂号收费成功", ghjs);
-                    }
-                }
+                int isOpenBill = -1; string openMsg = "";
                 var resultnewjs = _outPatChargeApp.submitOutpatCharge(bacDto, feeRelated, ybfeeRelated, xnhybfeeRelated, accDto, OrganizeId, cfnmList, out jsnmList, extxmnmList, outTradeNo);
                 if (!resultnewjs) return Success(bacDto.isQfyj ? "欠费预结操作成功" : "成功收费");
                 //门诊收费的处方收费成功之后是否同步收费状态至CIS
@@ -874,12 +849,12 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 var res = new
                 {
                     jsnm = jsnmList[0]
-                };
-
+                }; 
                 //异步推送处方收费成功的通知给药房药库
                 notifyPDS(jsnmList[0], bacDto.sfrq ?? DateTime.Now, cfnmList, bacDto.fph);
                 _outpatientRegistRepo.RecordOutpId(bacDto.mzh, "", UserIdentity.UserCode, OrganizeId);
-                return Success("成功收费", res);
+                
+                  return Success(null, res);
             }
             catch (Exception e)
             {
@@ -888,7 +863,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 throw;
             }
         }
-
+         
         ///// <summary>
         ///// 新农合门诊结算
         ///// </summary>
@@ -962,6 +937,31 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             _outpatientRegistRepo.updatePatBrxzInfo(this.OrganizeId, mzh, "0");
             return Success("操作成功");
         }
+        /// <summary>
+        /// 门诊挂号不进行医保登记 收费时进行登记跟新自费卡为医保卡
+        /// </summary>
+        /// <param name="mzh"></param>
+        /// <param name="kh"></param>
+        /// <param name="cardtype"></param>
+        /// <param name="brxz"></param>
+        /// <returns></returns>
+        public ActionResult UpdateChargeMzghInfo(string mzh,string kh,string cardtype,string brxz,string zjh,string status)
+        {
+            _outpatientRegistRepo.UpdateChargeMzghInfo(this.OrganizeId, mzh,kh,cardtype,brxz,zjh, status);
+            return Success("操作成功");
+        }
+        /// <summary>
+        /// 更新挂号医保就诊id流水号
+        /// </summary>
+        /// <param name="mzh"></param>
+        /// <param name="jzid"></param>
+        /// <param name="jzpzlx"></param>
+        /// <returns></returns>
+        public ActionResult UpdateChargeMzghJzid(string mzh, string jzid, string jzpzlx)
+        {
+            _outpatientRegistRepo.updateYbghjzId(this.OrganizeId, mzh,jzid,jzpzlx);
+            return Success("操作成功");
+        }
 
         #endregion
 
@@ -1028,7 +1028,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                                 TimeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")//,
                                 //Token = token
                             };
-                            var apiResp = SitePDSAPIHelper.Request<APIRequestHelper.DefaultResponse>("api/ResourcesOperate/OutpatientCommit", reqObj, autoAppendToken: false, httpContext: context);
+                            var apiResp = SitePDSAPIHelper.Request<APIRequestHelper.DefaultResponse>("api/ResourcesOperate/OutpatientCommit", reqObj, autoAppendToken: false,httpContext: context);
 
                             LogCore.Info("OutpatientCommit response", apiResp.ToJson());
                             AppLogger.Info(apiResp != null
@@ -1177,130 +1177,121 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 return Success("无数据");
             }
             var uri = ConfigurationHelper.GetAppConfigValue("pacsUrl");
-            List<CheckApplicationfromDTO> datalist = new List<CheckApplicationfromDTO>();
-            if (cfnmList != null)
-            {
-                foreach (var item in cfnmList)
-                {
-                    var data = _outPatientUniversalDmnService.pushApplicationform(bacDto, item, this.OrganizeId, "Y");
-                    if (data != null)
-                    {
-                        datalist.Add(data);
-                    }
+			List<CheckApplicationfromDTO> datalist = new List<CheckApplicationfromDTO>();
+			if (cfnmList!=null)
+			{
+				foreach (var item in cfnmList)
+				{
+					var data = _outPatientUniversalDmnService.pushApplicationform(bacDto, item, this.OrganizeId, "Y");
+					if (data != null)
+					{
+						datalist.Add(data);
+					}
 
-                }
-            }
+				}
+			}
+            
             if (datalist == null)
-            {
-                return Success("无数据");
-            }
-            var mesagssjson = "";
-            var url = uri + "URISService/services/interface/requestorder";
-            foreach (var data in datalist)
-            {
-                string datajson = Tools.Json.ToJson(data);
-                try
-                {
-                    System.Net.HttpWebRequest request = null;
-                    System.Net.WebResponse response = null;
+			{
+				return Success("无数据");
+			}
+			var mesagssjson = "";
+			var url = uri+"URISService/services/interface/requestorder";
+			foreach (var data in datalist)
+			{
+				string datajson = Tools.Json.ToJson(data);
+				try
+				{
+					System.Net.HttpWebRequest request = null;
+					System.Net.WebResponse response = null;
 
-                    request = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(url);
-                    if (url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ServicePointManager.ServerCertificateValidationCallback = CheckValidationResult;
-                    }
-                    request.ProtocolVersion = System.Net.HttpVersion.Version10;
-                    request.Method = "POST";
-                    request.ContentType = "application/json";
-                    request.CookieContainer = null;//获取验证码时候获取到的cookie会附加在这个容器里面
-                    request.AllowAutoRedirect = true;
-                    request.KeepAlive = true;//建立持久性连接
-                                             //request.ContentLength = cs.Length;
-                    request.Host = "192.168.0.101";
-                    //request.UserAgent = "PostmanRuntime/7.29.2";
-                    request.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)";
-                    request.Accept = "*/*";
-                    byte[] datas = System.Text.Encoding.UTF8.GetBytes(datajson);
-                    using (System.IO.Stream stream = request.GetRequestStream())
-                    {
-                        stream.Write(datas, 0, datas.Length);
-                    }
+					request = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(url);
+					if (url.StartsWith("https", StringComparison.OrdinalIgnoreCase))
+					{
+						ServicePointManager.ServerCertificateValidationCallback = CheckValidationResult;
+					}
+					request.ProtocolVersion = System.Net.HttpVersion.Version10;
+					request.Method = "POST";
+					request.ContentType = "application/json";
+					request.CookieContainer = null;//获取验证码时候获取到的cookie会附加在这个容器里面
+					request.AllowAutoRedirect = true;
+					request.KeepAlive = true;//建立持久性连接
+											 //request.ContentLength = cs.Length;
+					request.Host = "192.168.0.101";
+					//request.UserAgent = "PostmanRuntime/7.29.2";
+					request.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)";
+					request.Accept = "*/*";
+                    request.Timeout = 5;
+					byte[] datas = System.Text.Encoding.UTF8.GetBytes(datajson);
+					using (System.IO.Stream stream = request.GetRequestStream())
+					{
+						stream.Write(datas, 0, datas.Length);
+					}
 
-                    response = (System.Net.HttpWebResponse)request.GetResponse();
-                    string outputText = string.Empty;
-                    using (System.IO.Stream responseStm = response.GetResponseStream())
-                    {
-                        System.IO.StreamReader redStm = new System.IO.StreamReader(responseStm, System.Text.Encoding.UTF8);
-                        outputText = redStm.ReadToEnd();
-                    }
-                    var apiresp = JavaScriptJsonSerializerHelper.Deserialize<RefJson>(outputText);
+					response = (System.Net.HttpWebResponse)request.GetResponse();
+					string outputText = string.Empty;
+					using (System.IO.Stream responseStm = response.GetResponseStream())
+					{
+						System.IO.StreamReader redStm = new System.IO.StreamReader(responseStm, System.Text.Encoding.UTF8);
+						outputText = redStm.ReadToEnd();
+					}
+					var apiresp = JavaScriptJsonSerializerHelper.Deserialize<RefJson>(outputText);
+					
+					if (apiresp != null && apiresp.status != "Success")
+					{
+						mesagssjson = apiresp.errorCode;
+						AppLogger.Info(string.Format("Pacs检查申请单入参：{0}，出参结果：{1}", datajson, outputText));
+					}
+					else if (apiresp != null && apiresp.status == "Success")
+					{
+						//pacs申请单成功后改变mz_cf表sqdzt为0
+						_outPatientUniversalDmnService.pushApplicationformRef(data.Patient.Request.Reqno, this.OrganizeId, 0);
+					}
+					var refdatalist = new
+					{
+						mesagssjsosn = mesagssjson,
+						jsonref = datajson
+					};
+				}
+				catch (Exception e)
+				{
 
-                    if (apiresp != null && apiresp.status != "Success")
-                    {
-                        mesagssjson = apiresp.errorCode;
-                        AppLogger.Info(string.Format("Pacs检查申请单入参：{0}，出参结果：{1}", datajson, outputText));
-                    }
-                    else if (apiresp != null && apiresp.status == "Success")
-                    {
-                        //pacs申请单成功后改变mz_cf表sqdzt为0
-                        _outPatientUniversalDmnService.pushApplicationformRef(data.Patient.Request.Reqno, this.OrganizeId, 0);
-                    }
-                    var refdatalist = new
-                    {
-                        mesagssjsosn = mesagssjson,
-                        jsonref = datajson
-                    };
-                }
-                catch (Exception e)
-                {
+					throw;
+				}
+			}
+			return Success("");
 
-                    throw;
-                }
-            }
-            return Success("");
+		}
 
-        }
+		#endregion
 
-        #endregion
-
-        #region 挂号弹框
-
-        /// <summary>
-        /// 挂号弹框视图
-        /// </summary>
-        /// <returns></returns>
-        public ActionResult GhLayer(string blh)
-        {
-            return View("OutpatientRegLayer");
-        }
-
-        #endregion
-        /// <summary>
+		/// <summary>
 		/// 开立物资项目扣减库存数量 扣减冻结数量
 		/// </summary>
 		/// <returns></returns>
 		public ActionResult Sumwzdj(string[] cfh)
-        {
-            var list = _outPatientUniversalDmnService.Sumwzdj(cfh, OrganizeId, UserIdentity.rygh);
-            var data = new
-            {
-                row = list
-            };
-            return Content(data.ToJson());
-        }
+		{
+			var list = _outPatientUniversalDmnService.Sumwzdj(cfh, OrganizeId, UserIdentity.rygh);
+			var data = new
+			{
+				row = list
+			};
+			return Content(data.ToJson());
+		}
 
-        /// <summary>
-        /// 开立物资项目冻结库存数量
-        /// </summary>
-        /// <returns></returns>
-        public ActionResult TuiHuiwzdj(string[] cfh)
-        {
-            var list = _outPatientUniversalDmnService.TuiHuiwzdj(cfh, OrganizeId, UserIdentity.rygh);
-            var data = new
-            {
-                row = list
-            };
-            return Content(data.ToJson());
-        }
-    }
+		/// <summary>
+		/// 开立物资项目冻结库存数量
+		/// </summary>
+		/// <returns></returns>
+		public ActionResult TuiHuiwzdj(string[] cfh)
+		{
+			var list = _outPatientUniversalDmnService.TuiHuiwzdj(cfh, OrganizeId, UserIdentity.rygh);
+			var data = new
+			{
+				row = list
+			};
+			return Content(data.ToJson());
+		}
+
+	}
 }

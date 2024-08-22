@@ -1,0 +1,178 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "OutpatientDaySett";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+<style>
+    .newform-control {
+        height: 24px;
+        padding-top: 0px;
+        padding-bottom: 0px;
+        padding-right: 0px;
+        padding-left: 5px;
+        resize: none;
+        border-radius: 4px;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    .newformTitle {
+        position: relative;
+        left: 0px;
+        text-align: right;
+        white-space: nowrap;
+        font-weight: normal;
+        padding-right: 15px;
+    }
+
+    .form-control:focus {
+        -webkit-box-shadow: inset 0 0px 1px rgba(0,0,0,.075) !important;
+    }
+</style>
+<div class="topPanel">
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="$.reload()"><span class="glyphicon glyphicon-refresh"></span></a>
+        </div>
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <th class="newformTitle">结算日期：</th>
+                <td>
+                    <input readonly id="kssj" type="text" class="newform-control form-control" placeholder="上次结算日期" style="width: 88%;">
+                </td>
+                <th class="newformTitle">—</th>
+                <td>
+                    <input readonly id="jssj" type="text" class="newform-control form-control" placeholder="本次结算日期" style="width: 88%;" value="@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")">
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+    
+<div class="gridPanel" style="margin-top:1%">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 6, 7 },
+    F6Text = "结算确认",
+    F7Text = "取消结算"
+})
+<script>
+    $(function () {
+        getLastDaySettTime();
+        gridList();
+    })
+
+    //获取上次日结算时间
+    function getLastDaySettTime() {
+        $.najax({
+            url: "/DaySettleManage/DaySettle/GetLastDaySettTime",
+            dataType: "json",
+            data: { mzzybz: "1" },
+            type: "POST",
+            success: function (data) {
+                $("#kssj").val(data.data);
+            }
+        });
+    }
+
+    //日结算明细
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/DaySettleManage/DaySettle/GetDaySettListJson",
+            postData: getSearchPostData(),
+            height: $(window).height() - 175,
+            colModel: [
+             { label: "主键", name: "Id", hidden: true, key: true },
+             {
+                 label: "本次结算金额", name: "bcje", width: 100, align: "left",
+                 formatter: function (val) {
+                     if (val) {
+                         return val.toFixed(2);
+                     } else {
+                         return "0.00"
+                     }
+                 }
+             },
+             { label: "发票号", name: "fphs", width: 400, align: "center" },
+             { label: "结算人", name: "CreatorName", width: 150, align: "center" },
+             { label: "结算开始时间", name: "LastJsTime", width: 150, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+             { label: "结算结束时间", name: "CreateTime", width: 150, align: "left", formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
+            ],
+            pager: "#gridPager",
+            sortname: 'CreateTime desc',
+            viewrecords: true
+        });
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        return { mzzybz: "1" };
+    };
+
+    //日结算确认
+    function newtouch_event_f6() {
+        $.modalConfirm("确认是否进行取消结算？", function (flag) {
+            if (!flag) {
+                return;
+            }
+            else {
+                $.najax({
+                    type: "POST",
+                    url: "/DaySettleManage/DaySettle/SaveInpatientDaySettle",
+                    dataType: "json",
+                    success: function (data) {
+                        $.modalAlert("操作成功", 'success');
+                        $.modalClose();
+                        $("#gridList").jqGrid('clearGridData');  //清空表格
+                        $("#gridList").jqGrid('setGridParam').trigger("reloadGrid");
+                    },
+                    errorCallback: function (err) {
+                        $.modalAlert(err.message, 'error');
+                        $.modalClose();
+                    }
+                });
+            }
+        });
+    }
+
+    //退费确认
+    function newtouch_event_f7() {
+        //获取选中行Id
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请先选中需取消结算的信息", 'warning');
+            return;
+        }
+        //弹出确认窗口
+        $.modalConfirm("确认是否进行结算？", function (flag) {
+            if (!flag) {
+                return;
+            }
+            else {
+                $.najax({
+                    type: "POST",
+                    url: "/DaySettleManage/DaySettle/CancleDaySettleInfo",
+                    data: { Id: seleRowid },
+                    dataType: "json",
+                    success: function (data) {
+                        $.modalAlert("操作成功", 'success');
+                        $.modalClose();
+                        $("#gridList").jqGrid('clearGridData');  //清空表格
+                        $("#gridList").jqGrid('setGridParam').trigger("reloadGrid");
+                    },
+                    errorCallback: function (err) {
+                        $.modalAlert(err.message, 'error');
+                        $.modalClose();
+                    }
+                });
+            }
+        });
+    }
+</script>

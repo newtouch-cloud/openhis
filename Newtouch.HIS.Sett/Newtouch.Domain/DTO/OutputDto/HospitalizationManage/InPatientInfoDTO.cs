@@ -77,6 +77,7 @@ namespace Newtouch.HIS.Domain.DTO
         /// 
         /// </summary>
         public string bqmc { get; set; }
+        public string cwmc { get; set; }
 
         /// <summary>
         /// 
@@ -181,6 +182,20 @@ namespace Newtouch.HIS.Domain.DTO
         public string contPerRelValue { get; set; }
 
         public string ryfs { get; set; }
+        /// <summary>
+        /// 是否已上传
+        /// </summary>
+        public string issc { get; set; }
+        public string doctor { get; set; }
+        public string inHosDays { get; set; }
+        public string zzdmc2 { get; set; }
+        public string zzdmc3 { get; set; }
+        public string cyzd { get; set; }
+        public string zy { get; set; }
+        public string xzz { get; set; }
+        public string cyfs { get; set; }
+        public string jzDoctor { get; set; }
+        public string pkbz { get; set; }
 
     }
 

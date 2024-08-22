@@ -1,0 +1,260 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div style="padding: 20px 35px 0 2px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle"><span class="required">*</span>组织机构：</th>
+                <td class="formValue" colspan="3">
+                    <select id="OrganizeId" name="OrganizeId" class="form-control required">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>门诊类型：</th>
+                <td class="formValue" colspan="3">
+                    <select id="mjzbz" name="mjzbz" class="form-control required" data-EnumType="EnumOutPatientType">
+                        <option value="">==请选择==</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">挂号项目 ：</th>
+                <td class="formValue" colspan="3">
+                    <input type="text" class="form-control" id="ghlx" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">诊疗项目 ：</th>
+                <td class="formValue" colspan="3">
+                    <input type="text" class="form-control" id="zlxm" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle"><span class="required">*</span>科室 ：</th>
+                <td class="formValue" colspan="3">
+                    <input type="text" class="form-control required" id="ks" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">专家医生 ：</th>
+                <td class="formValue" colspan="3">
+                    <input type="text" class="form-control" id="ys" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">周一 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zyi", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+                <th class="formTitle">周二 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zer", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+                <th class="formTitle">周三 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zsan", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">周四 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zsi", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+                <th class="formTitle">周五 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zwu", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+                <th class="formTitle">周六 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zlv", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">周日 ：</th>
+                <td class="formValue">
+                    @Html.DropDownList("zri", EnumRegSchedule.none.ToDescSelectList(), "==请选择==", new { @class = "form-control" })
+                </td>
+                <th class="formTitle">总挂号量 ：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="zhl" />
+                </td>
+            </tr>
+            <tr>
+                <th class="formTitle">有效</th>
+                <td class="formValue">
+                    <div class="ckbox">
+                        <input id="zt" type="checkbox" checked="checked"><label for="zt"></label>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</form>
+
+<script>
+    var ghpbId = $.request("ghpbId");
+    var OrganizeId = $.request("OrganizeId");
+    $(function () {
+        initControl();
+        if (!!ghpbId) {
+            $.ajax({
+                url: "/OutpatientManage/OutpatientRegSchedule/GetFormJson?r=" + Math.random(),
+                data: { ghpbId: ghpbId, OrganizeId: OrganizeId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                    $('#ghlx').attr('data-ghlx', data.ghlx)
+                        .attr('data-sfxmmc', data.sfxmmc)
+                              .val(data.sfxmmc);
+                    $('#zlxm').attr('data-zlxm', data.zlxm)
+                        .attr('data-sfxmmc', data.zlxmmc)
+                        .val(data.zlxmmc);
+                    $('#ys').attr('data-ys', data.ys)
+                            .val(data.staffName);
+                    $('#ks').attr('data-ks', data.ks)
+                            .val(data.departmentName);
+                }
+            });
+        }
+    })
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/SystemManage/Organize/GetChildTreeSelectJson",
+        });
+    }
+
+    //挂号项目
+    $('#ghlx').newtouchFloatingSelector({
+        width: 600,
+        height: 220,
+        caption: "收费项目",
+        clickautotrigger: true,
+        url: '/SystemManage/BaseData/SelectSfxmYp',
+        ajaxparameters: function () {
+            return "keyword=" + $.trim($('#ghlx').val()) + "&mzzybz=1&dllb=2&sfdllx=OutpatientReg";
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#ghlx').attr('data-ghlx', $thistr.attr('data-sfxmCode'))
+                .attr('data-sfxmmc', $thistr.attr('data-sfxmmc'))
+                .val($thistr.attr('data-sfxmmc'));
+        },
+        colModel: [{ label: '编码', name: 'sfxmCode', widthratio: 15 },
+            { label: '名称', name: 'sfxmmc', widthratio: 25 },
+            { label: '拼音', name: 'py', widthratio: 15 },
+            { label: '单位', name: 'dw', widthratio: 8 },
+            { label: '单价', name: 'dj', widthratio: 10 },
+            { label: '收费大类', name: 'sfdlmc', widthratio: 15 },
+        ]
+    });
+
+    //诊疗项目
+    $('#zlxm').newtouchFloatingSelector({
+        width: 600,
+        height: 180,
+        caption: "诊疗项目",
+        clickautotrigger: true,
+        url: '/SystemManage/BaseData/SelectSfxmYp',
+        ajaxparameters: function () {
+            return "keyword=" + $.trim($('#zlxm').val()) + "&mzzybz=1&dllb=2&sfdllx=Diagnose";
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#zlxm').attr('data-zlxm', $thistr.attr('data-sfxmCode'))
+                .attr('data-sfxmmc', $thistr.attr('data-sfxmmc'))
+                .val($thistr.attr('data-sfxmmc'));
+        },
+        colModel: [{ label: '编码', name: 'sfxmCode', widthratio: 15 },
+            { label: '名称', name: 'sfxmmc', widthratio: 25 },
+            { label: '拼音', name: 'py', widthratio: 15 },
+            { label: '单位', name: 'dw', widthratio: 8 },
+            { label: '单价', name: 'dj', widthratio: 10 },
+            { label: '收费大类', name: 'sfdlmc', widthratio: 15 },
+        ]
+    });
+
+    //科室
+    $('#ks').newtouchFloatingSelector({
+        width: 400,
+        height: 180,
+        caption: "科室",
+        clickautotrigger: true,
+        url: '/OutpatientManage/OutpatientRegSchedule/GetSysDepartmentList',
+        ajaxmethod: 'POST',
+        ajaxreqdata: function () {
+            var reqData = {};
+            reqData.keyword = $("#ks").val();
+            return reqData;
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#ks').attr('data-ks', $thistr.attr('data-code'))
+                .val($thistr.attr('data-Name'));
+        },
+        colModel: [{ label: '代码', name: 'Code', widthratio: 30 },
+            { label: '科室名称', name: 'Name', widthratio: 30 },
+            { label: '拼音', name: 'py', widthratio: 30 }
+        ]
+    });
+
+    //医生
+    $('#ys').newtouchFloatingSelector({
+        width: 400,
+        height: 180,
+        caption: "科室",
+        clickautotrigger: true,
+        url: '/OutpatientManage/OutpatientRegSchedule/GetStaffByDutyCode',
+        ajaxmethod: 'POST',
+        ajaxparameters: function () {
+            if ($.trim($('#ys').val()).length == 0) {
+                return;
+            }
+            return "keyword=" + $.trim($('#ys').val());
+        },
+        itemdbclickhandler: function ($thistr) {
+            $('#ys').attr('data-ys', $thistr.attr('data-StaffGh'))
+                .val($thistr.attr('data-StaffName'));
+        },
+        colModel: [{ label: '人员', name: 'StaffName', widthratio: 30 },
+            { label: '工号', name: 'StaffGh', widthratio: 30 },
+            { label: '拼音', name: 'StaffPY', widthratio: 30 }
+        ]
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        params.ghlx = $('#ghlx').attr('data-ghlx');
+        if ($('#ghlx').val() != $('#ghlx').attr('data-sfxmmc')) {
+            params.ghlx = '';
+        }
+        params.zlxm = $('#zlxm').attr('data-zlxm');
+        if ($('#zlxm').val() != $('#zlxm').attr('data-sfxmmc')) {
+            params.zlxm = '';
+        }
+        params.ks = $('#ks').attr('data-ks');
+        params.ys = $('#ys').attr('data-ys');
+        if (!params.ks) {
+            return false;
+        }
+        if (params.mjzbz == 3 && !!!params.ys) {
+            $.modalAlert('专家门诊必须选择专家', 'error');
+            return;
+        }
+        $.submitForm({
+            url: "/OutpatientManage/OutpatientRegSchedule/SubmitForm?ghpbId=" + ghpbId,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+</script>

@@ -520,7 +520,7 @@ and a.OrganizeId=ks.OrganizeId and ks.zt='1' and a.czks=ks.Code ";
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 strSql += " and (czksmc like @keyword or ks.py like @keyword or h.py like @keyword or h.name like @keyword or a.Title like @keyword)";
-                para.Add(new SqlParameter("@keyword", "%" + keyword + "%"));
+                para.Add(new SqlParameter("@keyword","%"+ keyword+"%"));
             }
             strSql += " order by RegType,ksmc";
 

@@ -58,6 +58,9 @@ namespace Newtouch.HIS.Domain.DTO.InputDto
         public int patid { get; set; }
         public string zyh { get; set; }
         public string memo { get; set; }
-
+        /// <summary>
+        /// 订单号
+        /// </summary>
+        public string outTradeNo { get; set; }
     }
 }

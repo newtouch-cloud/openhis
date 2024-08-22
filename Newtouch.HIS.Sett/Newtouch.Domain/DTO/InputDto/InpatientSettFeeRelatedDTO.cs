@@ -75,4 +75,5 @@ namespace Newtouch.HIS.Domain.DTO
         public decimal? xjwc { get; set; }
         #endregion
     }
+
 }

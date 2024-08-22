@@ -244,11 +244,11 @@
             zyh = null;
             jsnm = null
             ybjsh = null;
-            if (!obj || (!obj.zyh && !obj.kh)) {
-                isLoadingIIII = false;
-                $.modalAlert("请输入住院号,或先读卡！", 'warning');
-                return false;
-            }
+            //if (!obj || (!obj.zyh && !obj.kh)) {
+            //    isLoadingIIII = false;
+            //    $.modalAlert("请输入住院号,或先读卡！", 'warning');
+            //    return false;
+            //}
             $.najax({
                 type: "POST",
                 url: "/HospitalizationManage/DischargeSettle/GetCancelSettleStatusDetail",
@@ -257,7 +257,7 @@
                 success: function (ajaxresp) {
                     //住院病人信息
                     patModel = ajaxresp.data.InpatientSettPatInfo;
-                    isYbjyjz = openYbSett && patModel.brxz == '1';
+                    isYbjyjz = openYbSett && patModel.brxz != '0';
 
                     isXnhjyjz = openXnhSett &&
                         patModel.brxz == '8' &&
@@ -367,7 +367,6 @@
                             }
                         });
                         if (DenySettleReturn.xxfhm === "P001") {
-                            debugger;
                             shybhisSubmit(DenySettleReturn.xxnr.translsh);
                         } else {
                             $.modalAlert('住院结算冲正失败：' + DenySettleReturn.fhxx + '【此时医保已经结算成功，请联系his开发商处理】', 'success');
@@ -446,9 +445,8 @@
 			                }
 		                });
                 }
-
-                $.modalAlert(data.message, 'success');
-                funcDoPageClear();
+                //广西医保特有
+               // refundPrintInvoiceReq(zyh, jsnm);
             }
         });
     }
@@ -459,12 +457,40 @@
             data: { zyh: zyh, expectedjsnm: jsnm, cancelReason: $.trim($('#txtCancelReason').val()), cancelyblsh: cancelyblsh }, //期望的结算内码 防止过程中变更
             type: "POST",
             success: function (data) {
-                $.modalAlert(data.message, 'success');
-                funcDoPageClear();
+                //广西医保特有
+                //refundPrintInvoiceReq(zyh, jsnm);
             }
         });
     }
-
+    //票据冲红
+    function refundPrintInvoiceReq(mzh, jsnm) {
+        var requestJson = { "BusinessName": "发票冲红", "paySerialNo": mzh, "paySettlementNo": jsnm, "Operator": "@(opr.UserName)", "Reason": "出院结算取消冲红" };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/InvoicePost",
+            dataType: "json",
+            data: requestJson,
+            async: false,
+            success: function (data) {
+                if (data.code == "0") {
+                    $.modalAlert("电子票冲红成功", 'success');
+                    funcDoPageClear();
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("电子票冲红失败[" + data.mes + "]", 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                isuccer = false;
+                $.modalAlert('电子票冲红异常[' + ex + ']', 'error');
+                return;
+            }
+        });
+    }
 
 </script>
 <script type="text/javascript">

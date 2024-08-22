@@ -43,7 +43,8 @@ namespace Newtouch.HIS.DomainServices
         private readonly ISysPatientAccountRepo _SysPatAccRepository;
         private readonly ISysConfigRepo _sysConfigRepo;
         private readonly ISysPatientBasicInfoRepo _sysPatientBasicInfoRepo;
-		private readonly ISysPatientNatureRepo _sysPatientNatureRepo;
+        private readonly ISysPatientNatureRepo _sysPatientNatureRepo;
+
 
         #region 贵安新农合
         private readonly ITTCataloguesComparisonDmnService _ttCataloguesComparisonDmnService;
@@ -94,6 +95,7 @@ namespace Newtouch.HIS.DomainServices
             };
             return FirstOrDefault<OutpatAccInfoDto>(strSql.ToString(), par.ToArray());
         }
+
         /// <summary>
         /// 同时保存病人和卡信息
         /// </summary>
@@ -355,8 +357,8 @@ namespace Newtouch.HIS.DomainServices
                     {
                         //差别数据统计
                         data_name += (pi.Name == "" ? "NULL" : pi.Name) + ",";
-                        datavalue_old += (get_old == "" ? "NULL" : get_old) + "卍";
-                        datavalue_new += (get_new == "" ? "NULL" : get_new) + "卍";
+                        datavalue_old += (get_old == "" ? "NULL" : get_old) + ",";
+                        datavalue_new += (get_new == "" ? "NULL" : get_new) + ",";
                     }
 
                 }
@@ -366,21 +368,21 @@ namespace Newtouch.HIS.DomainServices
                     var CreatorCodes = CreatorCode;
                     var CreateTime = DateTime.Now;
                     data_name = (data_name != "" ? data_name.Substring(0, data_name.LastIndexOf(",")) : "");
-                    datavalue_old = (datavalue_old != "" ? datavalue_old.Substring(0, datavalue_old.LastIndexOf("卍")) : "");
-                    datavalue_new = (datavalue_new != "" ? datavalue_new.Substring(0, datavalue_new.LastIndexOf("卍")) : "");
-                    //string strSql = string.Format(@"insert into [NewtouchHIS_Sett].[dbo].[xt_brjbxxLOG] " +
-                    //    " select newid(),*,@CreatorCodes,@CreateTime,NULL,NULL,@data_name data_name,@datavalue_old datavalue_old,@datavalue_new datavalue_new from [NewtouchHIS_Sett].[dbo].[xt_brjbxx] with(nolock) where patid=@patid and blh=@blh and zt='1' and OrganizeId=@orgId ");
-                    //var param = new DbParameter[] {
-                    //        new SqlParameter("@data_name",data_name),
-                    //        new SqlParameter("@datavalue_old",datavalue_old),
-                    //        new SqlParameter("@datavalue_new",datavalue_new),
-                    //        new SqlParameter("@patid",vo.patid),
-                    //        new SqlParameter("@blh",vo.blh),
-                    //        new SqlParameter("@orgId",orgId),
-                    //        new SqlParameter("@CreatorCodes",CreatorCode),
-                    //        new SqlParameter("@CreateTime",CreateTime),
-                    //    };
-                    //this.ExecuteSqlCommand(strSql, param);
+                    datavalue_old = (datavalue_old != "" ? datavalue_old.Substring(0, datavalue_old.LastIndexOf(",")) : "");
+                    datavalue_new = (datavalue_new != "" ? datavalue_new.Substring(0, datavalue_new.LastIndexOf(",")) : "");
+                    string strSql = string.Format(@"insert into [NewtouchHIS_Sett].[dbo].[xt_brjbxxLOG] " +
+                        " select newid(),*,@CreatorCodes,@CreateTime,NULL,NULL,@data_name data_name,@datavalue_old datavalue_old,@datavalue_new datavalue_new from [NewtouchHIS_Sett].[dbo].[xt_brjbxx] with(nolock) where patid=@patid and blh=@blh and zt='1' and OrganizeId=@orgId ");
+                    var param = new DbParameter[] {
+                            new SqlParameter("@data_name",data_name),
+                            new SqlParameter("@datavalue_old",datavalue_old),
+                            new SqlParameter("@datavalue_new",datavalue_new),
+                            new SqlParameter("@patid",vo.patid),
+                            new SqlParameter("@blh",vo.blh),
+                            new SqlParameter("@orgId",orgId),
+                            new SqlParameter("@CreatorCodes",CreatorCode),
+                            new SqlParameter("@CreateTime",CreateTime),
+                        };
+                    this.ExecuteSqlCommand(strSql, param);
                 }
                 
                 xtbrjbxxlog.data_name = data_name;
@@ -422,7 +424,7 @@ namespace Newtouch.HIS.DomainServices
                     db.Insert(patiententity);
 
                     xtbrjbxxlog.patid = newPatId;
-					xtbrjbxxlog.Create(true);                    
+                    xtbrjbxxlog.Create(true);
                     #region 照顾自助机/小程序接口，获取不到登录用户
                     if (string.IsNullOrEmpty(xtbrjbxxlog.CreatorCode))
                     {
@@ -433,10 +435,8 @@ namespace Newtouch.HIS.DomainServices
                         xtbrjbxxlog.CreateTime = DateTime.Now;
                     }
                     #endregion
+                    db.Insert(xtbrjbxxlog);
                 }
-                xtbrjbxxlog.patid = patiententity.patid;
-                xtbrjbxxlog.Create(true);
-                db.Insert(xtbrjbxxlog);
 
                 if (newCardEntity != null)
                 {
@@ -866,7 +866,7 @@ FROM     xt_brjbxx  jb
             //卡
             hospPatientBasicInfo.kh = VO.kh;
             VO.cardtype = string.IsNullOrWhiteSpace(VO.cardtype) ? ((int)EnumCardType.XNK).ToString() : VO.cardtype;
-            hospPatientBasicInfo.CardType = VO.cardtype;
+            hospPatientBasicInfo.CardType =VO.cardtype ;
             hospPatientBasicInfo.CardTypeName = ((EnumCardType)(Convert.ToInt32(VO.cardtype))).GetDescription();
 
             hospPatientBasicInfo.lxrjtdh = VO.lxrjtdh;
@@ -1298,8 +1298,7 @@ where   a.zt='1'  and zybz not in('3','9') and cd.CardType<>'1'   and l.tradiNum
                         //sqlparam.Add(new SqlParameter("@keyword", "%" + keyword.Trim() + "%"));
                     }
                 }
-                else
-                {
+                else {
                     strsql.Append(@" select  a.jzid mdtrt_id,'' setl_id,cd.grbh psn_no,b.xm psn_name, a.mzh zymzh,
 SUBSTRING(l.inHead,CHARINDEX(',',l.inHead)+6,CHARINDEX(',',l.inHead,CHARINDEX(',',l.inHead)+1)-CHARINDEX(',',l.inHead)-6 ) medins_setl_id,
  cd.cbdbm,l.errormsg errormsg,l.tradiNumber infno 
@@ -1446,8 +1445,8 @@ WHERE   zybz NOT IN ( 0, 4 ) ");
         d.Name ksmc , 
         e.bqCode bq ,
         e.bqmc ,
-        f.cwCode cw ,
-        f.cwmc --,
+        f.cwCode,
+        f.cwmc cw--,
          --//g.zh ,
         --//g.zhye , --预交金
         --//h.zdCode ,
@@ -1503,7 +1502,6 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
             , string mjzbz = null
             , string jiuzhenbz = null
             , string keyword = null
-            , string zzhz = null
             , Pagination pagination = null)
         {
             var paraList = new List<SqlParameter>() { };
@@ -1514,7 +1512,6 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
             paraList.Add(new SqlParameter("@ysgh", ysgh ?? ""));
             paraList.Add(new SqlParameter("@mjzbz", mjzbz ?? ""));
             paraList.Add(new SqlParameter("@jiuzhenbz", jiuzhenbz ?? ""));
-            paraList.Add(new SqlParameter("@zzhz", zzhz ?? ""));
             paraList.Add(new SqlParameter("@keyword", "%" + (keyword ?? "") + "%"));
             //
             pagination = pagination ?? new Pagination();
@@ -1542,7 +1539,7 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
             paraList.Add(outParameter4);
 
             var list = this.FindList<OutPatientRegistrationInfoDTO>(@"exec usp_interface_OutPatientRegistrationQuery @orgId, @lastUpdateTime
-, @outpatientNumber, @ksCode, @ysgh, @mjzbz, @jiuzhenbz, @keyword, @zzhz
+, @outpatientNumber, @ksCode, @ysgh, @mjzbz, @jiuzhenbz, @keyword
 --
 ,@page ,@rows ,@sidx ,@sord
 --
@@ -1646,12 +1643,17 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
     ,zyxx.brxz,
     xz.brxzmc,xz.brxzlb
     ,isnull(zyxx.blh, xx.blh) blh
-    ,zd.zdCode AS zzdCode,zd.icd10 AS zzdicd10,zd.zdmc zzdmc
+    ,zd.zdCode AS zzdCode,zd.icd10 AS zzdicd10
+	,(select ls.zdmc from zy_rydzd ls where ls.zyh=zd.zyh and ls.zdpx= '1' and zt='1' )zzdmc
+	,(select ls.zdmc from zy_rydzd ls where ls.zyh=zd.zyh  and ls.zdpx= '2' and zt='1' ) zzdmc2
+	,(select ls.zdmc from zy_rydzd ls where ls.zyh=zd.zyh  and ls.zdpx= '3' and zt='1' ) zzdmc3
     ,CONVERT(varchar(100), zyxx.csny, 23) AS csny
     ,CONVERT(varchar(100), zyxx.ryrq, 23) AS ryrq
     ,CONVERT(varchar(100), zyxx.cyrq, 23) AS cyrq
-    ,zyxx.bq bqCode,bq.bqmc bqmc
-    ,zybz zybz
+    ,zyxx.bq bqCode,bq.bqmc bqmc,cw.cwmc
+    ,zyxx.zybz zybz
+    ,zdb.Name zy
+    ,(zyxx.xian_sheng+zyxx.xian_shi+zyxx.xian_xian+zyxx.xian_dz) xzz
     ,case zyxx.zybz when '0' then '入院登记' when '1' then '病区中' when '2' then '病区出院' when '3' then '病人出院' when '9' then '作废记录' else '' end AS zybzmc
     ,isnull(zyxx.LastModifyTime, zyxx.CreateTime) UpdateTime
     ,xx.py, '' wb
@@ -1661,21 +1663,30 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
     ,(CASE zyxx.zjlx WHEN 1 THEN zyxx.zjh ELSE '' END) AS idCardNo
     ,(CASE zyxx.xb WHEN '1' THEN '1' WHEN '2' THEN '2' ELSE '3' END ) as sex
     ,(CASE zyxx.xb WHEN '1' THEN '男' WHEN '2' THEN '女' ELSE '不详' END ) as sexValue
-    ,zyxx.lxr AS contPerName 
+	,xx.cyzdmc cyzd  
+	,(CASE xx.cyfs WHEN '1'THEN '治愈' WHEN '2' THEN '好转' WHEN '3' THEN '转院' ELSE '' END ) cyfs 
+	,CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, zyxx.ryrq,ISNULL(cyrq,CONVERT(varchar,GETDATE(),120))) WHEN 0 THEN 1 else  DATEDIFF(DAY, zyxx.ryrq,ISNULL(cyrq,CONVERT(varchar,GETDATE(),120)))END )+'天' inHosDays
+    ,(zyxx.lxr+'('+
+	(CASE zyxx.lxrgx WHEN '1' THEN '夫妻'WHEN '2' THEN '父子'WHEN '3' THEN '母子'WHEN '4' THEN '父女'WHEN '5' THEN '母女'WHEN '6' THEN '兄弟'WHEN '7' THEN '姐弟'WHEN '8' THEN '姐妹'WHEN '9' THEN '祖孙'
+	WHEN 'A' THEN '公媳' WHEN 'B' THEN '婆媳'WHEN 'C' THEN '岳婿'WHEN 'D' THEN '连襟'WHEN 'E' THEN '妯娌'WHEN 'F' THEN '朋友'WHEN 'G' THEN '兄妹'ELSE '其他' END)+')')
+	AS contPerName 
     ,zyxx.lxrdh AS contPerPhoneNum 
     ,lxrItem.Code AS contPerRel 
     ,lxrItem.Name AS contPerRelValue
-    ,zyxx.ks, ks.Name ksmc, zyxx.doctor, ysStaff.Name ysxm
-    ,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.lxrdh,mz.mzmc,zyxx.rybq
+    ,zyxx.ks, ks.Name ksmc, ysStaff.Name doctor,'' jzDoctor, '' pkbz,ysStaff.Name ysxm
+    ,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.lxrdh,mz.mzmc,zyxx.rybq,(case isnull(basy.zyh,'0') when '0' then '未上传' else '已上传' end) issc
 from zy_brjbxx(nolock) zyxx
-left join xt_brjbxx(nolock) xx
-    on zyxx.patid = xx.patid AND zyxx.OrganizeId = xx.OrganizeId  AND xx.zt = '1'
+left join [Newtouch_CIS].[dbo].[zy_brxxk] xx
+    on zyxx.zyh = xx.zyh AND zyxx.OrganizeId = xx.OrganizeId  AND xx.zt = '1'
 left join xt_brxz(nolock) xz
     ON xz.brxz = zyxx.brxz and xz.OrganizeId = zyxx.OrganizeId
 left join zy_rydzd(nolock) zd
     ON zd.zyh = zyxx.zyh AND zd.OrganizeId = zyxx.OrganizeId and zd.zdpx = 1 AND zd.zt = '1'
+left join Newtouch_CIS..zy_PatDxInfo(nolock) cyzd 
+	ON cyzd.zyh = zyxx.zyh AND cyzd.OrganizeId = zyxx.OrganizeId and cyzd.zdlb=2 and cyzd.zdlx=0 AND cyzd.zt = '1'
 left join [NewtouchHIS_Base]..V_S_xt_bq(nolock) bq
     ON bq.bqCode = zyxx.bq AND bq.OrganizeId = zyxx.OrganizeId  AND bq.zt = '1'
+left join [NewtouchHIS_Base].[dbo].[xt_cw] cw with(nolock) ON xx.OrganizeId=cw.OrganizeId and xx.BedCode=cw.bfCode  and cw.zt='1'
 LEFT JOIN NewtouchHIS_Base..V_C_Sys_ItemsDetail lxrItem 
     ON ( lxrItem.OrganizeId = zyxx.OrganizeId OR lxrItem.OrganizeId = '*')
     AND lxrItem.Code = zyxx.lxrgx
@@ -1686,6 +1697,8 @@ left join NewtouchHIS_Base..V_S_Sys_Staff ysStaff
     on ysStaff.gh = zyxx.doctor and ysStaff.OrganizeId = zyxx.OrganizeId
 left join xt_card kh on kh.CardNo=zyxx.kh and kh.OrganizeId=zyxx.OrganizeId and kh.zt=1
 left join NewtouchHIS_Base..xt_mz mz on mz.mzCode=zyxx.mz and mz.zt=1
+left join drjk_basyup_output basy on basy.zyh=zyxx.zyh and basy.zt=1 
+left join [NewtouchHIS_Base].[dbo].[Sys_ItemsDetail] zdb on zdb.Code=zyxx.zy and zdb.zt=1
 where zyxx.zt = '1'
 and zyxx.OrganizeId = @orgId
 ");
@@ -1844,9 +1857,9 @@ and zyxx.OrganizeId = @orgId
         /// <returns></returns>
         public IList<HospPatientBasicInfoEntity> GetPatSearchList(Pagination pagination, string orgId, string zyh, string xm, string brzybzType = null)
         {
-            var sql = @"select zyxx.* from zy_brjbxx zyxx
-left join xt_brjbxx xtbrxx
-on xtbrxx.patid = zyxx.patid and xtbrxx.zt = '1' and xtbrxx.OrganizeId = zyxx.OrganizeId
+            var sql = @"select zyxx.*,cw.BedNo from zy_brjbxx zyxx
+left join xt_brjbxx xtbrxx on xtbrxx.patid = zyxx.patid and xtbrxx.zt = '1' and xtbrxx.OrganizeId = zyxx.OrganizeId
+left join [Newtouch_CIS].[dbo].[zy_cwsyjlk] cw  on zyxx.OrganizeId=cw.OrganizeId and zyxx.zyh=cw.zyh and cw.zt='1'
 where zyxx.OrganizeId = @orgId and zyxx.zt = '1'
 and (@zyh = '%%' or zyxx.zyh like @zyh)
 and (@xm = '%%' or zyxx.xm like @xm or xtbrxx.py like @xm)";
@@ -2428,11 +2441,10 @@ WHERE   a.zyh = @zyh
                 entity.zt = "1";
                 if (patInfo.jzpzlx != ((int)EnumCardType.YBJYK).ToString())
                 {
-                    entity.CardNo = _SysCardRepository.GetCardSerialNo(orgId);
+                    entity.CardNo = _SysCardRepository.GetCardSerialNo(orgId); 
                 }
-                else
-                {
-                    entity.CardNo = patInfo.kh;
+                else {
+                    entity.CardNo = patInfo.kh; 
                 }
                 entity.CardType = patInfo.jzpzlx;
                 entity.CardTypeName= ((EnumCardType)(Convert.ToInt32(patInfo.jzpzlx))).GetDescription();
@@ -2998,7 +3010,7 @@ where a.zt='1' and a.jsnm=@jsnm";
         }
         public List<HisKsZdVO> GetksZzdList(string orgid)
         {
-            string sqlstr = @"select code,name,py,convert(varchar(10),mzzybz)mzzybz,zxks,ybksbm,bmdm from NewtouchHIS_Base..[Sys_Department] where zt='1' and OrganizeId=@orgid and zlks='1'";
+            string sqlstr = @"select code,name,py,convert(varchar(10),mzzybz)mzzybz,zxks,ybksbm from NewtouchHIS_Base..[Sys_Department] where zt='1' and OrganizeId=@orgid and zlks='1'";
 
 
 

@@ -1,0 +1,160 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+
+<div class="topPanel">
+    @Html.Partial("_OrganizeIdDDLToolbarSearchView")
+    <div class="toolbar">
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_add()" id="bedata"><i class="fa fa-plus"></i>新建</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a class="btn btn-primary" onclick="btn_delete()"><i class="fa fa-trash-o"></i>删除</a>
+        </div>
+        @*<div class="btn-group">
+                <a class="btn btn-primary" onclick="btn_users()"><i class="fa fa-pencil-square-o"></i>角色用户</a>
+
+            </div>*@
+    </div>
+    <div class="search">
+        <table>
+            <tr>
+                <td>
+                    <div class="input-group">
+                        <input id="txt_keywordcx" type="text" class="form-control" placeholder="名称/编码" style="width: 180px;">
+                        <span class="input-group-btn">
+                            <button id="btn_searchcx" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+
+@*, OrganizeId: $("#OrganizeId").val()*@
+
+<script>
+    $(function () {
+        gridList();
+    })
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/Treatment/loginfy",
+            height: $(window).height() - 128,
+            postData: { keyword: $("#txt_keywordcx").val() },
+            colModel: [
+                { label: "主键", name: "Id", hidden: true, key: true },
+                { label: '诊疗组合名称', name: 'zhmc', width: 150, align: 'left' },
+                { label: '诊疗组合编码', name: 'zhcode', width: 100, align: 'left' },
+                { label: '排序', name: 'ord', width: 60, align: 'center' },
+                { label: '明细项目名称', name: 'zlxmmc', width: 170, align: 'left' },
+                { label: '明细项目', name: 'zlxm', width: 100, align: 'center' },
+                { label: '单价', name: 'price', width: 100, align: 'center', formatter: 'number', formatoptions: { thousandsSeparator: "", decimalPlaces: 2 } },
+                { label: '明细项目拼音', name: 'zlxmpy', width: 120, align: 'left' },
+                { label: '组合金额', name: 'zhje', width: 100, align: 'left', hidden: true },
+                { label: '收费大类', name: 'dlmc', width: 100, align: 'left' },
+                { label: '分组列', name: 'zhmccode', width: 100, align: 'left' },
+            ],
+            
+            pager: "#gridPager",
+            viewrecords: true,
+            sortname: 'zhcode',
+            gridview: true,
+            grouping: true,// 是否分组,默认为false
+            groupingView: {
+                groupField: ['zhmccode'], // 按照哪一列进行分组
+                //groupText: ['<b>{0}</b>'],
+                groupColumnShow: [false],
+            },
+            rowNum: '10',
+            loadonce: true,
+            unwritten: false,
+        });
+        $("#btn_searchcx").click(function () {  
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keywordcx").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+    $('#txt_keywordcx').keydownEnterEvent(function () {
+        $('#btn_searchcx').trigger('click');
+    })
+
+    
+
+
+
+
+
+    function btn_add() {
+        $.modalOpen({
+            id: "AForm",
+            title: "添加项目信息",
+            url: "/Treatment/AForm?orgId=" + $('#OrganizeId').val(),
+            width: "550px",
+            height: "590px",
+            btn: null
+        });
+    }
+
+
+
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        console.info(keyValue);
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.modalOpen({
+            id: "Form",
+            title: "修改信息",
+            url: "/Treatment/AForm?keyValue=" + keyValue,
+            width: "550px",
+            height: "590px",
+            btn: null
+        });
+    }
+
+
+
+    function btn_delete() {
+
+        var rowKey = $("#gridList").jqGrid('getGridParam', "selrow");
+        var rowData = $("#gridList").jqGrid("getRowData", rowKey);//根据上面的rowKey获得本行的所有数据
+        var time = rowData.zhcode; //获得制定列的值 （ReservationTime为colModel的name）
+
+
+        var keyValue = $("#gridList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        $.deleteForm({
+            url: "/Treatment/deleteid",
+            param: { keyValue: time },
+            success: function () {
+                $.currentWindow().$("#gridList").trigger("reloadGrid");
+            }
+        })
+    }
+
+
+</script>
+
+
+

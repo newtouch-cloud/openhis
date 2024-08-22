@@ -14,5 +14,7 @@ namespace Newtouch.HIS.Domain.ValueObjects.OutpatientManage
         public string gh { get; set; }
         public string name { get; set; }
         public string ksmc { get; set; }
+        public string ks { get; set; }
+        public string jzid { get; set; }
     }
 }

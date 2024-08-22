@@ -3,9 +3,12 @@ using Newtouch.Core.Common.Utils;
 using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.ValueObjects;
+using Newtouch.Infrastructure.Model;
+using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using System;
 using System.Web.Mvc;
+using System.Configuration;
 
 namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
 {
@@ -63,7 +66,7 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
         [HandlerAjaxOnly]
         public ActionResult SubmitSett(string zyh, DateTime expectedcyrq, decimal expectedyjjzhye, decimal expectedjsje, string fph, decimal expectedzhaoling, string xjzfListStr, decimal shishoukuan)
         {
-            var successresult = _outHospSettApp.SaveSett(zyh, expectedcyrq, fph, expectedyjjzhye, expectedjsje, expectedzhaoling, xjzfListStr, shishoukuan);
+            var successresult = _outHospSettApp.SaveSett(zyh, expectedcyrq, fph, expectedyjjzhye, expectedjsje, expectedzhaoling, xjzfListStr, shishoukuan); 
             return Success("结算成功", successresult);
         }
 
@@ -206,7 +209,7 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
         /// <param name="dlCode"></param>
         /// <param name="mc"></param>
         /// <returns></returns>
-        public ActionResult GetSettleItemFrom(Pagination pagination, string zyh, string dlCode,string jsnms, string mc)
+        public ActionResult GetSettleItemFrom(Pagination pagination, string zyh, string dlCode, string jsnms, string mc)
         {
             var dto = _hospSettDmnService.SettlementDetailsItemsQuery(pagination, zyh, OrganizeId, dlCode, jsnms, mc);
             var data = new
@@ -230,7 +233,6 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
         {
             _hospSettDmnService.UpdateSettInvoiceNo(OrganizeId, jsnm, fph);
             return Success();
-        }
-
+        } 
     }
 }

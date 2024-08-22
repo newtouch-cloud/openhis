@@ -1,0 +1,217 @@
+﻿@{
+    ViewBag.Title = "";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<div class="rows">
+    <div class="panel panel-default">
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始日期：</th>
+                <td class="formValue">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
+                </td>
+                <th class="formTitle">结束日期：</th>
+                <td class="formValue">
+                    <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
+                           onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                </td>
+                <th class="formTitle">科室：</th>
+                <td class="formValue">
+                    <select id="depa" class="form-control">
+                        <option value="">全部</option>
+                    </select>
+                </td>
+                <th class="formTitle">病人性质：</th>
+                <td class="formValue">
+                    <input type="text" id="brxzmc" name="brxzmc" class="form-control form-an">
+                </td>
+                <td class="formValue"></td>
+            </tr>
+            <tr>
+                <th class="formTitle">操作员：</th>
+                <td class="formValue">
+                    <div class="row">
+                        <div class="col-md-9">
+                            <input type="text" class="form-control" id="txtsyy" value="" />
+                        </div>
+                        <div class="col-md-3" style="text-align:right;">
+                            <input type="button" class="btn btn-default btn-md" style="width:45px" id="btnsyy" value="查询" />
+                        </div>
+                    </div>
+                </td>
+                <th class="formTitle">结算类型：</th>
+                <td class="formValue">
+                    <select id="jslx" class="form-control">
+                        <option value="0">==全部==</option>
+                        <option value="1">门诊</option>
+                        <option value="2">住院</option>
+                    </select>
+                </td>
+                <th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+            scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+    var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var orgId = '@(ViewBag.OrgId)';
+    var isHospAdministrator = '@(ViewBag.IsHospAdministrator)';
+    var curUserCode = '@(ViewBag.CurUserCode)';
+
+    var uri = 'ReportServer/Pages/ReportViewer.aspx?%2FHIS.Report.1%2F%E7%A7%91%E5%AE%A4%E8%B4%A2%E5%8A%A1%E6%A0%B8%E7%AE%97%E6%B1%87%E6%80%BB%E8%A1%A8&rs:Command=Render';
+
+
+    function submit() {
+
+        if ($('#kssj').val().length == 0) {
+            $.modalAlert("缺少开始时间", "error");
+            return;
+        }
+        if ($('#jssj').val().length == 0) {
+            $.modalAlert("缺少结束时间", "error");
+            return;
+        }
+        if ($('#kssj').val() > $('#jssj').val()) {
+            $.modalAlert("开始时间不能大于结束时间", "error");
+            return;
+        }
+        var url = getUrl();
+
+        url += "&kssj=" + $('#kssj').val();
+        url += "&jssj=" + $.getDate({ date: $('#jssj').val() }) + ' 23:59:59';
+        url += "&dept=" + $('#depa').val();
+        url += "&czy=" + $("#txtsyy").val();
+        url += "&jslx=" + $('#jslx').val();
+        var brxz = '';
+        if ($('#brxzmc').attr('data-brxzmc') == $('#brxzmc').val()) {
+            brxz = $('#brxzmc').attr('data-brxz');
+        }
+        url += "&brxz=" + brxz;
+
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+    });
+
+    $(function () {
+        var h = $(window).height() - 55
+        $('#layout iframe').css('height', h);
+        init();
+
+        setTimeout(function () { submit(); }, 100);
+    });
+
+    function getUrl() {
+        if (uri.StartWith('/')) {
+            uri = uri.substr(1);
+        }
+        var srcUrl = uri;
+        srcUrl = reportServerHOST + srcUrl;
+
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+        if (true) {
+            if (srcUrl.indexOf('&rs:') == -1) {
+                srcUrl += "&rs:";
+            }
+            else {
+                srcUrl += "&";
+            }
+            srcUrl += "orgId=";
+            srcUrl += orgId;
+        }
+        return srcUrl;
+    }
+
+</script>
+<script type="text/javascript">
+    function init() {
+        //治疗师绑定下拉框
+        $("#depa").bindSelect({
+            id: "Code",
+            text: "Name",
+            url: "/OutpatientManage/OutpatientRegSchedule/GetSysDepartmentList",
+            dropdownAutoWidth: true
+        });
+
+        $('#depa').change(function () {
+            submit();
+        });
+
+        $('#jslx').bindSelect();
+
+        $('#jslx').change(function () {
+            submit();
+        });
+
+        //费用性质
+        $("#brxzmc").newtouchBatchFloatingSelector({
+            height: 250,
+            width: 400,
+            clickautotrigger: true,
+            filter: function (keyword) {
+                //遍历数据源，用keyword来筛选出结果
+                var resultObjArr = new Array();
+                $.each(top.window.clients.sysPatientNatureList, function (idx, val) {
+                    resultObjArr.push(val);
+                });
+                return resultObjArr;
+            },
+            caption: "费用性质",
+            colModel: [
+                { label: '编号', name: 'brxzbh', widthratio: 25 },
+                { label: '代码', name: 'brxz', widthratio: 25 },
+                { label: '名称', name: 'brxzmc', widthratio: 25 },
+                { label: '拼音', name: 'py', widthratio: 25 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#brxzmc").attr("data-brxzmc", $thistr.attr('data-brxzmc'))
+                    .attr("data-brxz", $thistr.attr('data-brxz'));
+                $("#brxzmc").val($thistr.attr('data-brxzmc'));
+
+                submit();
+                return;
+            }
+        });
+
+    }
+
+    //操作人
+    $("#btnsyy").click(function () {
+        $.modalOpen({
+            id: "FormUsers",
+            title: "选择操作员",
+            url: "/SystemManage/User/Selector?from=mzshoufeicaozuoyuan&organizeId=" + orgId + "&isExpand=true&callbackType=json&single=true",
+            width: "300px",
+            height: "400px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].AcceptClick(function (data) {
+                    userStaffTreeCallback(data);
+                });
+            }
+        });
+    });
+    //用户人员树回调方法
+    function userStaffTreeCallback(data) {
+        $("#txtsyy").val(data[0].Code);
+    }
+
+</script>

@@ -11,12 +11,17 @@
     //医保所属地，区分系统将执行何处医保逻辑
     var medicalInsurance = SysConfigReader.String("Inpatient_MedicalInsurance");
     var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
-    //就诊凭证类型是否从医保端获取  
+    //就诊凭证类型是否从医保端获取
     var YB_Jzpzl = SysConfigReader.String("YB_Jzpzl");
 }
 <style>
     .title {
-        width:60px;
+        width: 60px;
+    }
+
+    .text-break {
+        word-break: break-word;
+        white-space: normal !important;
     }
 </style>
 <form>
@@ -26,7 +31,7 @@
         </div>
         <table class="form">
             <tr>
-                <th class="formTitle" >在院状态：</th>
+                <th class="formTitle">在院状态：</th>
                 <td class="formValue">
                     <select id="zybz" name="zybz" class="form-control">
                         <option value="">==请选择==</option>
@@ -50,22 +55,22 @@
                     <input type="text" id="ksmc" name="ksmc" class="form-control form-an" />
                 </td>
                 <th class="formTitle" style="width:70px;padding-right:12px;">入院病区：</th>
-                <td class="formValue"> 
+                <td class="formValue">
                     <input type="text" id="bqmc" name="bqmc" class="form-control form-an" />
                 </td>
             </tr>
             <tr>
                 @*<td class="formValue" colspan="7">
-            <input type="button" id="btn_jsqd" class="btn btn-info" style="width:10%;display:none;" value="结算清单上传" />
-            <input type="button" id="btn_basy" class="btn btn-info" style="width:10%;display:none;" value="病案首页上传" />
-            <input type="button" id="btn_zyyz" class="btn btn-info" style="width:10%;display:none;" value="住院医嘱上传" />
-            <input type="button" id="btn_lcjc" class="btn btn-info" style="width:10%;display:none;" value="临床检查上传" />
-            <input type="button" id="btn_bljcbg" class="btn btn-info" style="width:14%;display:none;" value="病理检查报告上传" />
-            <input type="button" id="btn_dzbl" class="btn btn-info" style="width:10%;display:none;" value="电子病历上传" />
-        </td>
-        <td class="formValue" colspan="2">
-            <input id="txtsfz" type="hidden" class="form-control form-an" placeholder="身份证(异地病人)">
-        </td>*@
+                        <input type="button" id="btn_jsqd" class="btn btn-info" style="width:10%;display:none;" value="结算清单上传" />
+                        <input type="button" id="btn_basy" class="btn btn-info" style="width:10%;display:none;" value="病案首页上传" />
+                        <input type="button" id="btn_zyyz" class="btn btn-info" style="width:10%;display:none;" value="住院医嘱上传" />
+                        <input type="button" id="btn_lcjc" class="btn btn-info" style="width:10%;display:none;" value="临床检查上传" />
+                        <input type="button" id="btn_bljcbg" class="btn btn-info" style="width:14%;display:none;" value="病理检查报告上传" />
+                        <input type="button" id="btn_dzbl" class="btn btn-info" style="width:10%;display:none;" value="电子病历上传" />
+                    </td>
+                    <td class="formValue" colspan="2">
+                        <input id="txtsfz" type="hidden" class="form-control form-an" placeholder="身份证(异地病人)">
+                    </td>*@
                 <th class="formTitle">新住院号：</th>
                 <td class="formValue" colspan="1">
                     <select id="sel_newzyh">
@@ -103,8 +108,9 @@
                         <input type="button" id="btn_QXCYBL" class="btn btn-info" style="width:20%;display:inline-block;" value="出院回退" />
                     }
                 </td>
-                <td class="formValue title">
-                    <input type="button" id="btn_search" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="查询" />
+                <td class="formValue" colspan="2">
+                    <input type="button" id="btn_search" class="btn btn-primary" style="width:20%;margin-left: 10%;" value="查询" />
+                    <input type="button" id="btn_excel" class="btn btn-primary" style="width:20%;margin-left: 10%;" value="导出Excel" />
                 </td>
             </tr>
         </table>
@@ -114,14 +120,13 @@
         <div id="gridPager"></div>
     </div>
 </form>
-
 <script>
     $(function () {
         initControl();
         gridList();
     })
     function gridList() {
-        if ($("#ksmc").val()=="") {
+        if ($("#ksmc").val() == "") {
             $("#ksmc").attr("data-label", "");
         }
         if ($("#bqmc").val() == "") {
@@ -130,51 +135,62 @@
         var $gridList = $("#gridList");
         $gridList.dataGrid({
             url: "/PatientManage/Inpatient/GridInPatientGridJson",
-            height: $(window).height() - 128,
+            height: $(window).height() - 148,
             postData: {
                 keyword: $("#txt_keyword").val(), zybz: $("#zybz").val(), ryrqkssj: $("#ryrqkssj").val(),
                 yrqjssj: $("#ryrqjssj").val(), ksmc: $("#ksmc").attr("data-label"), bqmc: $("#bqmc").attr("data-label")
             },
             colModel: [
                 { label: '住院号', name: 'zyh', width: 50, align: 'left', key: true },
+                { label: '病历号', name: 'blh', hidden: true },
+                { label: '床号', name: 'cwmc', hidden: true },
+                { label: '姓名', name: 'xm', width: 60, align: 'left' },
+                { label: '联系人姓名', name: 'contPerName', width: 70, align: 'left' },
+                { label: '性别', name: 'sexValue', width: 40, align: 'Center' },
+                {
+                    label: '年龄', name: 'nlshow', width: 40, align: 'Center', formatter: function (cellvalue, a, b) {
+                        return getAgeFromBirthTime({ begin: b.csny }).text;
+                    }
+                },
+                { label: '职业', name: 'zy', width: 60, align: 'left' },
+                { label: '工作单位/地址', name: 'xzz', width: 120, align: 'left', classes: "text-break" },
+                { label: '联系电话', name: 'lxrdh', width: 80, align: 'left' },
+                { label: '入院日期', name: 'ryrq', width: 80, align: 'left' },
+                { label: '入院诊断', name: 'zzdmc', width: 120, align: 'left' },
+                { label: '第二诊断', name: 'zzdmc2', width: 120, align: 'left' },
+                { label: '第三诊断', name: 'zzdmc3', width: 120, align: 'left' },
+                { label: '出院日期', name: 'cyrq', width: 80, align: 'left' },
+                { label: '出院诊断', name: 'cyzd', width: 120, align: 'left' },
+                { label: '转归（预出院疗效类别）', name: 'cyfs', width: 125, align: 'left' },
+                { label: '身份证号', name: 'zjh', width: 120, align: 'left' },
+                { label: '住院天数', name: 'inHosDays', width: 60, align: 'left' },
+                { label: '诊断医生', name: 'doctor', width: 60, align: 'left' },
+                { label: '经治医生', name: 'jzDoctor', width: 60, align: 'left' },
                 {
                     label: '在院标志', name: 'zybz', width: 60, align: 'left', formatter: function (cellvalue) {
                         return $.enum.getDescByValue("EnumZYBZ", cellvalue);
                     }
                 },
-                { label: '病历号', name: 'blh', hidden: true },
-                { label: '姓名', name: 'xm', width: 60, align: 'left' },
-                { label: '性别', name: 'sexValue', width: 40, align: 'left' },
-                {
-                    label: '年龄', name: 'nlshow', width: 40, align: 'left', formatter: function (cellvalue, a, b) {
-                        return getAgeFromBirthTime({ begin: b.csny }).text;
-                    }
-                },
-                { label: '民族', name: 'mzmc', width: 50, align: 'left' },
-                { label: '电话', name: 'lxrdh', width: 80, align: 'left' },
-                { label: '出生年月', name: 'csny', width: 80, align: 'left' },
-                { label: '证件号', name: 'zjh', width: 120, align: 'left' },
-                { label: 'brxz', name: 'brxz', width: 80, align: 'left',hidden:true },
-                { label: 'CardType', name: 'CardType', width: 80, align: 'left', hidden: true },
-                { label: 'cbdbm', name: 'cbdbm', width: 80, align: 'left', hidden: true },
-                { label: '费用性质', name: 'brxzmc', width: 80, align: 'left' },
-                {
-                    label: '入院状态', name: 'rybq', width: 50, align: 'left', formatter: function (cellvalue) {
-                        return $.enum.getDescByValue("EnumWzjb", cellvalue);
-                    }
-                },
-                { label: '第一诊断', name: 'zzdmc', width: 100, align: 'left' },
-                { label: '入院日期', name: 'ryrq', width: 80, align: 'left' },
-                { label: '出院日期', name: 'cyrq', width: 80, align: 'left' },
-                { label: '已产生费用', name: 'zyfy', width: 80, align: 'left' },
-                { label: '预交费', name: 'yjj', width: 50, align: 'left' },
-                { label: 'jzh', name: 'jzh', width: 80, align: 'left', hidden: true },
-                { label: 'brxzlb', name: 'brxzlb', width: 80, align: 'left', hidden: true },
-                { label: '病区', name: 'bqmc', width: 80, align: 'left' },
-                {
-                    label: '最后更新时间', name: 'UpdateTime', width: 80, align: 'left',
-                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
-                },
+                { label: '是否贫困标志', name: 'pkbz', width: 80, align: 'left', hidden: true },
+                //{ label: 'brxz', name: 'brxz', width: 80, align: 'left',hidden:true },
+                //{ label: 'CardType', name: 'CardType', width: 80, align: 'left', hidden: true },
+                //{ label: 'cbdbm', name: 'cbdbm', width: 80, align: 'left', hidden: true },
+                //{ label: '费用性质', name: 'brxzmc', width: 80, align: 'left' },
+                //{
+                //    label: '入院状态', name: 'rybq', width: 50, align: 'left', formatter: function (cellvalue) {
+                //        return $.enum.getDescByValue("EnumWzjb", cellvalue);
+                //    }
+                //},
+
+                //{ label: '已产生费用', name: 'zyfy', width: 80, align: 'left' },
+                //{ label: '预交费', name: 'yjj', width: 50, align: 'left' },
+                //{ label: 'jzh', name: 'jzh', width: 80, align: 'left', hidden: true },
+                //{ label: 'brxzlb', name: 'brxzlb', width: 80, align: 'left', hidden: true },
+                //{ label: '病区', name: 'bqmc', width: 80, align: 'left' },
+                //{
+                //    label: '最后更新时间', name: 'UpdateTime', width: 80, align: 'left',
+                //    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                //},
             ],
             pager: "#gridPager",
             sortname: 'ryrq,UpdateTime',
@@ -209,9 +225,241 @@
 
     }
 </script>
+<script src="~/Content/js/Excel/xlsx.core.min.js"></script>
+<script src="~/Content/js/Excel/FileSaver.js"></script>
+<script src="~/Content/js/Excel/Blob.js"></script>
+<script type="module">
+    $("#btn_excel").click(function () { exportJsonExcelFunction(); });
+    let _options = {};
+    export function exportJsonExcelFunction() {
+        const dataSource = $("#gridList").jqGridRowValue();
+        let option = {}, tableData = [], tableTitle;
+        if (!dataSource || dataSource.length === 0) {
+            $.modalAlert("错误：没有可供导出的信息", "error");
+            return;
+        }
+        tableTitle = ['床号', '姓名', '性别', '年龄', '职业', '入院日期', '入院诊断', '住院天数', '所属医生', '备注'];
+        dataSource.map((item) => {
+            let row = {
+                '床号': item.cwmc,
+                '姓名': item.xm,
+                '性别': item.sexValue,
+                '年龄': item.nlshow,
+                '职业': item.zy,
+                '入院日期': item.ryrq,
+                '入院诊断': item.zzdmc,
+                '住院天数': item.inHosDays,
+                '所属医生': item.doctor,
+                '备注': ''
+            };
+            tableData.push(row);
+        });
+        var year = new Date().getFullYear();
+        var month = new Date().getMonth() - 1;
+        option.fileName = year + "年" + month + "月" + new Date().getDay() + "日" + '住院患者信息';
+        option.datas = [
+            {
+                sheetName: '',
+                sheetData: tableData,
+                sheetHeader: tableTitle,
+                sheetFileter: tableTitle,
+                columnWidths: [7, 20, 5, 10, 10, 11, 20, 10, 10, 10]
+            }
+        ];
+        exportExcel(option);
+    }
+
+    const exportExcel = function (options) {
+        _options = {
+            fileName: options.fileName || "download",
+            datas: options.datas,
+            saveAsBlob: options.saveAsBlob || false,
+            workbook: {
+                SheetNames: [],
+                Sheets: {},
+            },
+
+        };
+        saveExcel();
+    }
+    function saveExcel() {
+        let wb = _options.workbook;
+
+        _options.datas.forEach(function (data, index) {
+            let sheetHeader = data.sheetHeader || null;
+            let sheetData = data.sheetData;
+            let sheetName = data.sheetName || "sheet" + (index + 1);
+            let sheetFilter = data.sheetFilter || null;
+            let columnWidths = data.columnWidths || [];
+
+            sheetData = changeData(sheetData, sheetFilter);
+
+            if (sheetHeader) {
+                sheetData.unshift(sheetHeader);
+            }
+
+            let ws = sheetChangeData(sheetData);
+
+            ws["!merges"] = [];
+
+            ws["!cols"] = columnwidths(columnWidths);
+            //ws["!margins"] = pageMagins();
+            //ws["!pageSetup"] = pageSetupFunction();
+            wb.SheetNames.push(sheetName);
+            wb.Sheets[sheetName] = ws;
+        });
+
+        let wbout = XLSX.write(wb, {
+            bookType: "xlsx",
+            bookSST: false,
+            type: "binary",
+        });
+        if (!_options.saveAsBlob) {
+            saveAs(
+                new Blob([s2ab(wbout)], {
+                    type: "application/octet-stream",
+                }),
+                _options.fileName + ".xlsx"
+            );
+        } else {
+            return new File([s2ab(wbout)], _options.fileName + ".xlsx", {
+                type: "application/octet-stream",
+                lastModified: Date.now(),
+            });
+        }
+    }
+
+
+    function changeData(data, filter) {
+        let sj = data,
+            f = filter,
+            re = [];
+        Array.isArray(data)
+            ? (function () {
+                //对象
+                f
+                    ? (function () {
+                        //存在过滤
+                        sj.forEach(function (obj) {
+                            let one = [];
+                            filter.forEach(function (no) {
+                                one.push(obj[no]);
+                            });
+                            re.push(one);
+                        });
+                    })()
+                    : (function () {
+                        //不存在过滤
+                        sj.forEach(function (obj) {
+                            let col = Object.keys(obj);
+                            let one = [];
+                            col.forEach(function (no) {
+                                one.push(obj[no]);
+                            });
+                            re.push(one);
+                        });
+                    })();
+            })()
+            : (function () {
+                re = sj;
+            })();
+        return re;
+    };
+
+    // 转换数据
+    function sheetChangeData(data) {
+        let ws = {};
+        let range = {
+            s: {
+                c: 10000000,
+                r: 10000000,
+            },
+            e: {
+                c: 0,
+                r: 0,
+            },
+        };
+        for (let R = 0; R != data.length; ++R) {
+            for (let C = 0; C != data[R].length; ++C) {
+                if (range.s.r > R) range.s.r = R;
+                if (range.s.c > C) range.s.c = C;
+                if (range.e.r < R) range.e.r = R;
+                if (range.e.c < C) range.e.c = C;
+                let cell = {
+                    v: data[R][C],
+                };
+
+                console.log(cell);
+                if (cell.v == null) continue;
+                let cell_ref = XLSX.utils.encode_cell({
+                    c: C,
+                    r: R,
+                });
+
+                if (typeof cell.v === "number") cell.t = "n";
+                else if (typeof cell.v === "boolean") cell.t = "b";
+                else if (cell.v instanceof Date) {
+                    cell.t = "n";
+                    cell.z = XLSX.SSF._table[14];
+                    cell.v = datenum(cell.v);
+                } else if (/^hyperlink:/.test(cell.v)) {
+                    cell.l = {
+                        Target: cell.v.replace(/^hyperlink:/, ""),
+                    };
+                    cell.v = cell.v.replace(/^hyperlink:/, "");
+                } else cell.t = "s";
+                ws[cell_ref] = cell;
+            }
+        }
+        if (range.s.c < 10000000) ws["!ref"] = XLSX.utils.encode_range(range);
+        return ws;
+    };
+
+    function s2ab(s) {
+        let buf = new ArrayBuffer(s.length);
+        let view = new Uint8Array(buf);
+        for (let i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xff;
+        return buf;
+    };
+    //日期编号
+    function datenum(v, date1904) {
+        if (date1904) v += 1462;
+        let epoch = Date.parse(v);
+        return (epoch - new Date(Date.UTC(1899, 11, 30))) / (24 * 60 * 60 * 1000);
+    };
+    //列宽
+    function columnwidths(columnWidths) {
+        let out = [];
+        out = columnWidths.map(function (item) {
+            return { width: item ? Number(item) : 20 };
+        });
+        return out;
+    }
+
+    ////纸张设置
+    //function pageSetupFunction() {
+    //    var page = writextag('pageSetup', null, {
+    //        papersize: '9',//纸张大小 9为44纸
+    //        scale: '100',//缩放大小
+    //        orientation: 'portrait',// 纸张方向landscape 为横向 portrait 为纵向
+    //        horizontalDpi: '4294967292',
+    //        verticalDpi : '4294967292'
+    //    });
+    //    return page;
+    //}
+    ////边距设置
+    //function pageMagins() {
+    //    var margins = {
+    //        left: '0.7', right: '0.7',
+    //        top: '0.75', bottom: '0.75',
+    //        header:'0.5',footer:'0.5' 
+    //    }
+    //    return margins
+    //}
+</script>
 @if (isZFtoYB || isYBtoZF)
 {
-<script type="text/javascript">
+    <script type="text/javascript">
         var openYbSett = '@openYbSett' === 'True'; //开关配置：医保患者是否使用医保交易流程
         var openXnhSett = '@openXnhSett' === 'True';//开关配置：新农合患者是否使用新农合交易流程
         var medicalInsurance = '@medicalInsurance';
@@ -660,7 +908,7 @@
         if (!!!seleRow) {
             return;
         }
-         var isybjy = seleRow.brxzlb == "@((int)Newtouch.Infrastructure.EnumJykxzlx.yb)";
+        var isybjy = seleRow.brxzlb == "@((int)Newtouch.Infrastructure.EnumJykxzlx.yb)";
         var jsxnhjy = seleRow.brxz == '8' && seleRow.CardType == "@((int)Newtouch.Infrastructure.EnumCardType.XNHJYK)";
 
 
@@ -762,7 +1010,7 @@
         width: 300,
         clickautotrigger: true,
         filter: function (keyword) {
-            debugger;
+            
             //遍历数据源，用keyword来筛选出结果
             var resultObjArr = new Array();
             $.each(top.window.clients.sysDepartList, function (idx, val) {
@@ -822,5 +1070,5 @@
             return;
         },
     });
-</script>
+    </script>
 }

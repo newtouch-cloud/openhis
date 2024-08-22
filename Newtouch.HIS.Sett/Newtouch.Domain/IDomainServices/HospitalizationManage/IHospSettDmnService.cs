@@ -2,7 +2,6 @@
 using Newtouch.HIS.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Newtouch.HIS.Domain.IDomainServices
 {
@@ -49,14 +48,6 @@ namespace Newtouch.HIS.Domain.IDomainServices
         IList<HospSettlementClassificationFeeVO> SettlementDetailsQuery(string organizeId, int jsnm);
 
         /// <summary>
-        /// 病人分类收费汇总
-        /// </summary>
-        /// <param name="organizeId"></param>
-        /// <param name="zyh"></param>
-        /// <returns></returns>
-        Task<IList<HospSettlementClassificationFeeVO>> SettlementDetailsQueryAsync(string organizeId, string zyh);
-
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="jsnm"></param>
@@ -72,17 +63,6 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="mc"></param>
         /// <returns></returns>
         IList<HospFeeChargeCategoryGroupDetailVO> SettlementDetailsItemsQuery(Pagination pagination, string zyh, string orgId, string sfdl, string jsnms, string mc);
-        #endregion
-
-        /// <summary>
-        /// 计费项目明细
-        /// </summary>
-        /// <param name="organizeId"></param>
-        /// <param name="zyh"></param>
-        /// <param name="sfrq"></param>
-        /// <param name="dlCode"></param>
-        /// <param name="dlCodes"></param>
-        /// <returns></returns>
-        Task<IList<HospItemFeeDetailVO>> HospItemFeeDetailQueryAsync(string organizeId, string zyh, DateTime sfrq, string dlCode = "", List<string> dlCodes = null);
+        #endregion 
     }
 }

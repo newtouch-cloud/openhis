@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Newtouch.HIS.Domain.BusinessObjects;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.Infrastructure;
 
 namespace Newtouch.HIS.Domain.DTO.InputDto
 {
@@ -11,7 +10,6 @@ namespace Newtouch.HIS.Domain.DTO.InputDto
         public int patid { get; set; }
         public string xm { get; set; }
         public string xb { get; set; }
-        public string Gender { get; set; }
         public string blh { get; set; }
         public DateTime? csny { get; set; }
         public string zjlx { get; set; }
@@ -34,24 +32,7 @@ namespace Newtouch.HIS.Domain.DTO.InputDto
         public string CardTypeName { get; set; }
         public string mzh { get; set; }
         public int? ghnm { get; set; }
-
-        private DateTime? _ghsj;
-        public DateTime? ghsj
-        {
-            set
-            {
-                if (value == null)
-                {
-                    _ghsj = null;
-                }
-                if ((DateTime)value <= Constants.MinDate)
-                {
-                    _ghsj = null;
-                }
-                _ghsj = value;
-            }
-            get => _ghsj;
-        }
+        public DateTime? ghsj { get; set; }
         public string brly { get; set; }
         public string ghrq { get; set; }
 
@@ -146,20 +127,16 @@ namespace Newtouch.HIS.Domain.DTO.InputDto
         /// 
         /// </summary>
         public string ksmc { get; set; }
-        /// <summary>
-        /// 参保类别
-        /// </summary>
-        public string cblb { get; set; }
+		/// <summary>
+		/// 参保类别
+		/// </summary>
+		public string cblb { get; set; }
         public string zyh { get; set; }
         public string mjzbz { get; set; }
-        public string mzlx { get; set; }
         public string CardId { get; set; }
         public string dz { get; set; }
         public string zybz { get; set; }
-        /// <summary>
-        /// 挂号总金额
-        /// </summary>
-        public decimal ghzje { get; set; }
+        public string brxzlb { get; set; }
 
     }
 
@@ -307,11 +284,6 @@ namespace Newtouch.HIS.Domain.DTO.InputDto
         public string zfxz { get; set; }
         public decimal? zfbl { get; set; }
         public string xnhgrbm { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string grbh {get;set;}
     }
 
     /// <summary>
@@ -323,12 +295,12 @@ namespace Newtouch.HIS.Domain.DTO.InputDto
         /// 就诊记录
         /// </summary>
         public OutpatAccInfoDto OutpatAccInfoDto { get; set; }
-
+        
         /// <summary>
         /// 就诊记录集合
         /// </summary>
         public List<OutpatAccInfoDto> OutpatAccListDto { get; set; }
-
+        
         /// <summary>
         /// 
         /// </summary>

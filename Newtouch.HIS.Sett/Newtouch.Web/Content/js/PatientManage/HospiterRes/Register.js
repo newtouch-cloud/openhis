@@ -62,31 +62,31 @@ $(function () {
                 CallbackPatientQuery($thistr.attr('data-blh'));
             },
             colModel: [
-                 { label: '主键', name: 'patid', hidden: true },
-                 { label: '病历号', name: 'blh', width: 130, align: 'left' },
-                 { label: '姓名', name: 'xm', width: 120, align: 'left' },
-                 { label: '出生年月', name: 'csny', hidden: true, width: 100, align: 'left' },
-                 {
-                     label: '性别', name: 'xb', width: 70, align: 'left', formatter: function (cellvalue) {
-                         return $.getGender(cellvalue);
-                     }
-                 },
-                 {
-                     label: '年龄', name: 'nl', width: 100, align: 'left', formatter: function (cellvalue, a, b) {
-                         return getAgeFromBirthTime({ begin: b.csny }).text;
-                     }
-                 },
-                 { label: 'brly', name: 'brly', align: 'left', hidden: true },
-                 { label: 'zjh', name: 'zjh', align: 'left', hidden: true },
-                 { label: 'kh', name: 'kh', align: 'left', hidden: true },
-                 { label: 'phone', name: 'phone', align: 'left', hidden: true },
-                 { label: 'dy', name: 'dy', align: 'left', hidden: true },
-                 { label: 'zjlx', name: 'zjlx', align: 'left', hidden: true },
-                 { label: 'sycs', name: 'sycs', align: 'left', hidden: true },
-                 { label: 'dybh', name: 'dybh', align: 'left', hidden: true },
-                 { label: 'lxr', name: 'lxr', align: 'left', hidden: true },
-                 { label: 'lxrgx', name: 'lxrgx', align: 'left', hidden: true },
-                 { label: 'lxrdh', name: 'lxrdh', align: 'left', hidden: true },
+                { label: '主键', name: 'patid', hidden: true },
+                { label: '病历号', name: 'blh', width: 130, align: 'left' },
+                { label: '姓名', name: 'xm', width: 120, align: 'left' },
+                { label: '出生年月', name: 'csny', hidden: true, width: 100, align: 'left' },
+                {
+                    label: '性别', name: 'xb', width: 70, align: 'left', formatter: function (cellvalue) {
+                        return $.getGender(cellvalue);
+                    }
+                },
+                {
+                    label: '年龄', name: 'nl', width: 100, align: 'left', formatter: function (cellvalue, a, b) {
+                        return getAgeFromBirthTime({ begin: b.csny }).text;
+                    }
+                },
+                { label: 'brly', name: 'brly', align: 'left', hidden: true },
+                { label: 'zjh', name: 'zjh', align: 'left', hidden: true },
+                { label: 'kh', name: 'kh', align: 'left', hidden: true },
+                { label: 'phone', name: 'phone', align: 'left', hidden: true },
+                { label: 'dy', name: 'dy', align: 'left', hidden: true },
+                { label: 'zjlx', name: 'zjlx', align: 'left', hidden: true },
+                { label: 'sycs', name: 'sycs', align: 'left', hidden: true },
+                { label: 'dybh', name: 'dybh', align: 'left', hidden: true },
+                { label: 'lxr', name: 'lxr', align: 'left', hidden: true },
+                { label: 'lxrgx', name: 'lxrgx', align: 'left', hidden: true },
+                { label: 'lxrdh', name: 'lxrdh', align: 'left', hidden: true },
             ]
         });
     }
@@ -228,7 +228,7 @@ function initControl() {
             var resultObjArr = new Array();
             $.each(top.window.clients.sysStaffDutyList, function (idx, val) {
                 if (((val.StaffPY && val.StaffPY.indexOf(keyword.toLowerCase()) >= 0)
-                || (val.StaffName && val.StaffName.indexOf(keyword.toLowerCase()) >= 0)
+                    || (val.StaffName && val.StaffName.indexOf(keyword.toLowerCase()) >= 0)
                     || keyword.trim() == "")
                     && val.DutyCode == "RehabDoctor") {
                     resultObjArr.push(val);
@@ -266,7 +266,7 @@ function initControl() {
                 if (((val.StaffPY && val.StaffPY.toLowerCase().indexOf(keyword.toLowerCase()) >= 0)
                     || (val.StaffName && val.StaffName.indexOf(keyword.toLowerCase()) >= 0)
                     || keyword.trim() == "")
-                     && val.DutyCode == "Doctor") {
+                    && val.DutyCode == "Doctor") {
                     resultObjArr.push(val);
                 }
             });
@@ -318,10 +318,12 @@ function initControl() {
             {
                 label: '名称', name: 'brxzmc', widthratio: 25
             },
-            { label: '拼音', name: 'py', widthratio: 25 }
+            { label: '拼音', name: 'py', widthratio: 25 },
+            { label: 'brxzlb', name: 'brxzlb', widthratio: 25,hidden:true }
         ],
         itemdbclickhandler: function ($thistr) {
-            $("#brxzmc").attr("data-label", $thistr.find("td:eq(1)").html());
+            $("#brxzmc").attr("data-brxzmc", $thistr.find("td:eq(2)").html())
+                .attr("data-label", $thistr.find("td:eq(1)").html()).attr("data-brxzlb", $thistr.find("td:eq(4)").html());
             $("#brxzmc").val($thistr.find('td:eq(2)').html());
             if (openYbSett && medicalInsurance == "guian" && $("#brxzmc").attr("data-label") === "1") {
                 ybnhlx = "yb";
@@ -379,28 +381,28 @@ function initControl() {
     });
     ///入院诊断 zdmc2
     $("#zdmc2").newtouchBatchFloatingSelector(
-           {
-               height: 200,
-               width: 600,
-               url: "/PatientManage/HospiterRes/GetryzdSelect",
-               clickautotrigger: true,
-               ajaxparameters: function () {
-                   return "ryzd=" + $("#zdmc2").val() + "&ybnhlx=" + ybnhlx;
-               },
-               caption: "入院诊断",
-               colModel: [
-                    { label: '名称', name: 'zdmc', widthratio: 60 },
-                    { label: '拼音', name: 'py', widthratio: 20 },
-                    { label: 'icd10', name: 'icd10', widthratio: 20 },
-                    { label: '编号', name: 'zdbh', hidden: true },
-                    { label: '内码', name: 'zdnm', hidden: true }
-               ],
-               itemdbclickhandler: function (data) {
-                   $("#zdmc2").attr("data-label", data.attr('data-zdbh') + "-" + data.attr('data-zdnm'));
-                   $("#zdmc2").val(data.attr('data-zdmc'));
-                   return;
-               }
-           });
+        {
+            height: 200,
+            width: 600,
+            url: "/PatientManage/HospiterRes/GetryzdSelect",
+            clickautotrigger: true,
+            ajaxparameters: function () {
+                return "ryzd=" + $("#zdmc2").val() + "&ybnhlx=" + ybnhlx;
+            },
+            caption: "入院诊断",
+            colModel: [
+                { label: '名称', name: 'zdmc', widthratio: 60 },
+                { label: '拼音', name: 'py', widthratio: 20 },
+                { label: 'icd10', name: 'icd10', widthratio: 20 },
+                { label: '编号', name: 'zdbh', hidden: true },
+                { label: '内码', name: 'zdnm', hidden: true }
+            ],
+            itemdbclickhandler: function (data) {
+                $("#zdmc2").attr("data-label", data.attr('data-zdbh') + "-" + data.attr('data-zdnm'));
+                $("#zdmc2").val(data.attr('data-zdmc'));
+                return;
+            }
+        });
     ///入院诊断 zdmc3
     $("#zdmc3").newtouchBatchFloatingSelector({
         height: 200,
@@ -434,8 +436,8 @@ function initControl() {
             var resultObjArr = new Array();
             $.each(top.window.clients.sysDepartList, function (idx, val) {
                 if (((val.py && val.py.toLowerCase().indexOf(keyword) >= 0)
-                     || (val.Name && val.Name.indexOf(keyword) >= 0)
-                    || keyword.trim() == "") && (val.mzzybz != '1' )) {
+                    || (val.Name && val.Name.indexOf(keyword) >= 0)
+                    || keyword.trim() == "") && val.mzzybz == '2' && val.Code != 'KS17') {
                     resultObjArr.push(val);
                 }
             });
@@ -567,15 +569,15 @@ function initControl() {
             return resultObjArr;
         }
     });
-	//转出医院
+    //转出医院
     //$("#zcyy").newtouchBindSelect({
     //    datasource: function () {
-	//		var resultObjArr = new Array();
-	//		$.each($.itemDetails.getItems('zcyy'), function () {
-	//			$('#zcyy').append('<option value="' + this.Code + '">' + this.Name + '</option>');
-	//		});
-	//		return resultObjArr;
-	//	}
+    //		var resultObjArr = new Array();
+    //		$.each($.itemDetails.getItems('zcyy'), function () {
+    //			$('#zcyy').append('<option value="' + this.Code + '">' + this.Name + '</option>');
+    //		});
+    //		return resultObjArr;
+    //	}
     //});
     //紧急联系人关系
     $("#lxrgx").newtouchBindSelect({
@@ -634,9 +636,9 @@ function btn_Save() {
             return;
         }
         if ($("#rytj").val() == "3" && !$("#zcyy").val()) {
-	        $.modalAlert("如果是其他医院转入，请选择转出医院", 'warning');
-	        return;
-	    }
+            $.modalAlert("如果是其他医院转入，请选择转出医院", 'warning');
+            return;
+        }
         var zd1 = $("#zdmc1").attr("data-label");
         data["ryzd1"] = null;
         if (zd1 && $("#zdmc1").val().trim() != "" && $("#zdmc1").val() != null) {
@@ -675,19 +677,20 @@ function btn_Save() {
         data["xnhgrbm"] = $("#xnhgrbm").val();
         data["xnhylzh"] = $("#xnhylzh").val();
         data["inpId"] = $("#inpId").val();
-        data["jzlx"] = $('#readCardCardType').val();
+
         data["bzbm"] = $("#sel_tsbbz").val();
         data["bzmc"] = $("#sel_tsbbz").find("option:selected").text();
         data["cardtype"] = $("#readCardCardType").val();
         data["CardTypeName"] = $("#readCardCardType option:selected").text();
+
         //入院诊断必填
         if ($('#isDiagnosisRequired').val() == 'True'
             && !!!data["ryzd1"]) {
             $.modalAlert("入院诊断必须填写", 'warning');
             return;
         }
-       
-        
+
+
         var jylsh = "";//存放交易流水号
         var jyyzm = "";//存放交易校验码
 
@@ -695,22 +698,24 @@ function btn_Save() {
         {
             if (cqPatInfo.ybVer != "shanghaiV5") {
                 if (cqPatInfo.ybVer == undefined) {
-			    $.modalAlert("报销政策为【医保病人】，请先读卡！", 'warning');
-			    return;
+                    $.modalAlert("报销政策为【医保病人】，请先读卡！", 'warning');
+                    return;
                 }
             }
-		    if (!data.zyh) //(无住院号)入院登记
-		    {
-			    if (isZYZT) {
+            if (!data.zyh) //(无住院号)入院登记
+            {
+                if (isZYZT) {
                     $.modalAlert("该患者在医保中尚未出院，不能办理入院！", 'warning');
-				    return;
-			    }
-		    } else { //(有住院号)入院登记修改
-			    //获取入院登记反馈信息
-			   
-		    }
+                    return;
+                }
+            } else { //(有住院号)入院登记修改
+                //获取入院登记反馈信息
+
+            }
         }
-        var jzlx = $('#readCardCardType').val();
+        var jzlx = cqPatInfo.mdtrt_cert_type;
+        data["jzlx"] = cqPatInfo.jzlx;//$('#readCardCardType').val();
+        data["cardtype"] = cqPatInfo.jzlx;
         if (IsSuccess) {
             $.submitForm({
                 url: "/PatientManage/HospiterRes/SaveSysHosBasicInfo",
@@ -719,15 +724,15 @@ function btn_Save() {
                 successwithtipmsg: false,
                 success: function (datareq) {
                     if (datareq.message === "添加成功") {
-                        
+
                         if (openYbSett && $("#brxzmc").attr("data-brxzlb") === "1") {
-                            
+
                             if (cqPatInfo.ybVer == "shanghaiV5") {
                                 shanghaiV5ybrydj(datareq, data, jzlx);//上海五期医保入院登记 SJ11
                             } else if (cqPatInfo.ybVer == "gjyb") {
                                 gjybrydj(datareq, jzlx);//国家医保程序调用2401 住院登记
                             }
-	                    }
+                        }
                         if (!IsSuccess) {
                             $.najax({
                                 url: "/PatientManage/HospiterRes/CancelAdmission?zyh=" + datareq.data.zyh,
@@ -743,7 +748,7 @@ function btn_Save() {
                         } else {
                             $.modalAlert("住院登记成功！住院号为:" + datareq.data.zyh, 'success');
                         }
-                       
+
                     }
                     else if (datareq.message === "修改成功") {
                         $.ajax({
@@ -761,7 +766,7 @@ function btn_Save() {
                                 if (cqPatInfo.ybVer == "shanghaiV5") {
                                     shanghaiV5djcx(jzlx, $('#zyh').val());//上海五期医保入院登记撤销
                                     shanghaiV5ybrydj(datareq, data, jzlx);//上海五期医保入院登记 SJ11
-                                   
+
                                 } else {
                                     gjybrydjxg(payoptype);//国家医保程序调用2401 住院登记
                                 }
@@ -769,44 +774,44 @@ function btn_Save() {
                         });
                         if (!IsSuccess) {
                             errorMsg = "医保入院登记修改失败！" + errorMsg;
-                        } else { 
+                        } else {
                             $.modalAlert("住院号为:" + datareq.data.zyh + "，修改成功", 'warning');
                         }
                     } else {
-						//失败，重庆医保登记红冲
+                        //失败，重庆医保登记红冲
                         if (openYbSett && $("#brxzmc").attr("data-brxzlb") === "1") {
-		                    $.najax({
-			                    type: "GET",
-			                    url: "/OutpatientManage/OutpatCharge/GetCQjzdjDataInfo?zymzh=" + datareq.data.zyh,
-			                    dataType: "json",
-			                    loadingtext: "正在请求HIS取消入院登记，请稍后…",
-			                    success: function (ajaxresp) {
+                            $.najax({
+                                type: "GET",
+                                url: "/OutpatientManage/OutpatCharge/GetCQjzdjDataInfo?zymzh=" + datareq.data.zyh,
+                                dataType: "json",
+                                loadingtext: "正在请求HIS取消入院登记，请稍后…",
+                                success: function (ajaxresp) {
                                     if (ajaxresp && ajaxresp.jylsh || cqPatInfo.ybVer == "shanghaiV5") {
                                         if (cqPatInfo.ybVer == "shanghaiV5") {
                                             shanghaiV5djcx(jzlx, $('#zyh').val());//上海五期医保入院登记撤销
                                         }
                                         else {
-				                        var payoptype = { hisId:datareq.data.zyh,'mdtrt_id': ajaxresp.jylsh, 'operatorId': curUserCode, "operatorName": curUserName, 'insuplc_admdvs': $("#xzqh").val(), 'psn_no': $("#rybh").val() };
-				                    	$.ajax({
-						                    type: "POST",
-						                    url: "http://127.0.0.1:33333/api/YiBao/HospitaUpMdtrtinfo_2404",
-						                    dataType: "json",
-						                    data: payoptype,
-						                    async: false,
-						                    success: function (data) {
-						                    	var cqybjyDenySettleReturn = eval('(' + data + ')');
-						                    	if (cqybjyDenySettleReturn.infcode == "0") {
-													//////就诊登记取消，不需要落地
-							                    } else {
-						                    	    $.modalAlert('取消住院登记失败：' + cqybjyDenySettleReturn.err_msg, 'success');
-							                    }
-						                    }
+                                            var payoptype = { hisId: datareq.data.zyh, 'mdtrt_id': ajaxresp.jylsh, 'operatorId': curUserCode, "operatorName": curUserName, 'insuplc_admdvs': $("#xzqh").val(), 'psn_no': $("#rybh").val() };
+                                            $.ajax({
+                                                type: "POST",
+                                                url: "http://127.0.0.1:33333/api/YiBao/HospitaUpMdtrtinfo_2404",
+                                                dataType: "json",
+                                                data: payoptype,
+                                                async: false,
+                                                success: function (data) {
+                                                    var cqybjyDenySettleReturn = eval('(' + data + ')');
+                                                    if (cqybjyDenySettleReturn.infcode == "0") {
+                                                        //////就诊登记取消，不需要落地
+                                                    } else {
+                                                        $.modalAlert('取消住院登记失败：' + cqybjyDenySettleReturn.err_msg, 'success');
+                                                    }
+                                                }
                                             });
                                         }
-				                    }
-			                    }
-		                    });
-	                    }
+                                    }
+                                }
+                            });
+                        }
                         $.modalAlert("入院登记保存失败", 'warning');
                     }
                     ClearAll();
@@ -818,7 +823,7 @@ function btn_Save() {
     }
 }
 function gjybrydjxg(payoptype) {
-    payoptype.mdtrt_cert_type = $('#readCardCardType').val();
+    payoptype.mdtrt_cert_type = cqPatInfo.mdtrt_cert_type;
     payoptype.orgId = orgId;
     payoptype.med_type = ($("#rytj").val() == "" ? "21" : $("#rytj").val());//($("#rytj").val() == "3" ? "22" : "21");
     payoptype.czlb = 1;
@@ -841,8 +846,7 @@ function gjybrydjxg(payoptype) {
         }
     });
 }
-function shanghaiV5djcx(jzlx, zyh)
-{
+function shanghaiV5djcx(jzlx, zyh) {
     var payoptype = {
         cardtype: jzlx,
         carddata: jzlx == "3" ? cqPatInfo.ecToken : cqPatInfo.sbkh,
@@ -861,7 +865,7 @@ function shanghaiV5djcx(jzlx, zyh)
             var medicalReg = eval('(' + data + ')');
             if (medicalReg) {
                 if (medicalReg.xxfhm === "P001") {
-                    
+
                 }
                 else {
                     //$.modalAlert("医保门诊登记失败：" + medicalReg.ErrorMsg, 'error');
@@ -872,10 +876,10 @@ function shanghaiV5djcx(jzlx, zyh)
         }
     });
 }
-function gjybrydj(datareq,jzlx) {
+function gjybrydj(datareq, jzlx) {
     var payoptype = {
-        mdtrt_cert_type: $('#readCardCardType').val(),
-        mdtrt_cert_no: jzlx == "01" ? $("#ecToken").val() : (jzlx == "02" ? $("#sfzh").val() : patModel.kh),
+        mdtrt_cert_type: jzlx,
+        mdtrt_cert_no: jzlx == "01" ? cqPatInfo.ecToken : (jzlx == "02" ? $("#sfzh").val() : patModel.kh),
         hisId: datareq.data.zyh,//住院号
         med_type: ($("#rytj").val() == "" ? "21" : $("#rytj").val()),//21普通住院，22转入住院
         operatorId: curUserCode,
@@ -921,7 +925,7 @@ function gjybrydj(datareq,jzlx) {
         }
     });
 }
-function shanghaiV5ybrydj(datareq, data,jzlx) {
+function shanghaiV5ybrydj(datareq, data, jzlx) {
     var payoptype = {
         cardtype: cqPatInfo.jzlx,
         carddata: cqPatInfo.carddata,//jzlx == "3" ? cqPatInfo.ecToken : cqPatInfo.sbkh,
@@ -1016,22 +1020,22 @@ function Cancel() {
     var jylsh = "";//存放交易流水号
     var jyyzm = "";//存放交易校验码
 
-    if (openYbSett && $("#brxzmc").attr("data-brxzlb") === "1") //启用医保,医保性质
+    if (openYbSett && $("#brxzmc").attr("data-brxzlb") === "1") //启用医保,贵安医保,医保性质
     {
-	    $.najax({
-		    type: "GET",
-		    url: "/PatientManage/HospiterRes/CheckCancelAdmission?zyh=" + $("#zyh").val(),
-		    dataType: "json",
-		    async: false,
-		    loadingtext: "正在请求HIS取消住院登记，请稍后…",
-		    success: function () {
-			    $.najax({
-				    type: "GET",
-				    url: "/OutpatientManage/OutpatCharge/GetCQjzdjDataInfo?zymzh=" + $('#zyh').val(),
-				    dataType: "json",
-				    async: false,
-				    loadingtext: "正在请求HIS取消住院登记，请稍后…",
-				    success: function (ajaxresp) {
+        $.najax({
+            type: "GET",
+            url: "/PatientManage/HospiterRes/CheckCancelAdmission?zyh=" + $("#zyh").val(),
+            dataType: "json",
+            async: false,
+            loadingtext: "正在请求HIS取消住院登记，请稍后…",
+            success: function () {
+                $.najax({
+                    type: "GET",
+                    url: "/OutpatientManage/OutpatCharge/GetCQjzdjDataInfo?zymzh=" + $('#zyh').val(),
+                    dataType: "json",
+                    async: false,
+                    loadingtext: "正在请求HIS取消住院登记，请稍后…",
+                    success: function (ajaxresp) {
                         if (ajaxresp && (ajaxresp.jylsh || cqPatInfo.ybVer == "shanghaiV5")) {
                             if (cqPatInfo.ybVer == "shanghaiV5") {
                                 var jzlx = $('#readCardCardType').val();
@@ -1055,13 +1059,13 @@ function Cancel() {
                                     }
                                 });
                             }
-					    }
-				    }
-			    });
-		    }
-	    });
+                        }
+                    }
+                });
+            }
+        });
 
-    	
+
     }
     if (IsSuccess) {
         $.najax({
@@ -1098,7 +1102,7 @@ function Cancel() {
         });
     }
 
-    
+
 }
 
 function DisableSysBasicInfo() {
@@ -1112,7 +1116,7 @@ function DisableSysBasicInfo() {
 }
 
 function AbledSysBasicInfo() {
-    
+
     $("#mzmc").removeAttr("data-label");
     $("#gjmc").removeAttr("data-label");
     $("#jkjlmc").removeAttr("data-label");
@@ -1130,7 +1134,7 @@ function AbledSysBasicInfo() {
 }
 
 function ClearAll() {
-    
+
     AbledSysBasicInfo();
     newtouch_globalevent_f4();
 }
@@ -1162,10 +1166,8 @@ function checkNotNull() {
         $.modalAlert("病人基本信息不存在，无法保存", 'warning');
         return false;
     }
-    if ($("#rytj").val() == "9921")
-    {
-        if ($('#syrq').val().length == 0)
-        {
+    if ($("#rytj").val() == "9921") {
+        if ($('#syrq').val().length == 0) {
             $.modalAlert("新生儿随母入院请输入生育日期", 'warning');
             return false;
         }
@@ -1177,8 +1179,8 @@ function checkNotNull() {
     var validator = $('#form1').validate();
     validator.settings = {
         rules: {
-            doctormc:{required:true},
-            zdmc1:{ required: true},
+            doctormc: { required: true },
+            zdmc1: { required: true },
             ryrq: { required: true },
             ksmc: { required: true },
             bqmc: { required: true },
@@ -1186,8 +1188,8 @@ function checkNotNull() {
             zyh: { required: true }
         },
         messages: {
-            doctormc:{required:"医生必须填写"},
-            zdmc1:{ required: "入院诊断一必须填写"},
+            doctormc: { required: "医生必须填写" },
+            zdmc1: { required: "入院诊断一必须填写" },
             ryrq: { required: "入院时间必须选择" },
             ksmc: { required: "科室必须填写" },
             bqmc: { required: "病区必须填写" },

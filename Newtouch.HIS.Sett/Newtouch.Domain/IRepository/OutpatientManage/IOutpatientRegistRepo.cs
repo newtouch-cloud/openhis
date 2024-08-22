@@ -1,6 +1,5 @@
 ﻿
 using System.Collections.Generic;
-using Newtouch.HIS.Domain.DTO.InputDto;
 using Newtouch.HIS.Domain.Entity;
 
 namespace Newtouch.HIS.Domain.IRepository
@@ -20,13 +19,6 @@ namespace Newtouch.HIS.Domain.IRepository
         /// <param name="orgId"></param>
         /// <returns></returns>
         OutpatientRegistEntity SelectData(string mzh, string orgId);
-        /// <summary>
-        /// 根据门诊号获取患者信息
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        OutpatAccInfoDto GetBasicInfoPatInfoInRegister(string mzh, string orgId);
 
         List<OutpatientRegistEntity> SelectOutPatientRegList(List<int> ghnmList, string orgId);
 
@@ -61,6 +53,7 @@ namespace Newtouch.HIS.Domain.IRepository
         /// <param name="orgId"></param>
         /// <returns></returns>
         bool AllowRegh(string blh, string orgId);
+        int UpdatePatPhone(string patid, string phone, string userCode, string organizeId);
         /// <summary>
         /// 取消挂号
         /// </summary>
@@ -92,6 +85,23 @@ namespace Newtouch.HIS.Domain.IRepository
         /// <param name="mzh"></param>
         /// <param name="brxz"></param>
         void updatePatBrxzInfo(string orgId, string mzh, string brxz);
+        /// <summary>
+        /// 门诊挂号不进行医保登记 收费时进行登记跟新自费卡为医保卡
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="mzh"></param>
+        /// <param name="kh"></param>
+        /// <param name="cardtype"></param>
+        /// <param name="brxz"></param>
+        void UpdateChargeMzghInfo(string orgId, string mzh, string kh,string cardtype, string brxz,string zjh,string status);
+        /// <summary>
+        /// 更新挂号医保就诊id流水号
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="mzh"></param>
+        /// <param name="jzId"></param>
+        /// <param name="jzpzlx"></param>
+        void updateYbghjzId(string orgId, string mzh, string jzId, string jzpzlx);
 
         /// <summary>
         /// 记录补偿序号
@@ -102,6 +112,5 @@ namespace Newtouch.HIS.Domain.IRepository
         /// <param name="organizeId"></param>
         /// <returns></returns>
         int RecordOutpId(string mzh, string outpId, string userCode, string organizeId);
-        int UpdatePatPhone(string patid, string phone, string userCode, string organizeId);
     }
 }
