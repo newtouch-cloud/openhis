@@ -772,7 +772,7 @@
 				    $.modalAlert("获取住院就诊登记失败", 'error');
 				    return;
 		    	}
-		    	payoptype.mdtrt_cert_type = cqPatInfo.ybklx;
+		    	payoptype.mdtrt_cert_type = cqPatInfo.mdtrt_cert_type;
 		    	payoptype.orgId = "@opr.OrganizeId";
 		        //var jzxx = { mdtrt_id: payoptype.mdtrt_id, med_type: payoptype.med_type, djxx: payoptype };
 		        //funcSuccCallback(jzxx);
@@ -861,11 +861,11 @@
             }, 50);
         }
     }
-    function CQybjs(jzxx,mxxx) {
-        var jzlx = cqPatInfo.ybklx
+    function CQybjs(jzxx, mxxx) {
+        var jzlx = cqPatInfo.mdtrt_cert_type
         var predata = {
             psn_no: cqPatInfo.grbh,
-            mdtrt_cert_type: cqPatInfo.ybklx,
+            mdtrt_cert_type: cqPatInfo.mdtrt_cert_type,
             mdtrt_cert_no: jzlx == "01" ? cqPatInfo.ecToken : (jzlx == "02" ? cqPatInfo.sfzh : cqPatInfo.sbkh),
             medfee_sumamt: mxxx.ybzje,
             psn_setlway: "01",
@@ -879,6 +879,12 @@
             acct_used_flag: "1",
             dscgTime: $('#endTime').val().substring(0, 10)//mxxx.cyrq
         };
+        var ret = CQGetFph();
+        if (!ret.rs) {
+            $.modalAlert("获取发票号失败:" + rs.msg, 'error');
+            return;
+        }
+        predata.invono = ret.fph;
         var ybjsSettReturn1;
         var ybjsSettReturn;
         $.ajax({
@@ -936,6 +942,37 @@
             return;
         }
 
+    }
+    /* 获取发票号 */
+    function CQGetFph() {
+        var rs = false;
+        var msg = "";
+        var fph = "";
+
+        $.ajax({
+            type: "POST",
+            url: "/OutpatientManage/OutpatientReg/GetInvoice?r=" + Math.random(),
+            data: {},
+            dataType: "text",
+            async: false,
+            success: function (data) {
+                if (!!!data) {
+                    msg = "HIS服务(获取发票号)返回信息为空";
+                    return;
+                }
+                if (data.indexOf("{") >= 0 || data.indexOf("<") >= 0) {
+                    msg = "HIS服务(获取发票号)返回内容错误：" + data;
+                    return;
+                }
+                rs = true;
+                fph = data;
+            },
+            error: function (request, error, ex) {
+                msg = "HIS服务(获取发票号)不可访问：[" + ex + "]";
+            }
+        });
+
+        return { rs: rs, fph: fph, msg: msg };
     }
     function upLoadReturnData(retdata) {
         $.najax({
@@ -996,7 +1033,6 @@
 <script type="text/javascript">
     //医保读卡
     function ReadCardCall(readCardObj) {
-        debugger;
         cqPatInfo.jslx = "2";
         ybIsReadCard = true;
         ajaxLoadDataResult({ kh: readCardObj.yibaoCardInfo.kh, sfz: readCardObj.yibaoCardInfo.qtjz, cardType: readCardObj.ybkCardType, ver: '2' });

@@ -156,10 +156,12 @@ namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
             }
 
             #region 补充父节点 start
+            // by haijiang.mo 修复搜索二级以下的子部门用户，因无法构建出树结构，而搜索失败
             var parentDeptList = new HashSet<string>();
             // 控制总计算深度，防止因为数据错误，找不到父节点死循环
             var totalReFindParent = 10;
-            do {
+            do
+            {
                 totalReFindParent--;
                 parentDeptList = new HashSet<string>();
                 // 找出treeList 中没有parentId 的 

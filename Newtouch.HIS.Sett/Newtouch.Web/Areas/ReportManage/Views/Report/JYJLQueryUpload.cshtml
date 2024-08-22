@@ -1,0 +1,256 @@
+﻿
+@{
+	ViewBag.Title = "JYJLQueryUpload";
+	Layout = "~/Views/Shared/_Form.cshtml";
+	var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+}
+<div class="rows">
+	<div class="panel panel-default">
+		<table class="form">
+			<tr>
+				<th class="formTitle">开始日期：</th>
+				<td class="formValue">
+					<input id="ksrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-01")" />
+				</td>
+				<th class="formTitle">结束日期：</th>
+				<td class="formValue">
+					<input id="jsrq" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:90px"
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })"
+						   value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+				</td>
+				<th class="formTitle"></th>
+                <td class="formValue" style="padding-left:20px;">
+                    <input type="button" id="btn_search" onclick="jyjlsearch();" class="btn btn-primary btn-md" value="产生" style="width:55px" />
+                    <input type="button" id="btn_searchtotxt" onclick="searchtotxt();" class="btn btn-primary btn-md" value="上传" style="width:55px" />
+                    <input type="button" id="btn_searchhztotxt" onclick="searchhztotxt();" class="btn btn-primary btn-md" value="汇总产生" style="width:55px" />
+                </td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+       gridList();
+	});
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/ReportManage/Report/GetJyjlData",
+            height: $(window).height()-200,
+            postData: getpostData(),
+            colModel: [
+                { label: '流水号', name: 'lsh', width: 60, align: 'left' },
+                { label: '机构代码', name: 'jgdm', width: 60, align: 'left' },
+                { label: '卡号', name: 'kh', width: 60, align: 'left' },
+                { label: '账户标志', name: 'zhbz', width: 60, align: 'left' },
+                { label: '病人类型', name: 'brlx', width: 60, align: 'left' },
+                { label: '就诊次数', name: 'jzcs', width: 60, align: 'left' },
+                { label: '交易时间', name: 'jysj', width: 60, align: 'left' },
+                { label: '结算类型', name: 'jslx', width: 60, align: 'left' },
+                { label: '交易总费用', name: 'jyzfy', width: 60, align: 'left' },
+                { label: '当年账户支付', name: 'dnzhzf', width: 60, align: 'left' },
+                { label: '历年账户支付', name: 'lnzhzf', width: 60, align: 'left' },
+                { label: '自付段现金', name: 'zfdxj', width: 60, align: 'left' },
+                { label: '起付段现金', name: 'qfdxj', width: 60, align: 'left' },
+                { label: '统筹段现金', name: 'tcdxj', width: 60, align: 'left' },
+                { label: '统筹段账户', name: 'tcdzh', width: 60, align: 'left' },
+                { label: '统筹支付', name: 'tczj', width: 60, align: 'left' },
+                { label: '附加段现金', name: 'fjdxj', width: 60, align: 'left' },
+                { label: '附加段账户', name: 'fjdzh', width: 60, align: 'left' },
+                { label: '附加支付', name: 'fjzf', width: 60, align: 'left' },
+                { label: '医保范围总额', name: 'ybfwze', width: 60, align: 'left' },
+                { label: '非医保范围总额', name: 'fybfwzf', width: 60, align: 'left' },
+                { label: '医保类型', name: 'yblx', width: 60, align: 'left' },
+                { label: '发票号码', name: 'fphm', width: 60, align: 'left' },
+                { label: '退费标志', name: 'tfbz', width: 60, align: 'left' },
+                { label: '开始日期', name: 'ksrq', width: 60, align: 'left' },
+                { label: '减负标志', name: 'jfbz', width: 60, align: 'left' },
+                { label: '减负金额', name: 'jfje', width: 60, align: 'left' }, 
+                
+            ],
+            pager: "#gridPager",
+            sortname: 'jysj desc',
+            viewrecords: true,
+        });
+
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getpostData(),
+                page: 1,
+            }).trigger('reloadGrid');
+        });
+    }
+    function getpostData() {
+        return {
+             ksrq: $("#ksrq").val(), jsrq: $("#jsrq").val()
+        };
+    }
+    function searchtotxt() {
+        $.najax({
+            type: "POST",
+            url: "/ReportManage/Report/Ybsjsctotxt",
+            data: { ksrq: $("#ksrq").val(), jsrq: $("#jsrq").val()},
+            dataType: "json",
+            success: function (ajaxresp) {
+                var strtxt = "";
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    strtxt += ajaxresp[i].lsh + "    ";
+                    strtxt += ajaxresp[i].jgdm + "    ";
+                    strtxt += ajaxresp[i].kh+ "    ";
+                    strtxt += ajaxresp[i].zhbz + "    ";
+                    strtxt += ajaxresp[i].brlx + "    ";
+                    strtxt += ajaxresp[i].jzcs + "    ";
+                    strtxt += ajaxresp[i].jysj + "    ";
+                    strtxt += ajaxresp[i].jslx + "    ";
+                    strtxt += ajaxresp[i].jyzfy + "    ";
+                    strtxt += ajaxresp[i].dnzhzf + "    ";
+                    strtxt += ajaxresp[i].lnzhzf + "    ";
+                    strtxt += ajaxresp[i].zfdxj + "    ";
+                    strtxt += ajaxresp[i].qfdxj + "    ";
+
+                    strtxt += ajaxresp[i].tcdxj + "    ";
+                    strtxt += ajaxresp[i].tcdzh + "    ";
+                    strtxt += ajaxresp[i].tczj + "    ";
+                    strtxt += ajaxresp[i].fjdxj + "    ";
+                    strtxt += ajaxresp[i].fjdzh + "    ";
+                    strtxt += ajaxresp[i].fjzf + "    ";
+                    strtxt += ajaxresp[i].ybfwze + "    ";
+
+                    strtxt += ajaxresp[i].fybfwzf + "    ";
+                    strtxt += ajaxresp[i].yblx + "    ";
+                    strtxt += ajaxresp[i].fphm + "    ";
+                    strtxt += ajaxresp[i].tfbz + "    ";
+                    strtxt += ajaxresp[i].ksrq + "    ";
+                    strtxt += ajaxresp[i].jfbz + "    ";
+                    strtxt += ajaxresp[i].jfje + "    ";
+                    strtxt += "\t\n";     
+                }
+                var blob = new Blob([strtxt], { type: "text/plain;charset=utf-8" });
+                saveAs(blob, "交易记录库.txt");
+            }
+        });
+    }
+    function searchhztotxt() {
+        $.najax({
+            type: "POST",
+            url: "/ReportManage/Report/Ybsjsctotxt",
+            data: { ksrq: $("#ksrq").val(), jsrq: $("#jsrq").val() },
+            dataType: "json",
+            success: function (ajaxresp) {
+                var strtxt = "";
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    strtxt += ajaxresp[i].lsh + "    ";
+                    strtxt += ajaxresp[i].jgdm + "    ";
+                    strtxt += ajaxresp[i].kh + "    ";
+                    strtxt += ajaxresp[i].zhbz + "    ";
+                    strtxt += ajaxresp[i].brlx + "    ";
+                    strtxt += ajaxresp[i].jzcs + "    ";
+                    strtxt += ajaxresp[i].jysj + "    ";
+                    strtxt += ajaxresp[i].jslx + "    ";
+                    strtxt += ajaxresp[i].jyzfy + "    ";
+                    strtxt += ajaxresp[i].dnzhzf + "    ";
+                    strtxt += ajaxresp[i].lnzhzf + "    ";
+                    strtxt += ajaxresp[i].zfdxj + "    ";
+                    strtxt += ajaxresp[i].qfdxj + "    ";
+
+                    strtxt += ajaxresp[i].tcdxj + "    ";
+                    strtxt += ajaxresp[i].tcdzh + "    ";
+                    strtxt += ajaxresp[i].tczj + "    ";
+                    strtxt += ajaxresp[i].fjdxj + "    ";
+                    strtxt += ajaxresp[i].fjdzh + "    ";
+                    strtxt += ajaxresp[i].fjzf + "    ";
+                    strtxt += ajaxresp[i].ybfwze + "    ";
+
+                    strtxt += ajaxresp[i].fybfwzf + "    ";
+                    strtxt += ajaxresp[i].yblx + "    ";
+                    strtxt += ajaxresp[i].fphm + "    ";
+                    strtxt += ajaxresp[i].tfbz + "    ";
+                    strtxt += ajaxresp[i].ksrq + "    ";
+                    strtxt += ajaxresp[i].jfbz + "    ";
+                    strtxt += ajaxresp[i].jfje + "    ";
+                    strtxt += "\t\n";
+                }
+                var blob = new Blob([strtxt], { type: "text/plain;charset=utf-8" });
+                saveAs(blob, "交易记录库.txt");
+            }
+        });
+        $.najax({
+            type: "POST",
+            url: "/ReportManage/Report/YbMjzdbghtxt",
+            data: { ksrq: $("#ksrqdbgh").val(), jsrq: $("#jsrqdbgh").val() },
+            dataType: "json",
+            success: function (ajaxresp) {
+                var strtxt = "";
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    strtxt += ajaxresp[i].lsh + "    ";
+                    strtxt += ajaxresp[i].kh + "    ";
+                    strtxt += ajaxresp[i].ksbm + "    ";
+                    strtxt += ajaxresp[i].ksmc + "    ";
+                    strtxt += ajaxresp[i].ghf + "    ";
+                    strtxt += ajaxresp[i].zlf + "    ";
+                    strtxt += ajaxresp[i].jyzfy + "    ";
+                    strtxt += ajaxresp[i].ybfwze + "    ";
+                    strtxt += ajaxresp[i].fybfwze + "    ";
+                    strtxt += ajaxresp[i].jysj + "    ";
+                    strtxt += ajaxresp[i].yblx + "    ";
+                    strtxt += ajaxresp[i].jslx + "    ";
+                    strtxt += ajaxresp[i].tfbz + "    ";
+                    strtxt += ajaxresp[i].jzlsh + "    ";
+                    strtxt += "\t\n";
+                }
+                var blob = new Blob([strtxt], { type: "text/plain;charset=utf-8" });
+                saveAs(blob, "门急诊大病挂号库.txt");
+            }
+        });
+        $.najax({
+            type: "POST",
+            url: "/ReportManage/Report/GetMjzjcsfDatatxt",
+            data: { ksrq: $("#ksrqjcsf").val(), jsrq: $("#jsrqjcsf").val() },
+            dataType: "json",
+            success: function (ajaxresp) {
+                var strtxt = "";
+                for (var i = 0; i < ajaxresp.length; i++) {
+                    strtxt += ajaxresp[i].yblsh + "    ";
+                    strtxt += ajaxresp[i].kh + "    ";
+                    strtxt += ajaxresp[i].ksbm + "    ";
+                    strtxt += ajaxresp[i].ksmc + "    ";
+                    strtxt += ajaxresp[i].ysgh + "    ";
+                    strtxt += ajaxresp[i].ysxm + "    ";
+                    strtxt += ajaxresp[i].cfbh + "    ";
+                    strtxt += ajaxresp[i].fylb + "    ";
+                    strtxt += ajaxresp[i].xmmc + "    ";
+                    strtxt += ajaxresp[i].xmdw + "    ";
+                    strtxt += ajaxresp[i].xmdj + "    ";
+                    strtxt += ajaxresp[i].xmsl + "    ";
+                    strtxt += ajaxresp[i].xmje + "    ";
+                    strtxt += ajaxresp[i].jyje + "    ";
+                    strtxt += ajaxresp[i].ybfwje + "    ";
+                    strtxt += ajaxresp[i].bxbz + "    ";
+                    strtxt += ajaxresp[i].jysj + "    ";
+                    strtxt += ajaxresp[i].yblx + "    ";
+                    strtxt += ajaxresp[i].jslx + "    ";
+                    strtxt += ajaxresp[i].tfbz + "    ";
+                    strtxt += ajaxresp[i].lsh + "    ";
+                    strtxt += ajaxresp[i].xflsh + "    ";
+                    strtxt += ajaxresp[i].yptym + "    ";
+                    strtxt += ajaxresp[i].zczh + "    ";
+                    strtxt += ajaxresp[i].mxxmgg + "    ";
+                    strtxt += "\t\n";
+                }
+                var blob = new Blob([strtxt], { type: "text/plain;charset=utf-8" });
+                saveAs(blob, "门急诊大病家床收费库.txt");
+            }
+        });
+    }
+</script>

@@ -19,6 +19,7 @@ using Newtouch.HIS.Proxy.guian.DTO;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
@@ -36,7 +37,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
         private readonly IHospSettlementGAYBFeeRepo _hospSettlementGAYBFeeRepo;
         private readonly IHospSettlementGAXNHFeeRepo _hospSettlementGAXNHFeeRepo;
         private readonly IHospPatientBasicInfoRepo _hospPatientBasicInfoRepo;
-        private readonly ICqybSett05Repo _cqybSett05Repo;
+	    private readonly ICqybSett05Repo _cqybSett05Repo;
         private readonly IBookkeepInHosDmnService _BookkeepInHosDmnService;
         private readonly IHospItemBillingRepo _hospItemBillingRepo;
         #region 出院结算
@@ -49,7 +50,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
         /// <param name="kh"></param>
         /// <param name="cardType"></param>
         /// <returns></returns>
-        public InpatientSettPatStatusDetailDto GetInpatientSettleStatusDetail(string zyh, string sfz, string kh, string cardType, string jslx, string ver)
+        public InpatientSettPatStatusDetailDto GetInpatientSettleStatusDetail(string zyh, string sfz, string kh, string cardType,string jslx,string ver)
         {
             // 获取病人信息
             var settpatInfo = GetInpatientSettlePatInfo(ref zyh, sfz, kh, cardType, jslx);
@@ -63,7 +64,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
             {
                 InpatientSettPatInfo = settpatInfo,
                 //InpatientSettleItemBO = settleItemsBo
-                GroupFeeVOList = _dischargeSettleDmnService.GetHospGroupFeeVOList(zyh, this.OrganizeId, ver),
+                GroupFeeVOList = _dischargeSettleDmnService.GetHospGroupFeeVOList(zyh, this.OrganizeId,ver),
             };
             return resultDto;
         }
@@ -74,14 +75,14 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
         /// </summary>
         /// <param name="zyh"></param>
         /// <returns></returns>
-        public InpatientSettPatInfoVO GetInpatientSettlePatInfo(ref string zyh, string sfz = null, string kh = null, string cardType = null, string jslx = null, string orgId = null)
+        public InpatientSettPatInfoVO GetInpatientSettlePatInfo(ref string zyh, string sfz = null, string kh = null, string cardType = null,string jslx=null)
         {
             if (string.IsNullOrWhiteSpace(zyh))
             {
                 if (!string.IsNullOrWhiteSpace(kh) && !string.IsNullOrWhiteSpace(cardType))
                 {
                     //根据卡号和卡类型 换取住院号
-                    zyh = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.kh == kh && p.CardType == cardType && p.zybz != ((int)EnumZYBZ.Wry).ToString()).OrderByDescending(p => p.CreateTime).Select(p => p.zyh).FirstOrDefault();
+                    zyh = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.kh == kh && p.CardType == cardType && p.zybz!=((int)EnumZYBZ.Wry).ToString()).OrderByDescending(p => p.CreateTime).Select(p => p.zyh).FirstOrDefault();
                 }
                 else if (!string.IsNullOrWhiteSpace(sfz) && !string.IsNullOrWhiteSpace(cardType))
                 {
@@ -96,7 +97,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 throw new FailedCodeException("HOSP_PATIENT_BASICINFO_IS_NOT_EXIST");
             }
 
-            var settPatinfoList = _dischargeSettleDmnService.SelectInpatientSettPatInfo(zyh, this.OrganizeId ?? orgId);
+            var settPatinfoList = _dischargeSettleDmnService.SelectInpatientSettPatInfo(zyh, this.OrganizeId);
             if (settPatinfoList == null || settPatinfoList.Count == 0)
             {
                 throw new FailedCodeException("HOSP_PATIENT_BASICINFO_IS_NOT_EXIST");
@@ -133,18 +134,18 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 throw new FailedCodeException("HOSP_ERROR_PATIENT_DEPT_IS_NO_FOUND");
             }
             //settpatinfo.zyts = Common.DateTimeHelper.GetInHospDays(settpatinfo.ryrq.Value, settpatinfo.cyrq.Value);
-            //zybz 是否可结算 病区中的患者
-            var isSettContainsBQZ = _sysConfigRepo.GetBoolValueByCode("HOSP_Sett_Contains_BQZ", this.OrganizeId ?? orgId, false).Value;
-            var brzybzType = ((int)EnumZYBZ.Djz).ToString();
-            if (isSettContainsBQZ)
-            {
-                brzybzType += "," + ((int)EnumZYBZ.Bqz).ToString();
-            }
-            if (!brzybzType.Contains(settpatinfo.zybz) && (string.IsNullOrEmpty(jslx) || (!string.IsNullOrEmpty(jslx) && jslx != "mnjs")))
-            {
-                throw new FailedException(((EnumZYBZ)(Convert.ToInt32(settpatinfo.zybz))).GetDescription() + "状态不能结算");
-            }
-
+                //zybz 是否可结算 病区中的患者
+                var isSettContainsBQZ = _sysConfigRepo.GetBoolValueByCode("HOSP_Sett_Contains_BQZ", this.OrganizeId, false).Value;
+                var brzybzType = ((int)EnumZYBZ.Djz).ToString();
+                if (isSettContainsBQZ)
+                {
+                    brzybzType += "," + ((int)EnumZYBZ.Bqz).ToString();
+                }
+                if (!brzybzType.Contains(settpatinfo.zybz) && (string.IsNullOrEmpty(jslx) || (!string.IsNullOrEmpty(jslx) && jslx != "mnjs")))
+                {
+                    throw new FailedException(((EnumZYBZ)(Convert.ToInt32(settpatinfo.zybz))).GetDescription() + "状态不能结算");
+                }
+            
 
             return settpatinfo;
         }
@@ -161,7 +162,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 return null;
             }
             //zy_xmjfb
-            var treatmentItemsList = _dischargeSettleDmnService.SelectTreatmentItemList(zyh, this.OrganizeId, kssj, jssj);
+            var treatmentItemsList = _dischargeSettleDmnService.SelectTreatmentItemList(zyh, this.OrganizeId, kssj,jssj);
             //zy_ypjfb
             var drugList = _dischargeSettleDmnService.SelectDrugList(zyh, this.OrganizeId, kssj, jssj);
             //非治疗收费项目
@@ -175,30 +176,8 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
             };
             return resultBo;
         }
-
-        private InpatientSettleItemBO GetInpatientSettleItemsDetailList(string zyh, DateTime? kssj, DateTime? jssj, string orgId)
-        {
-            if (string.IsNullOrEmpty(zyh))
-            {
-                return null;
-            }
-            //zy_xmjfb
-            var treatmentItemsList = _dischargeSettleDmnService.SelectTreatmentItemList(zyh, orgId, kssj, jssj);
-            //zy_ypjfb
-            var drugList = _dischargeSettleDmnService.SelectDrugList(zyh, orgId, kssj, jssj);
-            //非治疗收费项目
-            //var non_treatmentItemsList = _dischargeSettleDmnService.SelectNonTreatmentItemList(zyh, this.OrganizeId);
-
-            var resultBo = new InpatientSettleItemBO()
-            {
-                TreatmentItemList = treatmentItemsList,
-                DrugList = drugList
-                //Non_treatmentItemList = non_treatmentItemsList
-            };
-            return resultBo;
-        }
         #region  医保数据传输
-        public InpatientSettPatStatusDetailDto GetZyUploadDetail(string zyh, string jslx)
+        public InpatientSettPatStatusDetailDto GetZyUploadDetail(string zyh,string jslx)
         {
             //获取病人信息
             var settpatInfo = GetInpatientSettlePatInfo(ref zyh, null, null, null, jslx);
@@ -232,7 +211,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
             var FeeVo = _dischargeSettleDmnService.GetInpatSettFeeSum(zyh, this.OrganizeId, sczt, xmmc, kssj, jssj);
             var resultVo = new InpatIentFeeSumVo
             {
-                zje = FeeVo
+                zje =FeeVo
             };
             return resultVo;
         }
@@ -267,28 +246,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
             var settleItemsBo = GetInpatientSettleItemsDetailList(zyh, dbDt, null);
 
             //保存到数据库
-            _dischargeSettleDmnService.SaveSett(settpatInfo, settleItemsBo, expectedcyrq, this.OrganizeId, fph, feeRelated, ybfeeRelated, xnhfeeRelated, outTradeNo, jslx, out jsnm);
-
-        }
-        public void SaveSett(string zyh, DateTime expectedcyrq, string fph, InpatientSettFeeRelatedDTO feeRelated
-    , CQZyjs05Dto ybfeeRelated, S14OutResponseDTO xnhfeeRelated
-    , string outTradeNo, string jslx, string orgId, out int jsnm)
-        {
-            if (string.IsNullOrEmpty(zyh))
-            {
-                throw new FailedCodeException("HOSP_ZYH_IS_EMPTY");
-            }
-
-            // 获取病人信息
-            var settpatInfo = GetInpatientSettlePatInfo(ref zyh, null, null, null, null, orgId);
-            //获取最后一次结算 排除中途结算
-            var dbDt = _BookkeepInHosDmnService.GetLastValidSettTime(zyh, orgId);
-
-            // 获取计费明细（包括：项目和药品）
-            var settleItemsBo = GetInpatientSettleItemsDetailList(zyh, dbDt, null, orgId);
-
-            //保存到数据库
-            _dischargeSettleDmnService.SaveSett(settpatInfo, settleItemsBo, expectedcyrq, orgId, fph, feeRelated, ybfeeRelated, xnhfeeRelated, outTradeNo, jslx, out jsnm);
+            _dischargeSettleDmnService.SaveSett(settpatInfo, settleItemsBo, expectedcyrq, this.OrganizeId, fph, feeRelated, ybfeeRelated, xnhfeeRelated, outTradeNo, jslx,out jsnm);
 
         }
         #endregion
@@ -310,18 +268,18 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
             var medicalInsurance = _sysConfigRepo.GetValueByCode("Inpatient_MedicalInsurance", this.OrganizeId);
             HospSettlementGAYBFeeEntity ybFee = null;
             HospSettlementGAXNHFeeEntity xnhFee = null;
-            CqybSett05Entity cqYbFee = null;
-            if (settpatInfo.brxz == "1" && settpatInfo.CardType == ((int)EnumCardType.YBJYK).ToString())//医保患者
-            {
+	        CqybSett05Entity cqYbFee = null;
+			if (settpatInfo.brxz=="1" && settpatInfo.CardType== ((int)EnumCardType.YBJYK).ToString())//医保患者
+            { 
                 if (medicalInsurance == "guian")
                 {
                     ybFee = lastSett != null ? _hospSettlementGAYBFeeRepo.IQueryable().Where(p => p.jsnm == lastSett.jsnm).FirstOrDefault() : null;
                 }
-                //if (medicalInsurance == "chongqing")
-                //{
-                // cqYbFee = lastSett != null ? _cqybSett05Repo.IQueryable().Where(p => p.jsnm == lastSett.jsnm && p.zt=="1").FirstOrDefault() : null;
-                //}
-            }
+	            //if (medicalInsurance == "chongqing")
+	            //{
+		           // cqYbFee = lastSett != null ? _cqybSett05Repo.IQueryable().Where(p => p.jsnm == lastSett.jsnm && p.zt=="1").FirstOrDefault() : null;
+	            //}
+			}
             if (settpatInfo.brxz == "8" && settpatInfo.CardType == ((int)EnumCardType.XNHJYK).ToString())//新农合患者
             {
                 if (medicalInsurance == "guian")
@@ -334,9 +292,9 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 InpatientSettPatInfo = settpatInfo,
                 LastUnCancelledSett = lastSett,
                 YbFee = ybFee,
-                XnhFee = xnhFee
-                //CqYbFee= cqYbFee
-            };
+                XnhFee= xnhFee
+	            //CqYbFee= cqYbFee
+			};
 
             return resultDto;
         }
@@ -448,7 +406,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
         public void SavePartialSettle(string zyh, DateTime startTime, DateTime endTime, string fph, InpatientSettFeeRelatedDTO feeRelated
             , CQZyjs05Dto ybfeeRelated, string outTradeNo, string jslx, out int jsnm)
         {
-            jsnm = 0;
+             jsnm = 0;
             // 获取病人信息
             var settpatInfo = GetPartialInpatientSettlePatInfo(ref zyh);
 
@@ -465,21 +423,21 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 throw new FailedException("过程中结算状态发生变更，请重试!");
             }
 
-            _dischargeSettleDmnService.commitPartialSettle(zyh, this.OrganizeId, startTime, endTime, feeRelated, ybfeeRelated, jslx, ypxmlist, out jsnm);
+            _dischargeSettleDmnService.commitPartialSettle(zyh, this.OrganizeId, startTime, endTime, feeRelated, ybfeeRelated,jslx, ypxmlist, out jsnm);
         }
 
-        public InpatientSettPatStatusDetailDto GetPartialInpatientSettleStatusDetail(string zyh, string sfz, string kh, string cardType, string jslx, string ver)
+        public InpatientSettPatStatusDetailDto GetPartialInpatientSettleStatusDetail(string zyh, string sfz, string kh, string cardType, string jslx,string ver)
         {
             // 获取病人信息
             var settpatInfo = GetPartialInpatientSettlePatInfo(ref zyh, sfz, kh, cardType, jslx);
             // 获取计费明细（包括：项目和药品）
             //var settleItemsBo = GetInpatientSettleItemsDetailList(zyh);
-            settpatInfo.zyts = DateTimeHelper.GetInHospDays(settpatInfo.ryrq.Value, DateTime.Now);
+                settpatInfo.zyts = DateTimeHelper.GetInHospDays(settpatInfo.ryrq.Value, DateTime.Now);
             var resultDto = new InpatientSettPatStatusDetailDto()
             {
                 InpatientSettPatInfo = settpatInfo,
                 //InpatientSettleItemBO = settleItemsBo
-                GroupFeeVOList = _dischargeSettleDmnService.GetHospGroupFeeVOList(zyh, this.OrganizeId, ver),
+                GroupFeeVOList = _dischargeSettleDmnService.GetHospGroupFeeVOList(zyh, this.OrganizeId,ver),
             };
             return resultDto;
         }
@@ -547,8 +505,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
         /// 转出院结算 预处理
         /// </summary>
         /// <param name="zyh"></param>
-        public string PreCYsettle(string zyh)
-        {
+        public string PreCYsettle(string zyh) {
             //1.未停止的医嘱判断  
             _hospAccountingPlanDetailRepo.CheckAccountingPlanDetailStatus(zyh, this.OrganizeId);
             //2.在院状态判断
@@ -561,7 +518,7 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 startTime = new DateTime(1970, 01, 01);  //未结算过的话 从入院开始算所有项目
             }
             var jsItemList = _hospItemBillingRepo.GetItemFeeEntityListByTime(zyh, this.OrganizeId, startTime.Value, DateTime.Now);
-            if (jsItemList.Count() > 0)
+            if (jsItemList.Count()>0)
             {
                 throw new FailedException("存在未结费用，不能出院");
             }

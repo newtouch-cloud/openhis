@@ -1,0 +1,154 @@
+﻿
+@{
+	ViewBag.Title = "";
+	Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<div class="rows">
+	<div class="panel panel-default">
+		<table class="form">
+			<tr>
+				<th class="formTitle">开始日期：</th>
+				<td class="formValue">
+					<input id="kssj" type="text" class="form-control input-wdatepicker form-an" 
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
+				</td>
+				<th class="formTitle">结束日期：</th>
+				<td class="formValue">
+					<input id="jssj" type="text" class="form-control input-wdatepicker form-an" 
+						   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+				</td>
+				<th class="formTitle" style="left: 20px;">科室名称：</th>
+				<td class="formValue" >
+					<select id="depa" class="form-control" >
+						<option value="">全部</option>
+					</select>
+				</td>
+				<th class="formTitle" >大类名称：</th>
+				<td class="formValue" >
+					<select id="dlmc" class="form-control">
+						<option value="">全部</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th class="formTitle">姓名：</th>
+				<td class="formValue">
+					<input id="xm" name="xm" type="text" autocomplete="off" class="form-control" />
+				</td>
+				<th class="formTitle">住院号/门诊号：</th>
+				<td class="formValue">
+					<input id="zyh" name="zyh" type="text" autocomplete="off" class="form-control" />
+				</td>
+				<th class="formTitle" style="padding-left: 30px;">收费项目名称：</th>
+				<td class="formValue">
+					<input id="sfxmmc" name="sfxmmc" type="text" autocomplete="off" class="form-control" />
+				</td>
+				<th class="formTitle">是否门诊：</th>
+				<td class="formValue">
+					<select id="sfmz" class="form-control">
+						<option value="">全部</option>
+						<option value="2">门诊</option>
+						<option value="1">住院</option>
+					</select>
+				</td>
+				<th class="formTitle"></th>
+				<td class="formValue" style="padding-left:20px;">
+					<input type="button" id="btn_search" onclick="submit();" class="btn btn-primary btn-md" value="查询" style="width:55px" />
+				</td>
+				<td class="formValue"></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+
+
+
+
+<div class="ui-layout" id="layout" style="height:100%;width:100%;">
+	<iframe class="ui-layout-center" style="width:100%;" id="iframerightiframerightiframerightttt" name="iframerightiframerightiframerightttt"
+			scrolling="auto" allowtransparency="true" frameborder="0"></iframe>
+</div>
+
+<script type="text/javascript">
+	var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+    var organId = '@(ViewBag.OrgId)';
+	function submit() {
+		if ($('#kssj').val().length == 0) {
+			$.modalAlert("缺少开始时间", "error");
+			return;
+		}
+		if ($('#jssj').val().length == 0) {
+			$.modalAlert("缺少结束时间", "error");
+			return;
+		}
+		var url = getUrl();
+		url += "&OrganizeId=" + organId;
+		url += "&kssj=" + $('#kssj').val();
+		url += "&jssj=" + $.getDate({ date: $('#jssj').val() }) + ' 23:59:59';
+		url += "&ksmc=" + $('#depa').val();
+		url += "&dlmc=" + $('#dlmc').val();
+		url += "&xm=" + $('#xm').val();
+		url += "&zyh=" + $('#zyh').val();
+		url += "&sfxmmc=" + $('#sfxmmc').val();
+		url += "&sfmz=" + $('#sfmz').val();
+        setTimeout("$.loading(true, '正在请求报表页面...');", 10);
+        $("#iframerightiframerightiframerightttt").attr('src', url);
+    }
+
+    $("#iframerightiframerightiframerightttt").load(function () {
+        $.loading(false);
+	});
+
+    $(function () {
+        var h = $(window).height() - 65
+        $('#layout iframe').css('height', h);
+		init();
+    });
+
+    //刷新列表
+    function refReport() {
+        $("#btn_search").trigger('click');
+    }
+
+    function getUrl() {
+        var reportServerHOST = '@(ViewBag.ReportServerHOST)';
+		reportServerHOST += "ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f医保数据落地明细";
+		//ReportServer/Pages/ReportViewer.aspx?%2fHIS.Report.1%2f医院垫支明细&rs:Command=Render
+        //获取自定义样式
+        if (true) {
+            if (reportServerHOST.indexOf('&rc:Stylesheet') == -1) {
+                reportServerHOST += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+        return reportServerHOST;
+    }
+</script>
+
+<script type="text/javascript">
+	function init() {
+		//治疗师绑定下拉框
+		$("#depa").bindSelect({
+			id: "Code",
+			text: "Name",
+			url: "/OutpatientManage/OutpatientRegSchedule/GetSysDepartmentList",
+			dropdownAutoWidth: true
+		});
+
+		$('#depa').change(function () {
+			submit();
+		});
+		//大类名称绑定下拉框
+		$("#dlmc").bindSelect({
+			id: "dlcode",
+			text: "dlmc",
+			url: "/ReportManage/Report/GetDlMc",
+			dropdownAutoWidth: true
+		});
+
+		$('#dlmc').change(function () {
+			submit();
+		});
+	}
+</script>

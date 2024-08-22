@@ -24,6 +24,8 @@ using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using Newtouch.HIS.Domain.IRepository.OutpatientManage;
 using Newtouch.HIS.Domain.DTO.InputDto;
+using Newtouch.Infrastructure.Model;
+using System.Configuration;
 
 namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 {
@@ -41,7 +43,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         private readonly IOutpatientSettlementGAYBFeeRepo _outpatientSettlementGAYBFeeRepo;
         private readonly IGuiAnOutpatientXnhApp _guiAnOutpatientXnhApp;
         private readonly IOutpatientRegistRepo _outpatientRegistRepo;
-	    private readonly ICqybSett05Repo _cqybSett05Repo;
+        private readonly ICqybSett05Repo _cqybSett05Repo;
         private readonly IOutpatientItemRepo _outpatientItemRepo;
         #region 页面初始化
 
@@ -70,12 +72,12 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <returns></returns>
         [HttpGet]
         [HandlerAjaxOnly]
-        public ActionResult PatSearchInfo(Pagination pagination, string blh, string mzh, string xm,string kssj,string jssj
+        public ActionResult PatSearchInfo(Pagination pagination, string blh, string mzh, string xm, string kssj, string jssj
             , bool curUserCreate = false, string jiuzhenbiaozhi = null)
         {
             var data = new
             {
-                rows = _refundService.GetBasicInfoSearchList(pagination, blh, mzh, xm,kssj,jssj, OrganizeId
+                rows = _refundService.GetBasicInfoSearchList(pagination, blh, mzh, xm, kssj, jssj, OrganizeId
                 , curUserCreate ? UserIdentity.UserCode : "", jiuzhenbiaozhi),
                 total = pagination.total,
                 page = pagination.page,
@@ -177,61 +179,61 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 return null;
             }
             var list = _refundService.RefundableQuery(this.OrganizeId, jsnm);
-            var ztlist = list.Where(p => p.ztId != null && p.ztId!="").ToList();
-			var flag = true;
-			string flagstr = _sysConfigRepo.GetValueByCode("sfxmztbs", this.OrganizeId);
-			if (flagstr=="false")
-			{
-				flag = false;
-			}
-			if (flag)
-			{
-				//收费项目组套合并
-				if (ztlist.Count() > 0)
-				{
-					ztlist = list.Where(p => p.ztId != null && p.ztId != "").ToList()
-					.GroupBy(m => new { m.ghnm, m.jslx, m.feeType, m.cfh, m.ztmc, m.ztId, m.ztsl, m.cfnm, m.ks, m.ys, m.ysmc, m.sfmb, m.sqdzt, m.cflxmc }).Select(p =>
-							 new OutPatientRefundableVO
-							 {
-								 ghnm = p.Key.ghnm,
-								 jsmxnm = p.Max(m => m.jsmxnm),
-								 jslx = p.Key.jslx,
-								 sl = p.Max(m => m.sl),
-								 ktsl = p.Max(m => m.ktsl),
-								 tsl = p.Max(m => m.tsl),
-								 jsmxje = p.Sum(m => m.jsmxje),
-								 dj = Math.Round(Convert.ToDecimal(p.Sum(m => m.dj)), 2, MidpointRounding.AwayFromZero),
-								 feeType = p.Key.feeType,
-								 dw = "套",
-								 cfh = p.Key.cfh,
-								 mc = p.Key.ztmc,
-								 ztmc = p.Key.ztmc,
-								 ztId = p.Key.ztId,
-								 ztsl = p.Key.ztsl,
-								 sfmb = p.Key.sfmb,
-								 dlmc = p.Key.ztmc,
-								 czh = "",
-								 cfnm = p.Key.cfnm,
-								 sfxmCode = p.Key.sfmb,
-								 sfdlCode = "",
-								 zfbl = null,
-								 zfxz = null,
-								 xmnm = null,
-								 cfmxId = null,
-								 ks = p.Key.ks,
-								 ys = p.Key.ys,
-								 ysmc = p.Key.ysmc,
-								 klsj = p.Max(m => m.klsj),
-								 zljhwzx = null,
-								 cflxmc = p.Key.cflxmc,
-								 sqdzt = p.Key.sqdzt
-							 }
-					).ToList();
-				}
-			}
-			
-               
-            list= list.Where(p => p.ztId == null ||p.ztId=="").ToList().Concat(ztlist).ToList();
+            var ztlist = list.Where(p => p.ztId != null && p.ztId != "").ToList();
+            var flag = true;
+            string flagstr = _sysConfigRepo.GetValueByCode("sfxmztbs", this.OrganizeId);
+            if (flagstr == "false")
+            {
+                flag = false;
+            }
+            if (flag)
+            {
+                //收费项目组套合并
+                if (ztlist.Count() > 0)
+                {
+                    ztlist = list.Where(p => p.ztId != null && p.ztId != "").ToList()
+                    .GroupBy(m => new { m.ghnm, m.jslx, m.feeType, m.cfh, m.ztmc, m.ztId, m.ztsl, m.cfnm, m.ks, m.ys, m.ysmc, m.sfmb, m.sqdzt, m.cflxmc }).Select(p =>
+                             new OutPatientRefundableVO
+                             {
+                                 ghnm = p.Key.ghnm,
+                                 jsmxnm = p.Max(m => m.jsmxnm),
+                                 jslx = p.Key.jslx,
+                                 sl = p.Max(m => m.sl),
+                                 ktsl = p.Max(m => m.ktsl),
+                                 tsl = p.Max(m => m.tsl),
+                                 jsmxje = p.Sum(m => m.jsmxje),
+                                 dj = Math.Round(Convert.ToDecimal(p.Sum(m => m.dj)), 2, MidpointRounding.AwayFromZero),
+                                 feeType = p.Key.feeType,
+                                 dw = "套",
+                                 cfh = p.Key.cfh,
+                                 mc = p.Key.ztmc,
+                                 ztmc = p.Key.ztmc,
+                                 ztId = p.Key.ztId,
+                                 ztsl = p.Key.ztsl,
+                                 sfmb = p.Key.sfmb,
+                                 dlmc = p.Key.ztmc,
+                                 czh = "",
+                                 cfnm = p.Key.cfnm,
+                                 sfxmCode = p.Key.sfmb,
+                                 sfdlCode = "",
+                                 zfbl = null,
+                                 zfxz = null,
+                                 xmnm = null,
+                                 cfmxId = null,
+                                 ks = p.Key.ks,
+                                 ys = p.Key.ys,
+                                 ysmc = p.Key.ysmc,
+                                 klsj = p.Max(m => m.klsj),
+                                 zljhwzx = null,
+                                 cflxmc = p.Key.cflxmc,
+                                 sqdzt = p.Key.sqdzt
+                             }
+                    ).ToList();
+                }
+            }
+
+
+            list = list.Where(p => p.ztId == null || p.ztId == "").ToList().Concat(ztlist).ToList();
 
             return Content(list.ToJson());
         }
@@ -258,13 +260,13 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
         /// <returns></returns>
         public ActionResult RefundSettlement(string mzh, int jsnm
             , Dictionary<string, decimal> tjsxmDict, decimal expectedTmxZje
-            , string newfph, Dictionary<string, decimal> tjsxmDictZt, decimal expectedTmxZjeZt,string cfnmArray)
+            , string newfph, Dictionary<string, decimal> tjsxmDictZt, decimal expectedTmxZjeZt, string cfnmArray)
         {
             return handleRefund(mzh, jsnm
             , tjsxmDict, expectedTmxZje, null, null
             , null
             , null
-            , newfph, tjsxmDictZt,expectedTmxZjeZt, cfnmArray);
+            , newfph, tjsxmDictZt, expectedTmxZjeZt, cfnmArray);
         }
 
         /// <summary>
@@ -330,12 +332,12 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             , OutpatientSettYbFeeRelatedDTO newybfeeRelated)
         {
             string newfph = "";
-            decimal ztje =Convert.ToDecimal(0.00);
+            decimal ztje = Convert.ToDecimal(0.00);
             return handleRefund(mzh, jsnm
             , tjsxmDict, expectedTmxZje, hcybjsh, newwjybjsh
             , hcybfeeRelated
             , newybfeeRelated
-            , newfph,null, ztje,null);
+            , newfph, null, ztje, null);
         }
 
         #endregion
@@ -435,29 +437,29 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             , Dictionary<string, decimal> tjsxmDict, decimal expectedTmxZje, string hcybjsh, string newwjybjsh
             , CQMzjs05Dto hcybfeeRelated
             , OutpatientSettYbFeeRelatedDTO newybfeeRelated
-            , string newfph, Dictionary<string, decimal> tjsxmDictZt, decimal expectedTmxZjeZt,string cfnmArray)
+            , string newfph, Dictionary<string, decimal> tjsxmDictZt, decimal expectedTmxZjeZt, string cfnmArray)
         {
             var newDict = new Dictionary<int, decimal>();
-            if(expectedTmxZje<=0)tjsxmDict = null;
+            if (expectedTmxZje <= 0) tjsxmDict = null;
             if (expectedTmxZjeZt <= 0) tjsxmDictZt = null;
-            if (tjsxmDict!=null)
+            if (tjsxmDict != null)
             {
                 foreach (var item in tjsxmDict)
                 {
                     newDict.Add(Convert.ToInt32(item.Key), item.Value);
                 }
             }
-            
-            if (tjsxmDictZt!=null)
+
+            if (tjsxmDictZt != null)
             {
                 var tmzxmlist = _outPatientUniversalDmnService.RefundZtDetail(cfnmArray, OrganizeId);
-                foreach(var items in tjsxmDictZt)
+                foreach (var items in tjsxmDictZt)
                 {
                     foreach (var m in tmzxmlist)
                     {
-                        if (items.Key==m.ztId) //还需加cfnm 多个处方可能有相同组套
+                        if (items.Key == m.ztId) //还需加cfnm 多个处方可能有相同组套
                         {
-                            newDict.Add(m.jsmxnm,Math.Round(items.Value*m.sl,2, MidpointRounding.AwayFromZero));
+                            newDict.Add(m.jsmxnm, Math.Round(items.Value * m.sl, 2, MidpointRounding.AwayFromZero));
                         }
                     }
                 }
@@ -468,7 +470,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             string outTradeNo;
             decimal refundAmount;
             _outPatientUniversalDmnService.RefundSettlement(this.OrganizeId, jsnm, newDict, expectedTmxZje, newfph, out newJszbInfo, out outTradeNo, out refundAmount, hcybjsh, newwjybjsh, hcybfeeRelated, newybfeeRelated, null, null);
-
+             
             if (!string.IsNullOrWhiteSpace(mzh))
             {
                 refundFeeNotify(mzh, newDict);
@@ -482,12 +484,14 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                 isTradeRefundError = refundReuslt == (int)EnumRefundStatus.Failed || refundReuslt == (int)EnumRefundStatus.UnKnown;    //失败 或 未知
             }
 
-            var msg = "退费成功";
+            var msg = "退费成功"; 
             if (!isTradeRefundError.HasValue) return Success(msg, newJszbInfo);
             msg = !isTradeRefundError.Value ? "退费成功，应退金额已原路退回" : "HIS退费成功，但应退金额退回失败，请人工核查";
-            return Success(msg, newJszbInfo);
+            
+              return Success(msg , newJszbInfo);
         }
 
+       
         /// <summary>
         /// 更新CIS退标志
         /// </summary>
@@ -586,18 +590,18 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             _outpatientRegistRepo.RecordOutpId(mzh, "", UserIdentity.UserCode, OrganizeId);
             return Success(msg, newJszbInfo);
         }
-		#endregion
+        #endregion
 
-		#region 重庆医保退费
-	    public ActionResult RefundableChongQingQuery(DateTime? kssj, DateTime? jssj, string mzh)
-	    {
-		    if (string.IsNullOrEmpty(mzh) || !kssj.HasValue || !jssj.HasValue)
-		    {
-			    return null;
-		    }
-		    var list = _refundService.RefundableChongQingQuery(this.OrganizeId, kssj, jssj, mzh);
-		    return Content(list.ToJson());
-	    }
+        #region 重庆医保退费
+        public ActionResult RefundableChongQingQuery(DateTime? kssj, DateTime? jssj, string mzh)
+        {
+            if (string.IsNullOrEmpty(mzh) || !kssj.HasValue || !jssj.HasValue)
+            {
+                return null;
+            }
+            var list = _refundService.RefundableChongQingQuery(this.OrganizeId, kssj, jssj, mzh);
+            return Content(list.ToJson());
+        }
 
         #endregion
 
@@ -607,14 +611,14 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             List<CheckApplicationfromDTO> datalist = new List<CheckApplicationfromDTO>();
             foreach (var item in cfhList)
             {
-                if (item!="")
+                if (item != "")
                 {
                     var data = _outPatientUniversalDmnService.retApplicationform(mzh, item, this.OrganizeId, "N");
-                    if (data!=null)
+                    if (data != null)
                     {
                         datalist.Add(data);
                     }
-                    
+
                 }
             }
             //var data = _outPatientUniversalDmnService.retApplicationform(mzh, cfnmList, this.OrganizeId, "N");
@@ -635,7 +639,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                     request.ProtocolVersion = System.Net.HttpVersion.Version10;
                     request.Method = "POST";
 
-					request.ContentType = "application/json";
+                    request.ContentType = "application/json";
                     request.CookieContainer = null;//获取验证码时候获取到的cookie会附加在这个容器里面
                     request.AllowAutoRedirect = true;
                     request.KeepAlive = true;//建立持久性连接
@@ -656,17 +660,17 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
                         outputText = redStm.ReadToEnd();
                     }
                     var apiresp = JavaScriptJsonSerializerHelper.Deserialize<RefJson>(outputText);
-                    if (apiresp != null&& apiresp.status!= "Success")
+                    if (apiresp != null && apiresp.status != "Success")
                     {
                         AppLogger.Info(string.Format("Pacs检查申请单入参：{0}，出参结果：{1}", datajson, outputText));
                     }
-                    else if(apiresp != null && apiresp.status == "Success")
+                    else if (apiresp != null && apiresp.status == "Success")
                     {
                         //pacs申请单退成功后改变mz_cf表sqdzt为4 取消
-                        _outPatientUniversalDmnService.pushApplicationformRef(data.Patient.CardID, this.OrganizeId,4);
+                        _outPatientUniversalDmnService.pushApplicationformRef(data.Patient.CardID, this.OrganizeId, 4);
                     }
-                    
-                    
+
+
                 }
                 catch (Exception e)
                 {

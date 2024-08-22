@@ -5,6 +5,7 @@ using Newtouch.HIS.Domain.ValueObjects.OutpatientManage;
 using System;
 using Newtouch.HIS.Domain.DTO.OutputDto.OutpatientManage;
 using Newtouch.Core.Common;
+using Newtouch.Infrastructure.Model;
 
 namespace Newtouch.HIS.Application.Interface
 {
@@ -35,7 +36,7 @@ namespace Newtouch.HIS.Application.Interface
 
         void CheckPintInfo(string jsnm);
 
-        void PrintInvoice(string jsnm, bool isGH);
+        void PrintInvoice(string jsnm, bool isGH); 
 
         void RePrint(string jsnm, string pageFph, bool isGH);
 

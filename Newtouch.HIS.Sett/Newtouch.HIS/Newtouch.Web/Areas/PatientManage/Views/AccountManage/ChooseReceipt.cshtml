@@ -1,0 +1,115 @@
+﻿
+@{
+    ViewBag.Title = "ChooseReceipt";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+ 
+<form id="formReceipt">
+    <div style="margin-top:40px;margin-right:40px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle dialogText">凭证号：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="txtpzh" name="txtpzh" required value="">
+                </td>  
+            </tr> 
+        </table>
+        <div class="errorDiv"> 
+            <span id="lblMsg"></span>
+        </div>
+    </div>
+</form>
+
+<script>
+    $(function () { 
+        var sjh = $.currentWindow().$("#txtlpzh").val();
+        if(sjh){
+            $("#txtpzh").val(sjh);
+        } else
+        {
+            //获取收据凭证号
+            GetReceiptByEmpCode(); 
+        }
+    })
+
+    function GetReceiptByEmpCode() {
+        $.najax({
+            url: "/PatientManage/AccountManage/GetReceipt",
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (data) {  
+                if (data.data) {
+                    $("#txtpzh").val(""); 
+                    $("#lblMsg").text(data.data);
+                } 
+            }
+        });
+    }
+
+    //确定
+    function ReceiptConfirm()
+    { 
+        var pzh = $("#txtpzh").val(); 
+        if (checkPZH(pzh))
+        {
+            checkExitPZH(pzh);
+        }
+    }
+
+    //前台验证凭证号规则
+    function checkPZH(pzh)
+    { 
+        var szm = pzh.substring(0, 1);
+        var reg = new RegExp("^[0-9]*$");
+        //如果发票号第一个字符不是数字，则为首字母
+        if (!reg.test(szm))
+        {
+            szm = pzh.substring(0, 1);
+            if (!reg.test(pzh.substring(1,pzh.length-1)))
+            { 
+                var msg = "收据号除首字母外必须为数字。";   
+                $("#lblMsg").text(msg); 
+                return false;
+             }
+        }
+        else
+        {
+            szm = "";
+            if (!reg.test(pzh))
+            { 
+                var msg = "收据号必须为数字。"; 
+                $("#lblMsg").text(msg); 
+                return false;
+            }
+        }
+        return true;
+    }
+
+    //后台验证凭证号
+    function checkExitPZH(pzh)
+    { 
+        $.najax({
+            type: "POST",
+            url: "/PatientManage/AccountManage/CheckReceipt",
+            data: { pzh: pzh },
+            dataType: "json",
+            cache: false,
+            success: function (resdata) { 
+                if (resdata.data) {
+                    $.currentWindow().$("#txtlpzh").val(pzh);
+                    $.modalClose();
+                } 
+            },
+            errorCallback: function (errdata) {
+                $.modalClose();
+            }
+        });
+    }
+
+    //取消
+    function ReceiptCancle() 
+    {
+        $.modalClose();
+    }
+</script>

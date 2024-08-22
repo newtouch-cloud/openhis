@@ -1074,10 +1074,10 @@ namespace Newtouch.HIS.DomainServices
                     if (oldJszbEntity.xjzf != oldJszbEntity.zje)
                     {
                         //非全自费结算记录
-                        //if (tjehj != oldJszbEntity.zje)
-                        //{
-                        //    throw new FailedException("非全自费结算记录只支持全退，请重试");
-                        //}
+                        if (tjehj != oldJszbEntity.zje)
+                        {
+                            throw new FailedException("非全自费结算记录只支持全退，请重试");
+                        }
                         newJszbEntity.xjzf = 0; //退完了
                         ytw = true;   //已退完
 
@@ -2355,10 +2355,8 @@ where cfh=@cfh   and OrganizeId=@orgId and cflx=@cflx and zt='1' ) and OrganizeI
             }
             OutpatientSettlementPaymentModelEntity mzzfEntity1 = null;
             OutpatientSettlementPaymentModelEntity mzzfEntity2 = null;
-            bool isnew = false;
             if (!string.IsNullOrWhiteSpace(feeRelated.yjjzfje.ToString()) &&(feeRelated.yjjzfje ?? 0) > 0)
             {
-                isnew = true;
                 mzzfEntity1 = new OutpatientSettlementPaymentModelEntity();
                 mzzfEntity1.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
                 mzzfEntity1.OrganizeId = jszbEntity.OrganizeId;
@@ -2370,54 +2368,23 @@ where cfh=@cfh   and OrganizeId=@orgId and cflx=@cflx and zt='1' ) and OrganizeI
                 db.Insert(mzzfEntity1);
                 jszbEntity.xjzffs = xtzffs.ZYYJZHZF;
             }
-            if (!string.IsNullOrWhiteSpace(feeRelated.djjess.ToString()) && (feeRelated.djjess?? 0) > 0)
+            if (feeRelated.patZflist.Count() > 0)
             {
-                isnew = true;
-                mzzfEntity2 = new OutpatientSettlementPaymentModelEntity();
-                mzzfEntity2.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
-                mzzfEntity2.OrganizeId = jszbEntity.OrganizeId;
-                mzzfEntity2.jsnm = jszbEntity.jsnm;
-                mzzfEntity2.xjzffs = feeRelated.djjesszffs;
-                var xjzfys = feeRelated.xjzfys ==null? 0:feeRelated.xjzfys;
-                var yjjzfje = feeRelated.yjjzfje == null ? 0 : feeRelated.yjjzfje;
-                mzzfEntity2.zfje = xjzfys.ToDecimal() - yjjzfje.ToDecimal();
-                //mzzfEntity2.zfje = feeRelated.xjzfys.Value - feeRelated.yjjzfje.Value;
-                mzzfEntity2.zt = "1";
-                mzzfEntity2.Create();
-                mzzfEntity2.CreateTime = DateTime.Now.AddSeconds(1);
-                db.Insert(mzzfEntity2);
-                jszbEntity.xjzffs = feeRelated.djjesszffs;
-            }
-            if (!isnew)
-            {
-                if (!string.IsNullOrWhiteSpace(feeRelated.zffs1) && (feeRelated.zfje1 ?? 0) > 0)
-                {
-                    mzzfEntity1 = new OutpatientSettlementPaymentModelEntity();
-                    mzzfEntity1.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
-                    mzzfEntity1.OrganizeId = jszbEntity.OrganizeId;
-                    mzzfEntity1.jsnm = jszbEntity.jsnm;
-                    mzzfEntity1.xjzffs = feeRelated.zffs1;
-                    mzzfEntity1.zfje = feeRelated.zfje1.Value;
-                    mzzfEntity1.zt = "1";
-                    mzzfEntity1.Create();
-                    db.Insert(mzzfEntity1);
-                }
-                if (!string.IsNullOrWhiteSpace(feeRelated.zffs2) && (feeRelated.zfje2 ?? 0) > 0)
+                foreach (var item in feeRelated.patZflist)
                 {
                     mzzfEntity2 = new OutpatientSettlementPaymentModelEntity();
                     mzzfEntity2.mzjszffsbh = EFDBBaseFuncHelper.Instance.GetNewPrimaryKeyInt("mz_jszffs");
                     mzzfEntity2.OrganizeId = jszbEntity.OrganizeId;
                     mzzfEntity2.jsnm = jszbEntity.jsnm;
-                    mzzfEntity2.xjzffs = feeRelated.zffs2;
-                    mzzfEntity2.zfje = feeRelated.zfje2.Value;
+                    mzzfEntity2.xjzffs = item.zffsmc;
+                    mzzfEntity2.zfje = (decimal)item.zfje;
                     mzzfEntity2.zt = "1";
                     mzzfEntity2.Create();
                     mzzfEntity2.CreateTime = DateTime.Now.AddSeconds(1);
                     db.Insert(mzzfEntity2);
                 }
+                jszbEntity.xjzffs = feeRelated.djjesszffs;
             }
-
-
 
 
             //预交金支付 构建账户收支  //预交金支付 一定作为第一支付方式

@@ -36,6 +36,10 @@
 @Html.Partial("_YibaoCommonView")
 <form id="form1">
     <div class="panel panel-default">
+        @*<ul class="nav nav-tabs" role="tablist" id="myTab">
+                <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">患者基本信息</a></li>
+                <li role="presentation"><a href="#extentInfo" role="tab" data-toggle="tab">拓展信息</a></li>
+            </ul>*@
         <div class="panel-heading navb-bg">
             基本信息
         </div>
@@ -56,6 +60,7 @@
                                 <input type="hidden" id="cardtype" value="" />
                                 <input type="hidden" id="cbdbm" value="" />
                                 <input type="hidden" id="sbbh" value="" />
+                                <input type="hidden" id="accountattr" value="" />
                                 <input type="hidden" id="cblb" value="" />
                                 <!--地域编号 0本地 1外地 此处用于异地医保标记-->
                                 <input type="hidden" id="dybh" value="" />
@@ -71,7 +76,8 @@
                                 <input type="text" id="xm" name="xm" class="form-control form-an">
                             </td>
                             <td class="formTitle" style="display:none"><span>*</span>患者性质</td>
-                            <td class="formValue" style="display:none">
+                            <td class="formValue">
+                                @*style="display:none"*@
                                 <input type="text" id="brxzmc" name="brxzmc" class="form-control form-an">
                             </td>
                             <td class="formTitle"><span>*</span>性别</td>
@@ -103,8 +109,8 @@
                                 <input type="text" id="xm" name="xm" class="form-control form-an">
                             </td>
                             <td class="formTitle" style="display:none"><span>*</span>患者性质</td>
-                            <td class="formValue"  style="display:none">
-                                    <input type="text" id="brxzmc" name="brxzmc" class="form-control form-an">
+                            <td class="formValue" style="display:none">
+                                <input type="text" id="brxzmc" name="brxzmc" class="form-control form-an">
                             </td>
                             <td class="formTitle"><span>*</span>拼音</td>
                             <td class="formValue">
@@ -138,7 +144,7 @@
                         <td class="formValue formDdlSelectorTd">
                             @Html.DropDownList("zjlx", EnumZJLX.sfz.ToDescSelectList(), new { @class = "form-control form-an" })
                         </td>
-                        <td class="formTitle"><span class="zjclass">*</span>证件号</td>
+                        <td class="formTitle"><span>*</span>证件号</td>
                         <td class="formValue">
                             <input type="text" id="zjh" name="zjh" onblur="valiPatZjh()" class="form-control form-an">
                         </td>
@@ -281,6 +287,9 @@
                         <td class="formValue">
                             <input type="text" id="cs_dz" class="form-control form-an form-an-end" />
                         </td>
+                        <td class="formTitle" style="padding-right:60px">
+                            <input type="button" class="btn btn-primary" id="btnsyy" value="同上" onclick="GetDefaultCityToCurrent('_CSD');" />
+                        </td>
                     </tr>
 
                     <tr id="citylist_HKDZ">
@@ -304,6 +313,9 @@
                         </td>
                         <td class="formTitle"><span style="float:left;color:#475059">县(区)</span>&nbsp;&nbsp;<span style="float:right;color:#475059">地址：</span></td>
                         <td class="formValue"><input type="text" id="hu_dz" class="form-control form-an" /></td>
+                        <td class="formTitle" style="padding-right:60px">
+                            <input type="button" class="btn btn-primary" id="btnsyy" value="同上" onclick="GetDefaultCityToCurrent('_HKDZ');" />
+                        </td>
                     </tr>
                     <tr>
                         <td class="formTitle">紧急联系人关系</td>
@@ -342,7 +354,9 @@
                         </td>
                         <td class="formTitle">县(区) &nbsp;&nbsp; 地址：</td>
                         <td class="formValue"><input type="text" id="jjlxr_dz" class="form-control form-an" /></td>
-
+                        <td class="formTitle" style="padding-right:60px">
+                            <input type="button" class="btn btn-primary" id="btnsyy" value="同上" onclick="GetDefaultCityToCurrent('_JJLXRDZ');" />
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -433,13 +447,14 @@
         var khsc = true;
         var blhsc = true;
         $(function () {
+            
             if (!!patientform) {
                 fillForm();
                 localStorage.removeItem("patientform");
             }
             else {
                 brxzinit();
-                
+
             }
 
             if (!!keyValue) {
@@ -447,7 +462,7 @@
                 $("#blh").attr("disabled", "disabled").css("background-color", "#f1f4f6");
                 $.najax({
                     url: "/PatientManage/HospiterRes/GetFormJson?T=" + new Date(),
-                    data: { "keyValue": keyValue},
+                    data: { "keyValue": keyValue },
                     dataType: 'json',
                     async: false,
                     success: function (rep) {
@@ -460,20 +475,20 @@
                             if (rep["zjlx"]) {
                                 var type = rep["zjlx"].trim();
                                 switch (type) {
-                                case "1":
-                                    type = "身份证";
-                                    break;
-                                case "2":
-                                    type = "护照";
-                                    break;
-                                case "3":
-                                    type = "军官证";
-                                    break;
-                                default:
-                                    break;
+                                    case "1":
+                                        type = "身份证";
+                                        break;
+                                    case "2":
+                                        type = "护照";
+                                        break;
+                                    case "3":
+                                        type = "军官证";
+                                        break;
+                                    default:
+                                        break;
                                 }
                             }
-                            
+
                             if (rep["gjCode"]) {
                                 $("#gj2").val(rep["gjCode"]).trigger('change');
                             }
@@ -532,12 +547,18 @@
                     } else {
                         $('#nlshow').val("");
                         $('#mz').val("");
-                        //$('#gj2').val("");
                         $("#hf").val("");
+                        
+                        //默认显示国籍gj2 -43
+                        $("#gj2").val("CHN").trigger('change');
+                        //默认联系方式zjlxfs
+                        $("#zjlxfs").val("shoujihao").trigger('change');
+                        //默认现住址20-1-8 citylist_XDZ
+                        setTimeout(function () {
+                            setTheDefaultCity();
+                        }, 1000);
                     }
-
                 }
-              
             }
         });
 
@@ -553,6 +574,9 @@
                         case "gjyb":
                             gjyb(yibaoCardInfo);
                             break;
+                        default:
+                            setzfk(yibaoCardInfo);
+                            break;
                     }
                 } else {
                     $.loading(false);
@@ -560,9 +584,13 @@
                 }
             }
         }
+        function setzfk(yibaoCardInfo) {
+            $("#brxzmc").val('自费').attr("data-label", '0');
+            $('#cardtype').val(yibaoCardInfo.jzlx);
+        }
 
-        function shanghaiV5(yibaoCardInfo)
-        {
+        function shanghaiV5(yibaoCardInfo) {
+            
             var ybfyxzCompResult;
             if (yibaoCardInfo.xxfhm === "P001") {
                 var ybPatInfo = yibaoCardInfo.sm01;
@@ -598,7 +626,7 @@
                     $('#cblb').val(ybPatInfo.accountattr);
                     //重庆医保，根据返回的行政区划编码区分本地和异地就医人员，本地就医人员的行政区划编码长度小于6位，异地就医人员的行政区划编码为6位
                     //新接口统筹区划统一6位50开头var bkbz = sm01Info.accountattr.substr(11, 1)
-                    if (ybPatInfo.accountattr.substr(11, 1)=="Y") {
+                    if (ybPatInfo.accountattr.substr(11, 1) == "Y") {
                         $('#dybh').val("1");
                     } else {
                         $('#dybh').val("0");
@@ -609,6 +637,7 @@
                     //参保地编码
                     $('#cbdbm').val(ybPatInfo.xzqh);    //分中心编号
                     $('#phone').val(ybPatInfo.lxdh);
+                    $('#accountattr').val(ybPatInfo.accountattr);
                     //身份证 等等赋值
                     $('#xm').val(ybPatInfo.xm);    //姓名
                     //证件类型 医保字典0身份证 1护照
@@ -626,13 +655,13 @@
                     //性别 医保字典1男2女
                     $("input[name=xb]").parent().removeClass('active');
                     $("input[name=xb]").removeAttr('checked'); 
-                    if (ybPatInfo.xb % 2 == 0)
+                    if (ybPatInfo.xb == '1')
                         $("input[name=xb]:eq(0)").trigger('click'); //男
-                    else if (ybPatInfo.gend == '2')
+                    else if (ybPatInfo.xb == '2')
                         $("input[name=xb]:eq(1)").trigger('click'); //女
+                    
+                    $("#brxzmc").val(yibaoCardInfo.brxzmc).attr("data-label", yibaoCardInfo.brxzdm);
 
-                    $("#brxzmc").val('普通医保').attr("data-label", '1');
-                   
                 }
                 else {
                     $.modalAlert(yibaoCardInfo.fhxx, 'error');
@@ -642,8 +671,7 @@
                 $.modalAlert("刷卡失败:" + yibaoCardInfo.fhxx, 'error');
         }
 
-        function gjyb(yibaoCardInfo)
-        {
+        function gjyb(yibaoCardInfo) {
             var thisZjlx;
             var ybfyxzCompResult;
             if (yibaoCardInfo.infcode == "0" || yibaoCardInfo.infcode === 0) {
@@ -689,6 +717,7 @@
                     }
                     $('#xzlx').val(ybPatInfo2.insutype);//险种类型
                     $('#grbh').val(ybPatInfo.psn_no);//人员编号
+                    $('#accountattr').val(ybPatInfo.accountattr);//账户标志
                     khsc = false;
                     //社保编号
                     $('#sbbh').val(yibaoCardInfo.kh);  //个人编号
@@ -716,40 +745,41 @@
                     else if (ybPatInfo.gend == '2')
                         $("input[name=xb]:eq(1)").trigger('click'); //女
 
-                    var resultObjArr = new Array();
-                    $.each(top.window.clients.sysPatientNatureList, function (idx, val) {
-                        if (val.xzlx && val.xzlx == ybPatInfo2.insutype) {
-                            resultObjArr.push(val);
-                        }
-                    });
-                    if (!!resultObjArr) {
-                        if (resultObjArr.length == 0) {
-                            var instype = "";
-                            instype = ybPatInfo2.insutype;
-                            $.ajax({
-                                url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
-                                data: { xzlx: instype },
-                                dataType: "json",
-                                async: false,
-                                cache: false,
-                                success: function (data) {
-                                    if (!!data) {
-                                        $("#brxzmc").val(data.brxzmc).attr("data-label", data.brxz);
-                                    }
-                                    else {
-                                        $("#brxzmc").val('普通医保').attr("data-label", '1');
-                                    }
-                                }
-                            });
-                        }
-                        else {
-                            $("#brxzmc").val(resultObjArr[0].brxzmc).attr("data-label", resultObjArr[0].brxz);
-                        }
+                    $("#brxzmc").val(yibaoCardInfo.brxzmc).attr("data-label", yibaoCardInfo.brxzdm);
+                    //var resultObjArr = new Array();
+                    //$.each(top.window.clients.sysPatientNatureList, function (idx, val) {
+                    //    if (val.xzlx && val.xzlx == ybPatInfo2.insutype) {
+                    //        resultObjArr.push(val);
+                    //    }
+                    //});
+                    //if (!!resultObjArr) {
+                    //    if (resultObjArr.length == 0) {
+                    //        var instype = "";
+                    //        instype = ybPatInfo2.insutype;
+                    //        $.ajax({
+                    //            url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
+                    //            data: { xzlx: instype },
+                    //            dataType: "json",
+                    //            async: false,
+                    //            cache: false,
+                    //            success: function (data) {
+                    //                if (!!data) {
+                    //                    $("#brxzmc").val(data.brxzmc).attr("data-label", data.brxz);
+                    //                }
+                    //                else {
+                    //                    $("#brxzmc").val('普通医保').attr("data-label", '1');
+                    //                }
+                    //            }
+                    //        });
+                    //    }
+                    //    else {
+                    //        $("#brxzmc").val(resultObjArr[0].brxzmc).attr("data-label", resultObjArr[0].brxz);
+                    //    }
 
-                    }
-                    else {
-                        $("#brxzmc").val('普通医保').attr("data-label", '11');
-                    }
+                    //}
+                    //else {
+                    //    $("#brxzmc").val('普通医保').attr("data-label", '11');
+                    //}
                 }
                 else {
                     $.modalAlert(yibaoCardInfo.err_msg, 'error');
@@ -761,7 +791,7 @@
 
         function getcitycode(data) {
             $("tr[id*='citylist_']").each(function (i, e) {
-                //debugger
+                
                 var sncode = "";
                 var sicode = "";
                 var qxcode = "";
@@ -802,7 +832,7 @@
 
         function savecitycode(savedata) {
             $("tr[id*='citylist_']").each(function (i, e) {
-                //debugger
+                debugger
                 if (e.id.indexOf('_XDZ') != -1) {
                     //$('#citylist_CSD select[name="province"] option:selected').text()
                     savedata.xian_sheng = $(this).find(" select[name='province'] option:selected ").text().replace(' - 请选择 - ', '');
@@ -828,6 +858,43 @@
             });
             return savedata;
         }
+
+        function setTheDefaultCity() {
+            $("tr[id*='citylist_']").each(function (i, e) {
+                var sncode = "";
+                var sicode = "";
+                var qxcode = "";
+                if (e.id.indexOf('_XDZ') != -1) {
+                    sncode = $(this).find(" select[name='province']").find("option:contains('广西')").val();
+                    $(this).find(" select[name='province']").val(sncode).trigger("change");
+                    sicode = $(this).find(" select[name='city']").find("option:contains('南宁')").val();
+                    $(this).find(" select[name='city']").val(sicode).trigger("change");
+                    qxcode = $(this).find(" select[name='area']").find("option:contains('隆安')").val();
+                    $(this).find(" select[name='area']").val(qxcode).trigger("change");
+                }
+            });
+        }
+
+        function GetDefaultCityToCurrent(type) {
+            $("tr[id*='citylist_']").each(function (i, e) {
+                var sncode = "";
+                var sicode = "";
+                var qxcode = "";
+                if (e.id.indexOf(type) != -1) {
+                    var xian_sheng = $("#citylist_XDZ").find(" select[name='province'] option:selected ").text();
+                    var xian_shi = $("#citylist_XDZ").find(" select[name='city'] option:selected").text();
+                    var xian_xian = $("#citylist_XDZ").find(" select[name='area'] option:selected").text();
+                    sncode = $(this).find(" select[name='province']").find("option:contains('" + xian_sheng + "')").val();
+                    $(this).find(" select[name='province']").val(sncode).trigger("change");
+                    sicode = $(this).find(" select[name='city']").find("option:contains('" + xian_shi + "')").val();
+                    $(this).find(" select[name='city']").val(sicode).trigger("change");
+                    qxcode = $(this).find(" select[name='area']").find("option:contains('" + xian_xian + "')").val();
+                    $(this).find(" select[name='area']").val(qxcode).trigger("change");
+                }
+            });
+
+        }
+
         $(window).load(function () {
             if (fromly === "yktmodify") {
                 setTimeout(function () {

@@ -1,6 +1,7 @@
 ﻿using FrameworkBase.MultiOrg.Application;
 using Newtouch.Common;
 using Newtouch.HIS.Application.Interface;
+using Newtouch.HIS.Domain;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.Infrastructure;
@@ -59,33 +60,77 @@ namespace Newtouch.HIS.Application
                     var refundedSum = _orderRefundInfoRepo.GetRefundedSumByOutTradeNo(outTradeNo);
                     if (refundedSum + refundAmount <= payEntity.Amount)
                     {
-                        //3、退
-                        PayResultModel payresult = TradeHelper.TradeRefund(refundEntity.OutTradeNo, refundEntity.TradeNo, refundAmount.ToString("0.00"), refundReason, payEntity.PayType, "", refundEntity.OutRequestNo);
-
-                        if (payresult.code == ResponseResultCode.SUCCESS)
+                        //13聚合支付退费
+                        if (payEntity.PayType == 13)
                         {
-                            DateTime refundDate;
-                            if (DateTime.TryParse(payresult.GmtTime, out refundDate))
+                            //N|BH1234567890133|20240402|0.01
+                            string orderid = string.Format("N|{0}|{1}|{2}", payEntity.OutTradeNo, payEntity.TradeNo.Substring(0, 8), payEntity.Amount);
+                            var auth_codedata = new
                             {
-                                refundEntity.RefundDate = refundDate;
-                            }
+                                refundreason = refundReason,
+                                terminal = this.UserIdentity.UserCode,
+                                hospitalid = "隆安县城厢卫生院",
+                                orderid = orderid,
+                                sign = ""
+                            };
+                            string datajson = Newtonsoft.Json.JsonConvert.SerializeObject(auth_codedata);
 
-                            refundEntity.RefundStatus = (int)EnumRefundStatus.Success;
-                            return refundEntity.RefundStatus;
-                        }
-                        else
-                        {
-                            if ("UNKNOWN".Equals(payresult.sub_code, StringComparison.OrdinalIgnoreCase))
+                            CommmHelper commm = new CommmHelper();
+                            string nxresult = commm.NxPost(Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("NxPay") + "system/refund-refundfee", datajson);
+                            if (nxresult != null)
+                            {
+                                var nxpaymodel = Newtonsoft.Json.JsonConvert.DeserializeObject<RefundFeeOut>(nxresult);
+                                if (nxpaymodel.Result == "0")
+                                {
+                                    refundEntity.RefundDate = DateTime.Now;
+                                    refundEntity.RefundStatus = (int)EnumRefundStatus.Success;
+                                    return refundEntity.RefundStatus;
+                                }
+                                else
+                                {
+                                    refundEntity.Memo = errorMsg = "失败，" + nxpaymodel.Message;
+                                    refundEntity.RefundStatus = (int)EnumRefundStatus.Failed;
+                                    return refundEntity.RefundStatus;
+                                }
+                            }
+                            else
                             {
                                 refundEntity.Memo = errorMsg = "退款原路退回进度未知，请人工核查";
                                 refundEntity.RefundStatus = (int)EnumRefundStatus.UnKnown;
                                 return refundEntity.RefundStatus;
                             }
+
+                        }
+                        else
+                        {
+                            //3、退
+                            PayResultModel payresult = TradeHelper.TradeRefund(refundEntity.OutTradeNo, refundEntity.TradeNo, refundAmount.ToString("0.00"), refundReason, payEntity.PayType, "", refundEntity.OutRequestNo);
+
+                            if (payresult.code == ResponseResultCode.SUCCESS)
+                            {
+                                DateTime refundDate;
+                                if (DateTime.TryParse(payresult.GmtTime, out refundDate))
+                                {
+                                    refundEntity.RefundDate = refundDate;
+                                }
+
+                                refundEntity.RefundStatus = (int)EnumRefundStatus.Success;
+                                return refundEntity.RefundStatus;
+                            }
                             else
                             {
-                                refundEntity.Memo = errorMsg = "失败，" + payresult.msg + "," + payresult.sub_msg;
-                                refundEntity.RefundStatus = (int)EnumRefundStatus.Failed;
-                                return refundEntity.RefundStatus;
+                                if ("UNKNOWN".Equals(payresult.sub_code, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    refundEntity.Memo = errorMsg = "退款原路退回进度未知，请人工核查";
+                                    refundEntity.RefundStatus = (int)EnumRefundStatus.UnKnown;
+                                    return refundEntity.RefundStatus;
+                                }
+                                else
+                                {
+                                    refundEntity.Memo = errorMsg = "失败，" + payresult.msg + "," + payresult.sub_msg;
+                                    refundEntity.RefundStatus = (int)EnumRefundStatus.Failed;
+                                    return refundEntity.RefundStatus;
+                                }
                             }
                         }
                     }
@@ -122,7 +167,7 @@ namespace Newtouch.HIS.Application
                     }
                     else
                     {
-                        if (refundEntity.RefundStatus == (int) EnumRefundStatus.Success)
+                        if (refundEntity.RefundStatus == (int)EnumRefundStatus.Success)
                         {
                             var ety = _orderRefundInfoRepo.FindEntity(p => p.OutRequestNo == outRequestNo);
 

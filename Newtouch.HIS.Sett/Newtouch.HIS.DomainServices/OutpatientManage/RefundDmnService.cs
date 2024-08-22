@@ -907,73 +907,47 @@ and a.OrganizeId=@OrganizeId
         /// <returns></returns>
         public List<OutpatAccInfoDto> GetBasicInfoSearchList(Pagination pagination, string blh, string mzh, string xm, string kssj, string jssj, string orgId, string usercode, string jiuzhenbiaozhi)
         {
-            var newPat = @"
-SELECT DISTINCT A.patid ,
-		a.blh ,
-		A.xm ,
-		A.xb ,
-		A.csny ,
-		A.zjlx ,
-		A.zjh ,
-		c.CardNo kh ,
-		CAST(FLOOR(DATEDIFF(DY, a.csny, GETDATE()) / 365.25) AS INT) nl ,
-		xz.brxz ,
-		xz.brxzmc ,
-		yb.sycs ,
-		A.dh ,
-		A.dybh ,
-		'' ghsj,
-		'' mzh,
-		A.phone
-FROM    [dbo].[xt_brjbxx] AS A WITH ( NOLOCK )
-		INNER JOIN dbo.xt_card c ON c.patid = a.patid AND A.OrganizeId = c.OrganizeId
-		LEFT JOIN xt_brxz xz ON xz.brxz = c.brxz AND xz.OrganizeId = c.OrganizeId
-		LEFT JOIN xt_ybbab yb ON yb.patid = a.patid AND xz.OrganizeId = yb.OrganizeId
-		LEFT JOIN dbo.mz_gh gh ON gh.patid=a.patid AND gh.OrganizeId=c.OrganizeId
-WHERE   A.CreateTime BETWEEN @kssj and @jssj 
-		and gh.ghnm is NULL
-		and (isnull(@jiuzhenbiaozhi, '') = '' or isnull(gh.jzbz,'1') in (select * from [f_split](@jiuzhenbiaozhi,',')))
-		AND ( A.xm like @xm or A.py like @xm OR @xm = '%%' )
-		AND ( a.blh like @blh OR @blh ='%%' )
-		AND a.OrganizeId = @OrganizeId 
-		and (isnull(@usercode, '') = '' or A.CreatorCode=@usercode)
-				
-UNION ALL 
-
-";
-            var strSql = $@"
-{(string.IsNullOrWhiteSpace(mzh) ? newPat : "")}
-SELECT  A.patid ,
-		a.blh ,
-		A.xm ,
-		A.xb ,
-		A.csny ,
-		A.zjlx ,
-		A.zjh ,
-		c.CardNo kh ,
-		CAST(FLOOR(DATEDIFF(DY, a.csny, GETDATE()) / 365.25) AS INT) nl ,
-		xz.brxz ,
-		xz.brxzmc ,
-		yb.sycs ,
-		A.dh ,
-		A.dybh ,
-		gh.CreateTime ghsj,
-		gh.mzh,
-		A.phone
-FROM    [dbo].[xt_brjbxx] AS A WITH ( NOLOCK )
-		INNER JOIN dbo.xt_card c ON c.patid = a.patid AND A.OrganizeId = c.OrganizeId
-		LEFT JOIN xt_brxz xz ON xz.brxz = c.brxz AND xz.OrganizeId = c.OrganizeId
-		LEFT JOIN xt_ybbab yb ON yb.patid = a.patid AND xz.OrganizeId = yb.OrganizeId
-		RIGHT JOIN dbo.mz_gh gh ON gh.patid=a.patid AND gh.OrganizeId=c.OrganizeId
-WHERE   gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh OR @mzh = '%%' )
-		and (isnull(@jiuzhenbiaozhi, '') = '' or isnull(gh.jzbz,'1') in (select * from [f_split](@jiuzhenbiaozhi,',')))
-		AND ( gh.xm like @xm or A.py like @xm OR @xm = '%%' )
-		AND ( a.blh like @blh OR @blh ='%%' )
-		AND a.OrganizeId = @OrganizeId and gh.zt='1'              
-		and isnull(gh.ghzt,'') <> '2'  --排除已退
-		and (isnull(@usercode, '') = '' or gh.CreatorCode=@usercode)
-";
-
+            var strSql = new StringBuilder();
+            strSql.Append(@" SELECT  A.patid ,
+                                a.blh ,
+                                A.xm ,
+                                A.xb ,
+                                A.csny ,
+                                A.zjlx ,
+                                A.zjh ,
+                                c.CardNo kh ,
+                                CAST(FLOOR(DATEDIFF(DY, a.csny, GETDATE()) / 365.25) AS INT) nl ,
+                                xz.brxz ,
+                                xz.brxzmc ,
+                                yb.sycs ,
+                                A.dh ,
+                                A.dybh ,
+                                gh.CreateTime ghsj,
+                                gh.mzh,
+                                A.phone
+                        FROM    [dbo].[xt_brjbxx] AS A WITH ( NOLOCK )
+                                INNER JOIN dbo.xt_card c ON c.patid = a.patid
+                                                            AND A.OrganizeId = c.OrganizeId
+                                LEFT JOIN xt_brxz xz ON xz.brxz = c.brxz
+                                                        AND xz.OrganizeId = c.OrganizeId
+                                LEFT JOIN xt_ybbab yb ON yb.patid = a.patid
+                                                         AND xz.OrganizeId = yb.OrganizeId
+		                        RIGHT JOIN dbo.mz_gh gh ON gh.patid=a.patid 
+		                        AND gh.OrganizeId=c.OrganizeId
+                        WHERE  gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh
+                                  OR @mzh = '%%'
+                                )
+                                and (isnull(@jiuzhenbiaozhi, '') = '' or isnull(gh.jzbz,'1') in (select * from [f_split](@jiuzhenbiaozhi,',')))
+                                AND ( gh.xm like @xm or A.py like @xm
+                                      OR @xm = '%%'
+                                    )
+                                 AND ( a.blh like @blh
+                                              OR @blh ='%%'
+                                            )
+                                AND a.OrganizeId = @OrganizeId and gh.zt='1' 
+--and isnull(gh.ghzt,'') <> '0'  --排除挂号未结                                
+and isnull(gh.ghzt,'') <> '2'  --排除已退
+                                and (isnull(@usercode, '') = '' or gh.CreatorCode=@usercode)");
             DbParameter[] param =
             {
                 new SqlParameter("@xm","%"+(xm??"")+"%"),
@@ -985,7 +959,7 @@ WHERE   gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh OR @mzh = '%%' 
                 new SqlParameter("@kssj",Convert.ToDateTime(kssj).ToString("yyyy-MM-dd") ?? ""),
                 new SqlParameter("@jssj",Convert.ToDateTime(jssj).AddDays(1).ToString("yyyy-MM-dd") ?? ""),
             };
-            return QueryWithPage<OutpatAccInfoDto>(strSql, pagination, param).ToList();
+            return QueryWithPage<OutpatAccInfoDto>(strSql.ToString(), pagination, param).ToList();
         }
 
         /// <summary>
@@ -996,7 +970,7 @@ WHERE   gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh OR @mzh = '%%' 
         /// <param name="xm"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public List<OutpatAccInfoDto> GetBasicInfoSearchListInRegister(Pagination pagination, string blh, string xm, string orgId, string zjh)
+        public List<OutpatAccInfoDto> GetBasicInfoSearchListInRegister(Pagination pagination, string blh, string xm, string orgId,string zjh)
         {
             var strSql = new StringBuilder();
             strSql.Append(@" SELECT  A.patid ,
@@ -1077,9 +1051,9 @@ WHERE   gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh OR @mzh = '%%' 
 		                        a.jjlldh lxrdh,
 		                        a.jjllr lxr
                         FROM    [dbo].[xt_brjbxx] AS A WITH ( NOLOCK )
-                                --INNER JOIN dbo.xt_card c ON c.patid = a.patid
-                                                            --AND A.OrganizeId = c.OrganizeId
-                                LEFT JOIN xt_brxz xz ON xz.brxz = a.brxz
+                                INNER JOIN dbo.xt_card c ON c.patid = a.patid
+                                                            AND A.OrganizeId = c.OrganizeId
+                                LEFT JOIN xt_brxz xz ON xz.brxz = c.brxz
                                                         AND xz.OrganizeId = a.OrganizeId
                                                 LEFT JOIN ( SELECT TOP 1
                                             *
@@ -1727,8 +1701,8 @@ order by mzjs.CreateTime
      select ypjsmx.ghnm,ypjsmx.jsmxnm,ypjsmx.jslx
      ,ypjsmx.sl 
      --未发药 全部可退，  --已发药需要药房药库接口告知  已退药全部退掉后可以退费
-     ,case when cf.fybz = '2' then  CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end ktsl
-     ,case when cf.fybz = '2' then CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end tsl
+     ,case when cf.fybz = '2' then isnull(tymx.tysl,0.00) else ypjsmx.sl end ktsl
+     ,case when cf.fybz = '2' then isnull(tymx.tysl,0.00) else ypjsmx.sl end tsl
      ,ypjsmx.jyje jsmxje
      ,ypmx.dj, 1 feeType, ypmx.dw
      ,cf.cfh
@@ -1925,20 +1899,20 @@ ORDER BY mzjs.CreateTime
             return FindList<OutPatientRefundableGuiAnJsVO>(sql, pars.ToArray());
         }
 
-        #endregion
+		#endregion
 
-        #region
-        /// <summary>
-        /// 获取待退费信息
-        /// </summary>
-        /// <param name="orgId"></param>
-        /// <param name="kssj"></param>
-        /// <param name="jssj"></param>
-        /// <param name="mzh"></param>
-        /// <returns></returns>
-        public IList<OutPatChongQingVO> RefundableChongQingQuery(string orgId, DateTime? kssj, DateTime? jssj, string mzh)
-        {
-            const string sql = @"
+		#region
+	    /// <summary>
+	    /// 获取待退费信息
+	    /// </summary>
+	    /// <param name="orgId"></param>
+	    /// <param name="kssj"></param>
+	    /// <param name="jssj"></param>
+	    /// <param name="mzh"></param>
+	    /// <returns></returns>
+	    public IList<OutPatChongQingVO> RefundableChongQingQuery(string orgId, DateTime? kssj, DateTime? jssj, string mzh)
+	    {
+		    const string sql = @"
 					SELECT  mzgh.mzh,mzgh.ghly,
                     mzjs.jsnm ,
 					mzjs.ybjslsh ybjsh ,mzgh.jzid,ybfy.chrg_bchno pch,ybfy.med_type yllb,mzgh.bzbm bzbm,
@@ -1952,15 +1926,17 @@ ORDER BY mzjs.CreateTime
 					mzjs.fph
 			--现金支付方式 --多种时不行
 					,
-					xjzffs.xjzffsmc xjzffsmc
-			FROM    mz_js mzjs
-					LEFT JOIN mz_gh mzgh ON mzgh.ghnm = mzjs.ghnm
+					xjzffs.xjzffsmc+':'+cast(jszffs.zfje as varchar) xjzffsmc
+					into #jsxx
+			FROM    mz_js mzjs with(nolock)
+					LEFT JOIN mz_gh mzgh with(nolock) ON mzgh.ghnm = mzjs.ghnm
 											AND mzgh.OrganizeId = mzjs.OrganizeId
 					LEFT JOIN [NewtouchHIS_Base]..V_C_Sys_UserStaff userstaff ON userstaff.Account = mzjs.CreatorCode
 																		  AND userstaff.OrganizeId = mzjs.OrganizeId
-					LEFT JOIN drjk_mzjs_input ybfy ON ybfy.setl_id = mzjs.ybjslsh
+					LEFT JOIN drjk_mzjs_input ybfy with(nolock) ON ybfy.setl_id = mzjs.ybjslsh
 													AND ybfy.zt = '1'
-					LEFT JOIN xt_xjzffs xjzffs ON mzjs.xjzffs = xjzffs.xjzffs
+					LEFT JOIN mz_jszffs jszffs ON jszffs.jsnm=mzjs.jsnm and jszffs.OrganizeId=mzjs.OrganizeId
+					LEFT JOIN xt_xjzffs xjzffs ON jszffs.xjzffs = xjzffs.xjzffs
 			WHERE   mzjs.OrganizeId = @orgId
 					AND mzjs.zt = '1'
 					AND mzgh.mzh = @mzh
@@ -1973,18 +1949,23 @@ ORDER BY mzjs.CreateTime
 					AND ( @jssj IS NULL
 						  OR ISNULL(mzjs.jzsj, mzjs.CreateTime) < @jssj
 						)
-			ORDER BY mzjs.CreateTime;
+            select mzh,ghly,jsnm,ybjsh,jzid,pch,yllb,bzbm,jszje,jsxjzf,sfrq,createtime,creatorcode,creatorusername,jslx,fph
+			    ,xjzffsmc = ( stuff((select ',' + xjzffsmc from #jsxx where jsnm = jsxx.jsnm for xml path('')), 1, 1, '') )
+			    from #jsxx jsxx
+			    group by mzh,ghly,jsnm,ybjsh,jzid,pch,yllb,bzbm,jszje,jsxjzf,sfrq,createtime,creatorcode,creatorusername,jslx,fph
+			    order by CreateTime
+		;
                     ";
-            var pars = new DbParameter[]
-            {
-                new SqlParameter("@orgId", orgId),
-                new SqlParameter("@kssj", kssj.HasValue ? kssj.Value.Date : new DateTime(1970, 1, 1)),
-                new SqlParameter("@jssj", jssj.HasValue ? jssj.Value.AddDays(1).Date : new DateTime(2099, 12, 31)),
-                new SqlParameter("@mzh", mzh)
-            };
+		    var pars = new DbParameter[]
+		    {
+			    new SqlParameter("@orgId", orgId),
+			    new SqlParameter("@kssj", kssj.HasValue ? kssj.Value.Date : new DateTime(1970, 1, 1)),
+			    new SqlParameter("@jssj", jssj.HasValue ? jssj.Value.AddDays(1).Date : new DateTime(2099, 12, 31)),
+			    new SqlParameter("@mzh", mzh)
+		    };
 
-            return FindList<OutPatChongQingVO>(sql, pars.ToArray());
-        }
+		    return FindList<OutPatChongQingVO>(sql, pars.ToArray());
+	    }
         #endregion
         /// <summary>
         /// 门诊住院预交金患者浮层
@@ -2025,8 +2006,7 @@ ORDER BY mzjs.CreateTime
                                                         AND xz.OrganizeId = kh.OrganizeId
                                 ");
             }
-            else
-            {
+            else {
 
                 strSql.Append(@" SELECT distinct top 50 A.patid ,
                                 a.blh ,

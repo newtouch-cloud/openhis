@@ -3,6 +3,7 @@ using System.Threading;
 using System.Web.Mvc;
 using Newtouch.Core.Common;
 using Newtouch.HIS.Application.Interface;
+using Newtouch.HIS.Domain;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices.PayManage;
 using Newtouch.HIS.Domain.IRepository;
@@ -48,53 +49,138 @@ namespace Newtouch.HIS.Web.Areas.PayManage.Controllers
         }
 
         /// <summary>
-        /// 
+        /// 条码支付（扫码付）
         /// </summary>
         /// <param name="out_trade_no"></param>
         /// <param name="subject"></param>
         /// <param name="total_amount"></param>
         /// <param name="auth_code"></param>
         /// <returns></returns>
-        public ActionResult MicroPaySubmit(string out_trade_no, string subject, string total_amount, string auth_code)
+        public ActionResult MicroPaySubmit(string out_trade_no, string subject, string total_amount, string auth_code, string djjesszffs, string patid)
         {
-            PayResultModel payresult = TradeHelper.Pay(out_trade_no,subject,total_amount,auth_code);
-
-            OrderPayInfoEntity ety = new OrderPayInfoEntity();
-            ety.OutTradeNo = out_trade_no;
-            ety.Amount = Convert.ToDecimal(total_amount);
-            ety.TradeDesc = subject;
-
-            if (payresult != null)
+            out_trade_no = this.UserIdentity.UserCode + "_" + out_trade_no;
+            if (djjesszffs == "13")
             {
-                if (payresult.code == ResponseResultCode.SUCCESS)
+                var auth_codedata = new
                 {
-                    ety.TradeNo = payresult.TradeNo;
-                    ety.PayStatus = (int)EnumPayStatus.Success;
-                    ety.OrderDate = Convert.ToDateTime(payresult.GmtTime);
-                    ety.PayType = Convert.ToInt32(payresult.PayType) ;
-                    ety.Memo = payresult.TradeStatus;
-                    ety.PayAccount = payresult.PayAccount;
-                    ety.OrganizeId = this.OrganizeId;
-                    
-                    _OrderPayInfoRepo.SubmitInfo(ety);
+                    OutTradeNo = out_trade_no,
+                    BarCode = auth_code,
+                    TotalAmount = total_amount,
+                    Subject = subject,
+                    Body = subject,
+                    Terminal = this.UserIdentity.UserCode,
+                    PatientName = patid,
+                    IDCardNo = "",
+                    PatientID = patid,
+                    Operation = subject,
+                    PayType = 5,
+                    StoreId = "",
+                    SellerName = "隆安县城厢卫生院",
+                    FacePay = false,
+                    TxnTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                };
+                string datajson = Newtonsoft.Json.JsonConvert.SerializeObject(auth_codedata);
 
-                    var data = new
+                CommmHelper commm = new CommmHelper();
+                string nxresult = commm.NxPost(Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("NxPay") + "qrpay/qr-barcode-pay-request", datajson);
+
+
+                if (!string.IsNullOrEmpty(nxresult))
+                {
+                    var nxpaymodel = Newtonsoft.Json.JsonConvert.DeserializeObject<QRBarPayOutput>(nxresult);
+
+                    if (nxpaymodel.Result == "0")
                     {
-                        outTradeNo = out_trade_no,    //商户订单号
-                        tradeNo = DateTime.Now.Ticks,   //第三方交易号
-                        payType = payresult.PayType,    //支付方式
-                    };
+                        PayResultModel payresult = new PayResultModel();
+                        payresult.code = ResponseResultCode.SUCCESS;
+                        payresult.TradeNo = nxpaymodel.tradeNo;
+                        payresult.GmtTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        payresult.PayType = "2";
+                        payresult.TradeStatus = "0";
+                        payresult.PayAccount = total_amount;
 
-                    return Success(null, data);
+                        OrderPayInfoEntity ety = new OrderPayInfoEntity();
+                        ety.OutTradeNo = out_trade_no;
+                        ety.Amount = Convert.ToDecimal(total_amount);
+                        ety.TradeDesc = subject;
+
+                        if (payresult != null)
+                        {
+                            if (payresult.code == ResponseResultCode.SUCCESS)
+                            {
+                                ety.TradeNo = payresult.TradeNo;
+                                ety.PayStatus = (int)EnumPayStatus.Success;
+                                ety.OrderDate = Convert.ToDateTime(payresult.GmtTime);
+                                ety.PayType = Convert.ToInt32(djjesszffs);
+                                ety.Memo = payresult.TradeStatus;
+                                ety.PayAccount = payresult.PayAccount;
+                                ety.OrganizeId = this.OrganizeId;
+
+                                _OrderPayInfoRepo.SubmitInfo(ety);
+
+                                var data = new
+                                {
+                                    outTradeNo = out_trade_no,    //商户订单号
+                                    tradeNo = payresult.TradeNo,   //第三方交易号
+                                    payType = payresult.PayType,    //支付方式
+                                };
+
+                                return Success(null, data);
+                            }
+                            else
+                            {
+                                ety.PayStatus = (int)EnumPayStatus.Failed;
+                                ety.Memo = payresult.TradeStatus + ";" + payresult.sub_msg;
+                                _OrderPayInfoRepo.SubmitInfo(ety);
+                                return Error(payresult.msg + "," + payresult.sub_msg);
+                            }
+                        }
+                    }
                 }
-                else
+
+            }
+            else
+            {
+                PayResultModel payresult = TradeHelper.Pay(out_trade_no, subject, total_amount, auth_code);
+
+                OrderPayInfoEntity ety = new OrderPayInfoEntity();
+                ety.OutTradeNo = out_trade_no;
+                ety.Amount = Convert.ToDecimal(total_amount);
+                ety.TradeDesc = subject;
+
+                if (payresult != null)
                 {
-                    ety.PayStatus = (int)EnumPayStatus.Failed;
-                    ety.Memo = payresult.TradeStatus+";"+payresult.sub_msg;
-                    _OrderPayInfoRepo.SubmitInfo(ety);
-                    return Error(payresult.msg+","+payresult.sub_msg);
+                    if (payresult.code == ResponseResultCode.SUCCESS)
+                    {
+                        ety.TradeNo = payresult.TradeNo;
+                        ety.PayStatus = (int)EnumPayStatus.Success;
+                        ety.OrderDate = Convert.ToDateTime(payresult.GmtTime);
+                        ety.PayType = Convert.ToInt32(payresult.PayType);
+                        ety.Memo = payresult.TradeStatus;
+                        ety.PayAccount = payresult.PayAccount;
+                        ety.OrganizeId = this.OrganizeId;
+
+                        _OrderPayInfoRepo.SubmitInfo(ety);
+
+                        var data = new
+                        {
+                            outTradeNo = out_trade_no,    //商户订单号
+                            tradeNo = DateTime.Now.Ticks,   //第三方交易号
+                            payType = payresult.PayType,    //支付方式
+                        };
+
+                        return Success(null, data);
+                    }
+                    else
+                    {
+                        ety.PayStatus = (int)EnumPayStatus.Failed;
+                        ety.Memo = payresult.TradeStatus + ";" + payresult.sub_msg;
+                        _OrderPayInfoRepo.SubmitInfo(ety);
+                        return Error(payresult.msg + "," + payresult.sub_msg);
+                    }
+
+
                 }
-            
 
             }
 

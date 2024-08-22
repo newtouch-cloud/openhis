@@ -4,12 +4,10 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
 using FrameworkBase.MultiOrg.Infrastructure;
 using FrameworkBase.MultiOrg.Repository;
 using Newtouch.Common;
 using Newtouch.Core.Common.Exceptions;
-using Newtouch.HIS.Domain.DTO.InputDto;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.Infrastructure;
@@ -65,68 +63,6 @@ WHERE mzh=@mzh AND OrganizeId=@OrganizeId AND zt='1'
                 new SqlParameter("@OrganizeId", orgId),
             };
             return FirstOrDefault<OutpatientRegistEntity>(sql, param);
-        }
-
-
-        /// <summary>
-        /// 根据门诊号获取患者信息
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        public OutpatAccInfoDto GetBasicInfoPatInfoInRegister(string mzh, string orgId)
-        {
-            var strSql = new StringBuilder();
-            strSql.Append(@"select a.patid,a.mzh,(a.ghf+a.zlf+a.ckf+a.gbf) ghzje,mjzbz,case mjzbz
-           when 1 then '普通门诊'
-           when 2 then '急诊'
-           when 3 then '专家门诊'
-           when 4 then '特病门诊'
-           when 5 then '重大疾病门诊'
-           when 6 then '慢性病门诊'
-           when 7 then '居民两病'
-           when 8 then '意外伤害门诊'
-           when 10 then '生育门诊'
-           when 11 then '耐多药结核门诊'
-           when 9 then '儿童两病门诊' end                                 mzlx,
-       a.blh,
-       a.xm,
-       a.ghnm,
-       c.xb,case c.xb when '1' then '男' when '2' then '女' else '' end Gender,
-       c.csny,
-       c.zjlx,
-       c.zjh,
-       a.ks,
-       (select top 1 Name from NewtouchHIS_Base..V_S_Sys_Department ks where ks.Code = a.ks and ks.OrganizeId = a.OrganizeId) ksmc,
-       CAST(FLOOR(DATEDIFF(DY, c.csny, GETDATE()) / 365.25) AS INT) nl,
-       a.brxz,
-       xz.brxzmc,
-       kh,
-       CardTypeName,
-       ''                                                           dh,
-       ''                                                           phone,
-       c.brly,
-       (SELECT COUNT(1)
-        FROM dbo.mz_gh
-        WHERE patid = a.patid
-          and zt = 1
-          AND OrganizeId = a.OrganizeId
-          AND ghrq = CONVERT(varchar(10), GETDATE(), 23))           sycs,
-       ''                                                           lxrgx,
-       ''                                                           lxrdh,
-       ''                                                           lxr
-from mz_gh a
-         LEFT JOIN xt_brxz xz ON xz.brxz = a.brxz
-         left join xt_brjbxx c on a.patid = c.patid and a.OrganizeId = c.OrganizeId
-    AND xz.OrganizeId = a.OrganizeId
-where a.OrganizeId = @OrganizeId
-  AND a.mzh = @mzh ");
-            DbParameter[] param =
-            {
-                new SqlParameter("@mzh",mzh),
-                new SqlParameter("@OrganizeId",orgId)
-            };
-            return FirstOrDefault<OutpatAccInfoDto>(strSql.ToString(), param);
         }
 
         /// <summary>
@@ -364,6 +300,68 @@ where a.OrganizeId = @OrganizeId
                 this.Update(entity);
             }
         }
+        /// <summary>
+        /// 门诊挂号不进行医保登记 收费时进行登记跟新自费卡为医保卡
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="mzh"></param>
+        /// <param name="kh"></param>
+        /// <param name="cardtype"></param>
+        /// <param name="brxz"></param>
+        public void UpdateChargeMzghInfo(string orgId, string mzh, string kh, string cardtype,string brxz,string zjh,string status)
+        {
+            OutpatientRegistEntity entity = new OutpatientRegistEntity();
+            SysCardEntity cardentity = new SysCardEntity();
+            if (status == "modify")
+            {
+                const string sqlstr = @" select kh.* from xt_brjbxx xtxx
+left join xt_card kh on xtxx.patid = kh.patid and xtxx.OrganizeId = kh.OrganizeId and kh.zt = '1'
+where xtxx.zjh = @zjh and xtxx.OrganizeId = @orgId and xtxx.zt = '1'
+and CardType = @cardtype ";
+                var param = new DbParameter[]
+                {
+                    new SqlParameter("@cardtype", cardtype),
+                    new SqlParameter("@orgId", orgId),
+                    new SqlParameter("@zjh", zjh),
+                };
+                cardentity = FirstOrDefault<SysCardEntity>(sqlstr, param);
+                brxz = cardentity.brxz;
+                kh = cardentity.CardNo;
+            }
+            if (!string.IsNullOrWhiteSpace(mzh))
+                entity = this.IQueryable().Where(p => p.OrganizeId == orgId && p.mzh == mzh && p.zt == "1").FirstOrDefault();
+            else
+                entity = this.IQueryable().Where(p => p.OrganizeId == orgId && p.zjh == zjh && p.zjh != null && p.zt == "1").OrderByDescending(p => p.CreateTime).FirstOrDefault();
+            if (entity != null)
+            {
+                entity.brxz = brxz;
+                entity.kh = kh;
+                entity.CardType = cardtype;
+                entity.CardTypeName = ((EnumCardType)(Convert.ToInt32(cardtype))).GetDescription(); ;
+                entity.Modify();
+                this.Update(entity);
+            }
+
+        }
+        /// <summary>
+        /// 更新挂号医保就诊id流水号
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="mzh"></param>
+        /// <param name="jzId"></param>
+        /// <param name="jzpzlx"></param>
+        public void updateYbghjzId(string orgId, string mzh, string jzId,string jzpzlx)
+        {
+            var entity = this.IQueryable().Where(p => p.OrganizeId == orgId && p.mzh == mzh && p.zt == "1").FirstOrDefault();
+            if (entity != null)
+            {
+                entity.jzid = jzId;
+                entity.jzpzlx = jzpzlx;
+                entity.Modify();
+                this.Update(entity);
+            }
+        }
+
 
         /// <summary>
         /// 记录补偿序号
@@ -398,7 +396,7 @@ AND OrganizeId=@OrganizeId
         /// <param name="patid"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        public int UpdatePatPhone(string patid, string phone, string userCode, string organizeId)
+        public int UpdatePatPhone(string patid,string phone,string userCode, string organizeId)
         {
             const string sql = @"
 UPDATE dbo.xt_brjbxx

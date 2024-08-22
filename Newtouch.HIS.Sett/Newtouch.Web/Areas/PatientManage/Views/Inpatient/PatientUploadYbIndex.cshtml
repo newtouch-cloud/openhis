@@ -1,0 +1,329 @@
+﻿@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    //医保所属地，区分系统将执行何处医保逻辑
+    var medicalInsurance = SysConfigReader.String("Inpatient_MedicalInsurance");
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<style>
+    .title {
+        width:60px;
+    }
+</style>
+<form>
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle" >在院状态：</th>
+                <td class="formValue">
+                    <select id="zybz" name="zybz" class="form-control">
+                        <option value="">==请选择==</option>
+                        <option value="0,1,2,7">在院</option>
+                        <option value="3" selected="selected">已出院</option>
+                        <option value="9">已作废</option>
+                    </select>
+                </td>
+                <th class="formTitle">关键字：</th>
+                <td class="formValue">
+                    <input id="txt_keyword" type="text" class="form-control form-an" placeholder="姓名/病历号/住院号">
+                </td>
+                <th class="formTitle">入院日期：</th>
+                <td class="formValue" colspan="2">
+                    <input id="ryrqkssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:1%;float:left">—</span>
+                    <input id="ryrqjssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+               
+            </tr>
+            <tr>
+                <th class="formTitle" style="width:70px;padding-right:12px;">入院科室：</th>
+                <td class="formValue">
+                    <input type="text" id="ksmc" name="ksmc" class="form-control form-an" />
+                </td>
+                <th class="formTitle" style="width:70px;padding-right:12px;">入院病区：</th>
+                <td class="formValue">
+                    <input type="text" id="bqmc" name="bqmc" class="form-control form-an" />
+                </td>
+                <th class="formTitle">上传类型：</th>
+                <td class="formValue" style="width:70%;" colspan="2">
+                    <select class="form-control" id="ybscsel">
+                        <option value="4101">【4101】结算清单上传</option>
+                        <option value="4401">【4401】病案首页上传</option>
+                        <option value="4402">【4402】住院医嘱上传</option>
+                        <option value="4501">【4501】临床检查上传</option>
+                        <option value="4505">【4505】病理检查报告上传</option>
+                        <option value="4701">【4701】电子病历上传</option>
+                    </select>
+                </td>
+                
+                <td class="formTitle" colspan="2">
+                    <input type="button" id="btn_ybsc" class="btn btn-primary" style="width:36%;" value="上传" />
+                    <input type="button" id="btn_search" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="查询" />
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    })
+    function gridList() {
+        if ($("#ksmc").val()=="") {
+            $("#ksmc").attr("data-label", "");
+        }
+        if ($("#bqmc").val() == "") {
+            $("#bqmc").attr("data-label", "");
+        }
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PatientManage/Inpatient/GridInPatientGridJson",
+            height: $(window).height() - 188,
+            postData: {
+                keyword: $("#txt_keyword").val(), zybz: $("#zybz").val(), ryrqkssj: $("#ryrqkssj").val(),
+                yrqjssj: $("#ryrqjssj").val(), ksmc: $("#ksmc").attr("data-label"), bqmc: $("#bqmc").attr("data-label")
+            },
+            colModel: [
+                { label: '住院号', name: 'zyh', width: 50, align: 'left', key: true },
+                {
+                    label: '在院标志', name: 'zybz', width: 60, align: 'left', formatter: function (cellvalue) {
+                        return $.enum.getDescByValue("EnumZYBZ", cellvalue);
+                    }
+                },
+                { label: '病历号', name: 'blh', hidden: true },
+                { label: '是否上传', name: 'issc', width: 60, align: 'left' },
+                { label: '姓名', name: 'xm', width: 60, align: 'left' },
+                { label: '性别', name: 'sexValue', width: 40, align: 'left' },
+                {
+                    label: '年龄', name: 'nlshow', width: 40, align: 'left', formatter: function (cellvalue, a, b) {
+                        return getAgeFromBirthTime({ begin: b.csny }).text;
+                    }
+                },
+                { label: '病区', name: 'bqmc', width: 80, align: 'left' },
+                { label: '民族', name: 'mzmc', width: 50, align: 'left', hidden: true },
+                { label: '电话', name: 'lxrdh', width: 80, align: 'left', hidden: true },
+                { label: '出生年月', name: 'csny', width: 80, align: 'left', hidden: true },
+                { label: '证件号', name: 'zjh', width: 120, align: 'left' },
+                { label: 'brxz', name: 'brxz', width: 80, align: 'left',hidden:true },
+                { label: 'CardType', name: 'CardType', width: 80, align: 'left', hidden: true },
+                { label: 'cbdbm', name: 'cbdbm', width: 80, align: 'left', hidden: true },
+                { label: '费用性质', name: 'brxzmc', width: 80, align: 'left' },
+                {
+                    label: '入院状态', name: 'rybq', width: 50, align: 'left', hidden: true, formatter: function (cellvalue) {
+                        return $.enum.getDescByValue("EnumWzjb", cellvalue);
+                    }
+                },
+                { label: '第一诊断', name: 'zzdmc', width: 100, align: 'left' },
+                { label: '入院日期', name: 'ryrq', width: 80, align: 'left' },
+                { label: '出院日期', name: 'cyrq', width: 80, align: 'left' },
+                { label: '已产生费用', name: 'zyfy', width: 80, align: 'left' },
+                { label: '预交费', name: 'yjj', width: 50, align: 'left' },
+                { label: 'jzh', name: 'jzh', width: 80, align: 'left', hidden: true },
+                
+                {
+                    label: '最后更新时间', name: 'UpdateTime', width: 80, align: 'left',
+                    formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+                },
+            ],
+            pager: "#gridPager",
+            sortname: 'ryrq,UpdateTime',
+            viewrecords: true
+        });
+        $("#btn_search").click(function () {
+            if ($("#ksmc").val() == "") {
+                $("#ksmc").attr("data-label", "");
+            }
+            if ($("#bqmc").val() == "") {
+                $("#bqmc").attr("data-label", "");
+            }
+            $gridList.jqGrid('setGridParam', {
+                postData: {
+                    keyword: $("#txt_keyword").val(), zybz: $("#zybz").val(), ryrqkssj: $("#ryrqkssj").val(),
+                    yrqjssj: $("#ryrqjssj").val(), ksmc: $("#ksmc").attr("data-label"), bqmc: $("#bqmc").attr("data-label")
+                },
+            }).trigger('reloadGrid');
+        });
+    }
+
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+
+    $('#zybz').change(function () {
+        $('#btn_search').trigger('click');
+    });
+
+    function initControl() {
+
+    }
+</script>
+<script type="text/javascript">
+    var medicalInsurance = '@medicalInsurance';
+    var zyh = '';
+    var kh = "";
+    var jzh = '';
+    $('#btn_ybsc').click(function () {
+        uploadData($('#ybscsel').val());
+    });
+    
+    function uploadData(upobj) {
+        var seleRow = check();
+        if (!!!seleRow) {
+            return;
+        }
+        var isBrxzOk = seleRow.brxz == '0';
+        if (isBrxzOk) {
+            $.modalAlert("错误：选择的是非医保", "warning");
+            return;
+        }
+        var zyh = seleRow.zyh;
+        var cbdbm = seleRow.cbdbm;
+        var dbscobj = { mdtrt_id: "", psn_no: "", hisId: zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: cbdbm };
+        var upUrl;
+        switch (upobj) {
+            case '4101':
+                upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalSettlement_4101";
+                break;
+            case '4401':
+                upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalRcord_4401";
+                //upUrl = "http://127.0.0.1:33333/api/YiBao/PostUploadMedicalRcord";
+                break;
+            case '4402':
+                upUrl = "http://127.0.0.1:33333/api/YiBao/PostDoctorAdvice_4402";
+                break;
+            case '4501':
+                upUrl = "http://127.0.0.1:33333/api/YiBao/PostClinicalExamination_4501";
+                break;
+            case '4505':
+                upUrl = "http://127.0.0.1:33333/api/YiBao/PostPathologyCheck_4505";
+                break;
+            case '4701':
+                upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalRecords_4701";
+                break;
+        }
+        $.loading("数据上传中，请稍等");
+        $.ajax({
+            type: "POST",
+            url: upUrl,
+            data: dbscobj,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var tfReturn = eval('(' + data + ')');
+                if (tfReturn) {
+                    if (tfReturn.infcode == "0") {
+                        $.loading(false);
+                        $.modalAlert("住院号为:" + zyh + "，上传成功", 'warning');
+                    }
+                    else {
+                        $.loading(false);
+                        $.modalAlert("住院号-"+zyh+"上传失败：" + tfReturn.err_msg, 'error');
+                    }
+                }
+            }, error: function (request, error, ex) {
+                $.loading(false); 
+                $.modalAlert("医保服务【" + upobj + "】不可访问：[" + ex + "]", 'error');
+            }
+        });
+    }
+   
+    function check() {
+        var seleRow = $("#gridList").jqGridRowValue();
+        var zyh = seleRow.zyh;
+        if (!!!zyh) {
+            $.modalAlert("尚未选择一条记录", "warning");
+            return;
+        }
+        if (seleRow.zybz == '已出院') {
+            $.modalAlert("患者已出院", "error");
+            return;
+        }
+        else if (seleRow.zybz == '作废记录') {
+            $.modalAlert("已作废记录", "error");
+            return;
+        }
+        if (!medicalInsurance) {
+            $.modalAlert("缺少配置医保就医地", "error");
+            return;
+        }
+        return seleRow;
+    }
+
+    ///科室
+    $("#ksmc").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 300,
+        clickautotrigger: true,
+        filter: function (keyword) {
+            
+            //遍历数据源，用keyword来筛选出结果
+            var resultObjArr = new Array();
+            $.each(top.window.clients.sysDepartList, function (idx, val) {
+                if ((val.py && val.py.toLowerCase().indexOf(keyword) >= 0)
+                     || (val.Name && val.Name.indexOf(keyword) >= 0)
+                    || keyword.trim() == "") {
+                    resultObjArr.push(val);
+                }
+            });
+            return resultObjArr;
+
+        },
+        caption: "科室",
+        colModel: [
+            { label: '编号', name: 'Code', widthratio: 30 },
+            { label: '名称', name: 'Name', widthratio: 50 },
+            { label: '拼音', name: 'py', hidden: true }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#ksmc").attr("data-label", $thistr.find("td:eq(0)").html());
+            $("#ksmc").val($thistr.find('td:eq(1)').html());
+            return;
+        },
+    });
+    ///病区
+    $("#bqmc").newtouchBatchFloatingSelector({
+        height: 200,
+        width: 300,
+        clickautotrigger: true,
+        filter: function (keyword) {
+            //遍历数据源，用keyword来筛选出结果
+            var resultObjArr = new Array();
+            var ks = $("#ksmc").attr("data-label");
+            var bqlist = top.window.clients.sysWardDeptRelation.filter((item) => item.ks == ks);
+            $.each(bqlist, function (idx, val) {
+                if ((val.bqpy && val.bqpy.toLowerCase().indexOf(keyword.toLowerCase()) >= 0)
+                    || (val.bqmc && val.bqmc.indexOf(keyword) >= 0)
+                    || keyword.trim() == "") {
+                    resultObjArr.push(val);
+                }
+            });
+            return resultObjArr;
+
+        },
+        caption: "病区",
+        colModel: [
+            {
+                label: '编号', name: 'bq', widthratio: 25
+            },
+            {
+                label: '名称', name: 'bqmc', widthratio: 50
+            }
+        ],
+        itemdbclickhandler: function ($thistr) {
+            $("#bqmc").attr("data-label", $thistr.find("td:eq(0)").html());
+            $("#bqmc").val($thistr.find('td:eq(1)').html());
+            return;
+        },
+    });
+</script>
+}

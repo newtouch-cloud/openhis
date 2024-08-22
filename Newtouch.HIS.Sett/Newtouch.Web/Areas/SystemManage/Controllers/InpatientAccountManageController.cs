@@ -15,6 +15,7 @@ using FrameworkBase.MultiOrg.Domain.IRepository;
 using Newtouch.HIS.Domain.DTO.OutputDto.HospitalizationManage;
 using Newtouch.HIS.Domain.ValueObjects.HospitalizationManage;
 using System.Collections.Generic;
+using Newtouch.HIS.Application.Interface;
 
 namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
 {
@@ -23,6 +24,8 @@ namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
         private readonly IInpatientAccountManageApp _accountApp;
         private readonly IInpatientAccountRepo _inpatientAccountRepo;
         private readonly ISysConfigRepo _sysConfigRepo;
+
+        private readonly IPayApp _payApp;
 
         public static string accountConfig = "";
         public InpatientAccountManageController()
@@ -161,8 +164,18 @@ namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
         /// <returns></returns>
         public ActionResult RefundAccount(DeposDto depDto)
         {
-            _accountApp.RefundAccount(depDto);
-            return Success();
+            bool flag = _accountApp.RefundAccount(depDto);
+            string errorMsg = "";
+            if (depDto.zffsbh == 13)
+            {
+                if (flag)
+                {
+                    var refundReuslt = _payApp.TradeRefund(depDto.outTradeNo, depDto.zfje, "预交金全退", "", out errorMsg);
+                    if (refundReuslt != 0)
+                        errorMsg = "原路退费失败，" + errorMsg;
+                }
+            }
+            return Success(errorMsg, flag);
         }
         #endregion
     }

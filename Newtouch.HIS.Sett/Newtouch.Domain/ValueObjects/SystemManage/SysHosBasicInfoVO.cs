@@ -455,5 +455,6 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 账户标志
         /// </summary>
         public string accountattr { get; set; }
+
     }
 }

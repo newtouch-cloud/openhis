@@ -1,6 +1,7 @@
 using DotNetDBF;
 using FrameworkBase.MultiOrg.Domain.IDomainServices;
 using Newtouch.Common;
+using Newtouch.Core.Common;
 using Newtouch.Core.Common.Exceptions;
 using Newtouch.Core.Common.Utils;
 using Newtouch.HIS.Domain.Entity;
@@ -15,6 +16,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
 
@@ -870,6 +872,7 @@ namespace Newtouch.HIS.Web.Areas.ReportManage.Controllers
 
             return View();
         }
+        
         /// <summary>
         /// 获取大类名称
         /// </summary>
@@ -1203,7 +1206,128 @@ namespace Newtouch.HIS.Web.Areas.ReportManage.Controllers
 			return Content(refdata.ToJson());
 		}
 
-		#endregion
+        #endregion
+        #region 获取收费项目
+        /// <summary>
+        /// 获取大类名称
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult Getsfxm(Pagination pagination, string xzstr,string py,string sfdl)
+        {
+            var list = new
+            {
+                rows = _reportCommonDmnService.Getsfxm(pagination, xzstr, py, sfdl, this.OrganizeId),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(list.ToJson());
+        }
+        #endregion 医保上报报表
+        #region
+        /// <summary>
+        /// 总页面
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult YBXXQueryUpload()
+        {
+            ReportingServiceCom();
 
-	}
+            return View();
+        }
+        /// <summary>
+        /// 交易记录库
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult JYJLQueryUpload()
+        {
+            ReportingServiceCom();
+
+            return View();
+        }
+        /// <summary>
+        /// 门急诊大病挂号库
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult DBGHQueryUpload()
+        {
+            ReportingServiceCom();
+
+            return View();
+        }
+        /// <summary>
+        /// 门急诊家床收费库
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult JCSFQueryUpload()
+        {
+            ReportingServiceCom();
+
+            return View();
+        }
+        /// <summary>
+        /// 获取交易记录信息
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult GetJyjlData(Pagination pagination, string ksrq, string jsrq)
+        {
+            var list = new
+            {
+                rows = _reportCommonDmnService.GetJyjlData(pagination, ksrq, jsrq,this.OrganizeId),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(list.ToJson());
+        }
+        public ActionResult Ybsjsctotxt(string ksrq, string jsrq)
+        {
+            StringBuilder sb = new StringBuilder();
+            var rows = _reportCommonDmnService.GetJyjlDatatotxt(ksrq, jsrq, this.OrganizeId);
+            return Content(rows.ToJson()); 
+        }
+        /// <summary>
+        /// 获取门急诊大病挂号库
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult GetMjzdbghData(Pagination pagination, string ksrq, string jsrq)
+        {
+            var list = new
+            {
+                rows = _reportCommonDmnService.GetMjzdbghData(pagination, ksrq, jsrq, this.OrganizeId),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(list.ToJson());
+        }
+        public ActionResult YbMjzdbghtxt(string ksrq, string jsrq)
+        {
+            StringBuilder sb = new StringBuilder();
+            var rows = _reportCommonDmnService.GetYbMjzdbghtxt(ksrq, jsrq, this.OrganizeId);
+            return Content(rows.ToJson());
+        }
+        /// <summary>
+        /// 获取门急诊大病加床收费数据
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult GetMjzjcsfData(Pagination pagination, string ksrq, string jsrq)
+        {
+            var list = new
+            {
+                rows = _reportCommonDmnService.GetMjzjcsfData(pagination, ksrq, jsrq, this.OrganizeId),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(list.ToJson());
+        }
+        public ActionResult GetMjzjcsfDatatxt(string ksrq, string jsrq)
+        {
+            StringBuilder sb = new StringBuilder();
+            var rows = _reportCommonDmnService.GetMjzjcsfDatatxt(ksrq, jsrq, this.OrganizeId);
+            return Content(rows.ToJson());
+        }
+        #endregion
+    }
 }

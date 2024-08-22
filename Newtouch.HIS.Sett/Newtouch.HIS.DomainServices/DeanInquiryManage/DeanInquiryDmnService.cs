@@ -183,7 +183,6 @@ select count(*) from (select patid from NewtouchHIS_Sett..mz_cf  where CreateTim
             inParameters.Add(new SqlParameter("@ksrq", DateTime.Now.ToString("yyyy-MM-dd")));
             inParameters.Add(new SqlParameter("@jsrq", DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")));
             inParameters.Add(new SqlParameter("@jgdm", orgId));
-            
             return this.FindList<DailyUpdates_GetMzfy>("exec [NewtouchHIS_Sett]..[yzcx_jrdt_mzfy] @ksrq,@jsrq, @jgdm", inParameters.ToArray());
 
         }
@@ -833,11 +832,11 @@ group by dp.name");
                 ");
             if (yptype == "全部")
             {
-                sqlStr.Append(@"  group by yp.ypmc,yp.ypgg,yp.zxdw, sl ,dj ,yp.ypCode order by je desc ");
+                sqlStr.Append(@"  group by yp.ypmc,yp.ypgg,yp.zxdw, sl ,dj ,yp.ypCode order by sl desc ");
             }
             else
             {
-                sqlStr.Append(@"   where dlmc =@yptype group by yp.ypmc,yp.ypgg,yp.zxdw, sl ,dj,yp.ypCode order by je desc ");
+                sqlStr.Append(@"   where dlmc =@yptype group by yp.ypmc,yp.ypgg,yp.zxdw, sl ,dj,yp.ypCode order by sl desc ");
             }
 
             var param = new DbParameter[] {
@@ -889,19 +888,19 @@ group by dp.name");
             StringBuilder sqlStr = new StringBuilder();
             sqlStr.Append(@"
 					select Name,SUM(zje)zje,SUM(sl)sl from (
-					select count(1)sl,(sum(case when operateType=2 then (0-czjl.sl) else czjl.sl end )*dj)zje ,Name
+					select sum(case when operateType=2 then (0-czjl.sl) else czjl.sl end ) sl,(sum(case when operateType=2 then (0-czjl.sl) else czjl.sl end )*dj)zje ,Name
 					from  NewtouchHIS_PDS.dbo.zy_ypyzxx yzxx 
 					left join NewtouchHIS_PDS..zy_ypyzczjl  czjl on yzxx.yzId=czjl.yzId  
 					 left join NewtouchHIS_Base..Sys_Staff staff on yzxx.ysgh=staff.gh and yzxx.OrganizeId=staff.OrganizeId
 					where (yzxx.fybz=2 or yzxx.fybz=3) and   czjl.ypCode=@ypcode and yzxx.OrganizeId=@OrganizeId and  czjl.CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120)
 					group by Name,dj
 					union all
-					 select count(1)sl,(sum(case when operateType=2 then (0-czjl.sl) else czjl.sl end )*dj)zje ,Name from  NewtouchHIS_PDS..mz_cfypczjl czjl left join 
+					 select sum(case when operateType=2 then (0-czjl.sl) else czjl.sl end )  sl,(sum(case when operateType=2 then (0-czjl.sl) else czjl.sl end )*dj)zje ,Name from  NewtouchHIS_PDS..mz_cfypczjl czjl left join 
 					 NewtouchHIS_PDS..mz_cfmx cfmx on czjl.mzcfmxId=cfmx.Id
 				  	 left join NewtouchHIS_Base..Sys_Staff staff on cfmx.CreatorCode=staff.gh and cfmx.OrganizeId=staff.OrganizeId
 					 where czjl.ypCode=@ypcode and cfmx.OrganizeId=@OrganizeId  and  czjl.CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120)
 					 group by Name,dj) xm where xm.zje>0
-					 group by Name
+					 group by Name order by sl desc
                 ");
             var param = new DbParameter[] {
                 new SqlParameter("@OrganizeId",OrganizeId),
@@ -931,11 +930,11 @@ group by dp.name");
                 left join NewtouchHIS_Base..xt_sfdl c on b.sfdlCode=c.dlCode and a.OrganizeId=c.OrganizeId
                 where  c.dlmc='材料费'and a.zt=1 and a.CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120) and a.OrganizeId=@OrganizeId group by  b.sfxmmc,b.sfxmCode,sl,b.gg,b.dw
                 union all 
-                select b.sfxmmc,b.sfxmCode,b.gg,b.dw,sl,sum(je) zje  from mz_xm a 
+                select b.sfxmmc,b.sfxmCode,b.gg,b.dw,sum(sl) sl,sum(je) zje  from mz_xm a 
                 left join NewtouchHIS_Base..xt_sfxm b on a.sfxm=b.sfxmCode and a.OrganizeId=b.OrganizeId 
                 left join NewtouchHIS_Base..xt_sfdl c on b.sfdlCode=c.dlCode and a.OrganizeId=c.OrganizeId
                 where c.dlmc='材料费'and a.zt=1 and a.CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120) and a.OrganizeId=@OrganizeId  group by  b.sfxmmc,b.sfxmCode,sl,b.gg,b.dw
-                ) c group by sfxmmc,sfxmCode,gg,dw order by zje desc
+                ) c group by sfxmmc,sfxmCode,gg,dw order by sl desc
                 ");
             var param = new DbParameter[] {
                 new SqlParameter("@OrganizeId",OrganizeId),
@@ -958,9 +957,9 @@ group by dp.name");
             StringBuilder sqlStr = new StringBuilder();
             sqlStr.Append(@"
                       select Name,sl,zje from(
-                        select ys,count(1) sl,sum(je)zje from mz_xm where sfxm=@sfxmdm and zt=1 and OrganizeId=@OrganizeId and CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120) group by ys  
+                        select ys,sum(sl) sl,sum(je)zje from mz_xm where sfxm=@sfxmdm and zt=1 and OrganizeId=@OrganizeId and CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120) group by ys  
                         union all 
-                        select ys,count(1)sl,sum(je)zje from V_C_Sys_WsfZyXmjfb  where sfxm=@sfxmdm and OrganizeId=@OrganizeId and CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120)  and zt=1 group by ys 
+                        select ys,sum(sl) sl,sum(je)zje from V_C_Sys_WsfZyXmjfb  where sfxm=@sfxmdm and OrganizeId=@OrganizeId and CreateTime between convert(datetime,@kssj,120) and convert(datetime,@jssj,120)  and zt=1 group by ys 
                         ) sfxm left join NewtouchHIS_Base..Sys_Staff staff on sfxm.ys=staff.gh
                          order by zje desc
                 ");

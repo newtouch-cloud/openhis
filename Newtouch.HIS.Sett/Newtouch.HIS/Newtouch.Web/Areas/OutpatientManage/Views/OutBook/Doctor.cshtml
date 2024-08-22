@@ -1,0 +1,56 @@
+﻿
+@{
+    ViewBag.Title = "预约挂号医生";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form id="form1">
+</form>
+
+
+<script>
+    var keyValue = $.request("keyValue");
+    var ks = $.request("ks");
+    var ys = $.request("ys");
+
+    $.ajax({
+        url: "/OutPatientManage/OutBook/GetStaffList",
+        //data: { keyValue: keyValue },
+        dataType: "json",
+        success: function (data) {
+            var html = "";
+            for ( i = 0; i < data.length; i++){
+                //html += "<p><input name='Staff' style='margin-left:70px' type='checkbox' value='" + data[i].gh + "' />" + data[i].Name + " </p>";
+                html += "<p style='font-size:18px;margin-left:50px;'><input name='Staff' style='width:20px;height:20px;' type='checkbox' value='" + data[i].gh + "' /><a style='margin-left:15px'>" + data[i].Name + " </a> </p>";
+            }
+            $("#form1").html(html);
+            //默认加载选中
+            if (ys != null) {
+                if (ys.indexOf(",") == -1) {
+                    $(":checkbox[value='" + ys + "']").prop("checked", true);
+                } else {
+                    var ysList = ys.split(",");
+                    for (i = 0; i < ysList.length; i++) {
+                        $(":checkbox[value='" +ysList[i] + "']").prop("checked", true);
+                    }
+                }
+            }
+        }
+    });
+
+    function AcceptClick(callBack) {
+        var checkId = $("input[name='Staff']:checked");
+        var ghList = [];
+        for (i = 0; i < checkId.length; i++) {
+            ghList.push(checkId[i].value);
+        }
+        $.submitForm({
+            url: "/OutPatientManage/OutBook/SubmitForm",
+            param: { ks: ks, ghList: ghList },
+            success: function () {
+                callBack();
+                $.modalClose();
+            }
+        });
+    }
+</script>

@@ -48,6 +48,7 @@ namespace Newtouch.HIS.Application
             var list = _SysPatiNatureRepo.IQueryable().Where(p => p.zt == "1" && p.OrganizeId == orgId).Select(p => new
             {
                 brxz = p.brxz,
+                brxzlb=p.brxzlb,
                 brxzbh = p.brxzbh,
                 brxzmc = p.brxzmc,
                 py = p.py

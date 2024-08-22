@@ -10,7 +10,6 @@ namespace Newtouch.HIS.Domain.ValueObjects
     {
         public string version { get; set; }
         public List<medicalList> medicalList { get; set; }
-        public string[] medicalArr { get; set; }
     }
     public class medicalList {
         public string Index { get; set; }

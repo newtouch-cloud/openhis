@@ -1,0 +1,239 @@
+﻿
+@{
+    ViewBag.Title = "Refund";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<div class="panel panel-default" style="margin-bottom: 4px;">
+    <div class="panel-heading navb-bg">
+        筛选条件
+    </div>
+    <div style="padding-right:20px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">病历号：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="blh" placeholder="" style="width: 48%; float: left;" />
+                    <input type="button" class="btn btn-default btn-md btn-default-color" style="width: 15%;margin-left: 2%;" title="选择病人" value="查询" onclick="GetPatSerarchView($('#blh').val());">
+                </td>
+                <th class="formTitle">姓名：</th>
+                <td class="formValue">
+                    <input type="text" class="form-control" id="xm" placeholder="" />
+                </td>
+                <th class="formTitle">计费时间：</th>
+                <td class="formValue" colspan="2">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-01")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:2%;float:left;">—</span>
+                    <input id="jssj" type="text" class="form-control input-wdatepicker" style="width :41%;float:left;margin-left:2%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <td></td>
+                <td>
+                    <input type="button" id="btn_search" class="btn btn-primary form-an" style="width:40%;margin-left:10%;" value="查询" onclick="SerarchPresList()" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="panel panel-default" style="margin-bottom: 4px;">
+    <div class="panel-heading navb-bg">
+        患者信息
+    </div>
+    <div style="padding-right:20px;">
+        <table class="form">
+            <tr>
+                <th class="formTitle">病历号：</th>
+                <td class="formValue">
+                    <label id="type">R25639</label>
+                </td>
+                <th class="formTitle">姓名：</th>
+                <td class="formValue">
+                    <label id="xm">大白</label>
+                </td>
+                <th class="formTitle">性别：</th>
+                <td class="formValue">
+                    <label id="xb">女</label>
+                </td>
+                <th class="formTitle">年龄：</th>
+                <td class="formValue">
+                    <label id="nl">26</label>
+                </td>
+            </tr>
+            <tr>
+                <td class="formTitle">保险号：</td>
+                <td class="formValue">
+                    <label id="bxh">35010343123456743</label>
+                </td>
+                <td class="formTitle">费别：</td>
+                <td class="formValue">
+                    <label id="fb">自费</label>
+                </td>
+                <td class="formTitle">临床诊断：</td>
+                <td class="formValue">
+                    <label id="lczd">腰痛</label>
+                </td>
+                <th class="formTitle">施术部位：</th>
+                <td class="formValue">
+                    <label id="ssbw">腰背部 膈腧 心腧 督腧</label>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+<div class="gridPanel">
+    <table id="gridList"></table>
+    <div id="gridPager"></div>
+</div>
+@Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
+{
+    ShowKeyList = new int[] { 4, 6 },
+    F6Text = "退费"
+})
+
+<script>
+    $(function () {
+        var mydata = [,
+       {
+           cfh: 'R20170503140000321', kflb: 'PT', xmmc: '电针', sl: '1', dj: 30.00, tsl: '1', dw: '二个部位', sc: '', je: 30.00, sfrq: '2017-10-01 11:23:55'
+       },
+       {
+           cfh: 'R20170417170000323', kflb: 'PT', xmmc: '红外线治疗', sl: '3', dj: 30.00, tsl: '3', dw: '分', sc: '30', je: 90.00, sfrq: '2017-10-01 11:23:55'
+       },
+       {
+           cfh: 'R20170417180000324', kflb: 'PT', xmmc: '神经肌肉再训练', sl: '4', dj: 30.00, tsl: '3', dw: '分', sc: '30', je: 120.00, sfrq: '2017-10-01 11:23:55'
+       },
+       {
+           cfh: 'R20170503140000325', kflb: 'PT', xmmc: '关节松动术', sl: '3', dj: 30.00, tsl: '3', dw: '分', sc: '30', je: 90.00, sfrq: '2017-10-01 11:23:55'
+       }
+        ];
+        gridList(mydata);
+    })
+
+    //病人查询
+    function GetPatSerarchView(blh) {
+        if (!!!blh) {
+            blh = '';
+        };
+        $.modalOpen({
+            id: "patSearch",
+            title: "患者查询",
+            url: "/PatientManage/AccountManage/PatOnlyBlhSearchView?t=" + Math.random() + "&blh=" + blh,
+            width: "700px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].PatDbGrid();
+            }//窗口点确定的回调函数
+        });
+    }
+
+    //选择的病人 callback
+    function getPatInfoAjax(selePatInfo) {
+        $('#blh').val(selePatInfo.blh)
+        $('#blh').attr('data-patId', selePatInfo.patId);
+        $('#xm').val(selePatInfo.xm);
+    }
+
+    //处方查询
+    function SerarchPresList() {
+        if ($("#blh").val() == "") {
+            $.modalAlert("请先填写病历号", 'warning');
+            return false;
+        }
+        $.modalOpen({
+            id: "patSearch",
+            title: "处方列表",
+            url: "/FeeConfirmManage/FeeConfirm/PrescriptionForm?t=" + Math.random() + "&blh=" + $("#blh").val() + "&kssj=" + $('#kssj').val() + "&jssj=" + $('#kssj').val(),
+            width: "600px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].DbClickGrid();
+            }//窗口点确定的回调函数
+        });
+    }
+
+    //处方明细
+    function gridList(mydata) {
+        var $gridList = $("#gridList");
+        $gridList.newtouchLocalDataGrid({
+            //url: "///?t=" + Math.random(),
+            //postData: getSearchPostData(),
+            height: $(window).height() - 310,
+            unwritten: false,
+            caption: "处方明细 实收款：￥2000 总次数：8",
+            colModel: [
+            { label: "处方号", name: "cfh", width: 150, align: "left" },
+            { label: "康复类别", name: "kflb", width: 80, align: "left" },
+            { label: "项目名称", name: "xmmc", width: 100, align: "left" },
+            { label: "数量", name: "sl", width: 80, align: "left" },
+            {
+                label: "单价", name: "dj", width: 80, align: "left",
+                formatter: function (val) {
+                    if (val) {
+                        return val.toFixed(4);
+                    } else {
+                        return '';
+                    }
+                }
+            },
+            { label: "退数量", name: "tsl", width: 100, editable: true, editrules: { integer: true, minValue: 1 }, align: "left" },
+            { label: "时长", name: "sc", width: 60, align: "left" },
+            { label: "单位", name: "dw", width: 80, align: "left" },
+            {
+                label: "金额", name: "je", width: 80, align: "left",
+                formatter: function (val) {
+                    if (val) {
+                        return val.toFixed(2);
+                    } else {
+                        return '';
+                    }
+                }
+            },
+            {
+                label: "收费日期", name: "sfrq", width: 100, align: "left",
+                formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }
+            }
+            ],
+            multiselect: true,
+            pager: "#gridPager",
+            sortname: 'sfrq desc',
+            viewrecords: true,
+            onSelectRow: function (rowid) {
+                $("#" + $.jgrid.jqID(rowid) + "_tsl").focus();
+            },
+            gridComplete: function () {
+                //启用行内编辑框
+                EnableInlineEditBox();
+            }
+        },mydata);
+        $("#btn_search").click(function () {
+            if ($('#kssj').val() && $('#jssj').val() && ($('#kssj').val() > $('#jssj').val())) {
+                $.modalAlert("开始记账日期不能大于结束记账时间", 'warning');
+                return;
+            }
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        })
+    }
+
+    //启用行内编辑框
+    function EnableInlineEditBox() {
+        var rowIds = $("#gridList").jqGrid('getDataIDs');
+        for (var i = 0; i < rowIds.length; i++) {
+
+            $("#gridList").jqGrid('editRow', rowIds[i], true, null, null, null, null, function (callbackRowId) {
+            });
+        }
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var keyword = $("#keyword").val();
+        var blh = $("#blh").val();
+        var xm = $("#xm").val();
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val();
+        return { blh: blh, xm: xm, keyword: keyword, kssj: kssj, jssj: jssj };
+    };
+
+</script>
+

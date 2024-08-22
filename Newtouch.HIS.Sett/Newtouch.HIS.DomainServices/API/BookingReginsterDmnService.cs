@@ -5,12 +5,15 @@ using Newtouch.Core.Common.Exceptions;
 using Newtouch.Core.Common.Utils;
 using Newtouch.HIS.Domain.DTO;
 using Newtouch.HIS.Domain.DTO.InputDto;
+using Newtouch.HIS.Domain.DTO.OutputDto;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IDomainServices.API;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.IRepository.OutpatientManage;
 using Newtouch.HIS.Domain.ValueObjects;
+using Newtouch.HIS.Domain.ValueObjects.API;
+using Newtouch.HIS.Proxy.guian.DTO.S25;
 using Newtouch.HIS.Sett.Request;
 using Newtouch.HIS.Sett.Request.Booking.Request;
 using Newtouch.HIS.Sett.Request.Booking.Response;
@@ -48,16 +51,16 @@ namespace Newtouch.HIS.DomainServices.API
         private readonly IPatientBasicInfoDmnService _PatientBasicInfoDmnService;
         private readonly IOutBookScheduleRepo _OutBookScheduleRepo;
         private readonly IOutpatientRegistRepo _ioutpatientRegistRepo;
-        private readonly IOutPatChargeDmnService _outChargeDmnService;
+        //private readonly IOutPatChargeApp _outPatChargeApp;
         /// <summary>
         /// 获取卡信息
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public IList<PatCardInfoResp> GetCardInfo(CardInfoReq req)
+        public IList<CardInfoResp> GetCardInfo(CardInfoReq req)
         {
-            string sql = @"select a.patid,blh,a.xm,xb,csny csrq,b.CardNo kh ,b.CardType klx,
-b.CardTypeName klxmc,b.brxz, b.brxz,c.brxzmc, zjh
+            string sql = @"select a.patid PatientNumber,blh,a.xm PatientName,xb Gender,csny Brithday,b.CardNo ,b.CardType,
+b.CardTypeName,b.brxz, b.brxz PatType,c.brxzmc PatTypeName, Zjh
 from xt_brjbxx a with(nolock)
 left join xt_card b with(nolock) on a.organizeID=b.organizeid and a.patid=b.patid and b.zt='1'
 left join dbo.xt_brxz c with(nolock) on b.organizeID=c.organizeid and b.brxz=c.brxz and c.zt='1'
@@ -85,10 +88,10 @@ where a.zt='1' and a.organizeId=@orgId
                 sql += " and b.brxz=@brxz ";
                 para.Add(new SqlParameter("@brxz", req.PatType));
             }
-            return this.FindList<PatCardInfoResp>(sql, para.ToArray());
+            return this.FindList<CardInfoResp>(sql, para.ToArray());
         }
         /// <summary>
-        /// 获取预约出诊科室信息(弃用)
+        /// 获取预约出诊科室信息
         /// </summary>
         /// <param name="orgId"></param>
         /// <param name="ks"></param>
@@ -112,8 +115,7 @@ where a.zt='1' and a.organizeId=@orgId
             {
                 sql += " and name=@name ";
                 para.Add(new SqlParameter("@name", dto.DeptName));
-            }
-            return this.FindList<DepartmentResp>(sql, para.ToArray());
+            }return this.FindList<DepartmentResp>(sql, para.ToArray());
 
         }
         /// <summary>
@@ -132,19 +134,19 @@ left join [NewtouchHIS_Base].dbo.[V_S_xt_sfxm] d with(nolock) on a.organizeid =d
 left join [dbo].[mz_gh_zlxmzh] e with(nolock) on a.organizeid =e.organizeid and e.zt='1' and a.zlxm=e.zhcode
 where a.[OrganizeId]=@orgId and a.zt='1' and a.OutDate>=convert(varchar(10),GETDATE(),121) and 
 a.OutDate<=convert(varchar(10), DATEADD(DAY,@pbday,GETDATE()),121) and IsBook='1' and IsCancel='0' ";
-            List<SqlParameter> para = new List<SqlParameter>();
+            List<SqlParameter> para=new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", ConfigurationManager.AppSettings[dto.HospitalID]));
 
             if (string.IsNullOrWhiteSpace(dto.SchedulingDay.ToString()))
             {
-                dto.SchedulingDay = Convert.ToInt32(ConfigurationHelper.GetAppConfigValue("mzpbday"));
+                dto.SchedulingDay =Convert.ToInt32(ConfigurationHelper.GetAppConfigValue("mzpbday"));
             }
             para.Add(new SqlParameter("@pbday", dto.SchedulingDay));
 
             if (!string.IsNullOrWhiteSpace(dto.Dept))
             {
                 sql += " and czks=@czks";
-                para.Add(new SqlParameter("@czks", dto.Dept));
+                para.Add(new SqlParameter("@czks",dto.Dept));
             }
             if (!string.IsNullOrWhiteSpace(dto.RegType))
             {
@@ -230,22 +232,17 @@ order by a.OutDate ";
         {
 
             string sql = @"select cast(a.ScheduId as int) ScheduId,a.[OutDate],
-[czks] OutDept,[czksmc] OutDeptName,a.[RegType],a.[Title],[ysgh] Doctor,[ysxm] DoctorName,Weekdd,a.[Period],[PeriodDesc],a.[PeriodStart],a.[PeriodEnd]
+[czks] OutDept,[czksmc] OutDeptName,a.[RegType],[Title],[ysgh] Doctor,[ysxm] DoctorName,Weekdd,a.[Period],[PeriodDesc],a.[PeriodStart],a.[PeriodEnd]
 ,convert(decimal(10,2),a.[RegFee]) [RegFee],isnull(d.dj,0.00) GhFee,sum(isnull(e.price,0.00)) ZLFee,
-[ghlx],a.[zlxm],d.sfxmmc ghxmName,'诊疗费' zlxmName,[TotalNum],a.TotalNum-count(b.bookid) BookNum,a.IsBook
+[ghlx],a.[zlxm],d.sfxmmc ghxmName,'诊疗费' zlxmName,[TotalNum],a.TotalNum-count(b.bookid) BookNum
 from mz_ghpb_schedule a with(nolock)
 left join mz_gh_book b with(nolock) on a.organizeid=b.organizeid and a.scheduid=b.scheduid and b.zt=1 and b.yyzt<>'3'
 left join [NewtouchHIS_Base].dbo.[V_S_xt_sfxm] d with(nolock) on a.organizeid =d.organizeid and d.zt='1' and a.ghlx=d.sfxmcode
 left join [dbo].[mz_gh_zlxmzh] e with(nolock) on a.organizeid =e.organizeid and e.zt='1' and a.zlxm=e.zhcode
-where a.[OrganizeId]=@orgId and a.zt='1' and IsCancel='0' ";
+where a.[OrganizeId]=@orgId and a.zt='1' and IsBook='1' and IsCancel='0' ";
             List<SqlParameter> para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", ConfigurationManager.AppSettings[dto.HospitalID]));
 
-            if (!string.IsNullOrWhiteSpace(dto.ScheduId.ToString()))
-            {
-                sql += " and a.ScheduId=@ScheduId";
-                para.Add(new SqlParameter("@ScheduId", dto.ScheduId.ToString()));
-            }
             if (!string.IsNullOrWhiteSpace(dto.RegType))
             {
                 sql += " and a.OutDate=convert(varchar(10),@OutDate,121) ";
@@ -276,10 +273,14 @@ where a.[OrganizeId]=@orgId and a.zt='1' and IsCancel='0' ";
                 sql += " and a.RegType=@RegType";
                 para.Add(new SqlParameter("@RegType", dto.RegType));
             }
-
+            if (!string.IsNullOrWhiteSpace(dto.ScheduId.ToString()))
+            {
+                sql += " and a.ScheduId=@ScheduId";
+                para.Add(new SqlParameter("@ScheduId", dto.ScheduId.ToString()));
+            }
             sql += @"  group by a.ScheduId,a.OutDate,
-[czks],[czksmc],a.[RegType],a.[Title],[ysgh],[ysxm],weekdd,a.[Period],[PeriodDesc],a.[PeriodStart],a.[PeriodEnd],a.[RegFee],
-[ghlx],a.[zlxm],d.sfxmmc,TotalNum,d.dj,e.price,a.IsBook
+[czks],[czksmc],a.[RegType],[Title],[ysgh],[ysxm],weekdd,a.[Period],[PeriodDesc],a.[PeriodStart],a.[PeriodEnd],a.[RegFee],
+[ghlx],a.[zlxm],d.sfxmmc,TotalNum,d.dj,e.price
 order by a.OutDate  ";
             return FindList<MzpbScheduleResponse>(sql, para.ToArray());
         }
@@ -330,57 +331,51 @@ where a.zt='1' and a.organizeId=@orgId
         public MzAppointmentResp OutAppointment(MzAppointmentReq dto)
         {
             string message = "";
+            if (dto.IsBooking == "N" && Convert.ToDateTime(dto.OutDate).Date != DateTime.Now.Date)
+            {
+                throw new FailedException("非预约挂号只能选择当天！");
+            }
+            if (Convert.ToDateTime(dto.OutDate).Date < DateTime.Now.Date)
+            {
+                throw new FailedException("预约日期需要为今天之后的日期！");
+            }
             MzKsPbDto pbxx = new MzKsPbDto();
             pbxx.ScheduId = dto.ScheduId;
             pbxx.HospitalID = dto.HospitalID;
             var pbEntity = GetMzpbDetail(pbxx).FirstOrDefault();
-
             if (pbEntity == null)
             {
-                message = "排班信息不可约或已取消，请重新选择！";
+                message = dto.IsBooking == "N" ? "该排班不支持当日挂号！" : "该排班不可预约！";
                 throw new FailedException(message);
             }
-            if (pbEntity.BookNum == 0)
+            if (pbEntity.BookNum==0)
             {
                 throw new FailedException("该排班已无号源！");
-            }
-            if (Convert.ToDateTime(pbEntity.OutDate).Date < DateTime.Now.Date)
-            {
-                throw new FailedException("排班已过期，请重新选择！");
             }
             var brxxEntiey = GetPatInfo(dto.HospitalID, dto.CardNo, null, null).FirstOrDefault();
             if (brxxEntiey == null)
             {
                 throw new FailedException("该卡号在His中未登记！");
             }
-            DateTime pbOutdate = pbEntity.OutDate;// Convert.ToDateTime(dto.OutDate);
+            DateTime pbOutdate = Convert.ToDateTime(dto.OutDate);
             dto.HospitalID = ConfigurationManager.AppSettings[dto.HospitalID];
-            var yyEntity = _MzghbookRepo.FindEntity(p => p.OrganizeId == dto.HospitalID && p.kh == dto.CardNo &&
-                                                    p.ScheduId == dto.ScheduId && p.zt == "1" && p.yyzt != ((int)EnumMzyyzt.cancel).ToString());
+            var yyEntity = _MzghbookRepo.FindEntity(p => p.OrganizeId == dto.HospitalID && p.kh == dto.CardNo && 
+                                                    p.yyzt != ((int)EnumMzyyzt.cancel).ToString() &&
+                                                    p.yyzt != ((int)EnumMzyyzt.bookreg).ToString() &&
+                                                    p.ScheduId == dto.ScheduId && p.zt == "1" && p.OutDate == pbOutdate);
 
             if (yyEntity != null)
             {
-                switch (Convert.ToInt32(yyEntity.yyzt))
-                {
-                    case (int)EnumMzyyzt.book:
-                    case (int)EnumMzyyzt.reg:
-                        message = "该卡号已预约过该排班，请勿重复预约！";
-                        break;
-                    case (int)EnumMzyyzt.cancel:
-                        break;
-                }
-                if (!string.IsNullOrWhiteSpace(message))
-                {
-                    throw new FailedException(message);
-                }
+                message = dto.IsBooking == "N" ? "该卡号已预约过该排班,请取消后在进行当日挂号或用预约号挂号！" : "该卡号已预约过该排班，请勿重复预约！";
+                throw new FailedException(message);
             }
             var kepbEntity = _MzghbookRepo.FindEntity(p =>
                 p.OrganizeId == dto.HospitalID && p.yyzt != ((int)EnumMzyyzt.cancel).ToString() &&
-                p.yyzt != ((int)EnumMzyyzt.reg).ToString() &&
-                p.zt == "1" && p.kh == dto.CardNo && p.RegType == pbEntity.RegType && p.ks == pbEntity.OutDept && p.OutDate == pbOutdate);
+                p.yyzt != ((int)EnumMzyyzt.bookreg).ToString() &&
+                p.zt == "1" && p.kh == dto.CardNo && p.ks == pbEntity.OutDept && p.OutDate == pbOutdate);
             if (kepbEntity != null)
             {
-                message = "同一科室相同门诊（门诊类型）当天不可重复预约！";
+                message = dto.IsBooking == "N" ? "该卡号已预约过该科室,请取消后在进行当日挂号或用预约号挂号！" : "同一科室当天不可重复预约！";
                 throw new FailedException(message);
             }
             var queno = _OutPatientDmnService.GetJzxh(dto.ScheduId.ToString(), pbEntity.OutDept, pbEntity.Doctor, "", dto.AppID, dto.HospitalID);
@@ -390,7 +385,7 @@ where a.zt='1' and a.organizeId=@orgId
             yyety.ScheduId = Convert.ToDecimal(dto.ScheduId);
             yyety.kh = dto.CardNo;
             yyety.AppId = dto.AppID;
-            yyety.OutDate = pbOutdate;
+            yyety.OutDate = Convert.ToDateTime(dto.OutDate);
             yyety.patid = brxxEntiey.patid;
             yyety.Period = Convert.ToInt32(pbEntity.Period);
             yyety.PeriodStart = pbEntity.PeriodStart;
@@ -404,26 +399,13 @@ where a.zt='1' and a.organizeId=@orgId
             yyety.ys = pbEntity.Doctor;
             yyety.xm = brxxEntiey.xm;
             yyety.xb = brxxEntiey.xb;
+            yyety.yynr = pbEntity.Title;
 
             yyety.OrganizeId = dto.HospitalID;
             yyety.CreatorCode = dto.AppID;
-            yyety.yyzt = dto.IsBooking == "N" ? ((int)EnumMzyyzt.bookreg).ToString() : ((int)EnumMzyyzt.book).ToString();
+            yyety.yyzt =dto.IsBooking== "N" ? ((int)EnumMzyyzt.bookreg).ToString(): ((int)EnumMzyyzt.book).ToString();
 
-            string Desc = "";
-            if (!string.IsNullOrWhiteSpace(pbEntity.DoctorName))
-            {
-                switch (Convert.ToInt32(pbEntity.RegType))
-                {
-                    case (int)EnumOutPatientType.expertOutpat:
-                        Desc = $"[{pbEntity.DoctorName}]专家";
-                        break;
-                    default:
-                        Desc = $"[{pbEntity.DoctorName}]医生";
-                        break;
-                }
-            }
-            yyety.yynr = $"{pbEntity.OutDeptName} {Desc} {pbEntity.PeriodDesc}";
-            yyety.Title = pbEntity.Title;
+
             yyety.Create();
             _MzghbookRepo.Insert(yyety);
             var regEty = _OutBookScheduleRepo.FindEntity(p => p.ScheduId == dto.ScheduId && p.zt == "1");
@@ -432,94 +414,74 @@ where a.zt='1' and a.organizeId=@orgId
                 regEty.YYNum += 1;
                 _OutBookScheduleRepo.Update(regEty);
             }
-            else
-            {
-                message = "未找到当前的预约数据！";
+            else {
+                message = dto.IsBooking == "N" ? "未找到当日挂号排班信息！" : "未找到当前的预约数据！";
                 throw new FailedException(message);
             }
             return new MzAppointmentResp()
             {
                 BookID = bookId.ToString(),
-                QueueNo = queno
+                QueueNo=queno
             };
         }
         /// <summary>
-        /// 预约挂号结算
+        /// (挂号结算)
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public RegSettResp BookOutpatRegSett(RegSettReq req)
+        public RegSettResp OutpatRegSett(RegSettReq req)
         {
+            MzghbookEntity bookRecord = new MzghbookEntity();
             string message = "";
             int patid = -1;
             int qzjzxh = -1;
             string orgId = ConfigurationManager.AppSettings[req.HospitalID];
-            DateTime today = DateTime.Now.Date;
-            if (string.IsNullOrWhiteSpace(req.BookID.ToString()))
+            if (!string.IsNullOrWhiteSpace(req.BookID.ToString()))
             {
-                throw new FailedException("BookID不可为空");
-            }
-            MzghbookEntity bookRecord = _MzghbookRepo.FindEntity(p =>
-                    p.BookId == req.BookID && p.yyzt == ((int)EnumMzyyzt.book).ToString() && p.zt == "1" && p.OrganizeId == orgId &&
-                    p.OutDate >= today);
-            if (bookRecord != null)
-            {
-                patid = Convert.ToInt32(bookRecord.patid);
-                qzjzxh = bookRecord.QueueNo;
-                if (req.CardNo != bookRecord.kh)
+                string yyzt = req.IsBooking=="N" ? ((int)EnumMzyyzt.bookreg).ToString():((int)EnumMzyyzt.book).ToString();
+                DateTime datevalid = DateTime.Now.Date;
+                bookRecord = _MzghbookRepo.FindEntity(p =>
+                    p.BookId == req.BookID && p.yyzt == yyzt && p.zt == "1" && p.OrganizeId == orgId &&
+                    p.OutDate >= datevalid);
+                if (bookRecord != null)
                 {
-                    message = "卡信息异常，请确认预约信息与患者是否一致";
+                    patid = Convert.ToInt32(bookRecord.patid);
+                    qzjzxh = bookRecord.QueueNo;
+                    if (req.CardNo != bookRecord.kh)
+                    {
+                        message = req.IsBooking == "N" ? "卡信息异常,请重新挂号！" : "卡信息异常，请确认预约信息与患者是否一致";
+                        throw new FailedException(message);
+                    }
+                }
+                else
+                {
+                    message = req.IsBooking == "N" ? "挂号失败，请重试" : "未找到预约号【" + req.BookID + "】,请确认预约状态及日期是否有效";
                     throw new FailedException(message);
                 }
-                if (bookRecord.ghxz == ((int)EnumBrxz.zf).ToString() && req.PayFee != bookRecord.RegFee)
+                var brxxEntiey = GetPatInfo(req.HospitalID, req.CardNo, null, null).FirstOrDefault();
+                if (brxxEntiey != null)
                 {
-                    throw new FailedException($"支付费用({req.PayFee}元)与约定挂号费({bookRecord.RegFee}元)不一致，请重新支付！");
+                    if (patid != brxxEntiey.patid)
+                    {
+                        throw new FailedException("预约信息与卡信息不符");
+                    }
                 }
-                else if (req.PayFee > 0 && string.IsNullOrWhiteSpace(req.PayLsh))
+                else
                 {
-                    throw new FailedException("交易金额大于0元时，交易流水号必传！");
+                    throw new FailedException("当前卡号【" + req.CardNo + "】在HIS中不存在！");
                 }
+                
             }
-            else
-            {
-                message = "未找到待支付预约【" + req.BookID + "】,请确认预约状态及日期是否有效";
-                throw new FailedException(message);
-            }
-            var brxxEntiey = GetPatInfo(req.HospitalID, req.CardNo, null, null).FirstOrDefault();
-            if (brxxEntiey == null)
-            {
-                throw new FailedException("就诊卡【" + req.CardNo + "】信息无效，请联系管理员！");
-            }
+            //获取门诊号
+            string mzh = _OutPatientSettleDmnService.GetRegMzh(patid, bookRecord.ScheduId.ToString(), bookRecord.ks, orgId, null,
+                bookRecord.QueueNo, bookRecord.OutDate.ToString("yyyy-MM-dd"));
             MzKsPbDto pbxx = new MzKsPbDto();
             var scheduId = Convert.ToInt32(bookRecord.ScheduId);
             pbxx.HospitalID = req.HospitalID;
             pbxx.ScheduId = scheduId;
             var pbEntity = GetMzpbDetail(pbxx).FirstOrDefault();
             if (pbEntity == null)
-            {
-                throw new FailedException("该排班已停诊或作废，请联系管理员！");
-            }
-            string ghly = ((int)EnumMzghly.His).ToString();
-            SysCashPaymentModelEntity zffsEty = new SysCashPaymentModelEntity();
-            zffsEty = _sysForCashPayRepository.FindEntity(p => p.xjzffs == req.PayWay && p.zt == "1");
-            if (zffsEty == null)
-            {
-                throw new FailedException("暂不支持该支付方式！");
-            }
-            var ghlylist = EnumHelper.GetEnumDic<EnumMzghly>().FirstOrDefault(p => req.AppID.Contains(p.Value.ToString()));
-
-            if (string.IsNullOrWhiteSpace(ghlylist.Value))
-            {
-                throw new FailedException("该挂号渠道未授权！");
-            }
-            else
-            {
-                ghly = ghlylist.Key.ToString();
-            }
-
-            //获取门诊号
-            string mzh = _OutPatientSettleDmnService.GetRegMzh(patid, bookRecord.ScheduId.ToString(), bookRecord.ks, orgId, null,
-                bookRecord.QueueNo, bookRecord.OutDate.ToString("yyyy-MM-dd"));
+                throw new FailedException("该排班无效，请重试！");
 
             object regobj;
             OutpatientSettFeeRelatedDTO feeRelated = new OutpatientSettFeeRelatedDTO();
@@ -530,27 +492,42 @@ where a.zt='1' and a.organizeId=@orgId
             feeRelated.xjzfys = bookRecord.RegFee;
             feeRelated.yjjzfje = 0;
             feeRelated.djjess = req.PayFee;
+
+
+            string ghly = "1";
+            SysCashPaymentModelEntity zffsEty = new SysCashPaymentModelEntity();
+            if (bookRecord.AppId == EnumMzghly.WeChat.ToString())
+            {
+                zffsEty = _sysForCashPayRepository.FindEntity(p =>
+                    p.xjzffsmc.Contains("微信") && p.zt == "1");
+                ghly = ((int)EnumMzghly.WeChat).ToString();
+            }
+            else if (bookRecord.AppId == EnumMzghly.Alipay.ToString())
+            {
+                zffsEty = _sysForCashPayRepository.FindEntity(p =>
+                    p.xjzffsmc.Contains("支付宝") && p.zt == "1");
+                ghly = ((int)EnumMzghly.Alipay).ToString();
+            }
             feeRelated.zffs1 = zffsEty == null ? "" : zffsEty.xjzffs;
             feeRelated.zfje1 = zffsEty == null ? null : req.PayFee;
             feeRelated.djjesszffs = zffsEty == null ? "" : zffsEty.xjzffs;
 
-            _OutPatientSettleDmnService.Save(orgId, patid, req.CardNo, ghly, bookRecord.RegType,
-                           bookRecord.ks, bookRecord.ys, pbEntity.OutDeptName, pbEntity.DoctorName, pbEntity.Ghlx, pbEntity.Zlxm, null, null, false,
-                           false, bookRecord.QueueNo, scheduId, feeRelated, bookRecord.ghxz, null, mzh, "0", null, null, null, null, null,
+            _OutPatientSettleDmnService.Save(orgId, patid, req.CardNo, ghly, pbEntity.RegType,
+                           pbEntity.OutDept, "", pbEntity.OutDeptName, "", pbEntity.Ghlx, pbEntity.Zlxm, null, null, false,
+                           false, bookRecord.QueueNo, scheduId, feeRelated, bookRecord.ghxz, null, mzh, "0", null, null, null, null, null, null,
                            out regobj);
             var regEty = _outpatientRegRepo.FindEntity(p => p.mzh == mzh && p.zt == "1" && p.OrganizeId == orgId);
             if (regEty != null)
             {
                 regEty.ghrq = bookRecord.OutDate;
-                regEty.CreatorCode = req.AppID;
                 _outpatientRegRepo.Update(regEty);
 
                 bookRecord.PayFee = req.PayFee;
                 bookRecord.PayLsh = req.PayLsh;
                 bookRecord.LastModifyTime = DateTime.Now;
                 bookRecord.LastModifierCode = req.AppID;
-                bookRecord.yyzt = ((int)EnumMzyyzt.reg).ToString();
-                bookRecord.drghstatu = bookRecord.OutDate == today ? "Y" : "";
+                bookRecord.yyzt = req.IsBooking == "N" ? ((int)EnumMzyyzt.bookreg).ToString():((int)EnumMzyyzt.reg).ToString();
+                bookRecord.drghstatu =req.IsBooking=="N"?"Y":"";
                 bookRecord.ghrq = bookRecord.OutDate;
                 bookRecord.mzh = mzh;
                 _MzghbookRepo.Update(bookRecord);
@@ -559,101 +536,12 @@ where a.zt='1' and a.organizeId=@orgId
             return new RegSettResp()
             {
                 RegId = ((dynamic)regobj).jsnm.ToString(),
-                QueueNo = bookRecord.QueueNo,
-                Mzh = mzh
-            };
-        }
-        /// <summary>
-        /// 挂号结算
-        /// </summary>
-        /// <param name="dto"></param>
-        /// <returns></returns>
-        public RegSettResp OutpatRegSett(RegSettReq req)
-        {
-            int patid = -1;
-            string orgId = ConfigurationManager.AppSettings[req.HospitalID];
-            DateTime today = DateTime.Now.Date;
-            if (string.IsNullOrWhiteSpace(req.ScheduId.ToString()) || string.IsNullOrWhiteSpace(req.CardNo))
-            {
-                throw new FailedException("排班Id、就诊卡号不可为空");
-            }
-            var brxxEntiey = GetPatInfo(req.HospitalID, req.CardNo, null, null).FirstOrDefault();
-            if (brxxEntiey == null)
-            {
-                throw new FailedException("就诊卡【" + req.CardNo + "】信息无效，请联系管理员！");
-            }
-            patid = brxxEntiey.patid;
-            MzKsPbDto pbxx = new MzKsPbDto();
-            var scheduId = Convert.ToInt32(req.ScheduId);
-            pbxx.HospitalID = req.HospitalID;
-            pbxx.ScheduId = scheduId;
-            var pbEntity = GetMzpbDetail(pbxx).FirstOrDefault();
-            if (pbEntity == null)
-            {
-                throw new FailedException("该排班已停诊或作废，请联系管理员！");
-            }
-            if (req.ghxz == ((int)EnumBrxz.zf).ToString() && req.PayFee != pbEntity.RegFee)
-            {
-                throw new FailedException($"支付费用({req.PayFee}元)与约定挂号费({pbEntity.RegFee}元)不一致，请重新支付！");
-            }
-            else if (req.PayFee > 0 && string.IsNullOrWhiteSpace(req.PayLsh))
-            {
-                throw new FailedException("交易金额大于0元时，交易流水号必传！");
-            }
-
-            string ghly = ((int)EnumMzghly.His).ToString();
-            SysCashPaymentModelEntity zffsEty = new SysCashPaymentModelEntity();
-            zffsEty = _sysForCashPayRepository.FindEntity(p => p.xjzffs == req.PayWay && p.zt == "1");
-            if (zffsEty == null)
-            {
-                throw new FailedException("暂不支持该支付方式！");
-            }
-            var ghlylist = EnumHelper.GetEnumDic<EnumMzghly>().FirstOrDefault(p => req.AppID.Contains(p.Value.ToString()));
-
-            if (string.IsNullOrWhiteSpace(ghlylist.Value))
-            {
-                throw new FailedException("该挂号渠道未授权！");
-            }
-            else
-            {
-                ghly = ghlylist.Key.ToString();
-            }
-
-            //获取门诊号
-            var mzh = _OutPatientSettleDmnService.GetCQMzhJzxh(patid, req.ScheduId.ToString(), pbEntity.OutDept, pbEntity.Doctor, orgId, req.AppID, pbEntity.RegType, null, pbEntity.OutDate.ToString("yyyy-MM-dd"));
-
-            object regobj;
-            OutpatientSettFeeRelatedDTO feeRelated = new OutpatientSettFeeRelatedDTO();
-            feeRelated.zje = pbEntity.RegFee;
-            feeRelated.orglxjzfys = pbEntity.RegFee;
-            feeRelated.ssk = req.PayFee;
-            feeRelated.zhaoling = 0;
-            feeRelated.xjzfys = pbEntity.RegFee;
-            feeRelated.yjjzfje = 0;
-            feeRelated.djjess = req.PayFee;
-            feeRelated.zffs1 = zffsEty == null ? "" : zffsEty.xjzffs;
-            feeRelated.zfje1 = zffsEty == null ? null : req.PayFee;
-            feeRelated.djjesszffs = zffsEty == null ? "" : zffsEty.xjzffs;
-
-            _OutPatientSettleDmnService.Save(orgId, patid, req.CardNo, ghly, pbEntity.RegType,
-                           pbEntity.OutDept, pbEntity.Doctor, pbEntity.OutDeptName, pbEntity.DoctorName, pbEntity.Ghlx, pbEntity.Zlxm, null, null, false,
-                           false, mzh.Item1, scheduId, feeRelated, req.ghxz, null, mzh.Item2, "0", null, null, null, null, null,
-                           out regobj);
-            var regEty = _outpatientRegRepo.FindEntity(p => p.mzh == mzh.Item2 && p.zt == "1" && p.OrganizeId == orgId);
-            if (regEty != null)
-            {
-                regEty.ghrq = pbEntity.OutDate;
-                regEty.CreatorCode = req.AppID;
-                _outpatientRegRepo.Update(regEty);
-            }
-            return new RegSettResp()
-            {
-                RegId = ((dynamic)regobj).jsnm.ToString(),
-                QueueNo = mzh.Item1,
-                Mzh = mzh.Item2
+                QueueNo= bookRecord.QueueNo,
+                Mzh=mzh
                 //RegId = regobj.ToString()
             };
         }
+
         /// <summary>
         /// 预约号查询预约信息
         /// </summary>
@@ -665,7 +553,7 @@ where a.zt='1' and a.organizeId=@orgId
 cast(ScheduId as int) ScheduId,Ghxz,Xm PatName,xb Gnder,Lxdh,kh CardNo,
 c.name Dept,d.name Doctor,OutDate
 ,RegType,e.name RegName,Period,PeriodStart,PeriodEnd,QueueNo,RegFee,PayFee,PayLsh,PayTime
-,CancelReason,CancelTime,mzh,ghrq,(case when a.Title>'' then a.Title else a.yynr end)Content
+,CancelReason,CancelTime,mzh,ghrq,yynr
 from [mz_gh_book] a with(nolock)
 left join xt_brxz b with(nolock) on a.organizeid=b.organizeid and a.ghxz=b.brxz
 left join [NewtouchHIS_Base].[dbo].[V_S_Sys_Department] c on a.organizeid=c.organizeid and a.ks=c.code and c.zt='1'
@@ -691,7 +579,7 @@ where a.zt='1' and a.OrganizeId=@orgId
         public IList<MzAppointmentRecordListResp> QueryAppRecordList(MzAppointmentRecordListReq req)
         {
             string sql = @"SELECT RegType,cast(BookId as int) BookId,yyzt BookStatus,a.Xm PatName,a.xb Gender,
-c.name Dept,OutDate,QueueNo,RegFee,a.CreateTime,(case when a.Title>'' then a.Title else a.yynr end)Content
+c.name Dept,OutDate,QueueNo,RegFee,a.CreateTime
 from [mz_gh_book] a with(nolock)
 left join xt_brjbxx xtxx with(nolock) on xtxx.patid=a.patid and xtxx.OrganizeId=a.OrganizeId and xtxx.zt=1
 left join xt_brxz b with(nolock) on a.organizeid=b.organizeid and a.ghxz=b.brxz
@@ -710,11 +598,6 @@ where a.zt='1'
                 sql += " and xtxx.zjh=@zjh ";
                 para.Add(new SqlParameter("@zjh", req.IDCard));
             }
-            if (req.yyzt >= 0)
-            {
-                sql += " and a.yyzt=@yyzt";
-                para.Add(new SqlParameter("@yyzt", req.yyzt));
-            }
             if (!string.IsNullOrWhiteSpace(req.RegType))
             {
                 sql += " and a.RegType=@RegType ";
@@ -730,21 +613,10 @@ where a.zt='1'
                 sql += " and c.name=@DeptName ";
                 para.Add(new SqlParameter("@DeptName", req.DeptName));
             }
-            if (req.OutDate != null && req.OutDate.Value.Year > 1900)
+            if (req.OutDate!=null)
             {
                 sql += " and a.OutDate=convert(varchar(10),@OutDate,121) ";
                 para.Add(new SqlParameter("@OutDate", req.OutDate));
-            }
-            else if (!string.IsNullOrWhiteSpace(req.ksrq) && !string.IsNullOrWhiteSpace(req.jsrq))
-            {
-                sql += " and a.OutDate>=convert(varchar(10),@ksrq,121) and a.OutDate<=convert(varchar(10),@jsrq,121) ";
-                para.Add(new SqlParameter("@ksrq", req.ksrq));
-                para.Add(new SqlParameter("@jsrq", req.jsrq));
-            }
-            if (!string.IsNullOrWhiteSpace(req.PatName))
-            {
-                sql += " and a.Xm like @PatName";
-                para.Add(new SqlParameter("@PatName", req.PatName + "%"));
             }
             return FindList<MzAppointmentRecordListResp>(sql, para.ToArray());
         }
@@ -756,7 +628,7 @@ where a.zt='1'
         {
             int bookid = Convert.ToInt32(req.BookId);
             req.HospitalID = ConfigurationManager.AppSettings[req.HospitalID];
-            var yyEntity = _MzghbookRepo.FindEntity(p => p.BookId == bookid && p.OrganizeId == req.HospitalID && p.zt == "1");
+            var yyEntity = _MzghbookRepo.FindEntity(p => p.BookId == bookid && p.OrganizeId == req.HospitalID && p.zt=="1");
             if (yyEntity == null)
             {
                 throw new FailedException("无效的预约号");
@@ -767,28 +639,24 @@ where a.zt='1'
             }
             if (yyEntity.yyzt != ((int)EnumMzyyzt.book).ToString())
             {
-                throw new FailedException("取消预约失败，当前预约状态为【" + ((EnumMzyyzt)Convert.ToInt32(yyEntity.yyzt)).GetDescription() + "】");
-            }
-            if (!string.IsNullOrWhiteSpace(req.CardNo) && yyEntity.kh != req.CardNo)
-            {
-                throw new FailedException("就诊卡信息异常，请重新输入");
-            }
-            if (!string.IsNullOrWhiteSpace(req.Lxdh) && req.Lxdh.Length < 8)//简单校验
-            {
-                throw new FailedException("请输入正确的联系方式");
+                throw new FailedException("取消预约失败，当前预约状态为【"+ ((EnumMzyyzt)Convert.ToInt32(yyEntity.yyzt)).GetDescription() + "】");
             }
             yyEntity.yyzt = ((int)EnumMzyyzt.cancel).ToString();
-            yyEntity.CancelReason = req.AppID + ";" + yyEntity.lxdh ?? req.Lxdh + req.CancelReason ?? "";
+            yyEntity.CancelReason = req.AppID + ";" + yyEntity.lxdh ?? req.Lxdh;
             yyEntity.CancelTime = DateTime.Now;
             yyEntity.LastModifierCode = req.AppID;
             yyEntity.LastModifyTime = DateTime.Now;
-            var refCnt = _MzghbookRepo.Update(yyEntity);
+            var refCnt= _MzghbookRepo.Update(yyEntity);
             var regEty = _OutBookScheduleRepo.FindEntity(p => p.ScheduId == yyEntity.ScheduId && p.zt == "1");
             if (regEty != null)
             {
-                regEty.YYNum = regEty.YYNum > 0 ? regEty.YYNum - 1 : 0;
+                regEty.YYNum= regEty.YYNum>0 ? regEty.YYNum - 1: 0;
                 _OutBookScheduleRepo.Update(regEty);
             }
+            //else
+            //{
+            //    throw new FailedException("取消预约成功,号源退还失败,原因:未找到预约排班！");
+            //}
             return refCnt;
         }
         /// <summary>
@@ -829,28 +697,17 @@ where a.zt='1'
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public PatCardInfoResp SysPatInfoSet(RegisterReq req)
+        public CardInfoResp SysPatInfoSet(RegisterReq req)
         {
-            string OrgId = ConfigurationManager.AppSettings[req.HospitalID];
-            IDCard sfz = new IDCard();
-            if (!IDCard.TryParse(req.IDCard, out sfz))
+            string OrgId= ConfigurationManager.AppSettings[req.HospitalID];
+            if (!CommmHelper.CheckIDCard(req.IDCard))
             {
                 throw new FailedException("证件号格式不正确");
             }
-            var xb = EnumHelper.GetEnumDic<EnumSex>().FirstOrDefault(p => p.Key == Convert.ToInt32(req.Gender));
-            if (string.IsNullOrWhiteSpace(xb.Value))
-            {
-                throw new FailedException("性别验证失败");
-            }
-            var validatesfz = _SysPatientBasicInfoRepo.FindEntity(p => p.zjlx == ((int)EnumZJLX.sfz).ToString() && p.zjh == req.IDCard && p.OrganizeId == OrgId && p.zt == "1" && p.zjh != null);
-            if (validatesfz != null)
-            {
-                throw new FailedException("证件信息已存在");
-            }
             if (req.PatType != ((int)EnumBrxz.zf).ToString())
             {
-                var khvisit = _SysCardRepo.FindEntity(p => p.CardNo == req.CardNo && p.OrganizeId == OrgId && p.zt == "1");
-                if (khvisit != null)
+                var khvisit = _SysCardRepo.FindEntity(p=>p.CardNo==req.CardNo &&p.OrganizeId==OrgId &&p.zt=="1");
+                if(khvisit!=null)
                     throw new FailedException("卡号已经存在,不可多次绑定");
                 string sql = @"  select a.xm
                              from xt_brjbxx a
@@ -870,8 +727,8 @@ where a.zt='1'
             var FirstVisit = ConfigurationManager.AppSettings["FirstVisit"];
             if (FirstVisit == "N")
             {
-                var visit = _SysPatientBasicInfoRepo.FindEntity(p => p.zjh == req.IDCard && p.OrganizeId == OrgId && p.zt == "1");
-                if (visit == null)
+                var visit = _SysPatientBasicInfoRepo.FindEntity(p=>p.zjh==req.IDCard &&p.OrganizeId==OrgId &&p.zt=="1");
+                if(visit==null)
                     throw new FailedException("初次就诊需要先线下医院就诊");
             }
             SysHosBasicInfoVO vo = new SysHosBasicInfoVO();
@@ -884,8 +741,7 @@ where a.zt='1'
                 vo.kh = req.CardNo;
                 vo.cardtype = ((int)EnumCardType.YBJYK).ToString();
             }
-            else
-            {
+            else {
                 vo.kh = _SysCardRepo.GetCardSerialNo(OrgId);
             }
             vo.blh = _SysPatientBasicInfoRepo.Getblh(OrgId);
@@ -954,8 +810,7 @@ where a.zt='1'
                 }
                 mzh = regEty.mzh;
             }
-            else
-            {
+            else {
                 string vilidsql = @" select mzzyh,cardno,outtradeno,tradeno,totalamount,Realitytotalamount,jsnm from [dbo].Xt_Order with(nolock) 
                                     where jsnm=@jsnm and OrderStatus=@status and OrganizeId=@orgId and zt=1";
                 ordervo = this.FindList<OrderVo>(vilidsql,
@@ -963,7 +818,7 @@ where a.zt='1'
                     new SqlParameter("@status", (int)EnumOrderStatus.yzf) ,
                     new SqlParameter("@jsnm",req.RegId)
                     }).FirstOrDefault();
-                if (vilidsql == null)
+                if (vilidsql==null)
                 {
                     throw new FailedException("无效的结算记录!");
                 }
@@ -982,7 +837,7 @@ where a.zt='1'
                     expectedTmxZje += item.dj * sl;
                 }
             }
-            if (expectedTmxZje <= 0)
+            if (expectedTmxZje<=0)
             {
                 throw new FailedException("可退金额为零,请确认是否HIS端已退");
             }
@@ -990,7 +845,7 @@ where a.zt='1'
                                            expectedTmxZje,
                                            null, out newJszbInfo, out outTradeNo, out refundAmount, null, null,
                                            null, null, null, null);
-            if (newJszbInfo == null)
+            if (newJszbInfo==null)
             {
                 throw new FailedException("退费失败,请重试");
             }
@@ -1033,57 +888,13 @@ update Xt_Order set OrderStatus=2 where jsnm=@jsnm and zt=1
             };
         }
         /// <summary>
-        /// 根据门诊号查询账单
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        public IList<PrescriptionInfoResp> PresUnpayQuery(string mzh, string appId, string orgId)
-        {
-            var cfList = _outChargeDmnService.GetNewUnSettedPrescriptionByMzh(mzh, orgId);
-            return cfList.Select(p => new PrescriptionInfoResp
-            {
-                PresId = p.cfnm,
-                PresNo = p.cfh,
-                PresAmt = p.zje,
-                PresTypeName = p.cflxmc,
-                DeptName = p.ksmc,
-                DoctorName = p.ysmc,
-                PresTime = p.klsj
-            }).ToList();
-        }
-        /// <summary>
-        /// 处方明细
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="cfnms"></param>
-        /// <param name="appId"></param>
-        /// <param name="orgId"></param>
-        public IList<PrescriptionDetailResp> PresDetailQuery(string mzh, string cfnms, string appId, string orgId)
-        {
-            var data = _outChargeDmnService.GetNewAllUnSettedList(mzh, cfnms, orgId);
-            return data.Select(p=>new PrescriptionDetailResp
-            {
-                PresId=p.cfnm.ToString(),
-                PresItemName=p.sfxmmc,
-                PresNo=p.cfh,
-                Amt = p.zje,
-                Price =p.dj,
-                Quantity=p.sl,
-                Unit=p.dw,
-                ItemGroupName=p.ztmc,
-                PresItemId=p.xmnm.ToString()
-            }).ToList();
-        }
-
-        /// <summary>
         /// 待缴费订单
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
         public IList<CostOrderResp> QueryCostOrder(CostOrderReq req)
         {
-            var orgId = ConfigurationManager.AppSettings[req.HospitalID];
+            var orgId= ConfigurationManager.AppSettings[req.HospitalID];
             var ghEntity = _ioutpatientRegistRepo.IQueryable(p => p.kh == req.CardNo && p.OrganizeId == orgId && p.zt == "1").OrderByDescending(k => k.CreateTime).FirstOrDefault();
             if (ghEntity == null)
             {
@@ -1100,16 +911,15 @@ update Xt_Order set OrderStatus=2 where jsnm=@jsnm and zt=1
             {
                 feelistsql.Append(" and OrderStatus=1 ");
             }
-            else
-            {
-                //                //暂时先采用删除在生成未缴费订单
-                //                string sql1 = @" delete Xt_OrderDetail from  Xt_OrderDetail a join Xt_Order b on a.OrderId=b.Id and (b.OrderStatus=0 or b.OrderStatus=3) where  b.CardNo=@CardNo and b.OrganizeId=@orgId
-                //                            delete  from Xt_Order where CardNo=@CardNo and OrganizeId=@orgId  and (OrderStatus=0 or OrderStatus=3)
-                //";
-                //                var pars = new List<SqlParameter>();
-                //                pars.Add(new SqlParameter("@orgId", orgId));
-                //                pars.Add(new SqlParameter("@CardNo", req.CardNo));
-                //                var i = this.ExecuteSqlCommand(sql1, pars.ToArray());
+            else {
+//                //暂时先采用删除在生成未缴费订单
+//                string sql1 = @" delete Xt_OrderDetail from  Xt_OrderDetail a join Xt_Order b on a.OrderId=b.Id and (b.OrderStatus=0 or b.OrderStatus=3) where  b.CardNo=@CardNo and b.OrganizeId=@orgId
+//                            delete  from Xt_Order where CardNo=@CardNo and OrganizeId=@orgId  and (OrderStatus=0 or OrderStatus=3)
+//";
+//                var pars = new List<SqlParameter>();
+//                pars.Add(new SqlParameter("@orgId", orgId));
+//                pars.Add(new SqlParameter("@CardNo", req.CardNo));
+//                var i = this.ExecuteSqlCommand(sql1, pars.ToArray());
 
                 // 发生变化并且订单待支付的处方作废并生成新处方订单
                 string sql = @" exec Cf_OrderGenerate @orgId, @cardNo ";
@@ -1120,14 +930,14 @@ update Xt_Order set OrderStatus=2 where jsnm=@jsnm and zt=1
 
                 feelistsql.Append(" and OrderStatus=0 ");
             }
-
+            
             List<SqlParameter> para = new List<SqlParameter>();
             if (!string.IsNullOrWhiteSpace(req.DiagDay.ToString()))
             {
                 feelistsql.Append(" and ghrq<=GETDATE() and ghrq>=DATEADD(DD,-@DiagDay,GETDATE()) ");
                 para.Add(new SqlParameter("@DiagDay", req.DiagDay));
             }
-            if (req.DiagDate != null)
+            if (req.DiagDate!=null)
             {
                 feelistsql.Append(" and ghrq=convert(varchar(10),@DiagDate,121) ");
                 para.Add(new SqlParameter("@DiagDate", req.DiagDate));
@@ -1194,17 +1004,17 @@ group by cfh,cftypename";
             return new CostOrderDetailResp()
             {
                 CardNo = baseVO.CardNo,
-                OrderNo = baseVO.OrderNo,
-                Mzh = baseVO.Mzh,
+                OrderNo=baseVO.OrderNo,
+                Mzh=baseVO.Mzh,
                 PatientName = baseVO.PatientName,
                 Gender = baseVO.Gender,
                 nlshow = baseVO.nlshow,
                 ClinicDoctor = baseVO.ClinicDoctor,
                 ClinicDateTime = baseVO.ClinicDateTime,
                 TotalAmount = baseVO.TotalAmount,
-                Fph = baseVO.Fph,
+                Fph=baseVO.Fph,
                 OrderDetailData = costList,
-                CostTypeData = costTypeList
+                CostTypeData=costTypeList
             };
         }
         /// <summary>
@@ -1226,11 +1036,11 @@ group by cfh,cftypename";
                    //new SqlParameter("@status1",((int)EnumOrderStatus.dzf).ToString()),
                    //new SqlParameter("@status2", ((int)EnumOrderStatus.zfz).ToString())
                });
-            if (orderList == null)
-                throw new FailedException("订单号:" + req.OrderNo + "无效");
+            if(orderList==null)
+                throw new FailedException("订单号:"+req.OrderNo+"无效");
 
-            if (orderList == ((int)EnumOrderStatus.yzf).ToString() || orderList == ((int)EnumOrderStatus.ytk).ToString())
-                throw new FailedException("订单号:" + req.OrderNo + "状态为" + ((EnumOrderStatus)Convert.ToInt32(orderList)).GetDescription() + "不可取消");
+            if (orderList==((int)EnumOrderStatus.yzf).ToString()|| orderList == ((int)EnumOrderStatus.ytk).ToString())
+                throw new FailedException("订单号:" + req.OrderNo + "状态为"+ ((EnumOrderStatus)Convert.ToInt32(orderList)).GetDescription()+"不可取消");
 
             //string sql = @"update  Xt_OrderDetail  set zt=0 from Xt_Order a 
             //               where xt_OrderDetail.OrderId=a.Id and xt_OrderDetail.organizeId=a.organizeId and a.zt=1
@@ -1271,7 +1081,7 @@ group by cfh,cftypename";
             var orgId = ConfigurationManager.AppSettings[req.HospitalID];
             if (req.FeeType == "0")
             {
-                if (string.IsNullOrWhiteSpace(req.BookID.ToString()) || string.IsNullOrWhiteSpace(req.IsBooking))
+                if (string.IsNullOrWhiteSpace(req.BookID.ToString())|| string.IsNullOrWhiteSpace(req.IsBooking))
                 {
                     throw new FailedException("入参:BookID和IsBooking不能为空");
                 }
@@ -1295,13 +1105,12 @@ group by cfh,cftypename";
                         return new PreSettResp()
                         {
                             ybzf = 0.00.ToDecimal(),
-                            grzf = req.TotalAmount,
-                            xjzf = req.TotalAmount
+                            grzf=req.TotalAmount,
+                            xjzf= req.TotalAmount
                         };
                     }
                 }
-                else
-                {
+                else {
                     throw new FailedException("获取病人性质异常，请重试");
                 }
             }
@@ -1323,18 +1132,18 @@ group by cfh,cftypename";
                         throw new FailedException("入参:PatType 值错误,该人员性质为自费");
                     }
                 }
-                var amount = GetOrderAmount(req.Mzh, orgId);
-                if (amount.Count == 0)
+                var amount = GetOrderAmount(req.Mzh,orgId);
+                if (amount.Count==0)
                     throw new FailedException("订单中心无未结算订单");
                 if (amount.Count > 1)
                     throw new FailedException("订单中心存在多条未结订单,请取消订单或重新查询代缴费订单");
                 var jsje = amount.FirstOrDefault().TotalAmount;
-                if (jsje != req.TotalAmount)
+                if (jsje!=req.TotalAmount)
                     throw new FailedException("收费金额异常，HIS为：【" + jsje + "】传入金额为：【" + req.TotalAmount + "】");
 
-                if (amount.FirstOrDefault().Orderstatus == ((int)EnumOrderStatus.zfz).ToString())
+                if (amount.FirstOrDefault().Orderstatus==((int)EnumOrderStatus.zfz).ToString())
                 {
-                    throw new FailedException("订单号:" + req.OrderNo + "正在支付中,请勿重复支付");
+                    throw new FailedException("订单号:"+req.OrderNo+"正在支付中,请勿重复支付");
                 }
                 var validCf = ValidFee(ghEntity.mzh, orgId);
                 if (!string.IsNullOrWhiteSpace(validCf))
@@ -1350,6 +1159,14 @@ group by cfh,cftypename";
                 {
                     //走医保
                     throw new FailedException("医保收费未开通");
+                    //医保返回错误需重置
+                    CancalOrderReq cancalreq = new CancalOrderReq();
+                    cancalreq.AppID = req.AppID;
+                    cancalreq.HospitalID = req.HospitalID;
+                    cancalreq.Mzh = req.Mzh;
+                    cancalreq.CardNo = req.Mzh;
+                    cancalreq.OrderNo = req.OrderNo;
+                    var cz = ErrOrderCancal(cancalreq);
                 }
                 else
                 {
@@ -1367,7 +1184,7 @@ group by cfh,cftypename";
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public void OutSett(SettReq req, int jsnm, string orgId)
+        public void OutSett(SettReq req,int jsnm,string orgId)
         {
             #region 
             //var orgId = ConfigurationManager.AppSettings[req.HospitalID];
@@ -1518,13 +1335,13 @@ where ghyy.zt=1 and ghyy.yyzt in ('2','5') and ghyy.OrganizeId=@orgId and ghyy.A
                 ghsql += "  and 1=2";
                 pars.Add(new SqlParameter("@OrderNo", req.OrderNo));
             }
-            sql += " union all " + tksql + " union all " + ghsql;
+            sql += " union all " + tksql+" union all "+ghsql;
 
             sql += "  ) d ";
             pars.Add(new SqlParameter("@orgId", orgId));
             pars.Add(new SqlParameter("@appId", req.AppID));
             //var hospitalTradeList = this.QueryWithPage<ContrastBill>(sql, pt, pars.ToArray()).ToList();
-            var hospitalTradeList = this.FindList<ContrastBill>(sql, pars.ToArray());
+            var hospitalTradeList = this.FindList<ContrastBill>(sql,pars.ToArray());
             return hospitalTradeList;
             //return new ContrastBillResp
             //{
@@ -1597,7 +1414,7 @@ where ghyy.zt=1 and ghyy.yyzt in ('2','5') and ghyy.OrganizeId=@orgId and ghyy.A
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public string ValidFee(string mzh, string orgId)
+        public string ValidFee(string mzh,string orgId)
         {
             //考虑医保上传唯一流水号使用明细Id 用处方或项目明细Id判断处方是否发生变化
             string sql = @"
@@ -1654,7 +1471,7 @@ where   a.cfmxId is null or b.cfmxId is null";
         /// <param name="mzh"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public List<CfOrderVo> GetOrderAmount(string mzh, string orgId)
+        public List<CfOrderVo> GetOrderAmount(string mzh,string orgId)
         {
             string sql = @" select TotalAmount,orderstatus from [dbo].Xt_Order a with(nolock) where  a.zt=1 and a.mzzyh=@mzh 
 and (orderstatus=@status1 or orderstatus=@status2)
@@ -1689,67 +1506,28 @@ where a.zt=1 and (orderstatus='0' or orderstatus='3') and a.mzzyh=@mzh  and a.Or
         /// <returns></returns>
         public BasicInfoDto2018 getPatInfo(string mzh, string orgId)
         {
-            var sql = @"SELECT   b.xm ,b.xb ,b.csny ,b.zjh ,b.zjlx ,b.blh ,b.patid ,a.brxz ,a.mzh ,a.ghnm ,a.ys ,
-NULL sfrq ,NULL fph ,CONVERT(BIT,0) isQfyj,a.kh
-FROM     NewtouchHIS_Sett..mz_gh a with(nolock)
-LEFT JOIN NewtouchHIS_Sett..xt_brjbxx b with(nolock) ON b.OrganizeId = a.OrganizeId  AND b.patid = a.patid AND b.zt = '1'
-WHERE    a.mzh = @mzh AND a.OrganizeId = @orgId ";
+            var sql = @"       SELECT   b.xm ,
+                                        b.xb ,
+                                        b.csny ,
+                                        b.zjh ,
+                                        b.zjlx ,
+                                        b.blh ,
+                                        b.patid ,
+                                        a.brxz ,
+                                        a.mzh ,
+                                        a.ghnm ,
+                                        a.ys ,
+                                        NULL sfrq ,
+                                        NULL fph ,
+                                        CONVERT(BIT,0) isQfyj
+                               FROM     NewtouchHIS_Sett..mz_gh a
+                                        LEFT JOIN NewtouchHIS_Sett..xt_brjbxx b ON b.OrganizeId = a.OrganizeId
+                                                                                   AND b.patid = a.patid
+                                                                                   AND b.zt = '1'
+                               WHERE    a.mzh = @mzh
+                                        AND a.OrganizeId = @orgId ";
             return this.FirstOrDefault<BasicInfoDto2018>(sql,
                 new[] { new SqlParameter("@mzh", mzh), new SqlParameter("@orgId", orgId) });
-        }
-        /// <summary>
-        /// 查询当日已挂号
-        /// </summary>
-        /// <param name="orgId"></param>
-        /// <param name="todayonly">true 仅当日</param>
-        /// <param name="kh"></param>
-        /// <param name="mzh"></param>
-        /// <param name="ghzt">0 待结 1 已结 2 已退</param>
-        /// <returns></returns>
-        public IList<OutPatientRegBaseVO> GetPatRegList(string orgId, string appId, bool todayonly, string kh, string mzh, int[] ghzt = null)
-        {
-            var sb = new StringBuilder();
-            var pars = new List<SqlParameter>();
-            sb.Append(@"select staff.Name DoctorName,dept.Name DeptName,brxz.brxzmc Ghxzmc,gh.mzh Mzh,gh.kh CardNo,gh.ghly Ghly,gh.mjzbz RegType,gh.ks Dept,gh.ys Doctor,
-gh.jzxh QueueNo,gh.ghzt RegStatus,gh.jzbz Jzbz,gh.Createtime RegDate,gh.brxz Ghxz
-from mz_gh(nolock) gh
-left join [NewtouchHIS_Base]..V_S_Sys_Staff staff on staff.gh = gh.ys and staff.Organizeid = gh.OrganizeId
-left join [NewtouchHIS_Base]..V_S_Sys_Department dept(nolock) on dept.Code = gh.ks and dept.Organizeid = gh.OrganizeId
-inner join xt_card kxx(nolock) on kxx.CardNo=gh.kh and kxx.CardType=gh.CardType and kxx.OrganizeId=gh.OrganizeId and kxx.zt=1
-left join xt_brxz brxz(nolock) on brxz.brxz = kxx.brxz and brxz.OrganizeId = kxx.OrganizeId and brxz.zt=1
-left join xt_brjbxx jbxx(nolock) on jbxx.patid = gh.patid and jbxx.zt = '1' and jbxx.OrganizeId = gh.OrganizeId
-where gh.OrganizeId = @orgId  and gh.zt = '1'
-");
-            if (appId == EnumMzghly.SelfTerminal.ToString())
-            {
-                sb.Append(@" and gh.brxz ='" + ((int)EnumBrxz.zf).ToString() + "'");
-            }
-            if (todayonly)
-            {
-                sb.Append(@"and gh.CreateTime >= CONVERT(varchar(100), GETDATE(), 23) ");
-            }
-            if (ghzt != null && ghzt.Length > 0)
-            {
-                var ghztstr = string.Join(",", ghzt.ToList());
-                sb.Append(@" and gh.ghzt in(" + ghztstr + ")");
-            }
-            else
-            {
-                sb.Append(@" and gh.ghzt=" + ((int)EnumJieSuanZT.YJ).ToString());
-            }
-            if (!string.IsNullOrEmpty(kh))
-            {
-                sb.Append(@" and gh.kh = @kh ");
-                pars.Add(new SqlParameter("@kh", kh));
-            }
-            if (!string.IsNullOrEmpty(mzh))
-            {
-                sb.Append(@" and gh.mzh = @mzh ");
-                pars.Add(new SqlParameter("@mzh", mzh));
-            }
-            sb.Append(@" order by gh.CreateTime desc ");
-            pars.Add(new SqlParameter("@orgId", orgId));
-            return this.FindList<OutPatientRegBaseVO>(sb.ToString(), pars.ToArray());
         }
     }
 }

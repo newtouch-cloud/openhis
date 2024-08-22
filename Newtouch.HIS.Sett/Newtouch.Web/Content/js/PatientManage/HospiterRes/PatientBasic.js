@@ -5,6 +5,9 @@ var cz = "";//确认操作
 var sfzh;
 var cityref;
 $(function () {
+    if ($.request("parent") === 'cisframe') {
+        fromly = "yktmodify";
+    }
     if (fromly === "yktmodify") {
         $('#divYktRegister').remove();
         $('#divYktModify').show();
@@ -13,7 +16,7 @@ $(function () {
         $('#divYktRegister').show();
         $('#divYktModify').remove();
     }
-
+   
     initControl();
     gridInit();
     $('#myTab a:first').tab('show');
@@ -195,7 +198,7 @@ function initControl() {
             var resultObjArr = new Array();
             if (top.window.clients.sysNationalityList) {
                 $.each(top.window.clients.sysNationalityList, function (idx, val) {
-
+                    
                     if (val.gjCode == "cn") {
                         $("#gj2").append('<option value="' + val.gjCode + '" selected>' + val.gjmc + '</option>');
                     } else {
@@ -325,7 +328,8 @@ function initControl() {
 
 }
 
-function gridInit() {
+function gridInit()
+{   
     if (fromly) { //非门诊挂号住院登记新建弹出 ，取消就诊卡列表初始化
         return;
     }
@@ -337,27 +341,27 @@ function gridInit() {
         //width: $("#divPatCard").width() - 10,
         caption: '患者就诊卡列表',
         colModel: [
-            { label: '主键', name: 'patid', hidden: true },
-            { label: '病历号', name: 'blh', width: 80, align: 'left' },
-            { label: '姓名', name: 'xm', width: 80, align: 'left' },
-            { label: '出生年月', name: 'csny', hidden: true, width: 120, align: 'left' },
-            {
-                label: '性别', name: 'xb', width: 80, align: 'left', formatter: function (cellvalue) {
-                    return $.getGender(cellvalue);
-                }
-            },
-            {
-                label: '年龄', name: 'nlshow', width: 80, align: 'left', formatter: function (cellvalue, options, rowObject) {
-                    return getAgeFromBirthTime({ begin: rowObject.csny }).text;
-                }
-            },
-            { label: '证件号', name: 'zjh', width: 120, align: 'left' },
-            { label: '卡号', name: 'kh', width: 80, align: 'left' },
-            { label: '卡类型', name: 'CardTypeName', width: 80, align: 'left' },
-            { label: '病人性质', name: 'brxzmc', width: 80, align: 'left' },
-            { label: 'CardType', name: 'CardType', width: 80, align: 'left', hidden: true, },
-            { label: 'CardId', name: 'CardId', width: 80, align: 'left', hidden: true, },
-            { label: '', name: 'CreateTime', hidden: true }
+                    { label: '主键', name: 'patid', hidden: true },
+                    { label: '病历号', name: 'blh', width: 80, align: 'left' },
+                    { label: '姓名', name: 'xm', width: 80, align: 'left' },
+                    { label: '出生年月', name: 'csny', hidden: true, width: 120, align: 'left' },
+                    {
+                        label: '性别', name: 'xb', width: 80, align: 'left', formatter: function (cellvalue) {
+                            return $.getGender(cellvalue);
+                        }
+                    },
+                    {
+                        label: '年龄', name: 'nlshow', width: 80, align: 'left', formatter: function (cellvalue, options, rowObject) {
+                            return getAgeFromBirthTime({ begin: rowObject.csny }).text;
+                        }
+                    },
+                    { label: '证件号', name: 'zjh', width: 120, align: 'left' },
+                    { label: '卡号', name: 'kh', width: 80, align: 'left' },
+                    { label: '卡类型', name: 'CardTypeName', width: 80, align: 'left' },
+                    { label: '病人性质', name: 'brxzmc', width: 80, align: 'left' },
+                        { label: 'CardType', name: 'CardType', width: 80, align: 'left', hidden: true, },
+                    { label: 'CardId', name: 'CardId', width: 80, align: 'left', hidden: true, },
+                        { label: '', name: 'CreateTime', hidden: true }
         ],
         pager: "#gridPager",
         sortname: 'CreateTime desc',
@@ -368,15 +372,15 @@ function gridInit() {
             if (rowIds.length > 0) {
                 $.each(rowIds, function (index, value) {
                     var cardtype = $gridList.jqGrid('getRowData', rowIds[index]).CardType;
-                    if (cardtype === "1")//是否已存在虚拟卡
+                    if (cardtype==="1")//是否已存在虚拟卡
                     {
                         exsistzf = true;
                         return;
                     }
                 });
-
+               
                 var rowData = $gridList.jqGrid('getRowData', rowIds[0]);
-                var refkh = ''; var refblh = '';
+                var refkh = '';var refblh='';
                 $.najax({
                     url: "/PatientManage/HospiterRes/GetFormJson?T=" + new Date(),
                     data: { "keyValue": rowData.patid },
@@ -419,14 +423,15 @@ function gridInit() {
                         $('#blh').val(data.blh);
                     }
                 });
-
+               
             }
         },
     });
     $("#divPatCard").css('display', 'none');
 }
 
-function brxzinit() {
+function brxzinit()
+{
     //患者性质对照赋值
     var ybfyxzCompResult = {
         Code: '0',
@@ -436,7 +441,8 @@ function brxzinit() {
     $('#cardtype').val(xnkCardType);//默认虚拟卡
 }
 
-function submitForm() {
+function submitForm(callback) {
+    
     var result = checkNotNull();
     if (result) {
         var data = $("#form1").formSerialize();
@@ -458,13 +464,14 @@ function submitForm() {
             }
         }
         if (!data.xb) {
-            $.modalAlert("请选择性别！", 'warning');
+            $.modalAlert("请选中性别！", 'warning');
             return false;
         }
         $.submitForm({
             url: "/PatientManage/HospiterRes/SubmitForm",
             param: { PatientBasicAndCardInfoVO: data },
             success: function () {
+                
                 var parent = $.request("parent");
                 if (parent && parent === 'patientlist') {
                     //来自患者列表页面触发
@@ -472,9 +479,10 @@ function submitForm() {
                     $.currentWindow().$("#gridList").trigger("reloadGrid");
                     return;
                 }
-                else if (parent && parent === 'cisframe') {
+                else if ((parent && parent === 'cisframe') || parent==="OutChargeRegister") {
                     //来自CIS嵌套该修改页面
-                    return;
+                    // return;
+                    callback({ kh: data.kh, cardtype: data.cardtype,brxz:data.brxz,zjh:data.zjh});
                 }
                 else if (parent && parent === 'ZYZfToYb') {
                     ///住院自费转医保
@@ -482,17 +490,19 @@ function submitForm() {
                 }
                 else {
                     //来自登记页面触发
-
-                    $.currentWindow().CallbackPatientQuery({ blh: data.blh, kh: data.kh, cardtype: data.cardtype });
+                    
+                    $.currentWindow().CallbackPatientQuery({ kh: data.kh, cardtype: data.cardtype });
                 }
             }
         });
     }
 }
 
-function valiPatZjh() {
-    if ($("#zjh").val()) {
-        if (fromly || readbz !== "1") { //患者一卡通页面及医保读卡取消就诊卡列表加载
+function valiPatZjh()
+{   
+    if ($("#zjh").val())
+    {
+        if (fromly || readbz!=="1") { //患者一卡通页面及医保读卡取消就诊卡列表加载
             return;
         }
         var $gridList = $("#patGridList");
@@ -506,28 +516,28 @@ var theAcceptClickCallBack = null;
 function AcceptClick(callBack) {
 
     theAcceptClickCallBack = callBack;
-
+    
     var $gridList = $("#patGridList");
     var rowIds = $gridList.jqGrid('getDataIDs');
-    if (rowIds.length == 0 || cz == "SaveFrom") {
+    if (rowIds.length == 0||cz=="SaveFrom") {
         submitForm();
     }
-    else {
-        var blh = $gridList.jqGridRowValue().blh;
-        if (!!!blh) {
-            $.modalAlert("尚未选择一条就诊卡记录", "error");
-            return;
-        }
-        var obj = new Object();
-        obj.blh = blh;
-        obj.nlshow = $gridList.jqGridRowValue().nlshow;
-        obj.xm = $gridList.jqGridRowValue().xm;
-        obj.patid = $gridList.jqGridRowValue().patid;
-        obj.startTime = $.currentWindow().$("#ks").val();
-        obj.endTime = $.currentWindow().$("#js").val();
-        obj.CardId = $gridList.jqGridRowValue().CardId;
-        obj.CardType = $gridList.jqGridRowValue().CardType;
-        callBack(obj);
+    else { 
+    var blh = $gridList.jqGridRowValue().blh;
+    if (!!!blh) {
+        $.modalAlert("尚未选择一条就诊卡记录", "error");
+        return;
+    }
+    var obj = new Object();
+    obj.blh = blh;
+    obj.nlshow = $gridList.jqGridRowValue().nlshow;
+    obj.xm = $gridList.jqGridRowValue().xm;
+    obj.patid = $gridList.jqGridRowValue().patid;
+    obj.startTime = $.currentWindow().$("#ks").val();
+    obj.endTime = $.currentWindow().$("#js").val();
+    obj.CardId = $gridList.jqGridRowValue().CardId;
+    obj.CardType = $gridList.jqGridRowValue().CardType;
+    callBack(obj);
     }
 }
 
@@ -556,6 +566,12 @@ function checkNotNull() {
     var xm = $("#xm").val();
     if (!xm) {
         $.modalAlert("请填写姓名！", 'warning');
+        return false;
+    }
+    //身份证
+    var zjh = $("#zjh").val();
+    if (!zjh) {
+        $.modalAlert("请填写身份证号！", 'warning');
         return false;
     }
 

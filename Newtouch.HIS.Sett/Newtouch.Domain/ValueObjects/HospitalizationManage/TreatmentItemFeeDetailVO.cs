@@ -104,5 +104,10 @@ namespace Newtouch.HIS.Domain.ValueObjects.HospitalizationManage
         public string sfmbmc { get; set; }
         public string jfbbhs { get; set; }
 
+        /// <summary>
+        /// 医嘱名称
+        /// </summary>
+        public string yzmc { get; set; }
+
     }
 }

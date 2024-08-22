@@ -1,22 +1,30 @@
 ﻿using Autofac;
 using Newtouch.HIS.API.Common;
+using Newtouch.HIS.API.Common.Attributes;
+using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.DTO;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IDomainServices.OutpatientManage;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.IRepository.OutpatientManage;
+using Newtouch.HIS.Domain.ValueObjects.OutpatientManage;
 using Newtouch.HIS.Sett.Request.SelfService;
+using Newtouch.Infrastructure;
+using Newtouch.Tools;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 
 namespace Newtouch.HIS.Sett.API.Controllers
 {
-    /// <summary>
-    /// 自助机相关(弃用)
-    /// </summary>
-    [RoutePrefix("api/SelfService")]
+	/// <summary>
+	/// 自助机相关
+	/// </summary>
+	[RoutePrefix("api/SelfService")]
 	public class SelfServiceController : ApiControllerBase<SelfServiceController>
 	{
 		//private readonly IOutpatientRegApp _outpatientRegApp;
@@ -75,7 +83,7 @@ namespace Newtouch.HIS.Sett.API.Controllers
 						}
 						//保存
 						_outPatientSettleDmnService.Save(oData.OrganizeId, cardEntity.patid, oData.kh, "0", oData.mjzbz,
-							oData.ks, "", oData.ksmc, "", entity.ghlx, entity.zlxm, null, null, false, false, (int)qzjzxh.Value, entity.ghpbId, feeRelated, oData.brxz, null, qzmzh, "0", null,null,null,null,null, out newJszbInfo);
+							oData.ks, "", oData.ksmc, "", entity.ghlx, entity.zlxm, null, null, false, false, (int)qzjzxh.Value, entity.ghpbId, feeRelated, oData.brxz, null, qzmzh, "0", null,null,null,null,null,null, out newJszbInfo);
 						resp.data = new { mzh = qzmzh };
 						resp.msg = "";
 						resp.code = ResponseResultCode.SUCCESS;
@@ -92,7 +100,7 @@ namespace Newtouch.HIS.Sett.API.Controllers
 			return base.CreateResponse(resp);
 		}
 		/// <summary>
-		/// 获取科室排班(弃用)
+		/// 获取科室排班
 		/// </summary>
 		/// <param name="req"></param>
 		/// <returns></returns>
@@ -110,19 +118,19 @@ namespace Newtouch.HIS.Sett.API.Controllers
 				}
 				else
 				{
-					//DateTime pbrq = DateTime.Parse(req.VisitDate);
-					//var pbList= _outPatientDmnService.GetZzjRegScheduleList(pbrq, req.OrganizeId);
-					//if (pbList==null || pbList.Count<1)
-					//{
-					//	resp.msg = "日期："+ pbrq.ToString()+"暂无排班！";
-					//	resp.code = ResponseResultCode.FAIL;
-					//}
-					//else
-					//{
-					//	resp.data = pbList;
-					//	resp.msg = "";
-					//	resp.code = ResponseResultCode.SUCCESS;
-					//}
+					DateTime pbrq = DateTime.Parse(req.VisitDate);
+					var pbList= _outPatientDmnService.GetZzjRegScheduleList(pbrq, req.OrganizeId);
+					if (pbList==null || pbList.Count<1)
+					{
+						resp.msg = "日期："+ pbrq.ToString()+"暂无排班！";
+						resp.code = ResponseResultCode.FAIL;
+					}
+					else
+					{
+						resp.data = pbList;
+						resp.msg = "";
+						resp.code = ResponseResultCode.SUCCESS;
+					}
 					
 				}
 				

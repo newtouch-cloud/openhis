@@ -5,6 +5,8 @@
     var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
     //医保所属地，区分系统将执行何处医保逻辑
     var medicalInsurance = SysConfigReader.String("Outpatient_MedicalInsurance");
+    //就诊凭证类型是否从医保端获取  
+    var YB_Jzpzl = SysConfigReader.String("YB_Jzpzl");
 }
 @if (openYbSett == true)
 {
@@ -14,12 +16,13 @@
         <select id="readCardCardType" class="form-control" style="margin-left: 0px;margin-top: 2px; height: 22px;width:70px;float: left;vertical-align:central;">
             @if (openYbSett == true)
             {
-                <option value="2">医保卡</option>
+                @*<option value="2">医保卡</option>*@
                 <option value="3">电子凭证</option>
+                <option value="6">刷脸</option>
             }
             <option value="4">身份证</option>
-            <option value="1">自费磁卡</option>
-            <option value="0">测试磁卡</option>
+            @*<option value="1">自费磁卡</option>
+        <option value="0">测试磁卡</option>*@
         </select>
     </div>
 }
@@ -34,10 +37,9 @@
          $.loading(true, '正在读卡，请稍后…');
          setTimeout("readCard();", 50);
      });
-
+    $("#readCard").show();
      //读卡
     function readCard(khxx) {
-        debugger;
          switch (medicalInsurance) {
              case "shanghai":
                  if (!khxx && $('#readCardCardType').val() != "2") {
@@ -48,7 +50,7 @@
                  }
                  break;
              case "tongyong"://通用使用国家医保
-                 var khxx = { "sbkh": "", "sfzh": "", "ecToken": "" };
+                 var khxx = { "sbkh": "", "sfzh": "", "name": "", "ecToken": "" };
                  GetReadCardInfo(khxx);
                  break;
              default:
@@ -59,7 +61,6 @@
 
      function GetSHReadCardIno(khxx)
      {
-         debugger;
          var yibaoCardInfo;
          var sm01Info;
          var jzpzlx = $('#readCardCardType').val();
@@ -129,7 +130,6 @@
                  cqPatInfo.kh = sm01Info.kh;
                  var bkbz = sm01Info.accountattr.substr(11, 1);//帮困 G、A
                  var gbbz = sm01Info.accountattr.substr(1, 1);//干保 1
-                 debugger;
                  var resultObjArr = new Array();
                  if (bkbz == "G" || bkbz == "A" || gbbz == "1") {
                      cqPatInfo.ybVer = "shanghaiV5";
@@ -164,7 +164,7 @@
     {
         $.ajax({
             url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
-            data: { xzlx: "" },
+            data: { xzlx: brlx },
             dataType: "json",
             async: false,
             cache: false,
@@ -187,33 +187,38 @@
     }
 
      //读卡 获取人员信息
-     function GetReadCardInfo(sbkobj) {
-         debugger;
+    function GetReadCardInfo(sbkobj) {
          var cardInfo1;
          var cardInfo2;
          var cardInfo3;
          var yibaoCardInfo;
          var patsbkh = null;
          var jzpzlx = $('#readCardCardType').val();
-         var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
          var payoptype = { "mdtrt_cert_type": "02", "mdtrt_cert_no": sbkobj.sfzh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "口腔科" };
-         if (jzpzlx === "4") {//身份证
-             payoptype.mdtrt_cert_type = "02";
-             payoptype.mdtrt_cert_no = sbkobj.sfzh;
-             url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
-         }
-         else if (jzpzlx === "3") {//电子凭证
-             payoptype.mdtrt_cert_type = "01";
-             payoptype.mdtrt_cert_no = sbkobj.ecToken;
-             payoptype.psn_cert_type = "01";//身份证
-             payoptype.certno = sbkobj.sfzh;
-             payoptype.psn_name = sbkobj.xm;
-             url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
-         }
-         else if (jzpzlx === "0") {
-             payoptype.mdtrt_cert_type = "00";
-             payoptype.mdtrt_cert_no = sbkobj.carddata;
-         }
+         var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
+         
+        if (jzpzlx === "6") {//刷脸
+            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1164";
+        }
+        else if (jzpzlx === "4") {//身份证
+            payoptype.mdtrt_cert_type = "02";
+            payoptype.mdtrt_cert_no = sbkobj.sfzh;
+            payoptype.psn_name = sbkobj.name;
+            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1163";
+        }
+        else if (jzpzlx === "3") {//电子凭证
+            //payoptype.mdtrt_cert_type = "01";
+            //payoptype.mdtrt_cert_no = sbkobj.ecToken;
+            //payoptype.psn_cert_type = "01";//身份证
+            //payoptype.certno = sbkobj.sfzh;
+            //payoptype.psn_name = sbkobj.xm;
+            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
+        }
+        else if (jzpzlx === "0") {
+            payoptype.mdtrt_cert_type = "00";
+            payoptype.mdtrt_cert_no = sbkobj.carddata;
+        }
+         
          if (jzpzlx === "1") {//院内卡
              $.loading(false);
              $.modalAlert("院内卡读卡接口未开通", 'error');
@@ -238,7 +243,25 @@
                          $.modalAlert("读卡失败:" + yibaoCardInfo.err_msg, 'error');
                          return;
                      }
-
+                     if ('@YB_Jzpzl' === 'ON') {
+                         var cardecinfo = yibaoCardInfo.output.cardecinfo;
+                         debugger
+                         switch (cardecinfo.mdtrt_cert_type) {
+                             case "01"://电子凭证
+                                 jzpzlx = '3';
+                                 payoptype.mdtrt_cert_type = "01";
+                                 payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
+                                 break;
+                             case "02"://身份证
+                                 jzpzlx = '4';
+                                 break;
+                             case "03"://社保卡
+                                 jzpzlx = '2';
+                                 sbkobj.sbkh = cardecinfo.mdtrt_cert_no;
+                                 payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
+                                 break;
+                         }
+                     }
                      cardInfo1 = yibaoCardInfo.output.baseinfo; //医保基本信息
                      cardInfo2 = yibaoCardInfo.output.insuinfo[0];//参保信息
                      if (jzpzlx !== "3") {
@@ -290,25 +313,39 @@
             var jzpzlx = $('#readCardCardType').val();
             switch (jzpzlx) {
                 case "0":
-                case "3":
-                case "4":
                 case "1":
-                    GetPatSbkh();
+                case "4":
+                    GetPatSfzh();
                     break;
             }
         }
 
-    //手输社保卡号
+        //手输社保卡号
         function GetPatSbkh() {
-        $.modalOpen({
-            id: "sbkhInput",
-            title: "卡号输入",
-            url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random() + "&medicalInsurance=" + medicalInsurance,
-            width: "300px",
-            height: "150px",
-            callBack: function (iframeId) {
-                top.frames[iframeId].PatSbkhData();
-            }
-        });
-    }
+            $.modalOpen({
+                id: "sbkhInput",
+                title: "卡号输入",
+                url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random() + "&medicalInsurance=" + medicalInsurance,
+                width: "300px",
+                height: "150px",
+                callBack: function (iframeId) {
+                    debugger;
+                    top.frames[iframeId].PatSbkhData();
+                }
+            });
+        }
+        //手输社保卡号
+        function GetPatSfzh() {
+            $.modalOpen({
+                id: "sfzhInput",
+                title: "身份证号输入",
+                url: "/OutpatientManage/OutpatientReg/OutPatientSfzhInput?t=" + Math.random() + "&medicalInsurance=" + medicalInsurance,
+                width: "300px",
+                height: "150px",
+                callBack: function (iframeId) {
+                    debugger;
+                    top.frames[iframeId].PatSfzhData();
+                }
+            });
+        }
 </script>
