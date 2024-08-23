@@ -35,6 +35,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 using Newtouch.Infrastructure.Model;
 using System.Configuration;
+using Newtouch.HIS.DomainServices;
 
 namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 {
@@ -60,6 +61,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 	    private readonly ICqybSett05Repo _cqybSett05Repo;
         private readonly ICqybSett23Repo _cqybSett23Repo;
         private readonly ICqybUpdateMedicalInput03Repo _cqybupdatemedicalInput03Repo;
+        private readonly IPatientBasicInfoDmnService _PatientBasicInfoDmnService;
 
         #region  view
         /// <summary>
@@ -1293,5 +1295,16 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 			return Content(data.ToJson());
 		}
 
-	}
+
+        /// <summary>
+        /// 获取患者就诊登记的交易流水号秦皇岛
+        /// </summary>
+        /// <param name="zyh"></param>
+        /// <returns></returns>
+        public ActionResult GetQHDjzdjDataInfo(string zyh)
+        {
+            var medicalReg = _PatientBasicInfoDmnService.GetQHDjzdjInfo(zyh, OrganizeId);
+            return Content(medicalReg.ToJson());
+        }
+    }
 }

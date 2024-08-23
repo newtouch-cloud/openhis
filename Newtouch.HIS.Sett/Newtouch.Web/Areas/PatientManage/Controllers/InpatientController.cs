@@ -197,6 +197,28 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
         {
             return View();
         }
+        /// <summary>
+        /// 结算清单上传整合页面
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult SettlementListUpload()
+        {
+            return View();
+        }
+        //结算清单质控查询
+        public ActionResult SettlementListResultFrom()
+        {
+            ViewBag.OrgId = this.OrganizeId;
+            return View();
+        }
+        //结算清单数量统计结果查询
+        public ActionResult QuerySettlementResultFrom()
+        {
+            ViewBag.OrgId = this.OrganizeId;
+            return View();
+        }
+
+
         public ActionResult PatientUploadYbIndex()
         {
             return View();
@@ -325,6 +347,17 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
 		public ActionResult ZFToYB_Step_8(string zyh)
         {
             var data = _inpatientApp.ZFToYB_Step_8(zyh);
+            return Success(null, data);
+        }
+
+        /// <summary>
+		/// 
+		/// </summary>
+		/// <param name="zyh"></param>
+		/// <returns></returns>
+		public ActionResult UpqdScData(string kssj, string jssj)
+        {
+            var data = _inpatientApp.UpqdScData(kssj, jssj);
             return Success(null, data);
         }
 
@@ -581,6 +614,28 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
         }
 
         #endregion
+
+        /// <summary>
+        /// 结算清单上传内容查询
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="sczt"></param>
+        /// <param name="tjzt"></param>
+        /// <param name="keyword"></param>
+        /// <param name="cykssj"></param>
+        /// <param name="cyjssj"></param>
+        /// <returns></returns>
+        public ActionResult GridSettlementGridJson(Pagination pagination, string sczt, string tjzt, string keyword = null, DateTime? cykssj = null, DateTime? cyjssj = null)
+        {
+            var data = new
+            {
+                rows = _patientBasicInfoDmnService.GetSettlementList(this.OrganizeId, sczt: sczt, tjzt: tjzt, keyword: keyword, pagination: pagination, cykssj: cykssj, cyjssj: cyjssj),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(data.ToJson());
+        }
 
     }
 }

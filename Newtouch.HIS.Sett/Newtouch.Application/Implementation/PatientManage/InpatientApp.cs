@@ -156,6 +156,11 @@ namespace Newtouch.HIS.Application.Implementation
             return new object();
         }
 
+        public object UpqdScData(string kssj, string jssj)
+        {
+            return _patientBasicInfoDmnService.GetUpqdScData(kssj, jssj);
+        }
+
         #endregion
 
 

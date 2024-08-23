@@ -29,6 +29,8 @@ namespace Newtouch.HIS.Application.Interface
 
 		object ZFToYB_Step_8(string zyh);
 
+        object UpqdScData(string kssj, string jssj);
+
         #endregion
 
         #region YBToZF steps

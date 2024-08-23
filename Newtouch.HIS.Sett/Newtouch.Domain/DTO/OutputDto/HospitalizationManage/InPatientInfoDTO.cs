@@ -229,6 +229,12 @@ namespace Newtouch.HIS.Domain.DTO
         public string brxzlb { get; set; }
     }
 
+    public class InSettlementInfoVO : InPatientInfoVO
+    {
+        public string sczt { get; set; }
+        public string tjzt { get; set; }
+    }
+
     public class patFeeVo
     {
         public decimal? je { get; set; }
