@@ -2391,6 +2391,19 @@ WHERE   a.zt = '1'
             };
             return FirstOrDefault<SysHosBasicInfoVO>(strSql.ToString(), par.ToArray());
         }
+
+        public string GetUpqdScData(string kssj, string jssj)
+        {
+            var strSql = new StringBuilder(@"select distinct stuff((select distinct ','+zyh from drjk_zyjs_output where zt='1' and jsqd_scrq is null and jsqd_sclsh is null
+and  czrq>=@kssj and czrq<=@jssj FOR XML Path('')),1,1,'') as zyh  from  drjk_zyjs_output");
+            DbParameter[] par =
+            {
+                new SqlParameter("@kssj", kssj),
+                new SqlParameter("@jssj", jssj)
+
+            };
+            return FirstOrDefault<string>(strSql.ToString(), par.ToArray());
+        }
         #endregion
 
         #region 重庆医保
@@ -2663,6 +2676,84 @@ WHERE   a.zyh = @zyh
                     db.Commit();
                 }
             }
+        }
+        #endregion
+
+        #region 秦皇岛医保
+        public Input_Bbrxx GetQHDjzdjInfo(string zyh, string orgId)
+        {
+            StringBuilder strSql = new StringBuilder();
+            strSql.Append(@"
+ SELECT  a.zyh hisId ,b.mdtrt_id mdtrt_id,a.OrganizeId orgid,
+        case when rytj is not null  then rytj else '21' end med_type ,e.cbdbm insuplc_admdvs,e.grbh psn_no,e.xzlx insutype,
+        c.gh operatorId,c.name operatorName,'03' mdtrt_cert_type,kh mdtrt_cert_no,isnull('','') dise_codg,isnull('','') dise_name
+FROM    NewtouchHIS_Sett..zy_brjbxx a
+        left join [drjk_rybl_input] b on a.zyh=b.zyh and b.zt='1'
+        LEFT JOIN [NewtouchHIS_Base].[dbo].[V_S_Sys_Staff] c ON c.OrganizeId = a.OrganizeId
+                                                              AND c.gh = a.doctor
+                                                              AND c.zt = '1'
+        LEFT JOIN [NewtouchHIS_Sett].[dbo].[xt_brjbxx] e ON e.patid = a.patid
+                                                            AND e.OrganizeId = a.OrganizeId
+                                                            AND e.zt = '1'
+       
+WHERE   
+a.zyh = @zyh
+        and e.brxz!='0' 
+        AND a.OrganizeId = @OrganizeId
+        AND a.zt = '1' ");
+            SqlParameter[] par =
+            {
+                new SqlParameter("@zyh", zyh),
+                new SqlParameter("@OrganizeId", orgId)
+            };
+            return this.FirstOrDefault<Input_Bbrxx>(strSql.ToString(), par);
+        }
+        public string GetQHDSzshData(string zyh, string orgId)
+        {
+            StringBuilder strSql = new StringBuilder();
+            strSql.Append(@" select jr_id from [dbo].[Drjk_sqsh_Output] where issqsz='1'  and zt='1' and zyh=@zyh ");
+            SqlParameter[] par =
+            {
+                new SqlParameter("@zyh", zyh),
+                new SqlParameter("@OrganizeId", orgId)
+            };
+            return this.FirstOrDefault<string>(strSql.ToString(), par);
+        }
+        public string GetQHDTFDate(string zyh, string orgId)
+        {
+            StringBuilder strSql = new StringBuilder();
+            strSql.Append(@"
+select distinct
+ stuff((
+select feedetl_sn+',' from(
+select mxsc.feedetl_sn from zy_xmjfb xmjfb1
+left join zy_xmjfb xmjfb2 on xmjfb1.cxzyjfbbh=xmjfb2.jfbbh
+left join [drjk_zyfymxsc_input] mxsc on mxsc.feedetl_sn='XM'+convert(varchar(20),xmjfb2.jfbbh)
+ where xmjfb1.zyh=@zyh and xmjfb1.cxzyjfbbh!='0' and xmjfb1.zt='1' and mxsc.zt!='0'  and (xmjfb1.sl+xmjfb2.sl)!=mxsc.cnt
+ AND xmjfb1.OrganizeId = @OrganizeId
+ union all
+ select mxsc.feedetl_sn from zy_ypjfb ypjfb1
+left join zy_ypjfb ypjfb2 on ypjfb1.cxzyjfbbh=ypjfb2.jfbbh
+left join [drjk_zyfymxsc_input] mxsc on mxsc.feedetl_sn='YP'+convert(varchar(20),ypjfb2.jfbbh)
+ where ypjfb1.zyh=@zyh and ypjfb1.cxzyjfbbh!='0' and ypjfb1.zt='1' and mxsc.zt!='0' and (ypjfb1.sl+ypjfb2.sl)!=mxsc.cnt
+AND ypjfb1.OrganizeId = @OrganizeId
+union all 
+select mxsc.feedetl_sn from zy_xmjfb xmjfb
+left join [drjk_zyfymxsc_input] mxsc on mxsc.feedetl_sn='XM'+convert(varchar(20),xmjfb.jfbbh)
+ where xmjfb.zyh=@zyh  and mxsc.zt!='0'  and xmjfb.zt='0' 
+ AND xmjfb.OrganizeId = @OrganizeId
+ union all
+ select mxsc.feedetl_sn from zy_ypjfb ypjfb
+left join [drjk_zyfymxsc_input] mxsc on mxsc.feedetl_sn='XM'+convert(varchar(20),ypjfb.jfbbh)
+ where ypjfb.zyh=@zyh  and mxsc.zt!='0'  and ypjfb.zt='0'
+ AND ypjfb.OrganizeId =@OrganizeId
+) a for xml path('')),1,0,'') feedetl_sn ");
+            SqlParameter[] par =
+            {
+                new SqlParameter("@zyh", zyh),
+                new SqlParameter("@OrganizeId", orgId)
+            };
+            return this.FirstOrDefault<string>(strSql.ToString(), par);
         }
         #endregion
 
@@ -3021,6 +3112,105 @@ where a.zt='1' and a.jsnm=@jsnm";
             };
             return this.FindList<HisKsZdVO>(sqlstr, par.ToArray());
         }
+
+        #region 基金结算清单上传内容查询
+        public IList<InSettlementInfoVO> GetSettlementList(string orgId, string sczt, string tjzt, string keyword = null, Pagination pagination = null, DateTime? cykssj = null, DateTime? cyjssj = null)
+        {
+            var sb = new StringBuilder();
+            sb.Append(@"select zyxx.zyh, isnull(zyxx.xm, xx.xm) xm
+,case when isnull(zyxx.nl,0) <> 0 then zyxx.nl else (case when zyxx.csny is not null and zyxx.ryrq is not null then datediff(yy,zyxx.csny,zyxx.ryrq) else 0 end) end nl
+,zyxx.brxz,(case zyxx.brxz when '0' then '自费' when '1' then '居民医保' when '2' then '职工医保' when '3' then '异地医保' when '11' then '居民医保' when '12' then '职工医保' when '13' then '异地医保' end)
+brxzmc,isnull(zyxx.blh, xx.blh) blh
+,zd.zdCode AS zzdCode,zd.icd10 AS zzdicd10,zd.zdmc zzdmc
+,CONVERT(varchar(100), zyxx.csny, 23) AS csny
+,CONVERT(varchar(100), zyxx.ryrq, 23) AS ryrq
+,CONVERT(varchar(100), zyxx.cyrq, 23) AS cyrq
+,zyxx.bq bqCode,bq.bqmc bqmc
+,zybz zybz
+,case zyxx.zybz when '0' then '入院登记' when '1' then '病区中' when '2' then '病区出院' when '3' then '病人出院' when '9' then '作废记录' else '' end AS zybzmc
+,isnull(zyxx.LastModifyTime, zyxx.CreateTime) UpdateTime
+,xx.py, '' wb
+,zyxx.zjlx zjlx
+,(CASE zyxx.zjlx WHEN '1'THEN '身份证' WHEN '2' THEN '护照' WHEN '3' THEN '军官证' ELSE '其他' END ) zjlxValue
+,zyxx.zjh zjh
+,(CASE zyxx.zjlx WHEN 1 THEN zyxx.zjh ELSE '' END) AS idCardNo
+,(CASE zyxx.xb WHEN '1' THEN '1' WHEN '2' THEN '2' ELSE '3' END ) as sex
+,(CASE zyxx.xb WHEN '1' THEN '男' WHEN '2' THEN '女' ELSE '不详' END ) as sexValue
+,zyxx.lxr AS contPerName 
+,zyxx.lxrdh AS contPerPhoneNum 
+,lxrItem.Code AS contPerRel 
+,lxrItem.Name AS contPerRelValue
+,zyxx.ks, ks.Name ksmc, zyxx.doctor, ysStaff.Name ysxm
+,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.patid,
+case isnull(ybjs.jsqd_sclsh,'0') when '0' then '未上传' else '已上传' end sczt,
+case isnull(ybjs.jsqd_tjzt,'0') when '0' then '未提交' else '已提交' end tjzt
+from zy_brjbxx(nolock) zyxx
+left join xt_brjbxx(nolock) xx
+on zyxx.patid = xx.patid AND zyxx.OrganizeId = xx.OrganizeId  AND xx.zt = '1'
+left join xt_brxz(nolock) xz
+ON xz.brxz = zyxx.brxz and xz.OrganizeId = zyxx.OrganizeId
+left join drjk_rybl_input rybl on rybl.zyh=zyxx.zyh  and rybl.zt='1'
+left join zy_rydzd(nolock) zd
+ON zd.zyh = zyxx.zyh AND zd.OrganizeId = zyxx.OrganizeId and zd.zdpx = 1 AND zd.zt = '1'
+left join [NewtouchHIS_Base]..V_S_xt_bq(nolock) bq
+ON bq.bqCode = zyxx.bq AND bq.OrganizeId = zyxx.OrganizeId  AND bq.zt = '1'
+LEFT JOIN NewtouchHIS_Base..V_C_Sys_ItemsDetail lxrItem 
+ON ( lxrItem.OrganizeId = zyxx.OrganizeId OR lxrItem.OrganizeId = '*')
+AND lxrItem.Code = zyxx.lxrgx
+AND lxrItem.CateCode = 'RelativeType'
+left join NewtouchHIS_Base..V_S_Sys_Department ks
+on ks.Code = zyxx.ks and ks.OrganizeId = zyxx.OrganizeId
+left join NewtouchHIS_Base..V_S_Sys_Staff ysStaff
+on ysStaff.gh = zyxx.doctor and ysStaff.OrganizeId = zyxx.OrganizeId
+left join drjk_zyjs_output ybjs
+on ybjs.zyh = zyxx.zyh and ybjs.zt = '1'
+where zyxx.zt = '1'
+and zyxx.brxz in ('1','2','3','11','12','13')
+and zyxx.OrganizeId = @orgId
+");
+
+            var pars = new List<SqlParameter>();
+            pars.Add(new SqlParameter("@orgId", orgId));
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                sb.Append(@" and (zyxx.xm like @keyword or zyxx.blh like @keyword or zyxx.zyh like @keyword)");
+                pars.Add(new SqlParameter("@keyword", "%" + (keyword ?? "") + "%"));
+            }
+            if (cykssj.HasValue)
+            {
+                sb.Append(@" and zyxx.cyrq >= @cykssj");
+                pars.Add(new SqlParameter("@cykssj", cykssj.Value.Date));
+            }
+            if (cyjssj.HasValue)
+            {
+                sb.Append(@" and zyxx.cyrq < @cyjssj");
+                pars.Add(new SqlParameter("@cyjssj", cyjssj.Value.AddDays(1).Date));
+            }
+            if (!string.IsNullOrWhiteSpace(sczt))
+            {
+                if (sczt == "1")
+                {
+                    sb.Append(@" and ybjs.jsqd_sclsh is null");
+                }
+                else
+                {
+                    sb.Append(@" and ybjs.jsqd_sclsh is not null");
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(tjzt))
+            {
+                if (tjzt == "1")
+                {
+                    sb.Append(@" and ybjs.jsqd_tjzt is null");
+                }
+                else
+                {
+                    sb.Append(@" and ybjs.jsqd_tjzt is not null");
+                }
+            }
+            return this.QueryWithPage<InSettlementInfoVO>(sb.ToString(), pagination, pars.ToArray());
+        }
+        #endregion
 
     }
 

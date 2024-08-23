@@ -219,6 +219,42 @@
                 { label: '版本名称', name: 'VER_NAME', width: 100, align: 'left' },
             ];
             break;
+        case "1320":
+            colModel = [
+                { label: '中药配方颗粒代码', name: 'ZYPFKL_CODE', width: 100, align: 'left' },
+                { label: '中药配方颗粒名称', name: 'ZYPFKL_NAME', width: 100, align: 'left' },
+                { label: '道地药材', name: 'DDYC', width: 100, align: 'left' },
+                { label: '规格', name: 'GG', width: 100, align: 'left' },
+                { label: '中药配方颗粒执行标准', name: 'ZYPFKLZXBZ', width: 100, align: 'left' },
+                { label: '不良反应检查信息', name: 'BLFYJCXX', width: 100, align: 'left' },
+                { label: '中药饮片代码', name: 'ZYYP_CODE', width: 60, align: 'left' },
+                { label: '中药饮片名称', name: 'ZYYP_NAME', width: 60, align: 'left' },
+                { label: '药材名称', name: 'YC_NAME', width: 60, align: 'left' },
+                { label: '功效分类', name: 'GXFL', width: 100, align: 'left' },
+                { label: '功能主治', name: 'GNZZ', width: 100, align: 'left' },
+                { label: '常规用法', name: 'CGYF', width: 100, align: 'left' },
+                { label: '数据更新时间', name: 'SJGXSJ', width: 100, align: 'left' },
+                { label: '创建机构编号', name: 'CJJG_CODE', width: 100, align: 'left' },
+                { label: '医保区划', name: 'YBQH', width: 100, align: 'left' },
+                { label: '版本号', name: 'VER', width: 100, align: 'left' }
+            ];
+            break;
+        case "1321":
+            colModel = [
+                { label: '医疗目录编码', name: 'YLML_CODE', width: 100, align: 'left' },
+                { label: '医疗服务项目名称', name: 'YLFWXM_NAME', width: 120, align: 'left' },
+                { label: '医疗服务项目输出', name: 'YLFWXMSC', width: 120, align: 'left' },
+                { label: '价格构成', name: 'JGGC', width: 100, align: 'left' },
+                { label: '计价单位', name: 'JJDW', width: 60, align: 'left' },
+                { label: '计价说明', name: 'JJSM', width: 120, align: 'left' },
+                { label: '诊疗项目说明', name: 'ZLXMSM', width: 200, align: 'left' },
+                { label: '费用类型口径', name: 'FYLXKJ', width: 60, align: 'left' },
+                { label: '生效时间', name: 'EFFECTIVE_TIME', width: 80, align: 'left' },
+                { label: '失效时间', name: 'EXPIRATION_TIME', width: 80, align: 'left' },
+                { label: '版本号', name: 'VER', width: 60, align: 'left' },
+                { label: '版本名称', name: 'VER_NAME', width: 120, align: 'left' },
+            ];
+            break;
             //查询类目录
         case "1304":
             colModel = [
@@ -413,26 +449,6 @@
                 { label: '经办机构', name: 'optins_no', width: 100, align: 'left' },
                 { label: '表名', name: 'tabname', width: 100, align: 'left' },
                 { label: '统筹区', name: 'poolarea_no', width: 100, align: 'left' }
-            ];
-            break;
-        case "1320":
-            colModel = [
-                { label: '中药配方颗粒代码', name: 'ZYPFKL_CODE', width: 100, align: 'left' },
-                { label: '中药配方颗粒名称', name: 'ZYPFKL_NAME', width: 100, align: 'left' },
-                { label: '道地药材', name: 'DDYC', width: 100, align: 'left' },
-                { label: '规格', name: 'GG', width: 100, align: 'left' },
-                { label: '中药配方颗粒执行标准', name: 'ZYPFKLZXBZ', width: 100, align: 'left' },
-                { label: '不良反应检查信息', name: 'BLFYJCXX', width: 100, align: 'left' },
-                { label: '中药饮片代码', name: 'ZYYP_CODE', width: 60, align: 'left' },
-                { label: '中药饮片名称', name: 'ZYYP_NAME', width: 60, align: 'left' },
-                { label: '药材名称', name: 'YC_NAME', width: 60, align: 'left' },
-                { label: '功效分类', name: 'GXFL', width: 100, align: 'left' },
-                { label: '功能主治', name: 'GNZZ', width: 100, align: 'left' },
-                { label: '常规用法', name: 'CGYF', width: 100, align: 'left' },
-                { label: '数据更新时间', name: 'SJGXSJ', width: 100, align: 'left' },
-                { label: '创建机构编号', name: 'CJJG_CODE', width: 100, align: 'left' },
-                { label: '医保区划', name: 'YBQH', width: 100, align: 'left' },
-                { label: '版本号', name: 'VER', width: 100, align: 'left' }
             ];
             break;
         case "1901":
