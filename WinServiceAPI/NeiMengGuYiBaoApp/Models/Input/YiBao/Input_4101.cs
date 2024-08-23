@@ -241,7 +241,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 39|入院时间|日期时间型|  |  |  |
         /// </summary> 
-        public DateTime adm_time { get; set; }
+        public string adm_time { get; set; }
 
         /// <summary>
         /// 40|入院科别|字符型|6|Y  |Y  |参照科室代码（dept）
@@ -406,12 +406,12 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 72|结算开始日期|日期型|  |  |Y  |
         /// </summary> 
-        public DateTime setl_begn_date { get; set; }
+        public string setl_begn_date { get; set; }
 
         /// <summary>
         /// 73|结算结束日期|日期型|  |  |Y  |
         /// </summary> 
-		public DateTime setl_end_date { get; set; }
+		public string setl_end_date { get; set; }
 
         /// <summary>
         /// 74|个人自付|数值型|16,2|  |Y  |  

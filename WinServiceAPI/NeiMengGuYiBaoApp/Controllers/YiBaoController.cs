@@ -3115,6 +3115,35 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input5203, out output, post, out code);
             return json;
         }
+
+        /// <summary>
+        /// 5204 费用明细查询
+        /// </summary>
+        /// <param name="post5203"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetHospitaSettlement_5204(Post_5203 post5203)
+        {
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "5204";
+            post.insuplc_admdvs = post5203.insuplc_admdvs; ;
+            post.inModel = 0;
+            post.operatorId = post5203.operatorId;
+            post.operatorName = post5203.operatorName;
+
+            Input_5203 input5203 = new Input_5203();
+            input5203.data = new data5203(); ;
+            input5203.data.psn_no = post5203.psn_no;
+            input5203.data.mdtrt_id = post5203.mdtrt_id;
+            input5203.data.setl_id = post5203.setl_id;
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input5203, out output, post, out code);
+            return json;
+        }
+
         /// <summary>
         /// 5205 人员慢特病用药记录查询
         /// </summary>
@@ -3286,8 +3315,33 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 9001 签到
+        #region 9001 签到  9002 签退
         ///在YiBaoHelper中
+        
+        //签退
+        [HttpPost]
+        public string DoSigin9002(Post_9002 post9002)
+        {
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "9002";
+            post.insuplc_admdvs = "";//post9002.insuplc_admdvs;
+            post.inModel = 0;
+            post.operatorId = post9002.operatorId;
+            post.operatorName = post9002.operatorName;
+
+
+            Input_9002 input9002 = new Input_9002();
+            input9002.signOut = new signOut(); 
+            input9002.signOut.sign_no = YiBaoInitHelper.sign_no;// post9002.sign_no;
+            input9002.signOut.opter_no = post9002.operatorId;
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input9002, out output, post, out code);
+            return json;
+        }
+
         #endregion
 
 

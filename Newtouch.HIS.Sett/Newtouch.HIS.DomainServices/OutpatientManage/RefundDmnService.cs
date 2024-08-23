@@ -1085,13 +1085,14 @@ and isnull(gh.ghzt,'') <> '2'  --排除已退
             }
             else
             {
-                strSql.Append(@"select distinct '门诊' type ,b.mzh zymzh,c.jsnm, b.jzid, d.jylsh ,convert(varchar(20),c.CreateTime,120) jssj");
+                strSql.Append(@"select distinct '门诊' type ,b.mzh zymzh,c.jsnm, b.jzid, c.ybjslsh jylsh ,convert(varchar(20),c.CreateTime,120) jssj");
             }
             strSql.Append(@" from xt_brjbxx a
 join mz_gh b on a.patid=b.patid and a.OrganizeId=b.OrganizeId
+join xt_card kh on kh.CardNo=b.kh and kh.CardType=b.CardType and kh.OrganizeId=b.OrganizeId and kh.zt='1'
 join mz_js c on b.patid=c.patid and b.ghnm=c.ghnm and c.OrganizeId=b.OrganizeId
 				  and c.jsnm not in(select cxjsnm  from mz_js where jszt='2')
-join cqyb_OutPut05 d on d.jsnm=c.jsnm and d.OrganizeId=c.OrganizeId where a.grbh=@rybh 
+left join cqyb_OutPut05 d on d.jsnm=c.jsnm and d.OrganizeId=c.OrganizeId where kh.grbh=@rybh 
 and a.OrganizeId=@orgId ");
             if (type == "1")
             {
@@ -1099,13 +1100,14 @@ and a.OrganizeId=@orgId ");
             }
             else
             {
-                strSql.Append(@" union all select distinct '住院' type,b.zyh zymzh,d.jsnm ,c.jylsh jzid,e.jylsh,convert(varchar(20),d.createtime,120) jssj");
+                strSql.Append(@" union all select distinct '住院' type,b.zyh zymzh,d.jsnm ,c.jylsh jzid,d.ybjslsh jylsh,convert(varchar(20),d.createtime,120) jssj");
             }
             strSql.Append(@" from xt_brjbxx a
 join zy_brjbxx b on a.patid=b.patid and a.OrganizeId=b.OrganizeId
+join xt_card kh on kh.CardNo=b.kh and kh.CardType=b.CardType and kh.OrganizeId=b.OrganizeId and kh.zt='1'
 join cqyb_OutPut02 c on c.zymzh=b.zyh and c.OrganizeId=b.OrganizeId
 join zy_js d on d.zyh=b.zyh and d.OrganizeId=b.OrganizeId and d.jsnm not in (select cxjsnm from zy_js where jszt='2')
-join cqyb_OutPut05 e on e.jsnm=d.jsnm and e.OrganizeId=d.OrganizeId where a.grbh=@rybh and a.OrganizeId=@orgId
+left join cqyb_OutPut05 e on e.jsnm=d.jsnm and e.OrganizeId=d.OrganizeId where kh.grbh=@rybh and a.OrganizeId=@orgId
 ");
             if (type == "1")
             {

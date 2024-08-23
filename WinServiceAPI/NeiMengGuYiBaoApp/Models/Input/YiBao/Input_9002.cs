@@ -6,17 +6,20 @@ using System.Threading.Tasks;
 
 namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
-    public class Input_9002
+    public class Input_9002 : InputBase
     {
-        //       
-        //
+        public signOut signOut { get; set; }
+    }
+
+    public class signOut
+    {
         /// <summary>
-        ///  sign_no 签到编号  字符型  30  
+        ///   1  sign_no 签到编号  字符型  20  Y
         /// </summary>
-        public string sign_no;
+        public string sign_no { get; set; }
         /// <summary>
-        /// opter_no 操作员编号  字符型  20
+        /// 2  opter_no 操作员编号  字符型  20  
         /// </summary>
-        public string opter_no;
+        public string opter_no { get; set; }
     }
 }
