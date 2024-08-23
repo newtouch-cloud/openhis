@@ -158,6 +158,7 @@
     var medicalInsurance = '@medicalInsurance';
     var orgId = '@(opr.OrganizeId)';
     var cardInfo;
+    var currejlsx;
     var sfqt = true; //是否全退
     var tjscfh = [];
     $(function() {
@@ -354,7 +355,7 @@
                         }
                     }
                 },
-                { label: "结算类型", name: "jslx", width: 40, align: "left", hidden: true }
+                { label: "结算类型", name: "jslx", width: 40, align: "left", hidden: false }
             ],
             multiselect: true,
             viewrecords: true,
@@ -589,6 +590,8 @@
 
     //退费确认
     function newtouch_event_f6() {
+        currejlsx=$("#gridList").jqGrid('getRowData_AllLine')[0].jslx;
+
         //获取选中行Id
         var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
         if (selRowIds.length === 0) {
@@ -753,37 +756,37 @@
                 width: "600px",
                 height: openHeight,
                 callBack: function (iframeId) {
-                    if (pasccfhlist.length > 0) {
-                        $.ajax({
-                            type: "POST",
-                            url: "/OutpatientManage/OutpatientRefund/retApplicationform",
-                            data: { mzh: patModel.mzh, cfhList: pasccfhlist },
-                            dataType: "json",
-                            async: true,
-                            success: function (repjson) { }
-                        });
-					}
+                    //if (pasccfhlist.length > 0) {
+                    //    $.ajax({
+                    //        type: "POST",
+                    //        url: "/OutpatientManage/OutpatientRefund/retApplicationform",
+                    //        data: { mzh: patModel.mzh, cfhList: pasccfhlist },
+                    //        dataType: "json",
+                    //        async: true,
+                    //        success: function (repjson) { }
+                    //    });
+					//}
 
-					if (cgcfhlist.length>0) {
-						//物资库存回退
-						$.ajax({
-							type: "POST",
-							url: "/OutpatientManage/OutpatCharge/TuiHuiwzdj",
-							data: { cfh: cgcfhlist },
-							dataType: "json",
-							async: true,
-							success: function (repjson) {
+					//if (cgcfhlist.length>0) {
+					//	//物资库存回退
+					//	$.ajax({
+					//		type: "POST",
+					//		url: "/OutpatientManage/OutpatCharge/TuiHuiwzdj",
+					//		data: { cfh: cgcfhlist },
+					//		dataType: "json",
+					//		async: true,
+					//		success: function (repjson) {
 
-								//console.log(repjson.data.mesagssjsosn);
-								//console.log(repjson.data.jsonref);
-							}
-						});
-					}
+					//			//console.log(repjson.data.mesagssjsosn);
+					//			//console.log(repjson.data.jsonref);
+					//		}
+					//	});
+					//}
 
                     $.currentWindow(iframeId).AcceptClick(function (ajaxresp) {
                         //回收旧发票（作废旧发票）//打印新收费票据
                         if (ajaxresp && ajaxresp.data) {
-                            refundPrintInvoiceReq(thisJszb.fph, patModel, ajaxresp.data); 
+                            refundPrintInvoiceReq(thisJszb.fph, patModel, ajaxresp.data);
                         }
                         if (tjscfh.length>0) {
                             UpdateChargeTbz(tjscfh);
@@ -792,7 +795,7 @@
                         //HIS退费成功
                         $.modalAlert(ajaxresp.message, 'success');
                         //writeOffEBill(patModel.mzh, thisJszb.jsnm);
-                        newtouch_event_f4(); 
+                        newtouch_event_f4();
                     });
                 }
             });
@@ -955,7 +958,7 @@
 
 		//重庆医保退费
         function chongqingtuifei(tmx) {
-            
+
             var tjsxmDictObj = {};
             var tcfArr = new Array();
             var msg = "";
@@ -1006,6 +1009,7 @@
 	                    async: false,
 	                    success: function (data) {
 	                        cqybjyDenySettleReturn = eval('(' + data + ')');
+
 	                    },
 	                    error: function (request, error, ex) {
 	                        msg = "医保服务(门诊结算撤销交易【2208】)不可访问：[" + ex + "]";
@@ -1053,7 +1057,7 @@
                                                         //广西电子发票
                                                         //writeOffEBill(patModel.mzh, thisJszb.jsnm);//发票冲红
                                                         newtouch_event_f4();
-                                                       
+
                                                     });
                                             },
                                                 50);
@@ -1157,8 +1161,32 @@
                                                 });
                                             }
                                         }
+                                        if (currejlsx == "0") {
+                                            $.najax({
+                                                type: "GET",
+                                                url: "/OutpatientManage/OutpatCharge/GetCQjzdjInfo?mzh=" + patModel.mzh,
+                                                dataType: "json",
+                                                loadingtext: "正在请求HIS取消挂号，请稍后…",
+                                                async: false,
+                                                success: function (ajaxresp) {
+                                                    if (ajaxresp && ajaxresp.mdtrt_id) {
+                                                        var payoptype = { 'mdtrt_id': ajaxresp.mdtrt_id, "psn_no": cqPatInfo.grbh, insuplc_admdvs: cqPatInfo.xzqh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', 'hisId': patModel.mzh, 'ipt_otp_no': patModel.mzh };
+                                                        $.ajax({
+                                                            type: "POST",
+                                                            url: "http://127.0.0.1:33333/api/YiBao/RegisteredUndo_2202",
+                                                            dataType: "json",
+                                                            data: payoptype,
+                                                            async: false,
+                                                            success: function (data) {
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            });
+                                        }
                                     }
                                 });
+
                                 break;
                         }
 	                    mxscobj.jzid = jzid;
