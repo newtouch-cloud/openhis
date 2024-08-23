@@ -1399,6 +1399,11 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
 
         #endregion
 
+        public ActionResult QualityControlIndex()
+        {
+            return View();
+        }
+
         public ActionResult CountLisIncompletezy(string zyh)
         {
             var num = _dischargeSettleDmnService.CountLisIncompletezy(OrganizeId, zyh);
