@@ -1,7 +1,7 @@
 ﻿using CQYiBaoInterface.Models.Input;
-using CQYiBaoInterface.Models.Log;
 using CQYiBaoInterface.Models.Output;
 using CQYiBaoInterface.Models.Post;
+using NeiMengGuYiBaoApp.Models.Log;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
