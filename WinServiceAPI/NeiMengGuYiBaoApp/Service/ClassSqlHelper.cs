@@ -687,7 +687,7 @@ where  jz.zyh = '{hisId}'");
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@zyh", hisid);
-            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_setlinfoV2", Parameters);
+            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_setlinfoV", Parameters);
         }
 
         /// <summary>
