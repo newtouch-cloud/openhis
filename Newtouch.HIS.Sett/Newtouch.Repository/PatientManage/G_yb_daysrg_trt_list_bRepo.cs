@@ -83,6 +83,14 @@ from NewtouchHIS_Base.[dbo].G_yb_tcm_diag_b with(nolock)  where (@key='' or DISE
                     sqlstr = @"select TCMSYMP_ID,SDS_CGY_CODE,SDS_CGY_NAME,SDS_ATTR_CODE,SDS_ATTR,SDS_TYPE_CODE,SDS_TYPE_NAME,VALI_FLAG,VER,VER_NAME
 from NewtouchHIS_Base.[dbo].G_yb_tcmsymp_type_b with(nolock) where (@key='' or SDS_TYPE_CODE=@key) or  (@key='' or SDS_TYPE_NAME=@key)";
                     break;
+                case "1320":
+                    sqlstr = @"select ZYPFKL_CODE, ZYPFKL_NAME, DDYC, GG, ZYPFKLZXBZ, ZYYP_CODE, ZYYP_NAME, YC_NAME, GXFL,GNZZ, CGYF, SJGXSJ, CJJG_CODE, YBQH, VER
+from NewtouchHIS_Base.[dbo].G_yb_zypfklmu_list_b with (nolock) where(@key = '' or ZYPFKL_NAME = @key) or(@key = '' or YC_NAME = @key)";
+                    break;
+                case "1321":
+                    sqlstr = @"select YLML_CODE, YLFWXM_NAME, YLFWXMSC, JGGC, JJDW, JJSM, ZLXMSM, FYLXKJ, EFFECTIVE_TIME, EXPIRATION_TIME, VER, VER_NAME
+from NewtouchHIS_Base.[dbo].G_yb_ylfuxm_new_list_b with (nolock) where(@key = '' or YLML_CODE = @key) or(@key = '' or YLFWXM_NAME = @key)";
+                    break;
                 default:
                     break;
             }
