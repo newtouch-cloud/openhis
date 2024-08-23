@@ -2195,7 +2195,7 @@ namespace YiBaoBase
                 }
                 MessageBox.Show("人员定点备办理成功！");
             }
-            me_Ybfhxx10.Text = json;
+            memoEdit3.Text = json;
         
         }
 

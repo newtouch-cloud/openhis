@@ -539,6 +539,8 @@
             this.layoutControlGroup22 = new DevExpress.XtraLayout.LayoutControlGroup();
             this.layoutControlItem196 = new DevExpress.XtraLayout.LayoutControlItem();
             this.xtraTabPage21 = new DevExpress.XtraTab.XtraTabPage();
+            this.label6 = new System.Windows.Forms.Label();
+            this.tb_cs_1101_name = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.tb_9102_resp = new System.Windows.Forms.TextBox();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
@@ -575,8 +577,6 @@
             this.layoutControlItem49 = new DevExpress.XtraLayout.LayoutControlItem();
             this.layoutControlItem50 = new DevExpress.XtraLayout.LayoutControlItem();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.tb_cs_1101_name = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.layoutControl1)).BeginInit();
             this.layoutControl1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabControl1)).BeginInit();
@@ -3608,7 +3608,6 @@
             // 
             this.xtraTabPage8.Controls.Add(this.layoutControl10);
             this.xtraTabPage8.Name = "xtraTabPage8";
-            this.xtraTabPage8.PageVisible = false;
             this.xtraTabPage8.Size = new System.Drawing.Size(1356, 712);
             this.xtraTabPage8.Text = "病人转院病案管理";
             // 
@@ -4583,7 +4582,6 @@
             // 
             this.xtraTabPage11.Controls.Add(this.layoutControl13);
             this.xtraTabPage11.Name = "xtraTabPage11";
-            this.xtraTabPage11.PageVisible = false;
             this.xtraTabPage11.Size = new System.Drawing.Size(1356, 712);
             this.xtraTabPage11.Text = "商品采购";
             // 
@@ -5294,7 +5292,6 @@
             // 
             this.xtraTabPage15.Controls.Add(this.layoutControl15);
             this.xtraTabPage15.Name = "xtraTabPage15";
-            this.xtraTabPage15.PageVisible = false;
             this.xtraTabPage15.Size = new System.Drawing.Size(1356, 712);
             this.xtraTabPage15.Text = "人员慢特病备案管理";
             // 
@@ -6152,7 +6149,6 @@
             // 
             this.xtraTabPage16.Controls.Add(this.layoutControl18);
             this.xtraTabPage16.Name = "xtraTabPage16";
-            this.xtraTabPage16.PageVisible = false;
             this.xtraTabPage16.Size = new System.Drawing.Size(1356, 712);
             this.xtraTabPage16.Text = "人员定点备案管理";
             // 
@@ -7079,6 +7075,22 @@
             this.xtraTabPage21.Size = new System.Drawing.Size(1356, 712);
             this.xtraTabPage21.Text = "接口测试";
             // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(48, 156);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(31, 14);
+            this.label6.TabIndex = 14;
+            this.label6.Text = "姓名";
+            // 
+            // tb_cs_1101_name
+            // 
+            this.tb_cs_1101_name.Location = new System.Drawing.Point(97, 148);
+            this.tb_cs_1101_name.Name = "tb_cs_1101_name";
+            this.tb_cs_1101_name.Size = new System.Drawing.Size(160, 22);
+            this.tb_cs_1101_name.TabIndex = 13;
+            // 
             // label5
             // 
             this.label5.AutoSize = true;
@@ -7410,22 +7422,6 @@
             // 
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
-            // 
-            // tb_cs_1101_name
-            // 
-            this.tb_cs_1101_name.Location = new System.Drawing.Point(97, 148);
-            this.tb_cs_1101_name.Name = "tb_cs_1101_name";
-            this.tb_cs_1101_name.Size = new System.Drawing.Size(160, 22);
-            this.tb_cs_1101_name.TabIndex = 13;
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(48, 156);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(31, 14);
-            this.label6.TabIndex = 14;
-            this.label6.Text = "姓名";
             // 
             // Frm_Main
             // 

@@ -68,22 +68,25 @@
                     <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="查询" onclick="GetYbInfo()" />
                 </td>
                 <td class="formValue">
-                    @if (openYbSett == true || openXnhSett == true)
-                    {
-                    <div id="readCard" style="color:orangered;display:initial;">
-                        <input type="button" id="btkhsr" value="证件号输入" class="form-control" style="border-color:#00a0e9; margin-left: 0px;margin-top: 2px; height: 23px;width:44px;float: left;vertical-align:central;" onclick="GetPatSbkh()" />
-                        <i class="fa fa-id-card" style="font-size: 27px; float: left;vertical-align:central;" title="读卡"></i>
-                        <select id="readCardCardType" class="form-control" style="margin-left: 0px;margin-top: 2px; height: 22px;width:36px;float: left;vertical-align:central;">
-                            @if (openYbSett == true)
-                            {
-                                <option value="03">社</option>
-                            }
-                            <option value="01">社(电)</option>
-                            <option value="02">身</option>
-                        </select>
-                    </div>
-                    }
+                    @Html.Partial("YibaoRedCardCommon")
                 </td>
+                @*<td class="formValue">
+                        @if (openYbSett == true || openXnhSett == true)
+                        {
+                            <div id="readCard" style="color:orangered;display:initial;">
+                                <input type="button" id="btkhsr" value="证件号输入" class="form-control" style="border-color:#00a0e9; margin-left: 0px;margin-top: 2px; height: 23px;width:44px;float: left;vertical-align:central;" onclick="GetPatSbkh()" />
+                                <i class="fa fa-id-card" style="font-size: 27px; float: left;vertical-align:central;" title="读卡"></i>
+                                <select id="readCardCardType" class="form-control" style="margin-left: 0px;margin-top: 2px; height: 22px;width:36px;float: left;vertical-align:central;">
+                                    @if (openYbSett == true)
+                                    {
+                                        <option value="03">社</option>
+                                    }
+                                    <option value="01">社(电)</option>
+                                    <option value="02">身</option>
+                                </select>
+                            </div>
+                        }
+                    </td>*@
             </tr>
             <tr>
                 <th class="formTitle">医疗类别：</th>
@@ -128,9 +131,9 @@
                     <label id="xb"></label>
                 </td>
                 @*<th class="formTitleTh">民族：</th>
-                <td class="formValueYb">
-                    <label id="mz"></label>
-                </td>*@
+                    <td class="formValueYb">
+                        <label id="mz"></label>
+                    </td>*@
 
             </tr>
             <tr>
@@ -167,13 +170,13 @@
     var medicalInsurance = '@medicalInsurance';//医保所属地配置:区分医院所属医保区域
     var cqPatInfo = {};//患者读卡信息
     //读卡
-    function readCard() {
-        var cardInfo;
-        var yibaoCardInfo;
-        var cqcardInfo;
-        var cqyibaoCardInfo;
-        GetReadCardInfo(null,false);
-    }
+    //function readCard() {
+    //    var cardInfo;
+    //    var yibaoCardInfo;
+    //    var cqcardInfo;
+    //    var cqyibaoCardInfo;
+    //    GetReadCardInfo(null,false);
+    //}
     $('#jzId').newtouchBatchFloatingSelector({
         width: 500,
         height: 200,
@@ -221,7 +224,7 @@
         if (type=="1")
         {
             var dyxsData = { begntime: $('#kssj').val(),psn_no: cqPatInfo.grbh, insutype:cqPatInfo.xzlx,med_type: $('#sel_yllb').val(), operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: cqPatInfo.xzqh };
-          
+
             $.ajax({
                 type: "POST",
                 url: "http://127.0.0.1:33333/api/YiBao/GetPersonnelTreatment_2001",
@@ -523,7 +526,7 @@
             return $.enum.getDescByValue("Enumjjzflx", val);
         }
         },
-    
+
         {
             label: '基金款项待遇享受标志', name: 'trt_enjymnt_flag', width: 105, align: 'center', formatter: function (val) {
                 return $.enum.getDescByValue("Enumdyxsbz", val);
@@ -735,7 +738,7 @@
 
 
     //读卡 调用01,13接口
-    function GetReadCardInfo(sbkobj, boolVal) {
+    @*function GetReadCardInfo(sbkobj, boolVal) {
         var cardInfo1;
         var cardInfo2;
         var cardInfo3;
@@ -801,10 +804,18 @@
             $.loading(false);
             $.modalAlert("刷卡获取医保信息失败！失败原因：医保中心无信息返回，请重试！", 'error');
         }
+    }*@
 
-
-
+    function ReadCardCall(readCardObj) {
+        $("#rybh").html(cqPatInfo.grbh);
+        $("#zjhm").html(cqPatInfo.sfzh);
+        $("#xm").html(cqPatInfo.xm);
+        $("#xb").html(readCardObj.cardInfo1.gend == "1" ? "男" : "女");
+        //$("#mz").html(cardInfo1.naty);
+        $("#csny").html(readCardObj.cardInfo1.brdy);
+        $("#nl").html(readCardObj.cardInfo1.age + "岁");
     }
+
     //手输社保卡号
     function GetPatSbkh() {
         $.modalOpen({
@@ -818,15 +829,15 @@
             }
         });
     }
-    $('#readCard i').click(function () {
-        setTimeoutReadCard();
-    });
+    //$('#readCard i').click(function () {
+    //    setTimeoutReadCard();
+    //});
 
-    //触发读卡
-    function setTimeoutReadCard() {
-        $.loading(true, '正在读卡，请稍后…');
-        setTimeout("readCard();", 50);
-    }
+    ////触发读卡
+    //function setTimeoutReadCard() {
+    //    $.loading(true, '正在读卡，请稍后…');
+    //    setTimeout("readCard();", 50);
+    //}
 
 
 </script>

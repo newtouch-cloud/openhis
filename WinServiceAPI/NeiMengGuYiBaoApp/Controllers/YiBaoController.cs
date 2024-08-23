@@ -290,6 +290,8 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_1101 output1101 = new Output_1101();
             string codeOut = "1";
             string jsonStr = YiBaoHelper.CallAndSaveLog(input1101, out output1101, post, out codeOut);
+            if (codeOut != "0")
+                return jsonStr;
             JObject jsonUP = JObject.Parse(jsonStr);
             cardecinfo cardecinfo = new cardecinfo();
             cardecinfo.certno = input1101.data.certno;
