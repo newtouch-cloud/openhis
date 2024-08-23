@@ -332,5 +332,38 @@ namespace Newtouch.HIS.Domain.ReportTemplateVO
         public string SDS_TYPE_CODE { get; set; }
         public string SDS_TYPE_NAME { get; set; }
         #endregion
+
+        #region 1320
+        public string ZYPFKL_CODE { get; set; }
+        public string ZYPFKL_NAME { get; set; }
+        public string DDYC { get; set; }
+        public string GG { get; set; }
+        public string ZYPFKLZXBZ { get; set; }
+        public string BLFYJCXX { get; set; }
+        public string ZYYP_CODE { get; set; }
+        public string ZYYP_NAME { get; set; }
+        public string YC_NAME { get; set; }
+        public string GXFL { get; set; }
+        public string GNZZ { get; set; }
+        public string CGYF { get; set; }
+        public string SJGXSJ { get; set; }
+        public string CJJG_CODE { get; set; }
+        public string YBQH { get; set; }
+
+        #endregion
+
+
+        #region 1321
+        public string YLML_CODE { get; set; }
+        public string YLFWXM_NAME { get; set; }
+        public string YLFWXMSC { get; set; }
+        public string JGGC { get; set; }
+        public string JJDW { get; set; }
+        public string JJSM { get; set; }
+        public string ZLXMSM { get; set; }
+        public string FYLXKJ { get; set; }
+        public string EFFECTIVE_TIME { get; set; }
+        public string EXPIRATION_TIME { get; set; }
+        #endregion
     }
 }

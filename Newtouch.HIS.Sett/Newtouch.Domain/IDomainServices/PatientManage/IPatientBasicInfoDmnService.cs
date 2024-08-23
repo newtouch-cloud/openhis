@@ -217,6 +217,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="patid"></param>
         void InpatientYBchangetoZF(string orgId, string zyh, int patid);
 
+        string GetUpqdScData(string kssj, string jssj);
         #region 新农合
 
         SysHosBasicInfoVO GetZfToXnhPatInfo(string zyh, string orgId);
@@ -238,9 +239,18 @@ namespace Newtouch.HIS.Domain.IDomainServices
 		#region 重庆医保
 
 	    Input_Bbrxx GetCQjzdjInfo(string zyh, string orgId);
-	    void InPatZFchangetoYB(string orgId, string zyh, int patid, ZYToYBDto patInfo, CqybMedicalReg02Entity ryblInfo);
+
+        void InPatZFchangetoYB(string orgId, string zyh, int patid, ZYToYBDto patInfo, CqybMedicalReg02Entity ryblInfo);
         void OutPatZFchangetoYB(string orgId, string mzh, int patid, ZYToYBDto patInfo);
         void UpdateCqybOut02(string zyh,string orgId);
+        #endregion
+
+        #region 重庆医保
+        Input_Bbrxx GetQHDjzdjInfo(string zyh, string orgId);
+
+        string GetQHDTFDate(string zyh, string orgId);
+
+        string GetQHDSzshData(string zyh, string orgId);
         #endregion
 
         #region 医保业务
@@ -300,5 +310,19 @@ namespace Newtouch.HIS.Domain.IDomainServices
 
         bool updateZybrxxkExpandZhye(string zyh, string organizeId, decimal? zhye);
         List<HisKsZdVO> GetksZzdList(string orgid);
+
+        /// <summary>
+        /// 基金结算清单上传查询
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="sczt"></param>
+        /// <param name="tjzt"></param>
+        /// <param name="keyword"></param>
+        /// <param name="pagination"></param>
+        /// <param name="cykssj"></param>
+        /// <param name="cyjssj"></param>
+        /// <returns></returns>
+        IList<InSettlementInfoVO> GetSettlementList(string orgId, string sczt, string tjzt, string keyword = null, Pagination pagination = null, DateTime? cykssj = null, DateTime? cyjssj = null);
+
     }
 }
