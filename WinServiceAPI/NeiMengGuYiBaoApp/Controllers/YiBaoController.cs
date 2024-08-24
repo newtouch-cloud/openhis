@@ -22,6 +22,7 @@ using System.Xml;
 using NeiMengGuYiBaoApp.Service;
 using NeiMengGuYiBaoApp.Models.Output.HeaSecReadInfo;
 using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
+using AutoMapper;
 
 namespace NeiMengGuYiBaoApp.Controllers
 {
@@ -2562,6 +2563,196 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
+        #region 3508 3509 3510 3511 3512 3513 定点医药机构商品信息查询 3607 结算清单质控结果查询
+        /// <summary>
+        /// 【3508】定点医药机构商品库存信息查询
+        /// </summary>
+        /// <param name="post3508"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetProductInventoryInfo_3508(Post_3508 post3508)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3508.hisId;
+            post.tradiNumber = "3508";
+            post.inModel = 0;
+            post.operatorId = post3508.operatorId;
+            post.operatorName = post3508.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3508 input3508 = new Input_3508();
+            input3508.data = mapper.Map<Data3508>(post3508);
+            input3508.data.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_3508 output3508 = new Output_3508();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3508, out output3508, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【3509】定点医药机构商品库存变更记录查询
+        /// </summary>
+        /// <param name="post3509"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetProductInventoryChangeRecord_3509(Post_3509 post3509)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3509.hisId;
+            post.tradiNumber = "3509";
+            post.inModel = 0;
+            post.operatorId = post3509.operatorId;
+            post.operatorName = post3509.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3509 input3509 = new Input_3509();
+            input3509.data = mapper.Map<Data3509>(post3509);
+            input3509.data.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_3509 output3509 = new Output_3509();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3509, out output3509, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【3510】定点医药机构商品采购信息查询
+        /// </summary>
+        /// <param name="post3510"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetProductSourcingInfo_3510(Post_3510 post3510)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3510.hisId;
+            post.tradiNumber = "3510";
+            post.inModel = 0;
+            post.operatorId = post3510.operatorId;
+            post.operatorName = post3510.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3510 input3510 = new Input_3510();
+            input3510.data = mapper.Map<Data3510>(post3510);
+            input3510.data.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_3510 output3510 = new Output_3510();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3510, out output3510, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【3511】定点医药机构商品销售信息查询
+        /// </summary>
+        /// <param name="post3511"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetProductSalesInfo_3511(Post_3511 post3511)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3511.hisId;
+            post.tradiNumber = "3511";
+            post.inModel = 0;
+            post.operatorId = post3511.operatorId;
+            post.operatorName = post3511.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3511 input3511 = new Input_3511();
+            input3511.data = mapper.Map<Data3511>(post3511);
+            input3511.data.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_3511 output3511 = new Output_3511();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3511, out output3511, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【3512】定点医药机构入库商品追溯信息查询
+        /// </summary>
+        /// <param name="post3512"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetProductTraceabilityInfo_3512(Post_3512 post3512)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3512.hisId;
+            post.tradiNumber = "3512";
+            post.inModel = 0;
+            post.operatorId = post3512.operatorId;
+            post.operatorName = post3512.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3512 input3512 = new Input_3512();
+            input3512.data = mapper.Map<Data3512>(post3512);
+            input3512.data.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_3512 output3512 = new Output_3512();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3512, out output3512, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【3513】定点医药机构商品销售追溯信息查询
+        /// </summary>
+        /// <param name="post3513"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetProductSaleTraceabilityInfo_3513(Post_3513 post3513)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3513.hisId;
+            post.tradiNumber = "3513";
+            post.inModel = 0;
+            post.operatorId = post3513.operatorId;
+            post.operatorName = post3513.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3513 input3513 = new Input_3513();
+            input3513.data = mapper.Map<Data3513>(post3513);
+            input3513.data.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_3513 output3513 = new Output_3513();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3513, out output3513, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【3607】结算清单质控结果查询
+        /// </summary>
+        /// <param name="post3607"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetSettlementQualityControlResults_3607(Post_3607 post3607)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3607.hisId;
+            post.tradiNumber = "3607";
+            post.inModel = 0;
+            post.operatorId = post3607.operatorId;
+            post.operatorName = post3607.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var mapper = config.CreateMapper();
+            Input_3607 input3607 = new Input_3607();
+            input3607.data = mapper.Map<Data3607>(post3607);
+
+            Output_3607 output3607 = new Output_3607();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3607, out output3607, post, out code);
+            return json;
+        }
+        #endregion
+
         #region 4101 4102 4103 4104 4105 医疗保证基金结算清单信息
         /// <summary>
         /// 4101 医疗保证基金结算清单信息上传
@@ -3032,7 +3223,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 5201 5202 5203 5205 5206 5301 5302 5303 5304 信息查询
+        #region 5201 5202 5203 5204 5205 5206 5301 5302 5303 5304 信息查询
         /// <summary>
         /// 5201 就诊信息查询
         /// </summary>
