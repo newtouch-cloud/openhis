@@ -233,6 +233,8 @@ namespace Newtouch.HIS.Domain.DTO
     {
         public string sczt { get; set; }
         public string tjzt { get; set; }
+        public string setl_id { get; set; }
+        public string psn_no { get; set; }
     }
 
     public class patFeeVo
