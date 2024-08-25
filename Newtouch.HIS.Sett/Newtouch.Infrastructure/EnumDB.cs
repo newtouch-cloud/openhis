@@ -1212,27 +1212,27 @@ namespace Newtouch.Infrastructure
     }
     public enum EnumYbQuery
     {
-        [Description("人员待遇享受")]
+        [Description("【2001】人员待遇享受")]
         rydyxs = 1,
-        [Description("就诊信息查询")]
+        [Description("【5201】就诊信息查询")]
         jzxxcx = 2,
-        [Description("诊断信息查询")]
+        [Description("【5202】诊断信息查询")]
         zdxxcx = 3,
-        [Description("结算信息查询")]
+        [Description("【5203】结算信息查询")]
         jsxxcx = 4,
-        [Description("费用明细查询")]
+        [Description("【5204】费用明细查询")]
         fymxcx = 5,
-        [Description("人员慢特病用药记录查询")]
+        [Description("【5205】人员慢特病用药记录查询")]
         rymtbyyjl = 6,
-        [Description("人员累计信息查询")]
+        [Description("【5206】人员累计信息查询")]
         ryljxxcx = 7,
-        [Description("人员特殊病备案查询")]
+        [Description("【5301】人员特殊病备案查询")]
         rytsbbacx = 8,
-        [Description("人员定点信息查询")]
+        [Description("【5302】人员定点信息查询")]
         ryddxxcx = 9,
-        [Description("在院信息查询")]
+        [Description("【5303】在院信息查询")]
         zyxxcx = 10,
-        [Description("转院信息查询")]
+        [Description("【5304】转院信息查询")]
         zyxx = 11,
 
     }
