@@ -3014,7 +3014,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         public string QueryMedicalSettlement_4103(PostBase post)
         {
 
-            post.inModel = 1;
+            post.inModel = 0;
             post.tradiNumber = "4103";
             Input_4103 input4103 = new Input_4103();
             input4103.data = new data4103();
@@ -3066,6 +3066,30 @@ namespace NeiMengGuYiBaoApp.Controllers
                 return json;
             return json;
         }
+        /// <summary>
+        /// 【4105】医疗保障基金结算清单数量统计查询
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        public string QueryQltctrlProblem_4105(Post_4105 post)
+        {
+            post.inModel = 1;
+            post.tradiNumber = "4105";
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_4105 input4105 = new Input_4105();
+            input4105.data = new data4105();
+            string orgcode = ConfigurationManager.AppSettings["fixmedins_code"];
+            input4105.data.fixmedins_code = orgcode;
+            input4105.data.medtype_list = "21";
+            input4105.data.stt_begntime = post.begntime;
+            input4105.data.stt_endtime = post.endtime;
+            Output_4104 output = new Output_4104();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4105, out output, post, out code);
+            if (code != "0")
+                return json;
+            return json;
+        }
         #endregion
 
         #region 4401 4402 住院病案例首页信息
@@ -3110,7 +3134,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.inModel = 0;
             post.tradiNumber = "4402";
 
-            post.hisId = "00058";
+            //post.hisId = post.hisId;
             Input_4402 input4402 = new Input_4402();
             input4402.data = new List<data_4402>();
             input4402.data = Function.ToList<data_4402>(ClassSqlHelper.QueryMedicalRecords4402(orgId, post.hisId));
@@ -3123,7 +3147,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 4501 4502 4505 报告记录
+        #region 4501 4502 4503 4504 4505 报告记录
         /// <summary>
         ///  4501 临床检查报告记录
         /// </summary>
@@ -3131,7 +3155,6 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <returns></returns>
         public string PostClinicalExamination_4501(PostBase post)
         {
-            post.hisId = "00059";
             post.inModel = 0;
             post.tradiNumber = "4501";
             Input_4501 input4501 = new Input_4501();
