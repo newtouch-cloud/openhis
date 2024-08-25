@@ -3118,55 +3118,55 @@ where a.zt='1' and a.jsnm=@jsnm";
         {
             var sb = new StringBuilder();
             sb.Append(@"select zyxx.zyh, isnull(zyxx.xm, xx.xm) xm
-,case when isnull(zyxx.nl,0) <> 0 then zyxx.nl else (case when zyxx.csny is not null and zyxx.ryrq is not null then datediff(yy,zyxx.csny,zyxx.ryrq) else 0 end) end nl
-,zyxx.brxz,(case zyxx.brxz when '0' then '自费' when '1' then '居民医保' when '2' then '职工医保' when '3' then '异地医保' when '11' then '居民医保' when '12' then '职工医保' when '13' then '异地医保' end)
-brxzmc,isnull(zyxx.blh, xx.blh) blh
-,zd.zdCode AS zzdCode,zd.icd10 AS zzdicd10,zd.zdmc zzdmc
-,CONVERT(varchar(100), zyxx.csny, 23) AS csny
-,CONVERT(varchar(100), zyxx.ryrq, 23) AS ryrq
-,CONVERT(varchar(100), zyxx.cyrq, 23) AS cyrq
-,zyxx.bq bqCode,bq.bqmc bqmc
-,zybz zybz
-,case zyxx.zybz when '0' then '入院登记' when '1' then '病区中' when '2' then '病区出院' when '3' then '病人出院' when '9' then '作废记录' else '' end AS zybzmc
-,isnull(zyxx.LastModifyTime, zyxx.CreateTime) UpdateTime
-,xx.py, '' wb
-,zyxx.zjlx zjlx
-,(CASE zyxx.zjlx WHEN '1'THEN '身份证' WHEN '2' THEN '护照' WHEN '3' THEN '军官证' ELSE '其他' END ) zjlxValue
-,zyxx.zjh zjh
-,(CASE zyxx.zjlx WHEN 1 THEN zyxx.zjh ELSE '' END) AS idCardNo
-,(CASE zyxx.xb WHEN '1' THEN '1' WHEN '2' THEN '2' ELSE '3' END ) as sex
-,(CASE zyxx.xb WHEN '1' THEN '男' WHEN '2' THEN '女' ELSE '不详' END ) as sexValue
-,zyxx.lxr AS contPerName 
-,zyxx.lxrdh AS contPerPhoneNum 
-,lxrItem.Code AS contPerRel 
-,lxrItem.Name AS contPerRelValue
-,zyxx.ks, ks.Name ksmc, zyxx.doctor, ysStaff.Name ysxm
-,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.patid,
-case isnull(ybjs.jsqd_sclsh,'0') when '0' then '未上传' else '已上传' end sczt,
-case isnull(ybjs.jsqd_tjzt,'0') when '0' then '未提交' else '已提交' end tjzt
+    ,case when isnull(zyxx.nl,0) <> 0 then zyxx.nl else (case when zyxx.csny is not null and zyxx.ryrq is not null then datediff(yy,zyxx.csny,zyxx.ryrq) else 0 end) end nl
+    ,zyxx.brxz, xz.brxzmc,isnull(zyxx.blh, xx.blh) blh
+    ,zd.zdCode AS zzdCode,zd.icd10 AS zzdicd10,zd.zdmc zzdmc
+    ,CONVERT(varchar(100), zyxx.csny, 23) AS csny
+    ,CONVERT(varchar(100), zyxx.ryrq, 23) AS ryrq
+    ,CONVERT(varchar(100), zyxx.cyrq, 23) AS cyrq
+    ,zyxx.bq bqCode,bq.bqmc bqmc
+    ,zybz zybz
+    ,case zyxx.zybz when '0' then '入院登记' when '1' then '病区中' when '2' then '病区出院' when '3' then '病人出院' when '9' then '作废记录' else '' end AS zybzmc
+    ,isnull(zyxx.LastModifyTime, zyxx.CreateTime) UpdateTime
+    ,xx.py, '' wb
+    ,zyxx.zjlx zjlx
+    ,(CASE zyxx.zjlx WHEN '1'THEN '身份证' WHEN '2' THEN '护照' WHEN '3' THEN '军官证' ELSE '其他' END ) zjlxValue
+    ,zyxx.zjh zjh
+    ,(CASE zyxx.zjlx WHEN 1 THEN zyxx.zjh ELSE '' END) AS idCardNo
+    ,(CASE zyxx.xb WHEN '1' THEN '1' WHEN '2' THEN '2' ELSE '3' END ) as sex
+    ,(CASE zyxx.xb WHEN '1' THEN '男' WHEN '2' THEN '女' ELSE '不详' END ) as sexValue
+    ,zyxx.lxr AS contPerName 
+    ,zyxx.lxrdh AS contPerPhoneNum 
+    ,lxrItem.Code AS contPerRel 
+    ,lxrItem.Name AS contPerRelValue
+    ,zyxx.ks, ks.Name ksmc, zyxx.doctor, ysStaff.Name ysxm
+    ,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.patid,
+    case isnull(ybjs.jsqd_sclsh,'0') when '0' then '未上传' else '已上传' end sczt,
+    case isnull(ybjs.jsqd_tjzt,'0') when '0' then '未提交' else '已提交' end tjzt,
+    ybjs.setl_id,
+    ybjs.psn_no
 from zy_brjbxx(nolock) zyxx
 left join xt_brjbxx(nolock) xx
-on zyxx.patid = xx.patid AND zyxx.OrganizeId = xx.OrganizeId  AND xx.zt = '1'
+    on zyxx.patid = xx.patid AND zyxx.OrganizeId = xx.OrganizeId  AND xx.zt = '1'
 left join xt_brxz(nolock) xz
-ON xz.brxz = zyxx.brxz and xz.OrganizeId = zyxx.OrganizeId
+    ON xz.brxz = zyxx.brxz and xz.OrganizeId = zyxx.OrganizeId
 left join drjk_rybl_input rybl on rybl.zyh=zyxx.zyh  and rybl.zt='1'
 left join zy_rydzd(nolock) zd
-ON zd.zyh = zyxx.zyh AND zd.OrganizeId = zyxx.OrganizeId and zd.zdpx = 1 AND zd.zt = '1'
+    ON zd.zyh = zyxx.zyh AND zd.OrganizeId = zyxx.OrganizeId and zd.zdpx = 1 AND zd.zt = '1'
 left join [NewtouchHIS_Base]..V_S_xt_bq(nolock) bq
-ON bq.bqCode = zyxx.bq AND bq.OrganizeId = zyxx.OrganizeId  AND bq.zt = '1'
+    ON bq.bqCode = zyxx.bq AND bq.OrganizeId = zyxx.OrganizeId  AND bq.zt = '1'
 LEFT JOIN NewtouchHIS_Base..V_C_Sys_ItemsDetail lxrItem 
-ON ( lxrItem.OrganizeId = zyxx.OrganizeId OR lxrItem.OrganizeId = '*')
-AND lxrItem.Code = zyxx.lxrgx
-AND lxrItem.CateCode = 'RelativeType'
+    ON ( lxrItem.OrganizeId = zyxx.OrganizeId OR lxrItem.OrganizeId = '*')
+    AND lxrItem.Code = zyxx.lxrgx AND lxrItem.CateCode = 'RelativeType'
 left join NewtouchHIS_Base..V_S_Sys_Department ks
-on ks.Code = zyxx.ks and ks.OrganizeId = zyxx.OrganizeId
+    on ks.Code = zyxx.ks and ks.OrganizeId = zyxx.OrganizeId
 left join NewtouchHIS_Base..V_S_Sys_Staff ysStaff
-on ysStaff.gh = zyxx.doctor and ysStaff.OrganizeId = zyxx.OrganizeId
+    on ysStaff.gh = zyxx.doctor and ysStaff.OrganizeId = zyxx.OrganizeId
 left join drjk_zyjs_output ybjs
-on ybjs.zyh = zyxx.zyh and ybjs.zt = '1'
+    on ybjs.zyh = zyxx.zyh and ybjs.zt = '1'
 where zyxx.zt = '1'
-and zyxx.brxz in ('1','2','3','11','12','13')
-and zyxx.OrganizeId = @orgId
+    and zyxx.brxz in ('1','2','3','11','12','13')
+    and zyxx.OrganizeId = @orgId
 ");
 
             var pars = new List<SqlParameter>();
