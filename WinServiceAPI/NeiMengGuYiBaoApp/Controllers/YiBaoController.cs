@@ -23,6 +23,7 @@ using NeiMengGuYiBaoApp.Service;
 using NeiMengGuYiBaoApp.Models.Output.HeaSecReadInfo;
 using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
 using AutoMapper;
+using System.Globalization;
 
 namespace NeiMengGuYiBaoApp.Controllers
 {
@@ -2434,6 +2435,125 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
+        #region 3401 科室信息上传 3402 科室信息变更 3403 科室信息撤销
+        /// <summary>
+        /// 【3401】科室信息上传
+        /// </summary>
+        /// <param name="post3401"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoUpload_3401(Post_3401 post3401)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3401.hisId;
+            post.tradiNumber = "3401";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3401.operatorId;
+            post.operatorName = post3401.operatorName;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3401 input3401 = new Input_3401();
+            string[] ks_codes = { post3401.ksCode };
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            input3401.deptinfo = new Deptinfo3401();
+            input3401.deptinfo = Function.ToList<Deptinfo3401>(dtDiseinfo)[0];
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3401, out output, post, out code);
+            
+            return json;
+        }
+        /// <summary>
+        /// 【3401A】批量科室信息上传
+        /// </summary>
+        /// <param name="post3401A"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoUpload_3401A(Post_3401A post3401A)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3401A.hisId;
+            post.tradiNumber = "3401A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3401A.operatorId;
+            post.operatorName = post3401A.operatorName;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3401A input3401A = new Input_3401A();
+            string[] ks_codes = post3401A.ksCodes.ToArray();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            List<Deptinfo3401> deptinfo3401List = new List<Deptinfo3401>{ };
+            for (int i = 0; i < post3401A.ksCodes.LongCount(); i++) {
+                deptinfo3401List.Add(Function.ToList<Deptinfo3401>(dtDiseinfo)[i]);
+            }
+            input3401A.deptinfo = deptinfo3401List;
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3401A, out output, post, out code);
+
+            return json;
+        }
+        /// <summary>
+        /// 【3402】科室信息变更
+        /// </summary>
+        /// <param name="post3402"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoUpdate_3402(Post_3402 post3402)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3402.hisId;
+            post.tradiNumber = "3402";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3402.operatorId;
+            post.operatorName = post3402.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3402 input3402 = new Input_3402();
+            string[] ks_codes = { post3402.ksCode };
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            input3402.deptinfo = new Deptinfo3402();
+            input3402.deptinfo = Function.ToList<Deptinfo3402>(dtDiseinfo)[0];
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3402, out output, post, out code);
+
+            return json;
+        }
+        /// <summary>
+        /// 【3403】科室信息撤销
+        /// </summary>
+        /// <param name="post3403"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoRevoke_3403(Post_3403 post3403)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3403.hisId;
+            post.tradiNumber = "3403";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3403.operatorId;
+            post.operatorName = post3403.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3403 input3403 = new Input_3403();
+            string[] ks_codes = { post3403.ksCode };
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            input3403.data = new Data3403();
+            input3403.data = Function.ToList<Data3403>(dtDiseinfo)[0];
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3403, out output, post, out code);
+
+            return json;
+        }
+        #endregion
         #region 3501 3502 3503 3504 产品采购
         /// <summary>
         /// 3501  商品盘存上传

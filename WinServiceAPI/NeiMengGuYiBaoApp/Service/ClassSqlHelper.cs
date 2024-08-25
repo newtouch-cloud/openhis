@@ -21,6 +21,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using wqsj_PlatForm_DAS;
+using System.Reflection;
+using System.Collections;
 
 namespace NeiMengGuYiBaoApp.Service
 {
@@ -1732,6 +1734,16 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
 
         }
         #endregion
+
+        public static DataTable QueryDepartmentInfo3401(string orgId, string[] kdCodes) {
+            {
+                string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
+                string sql = "";
+                sql = sql.Replace("@ks_codes", ks_codes_in_clause);
+                sql = sql.Replace("@orgId", ks_codes_in_clause);
+                return platFormServer.Query(sql).Tables[0];
+            }
+        }
 
         public static DataTable QueryInventory3501(string pdId,string orgId,string ddyyid,string ddyymc)
         {
