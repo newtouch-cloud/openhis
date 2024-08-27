@@ -104,5 +104,13 @@ namespace Newtouch.HIS.Web.Areas.ReportManage.Controllers
             ReportingServiceCom();
             return View();
         }
+
+        // 药品入库查询
+        public ActionResult YprkQuery()
+        {
+            ViewBag.OrganizeId = OrganizeId;
+            ViewBag.yfbmCode = Constants.CurrentYfbm.yfbmCode;
+            return View();
+        }
     }
 }
