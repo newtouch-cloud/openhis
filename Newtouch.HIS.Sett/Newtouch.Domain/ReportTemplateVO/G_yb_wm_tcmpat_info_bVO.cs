@@ -84,9 +84,9 @@ namespace Newtouch.HIS.Domain.ReportTemplateVO
         //	说明书				
         public string MANL { get; set; }
         //	开始日期				
-        public DateTime? BEGNDATE { get; set; }
+        public string BEGNDATE { get; set; }
         //	结束日期				
-        public DateTime? ENDDATE { get; set; }
+        public string ENDDATE { get; set; }
         //	最小使用单位				
         public string MIN_USEUNT { get; set; }
         //	最小销售单位				
@@ -237,8 +237,8 @@ namespace Newtouch.HIS.Domain.ReportTemplateVO
 
         #region 1302
         public string DOSFORM { get; set; }
-        public DateTime? BEGNTIME { get; set; }
-        public DateTime? ENDTIME { get; set; }
+        public string BEGNTIME { get; set; }
+        public string ENDTIME { get; set; }
         #endregion
 
         #region 1305

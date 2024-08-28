@@ -90,5 +90,10 @@ namespace Newtouch.HIS.Domain.Entity
 
         public string ybksbm { get; set; }
         public string zlks { get; set; }
+
+        /// <summary>
+        /// 是否上传医保 上传1 未上传0
+        /// </summary>
+        public int? UploadYB { get; set; }
     } 
 }
