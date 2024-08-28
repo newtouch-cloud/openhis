@@ -93,6 +93,17 @@ namespace Newtouch.HIS.Domain.IRepository
         List<MzCfEntity> GetCf(string yfbmCode, string cardNo, string xm, EnumFybz fybz, bool ispay, string organizeId);
 
         /// <summary>
+        /// 通过处方号获取组号
+        /// </summary>
+        /// <param name="yfbmCode"></param>
+        /// <param name="cardNo"></param>
+        /// <param name="xm"></param>
+        /// <param name="fybz"></param>
+        /// <param name="ispay"></param>
+        /// <param name="organizeId"></param>
+        /// <returns></returns>
+        List<GetMzCfZt> GetZhInOutpatient(string cfh,string type);
+        /// <summary>
         /// 批量插入处方信息 返回受影响行
         /// </summary>
         /// <param name="mzCfs"></param>

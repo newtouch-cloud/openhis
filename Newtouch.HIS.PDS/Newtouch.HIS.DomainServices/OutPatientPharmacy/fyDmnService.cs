@@ -17,7 +17,6 @@ using Newtouch.HIS.Domain.Entity.V;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Domain.ValueObjects.Clinic;
 using Newtouch.HIS.Domain.ValueObjects.OutPatientPharmacy;
 using Newtouch.HIS.Domain.ValueObjects.SystemManage;
 using Newtouch.HIS.Domain.VO;
@@ -768,7 +767,7 @@ AND czjl.operateType=1
         public IList<CfxxVO> SelectRpList(string keyword, string fph, DateTime kssj, DateTime jssj, string yfbmCode, string organizeId)
         {
             const string sql = @"
-SELECT cf.cfnm, cf.CardNo, cf.xm, cf.Fph, cf.sfsj, cf.cfh, cf.brxzmc, cf.ysmc, cf.ksmc, t.fysj
+SELECT cf.cfnm, cf.CardNo, cf.xm,vout.mzh,cf.Fph, cf.sfsj, cf.cfh, cf.brxzmc, cf.ysmc, cf.ksmc, t.fysj
 FROM dbo.mz_cf(NOLOCK) cf
 INNER JOIN (
 	SELECT czjl.cfh, MAX(cf.CreateTime) fysj, cf.OrganizeId
@@ -779,6 +778,7 @@ INNER JOIN (
 	AND czjl.CreateTime BETWEEN @kssj AND @jssj AND czjl.operateType='1' 
 	GROUP BY czjl.cfh, cf.OrganizeId
 ) t ON t.cfh=cf.cfh AND t.OrganizeId=cf.OrganizeId
+INNER JOIN [NewtouchHIS_Sett].[dbo].[V_invoiceEBillOutpatient] vout on vout.busNo=cf.jsnm
 WHERE (ISNULL(cf.CardNo, '') LIKE '%'+@keyword+'%' OR ISNULL(cf.xm, '') LIKE '%'+@keyword+'%')
 AND ISNULL(cf.Fph, '') LIKE '%'+@fph+'%'
 AND t.fysj BETWEEN @kssj AND @jssj
@@ -875,15 +875,13 @@ INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx ypsx ON ypsx.ypId=yp.ypId AND ypsx.O
         /// <param name="fybz"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        public List<MZCfYpDyDTO> GetRpInfo(string yfbmCode, string cardNo, string xm, EnumFybz fybz = EnumFybz.Yp, string organizeId = "")
+        public List<MzCfEntity> GetRpInfo(string yfbmCode, string cardNo, string xm, EnumFybz fybz = EnumFybz.Yp, string organizeId = "")
         {
             const string sql = @"
-SELECT DISTINCT cf.* ,xtcf.cfId,jz.mzh
+SELECT DISTINCT cf.* 
 FROM dbo.mz_cf(NOLOCK) cf
 INNER JOIN dbo.mz_cfmx(NOLOCK) cfmx ON cfmx.cfh=cf.cfh AND cfmx.OrganizeId=cf.OrganizeId AND cfmx.zt='1' 
 INNER JOIN dbo.mz_cfmxph(NOLOCK) mxph ON mxph.fyyf=cf.lyyf AND mxph.cfh=cf.cfh AND mxph.yp=cfmx.ypCode AND mxph.zt='1' AND mxph.gjzt='0' AND mxph.OrganizeId=cf.OrganizeId
-INNER Join [Newtouch_CIS]..xt_cf xtcf on xtcf.cfh=cf.cfh and xtcf.OrganizeId=cf.OrganizeId and xtcf.zt='1'
-INNER Join [Newtouch_CIS]..xt_jz jz on jz.jzId=xtcf.jzId and jz.OrganizeId=xtcf.OrganizeId and jz.zt='1'
 WHERE cf.CardNo=@CardNo
 AND cf.OrganizeId=@OrganizeId
 AND cf.xm=@xm
@@ -892,6 +890,7 @@ AND cf.zt='1'
 AND cf.lyyf=@yfbmCode
 AND cf.jsnm>0
 ";
+
             var param = new DbParameter[]
             {
                 new SqlParameter("@CardNo", cardNo),
@@ -900,7 +899,7 @@ AND cf.jsnm>0
                 new SqlParameter("@yfbmCode", yfbmCode),
                 new SqlParameter("@fybz", ((int)fybz).ToString()),
             };
-            return FindList<MZCfYpDyDTO>(sql, param);
+            return FindList<MzCfEntity>(sql, param);
         }
 
         public IList<YpdlDTO> getYpdl(string orgId)
@@ -1022,32 +1021,5 @@ where  a.zt='1' and a.OrganizeId=@orgId
             return QueryWithPage<MzcfcxDetailList>(strsql, pagination, parms.ToArray());
         }
         #endregion
-
-        public string getMzhByCfh(string cfh,  string organizeId)
-        {
-            const string sql = "select c.mzh  " +
-                " from Newtouch_CIS..xt_cf(nolock)a " +
-                " join NewtouchHIS_PDS..mz_cf (nolock)b on b.cfh = a.cfh and b.OrganizeId = a.OrganizeId and b.zt = 1 " +
-                " join Newtouch_CIS..xt_jz(nolock) c on c.jzId = a.jzId and a.OrganizeId = c.OrganizeId" +
-                " where  a.zt='1' and a.OrganizeId=@OrganizeId and b.cfh=@cfh ";
-            var param = new DbParameter[]
-            {
-                new SqlParameter("@cfh",cfh ),
-                new SqlParameter("@OrganizeId", organizeId)
-            };
-            return FirstOrDefault<string>(sql, param);
-        }
-
-        public ClinicApplyInfoVO getApplyInfoByMzh(string mzh, string organizeId)
-        {
-            const string sql = "select * from [Newtouch_CIS].dbo.zl_zlsq a  " +
-                " where  a.zt='1' and a.OrganizeId=@OrganizeId and a.mzh=@mzh ";
-            var param = new DbParameter[]
-            {
-                new SqlParameter("@mzh",mzh ),
-                new SqlParameter("@OrganizeId", organizeId)
-            };
-            return FirstOrDefault<ClinicApplyInfoVO>(sql, param);
-        }
     }
 }

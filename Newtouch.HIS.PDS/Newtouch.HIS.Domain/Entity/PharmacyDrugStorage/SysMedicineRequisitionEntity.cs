@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Newtouch.HIS.Domain.Entity
 {
     /// <summary>
-    /// 系统药品申领单（xt_yp_sld）
+    /// 系统药品申领单
     /// </summary>
     [Table("xt_yp_sld")]
     public class SysMedicineRequisitionEntity : IEntity<SysMedicineRequisitionEntity>
@@ -25,11 +25,6 @@ namespace Newtouch.HIS.Domain.Entity
         /// 申领单号
         /// </summary>
         public string Sldh { get; set; }
-
-        /// <summary>
-        /// 申领单类型
-        /// </summary>
-        public int Sldlx { get; set; }
 
         /// <summary>
         /// 申领部门

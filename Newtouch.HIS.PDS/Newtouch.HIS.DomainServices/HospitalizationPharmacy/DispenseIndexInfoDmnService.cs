@@ -379,7 +379,7 @@ SELECT o.*, dbo.f_getYfbmYpComplexYpSlandDw(o.zxdwsl, @yfbmCode, o.ypCode, @Orga
 FROM (
 	SELECT SUM(c.sl) zxdwsl, a.zyh, c.ypCode,a.yzId, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz,
 	CASE when a.yzxz = '1' then '临时' when a.yzxz = '2' then '长期' else '/' end yzxzmc,
-	yp.ycmc,(case when cqyz.yzzt=4 then '[停]'+yp.ypmc else yp.ypmc end) ypmc, ypsx.ypgg,c.CreatorCode pyry, c.CreateTime pyrq, RTRIM(LTRIM(c.ph)) ph, RTRIM(LTRIM(c.pc)) pc,a.ts
+	yp.ycmc,(case when cqyz.yzzt=4 then '[停]'+yp.ypmc else yp.ypmc end) ypmc, ypsx.ypgg,c.CreatorCode pyry, c.CreateTime pyrq, RTRIM(LTRIM(c.ph)) ph, RTRIM(LTRIM(c.pc)) pc,a.ts,ypsx.gjybdm
 	FROM NewtouchHIS_PDS.dbo.zy_ypyzxx(NOLOCK) a 
 	INNER JOIN NewtouchHIS_PDS.dbo.zy_ypyzzxph(NOLOCK) c ON c.zxId=a.zxId AND c.yzId=a.yzId AND c.ypCode=a.ypCode AND c.zt='1' AND c.gjzt='0' AND c.OrganizeId=a.OrganizeId
 	INNER JOIN NewtouchHIS_Base.dbo.v_s_xt_yp yp ON yp.ypCode=a.ypCode AND yp.OrganizeId=a.OrganizeId
@@ -404,7 +404,7 @@ FROM (
     AND ISNULL(a.cw, '') LIKE '%' + @cw + '%'
     AND(a.yzId = @yzId OR '' = @yzId)
     AND c.zyypxxId = a.Id
-    GROUP BY a.yzId,c.ypCode, a.zyh, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz, yp.ycmc, yp.ypmc, ypsx.ypgg,c.CreatorCode, c.CreateTime, c.ph, c.pc, a.ts,cqyz.yzzt
+    GROUP BY a.yzId,c.ypCode, a.zyh, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz, yp.ycmc, yp.ypmc, ypsx.ypgg,c.CreatorCode, c.CreateTime, c.ph, c.pc, a.ts,cqyz.yzzt,ypsx.gjybdm
 ) o
 ORDER BY o.zxId, o.ypmc";
             var param = new DbParameter[]

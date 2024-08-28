@@ -13,14 +13,6 @@ namespace Newtouch.HIS.Domain.IDomainServices
     public interface IApplyDmnService
     {
         /// <summary>
-        /// 取消
-        /// </summary>
-        /// <param name="crkId"></param>
-        /// <param name="lastModifierCode"></param>
-        /// <returns></returns>
-        int Cancel(string crkId, string lastModifierCode);
-
-        /// <summary>
         /// 提交内部发药申请
         /// </summary>
         /// <param name="sysMedicineRequisitionEntity"></param>

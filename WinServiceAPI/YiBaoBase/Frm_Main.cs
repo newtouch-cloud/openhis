@@ -1647,7 +1647,7 @@ namespace YiBaoBase
             }
             PostBase post = new PostBase();
             post.hisId = "0";
-            post.tradiNumber = "2501";
+            post.tradiNumber = "2501A";
             //post.sign_no = sign_no;
             post.insuplc_admdvs = "";
             post.operatorId = czydm;

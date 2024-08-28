@@ -41,6 +41,10 @@ namespace Newtouch.HIS.Domain.Entity
         /// 姓名
         /// </summary>
         public string xm { get; set; }
+        /// <summary>
+        /// 性别
+        /// </summary>
+        public string xb { get; set; }
 
         /// <summary>
         /// 发票号
@@ -116,5 +120,17 @@ namespace Newtouch.HIS.Domain.Entity
         /// 修改日期
         /// </summary>
         public DateTime? LastModifyTime { get; set; }
+        /// <summary>
+        /// 门诊号
+        /// </summary>
+        public string mzh = "";
+}
+
+    /// <summary>
+    /// 门诊处方组号
+    /// </summary>
+    public class GetMzCfZt
+    {
+        public string zh { get; set; }
     }
 }

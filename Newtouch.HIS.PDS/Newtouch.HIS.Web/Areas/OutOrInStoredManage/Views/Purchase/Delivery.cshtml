@@ -1,0 +1,225 @@
+﻿
+@using Newtouch.Infrastructure
+@{
+    ViewBag.Title = "配货单获取验收";
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+}
+
+<script src="~/Content/js/index.js"></script>
+
+<form id="form1">
+    <div class="panel panel-default" style="margin-bottom:10px;">
+        <div class="panel-heading">配送信息</div>
+        <table class="form">
+            <tr>
+                <th class="formTitle "><span class="required">*</span>药企选择：</th>
+                <td class="formValue">
+                    <input type="text" id="yq" name="yq" class="form-control" placeholder="请选择药企" autocomplete="off" style="width:60%" />
+                    <input type="hidden" id="yqbm" />
+                </td>
+
+                <th class="formTitle">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary" value="获取明细" />
+                    <input type="button" id="btn_accept" class="btn btn-md btn-primary" value="明细验收" />
+                </th>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+    <div id="dv-detail">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+
+    $(function () {
+        InitFloat();
+
+        //gridList();
+    });
+
+
+    //初始化浮层
+    function InitFloat() {
+        //药企
+        $("#yq").newtouchBatchFloatingSelector({
+            clickautotrigger: true,
+            height: 200,
+            width: 400,
+            url: "/Medicine/MedicineSupplierList",
+            ajaxmethod: 'Get',
+            ajaxreqdata: function () {
+                var reqData = {};
+                reqData.keyword = $.trim($("#yq").val());
+                return reqData;
+            },
+            colModel: [
+                { label: '药企编码', name: 'gysCode', widthratio: 30 },
+                { label: '药企', name: 'gysmc', widthratio: 70 }
+            ],
+            itemdbclickhandler: function ($thistr) {
+                $("#yqbm").val($thistr.attr('data-gysCode'));
+                $("#yq").val($thistr.attr('data-gysmc'));
+                return;
+            }
+        });
+    }
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/OutOrInStoredManage/Purchase/GetDeliveryGridJson",
+            height: $(window).height() - 200,
+            postData: { qybm: $("#yqbm").val(), psmxbh: '' },
+            colModel: [
+                { label: '配送单号', name: 'PSDH', width: 80, align: 'left' },
+                { label: '药企编码', name: 'YQBM', width: 80, align: 'left' },
+                { label: '配送点编码', name: 'PSDBM', width: 80, align: 'left' },
+                { label: '配送单创建日期', name: 'CJRQ', width: 100, align: 'left' },
+                { label: '配送明细编号', name: 'PSMXBH', width: 140, align: 'left' },
+                { label: '配送单条码', name: 'PSDTM', width: 100, align: 'left' },
+                {
+                    label: '装箱类型', name: 'ZXLX', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '多品规货品拼箱配送';
+                        else if (cellvalue == 2) return '整箱为同一品规的货品';
+                        else if (cellvalue == 3) return '同一次配送的同一品规货品分布在多箱内';
+                    }
+                },
+                {
+                    label: '采购类型', name: 'CGLX', width: 80, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '医保范围招标';
+                        else if (cellvalue == 2) return '医保范围未招标';
+                        else if (cellvalue == 3) return '医保范围招标未中标';
+                        else if (cellvalue == 4) return '医保范围挂网';
+                        else if (cellvalue == 5) return '自费范围挂网';
+                        else if (cellvalue == 6) return '市量价挂钩集中采购';
+                        else if (cellvalue == 9) return '其他';
+                    }
+                },
+                {
+                    label: '商品类型', name: 'SPLX', width: 60, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '药品类';
+                        else if (cellvalue == 2) return '医用耗材类';
+                        else if (cellvalue == 3) return '医疗器械类';
+                        else if (cellvalue == 9) return '其他';
+                    }
+                },
+                {
+                    label: '药品类型', name: 'YPLX', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '生物制剂';
+                        else if (cellvalue == 2) return '中成药';
+                        else if (cellvalue == 3) return '中药饮片';
+                        else if (cellvalue == 4) return '自制制剂';
+                        else if (cellvalue == 5) return '免疫用疫苗';
+                        else if (cellvalue == 6) return '实验室检验化验用药品或试剂';
+                        else if (cellvalue == 7) return '医学检查用药品或试剂';
+                        else if (cellvalue == 8) return '化学药品';
+                        else if (cellvalue == 9) return '其他';
+                    }
+                },
+                { label: '商品统编代码', name: 'ZXSPBM', width: 190, align: 'left' },
+                { label: '产品名', name: 'CPM', width: 120, align: 'left' },
+                { label: '药品剂型', name: 'YPJX', width: 80, align: 'left' },
+                { label: '规格', name: 'GG', width: 80, align: 'left' },
+                {
+                    label: '包装材质', name: 'BZDWXZ', width: 100, align: 'left', formatter: function (cellvalue) {
+                        if (cellvalue == 1) return '商品最小零售单位';
+                        else if (cellvalue == 2) return '大包装简包装';
+                    }
+                },
+                { label: '包装单位名称', name: 'BZDWMC', width: 80, align: 'left' },
+                { label: '用药单位名称', name: 'YYDWMC', width: 80, align: 'left' },
+                { label: '包装内含数量', name: 'BZNHSL', width: 80, align: 'left' },
+                { label: '生产企业名称', name: 'SCQYMC', width: 150, align: 'left' },
+                { label: '生产批号', name: 'SCPH', width: 80, align: 'left' },
+                { label: '生产日期', name: 'SCRQ', width: 80, align: 'left' },
+                { label: '有效日期', name: 'YXRQ', width: 80, align: 'left' },
+                { label: '计划单号', name: 'JHDH', width: 80, align: 'left' },
+                { label: '销售订单号', name: 'XSDDH', width: 90, align: 'left' },
+                { label: '关联订单明细编号', name: 'DDMXBH', width: 160, align: 'left' },
+                { label: '顺序号', name: 'SXH', width: 80, align: 'left' },
+                { label: '配送数量', name: 'PSL', width: 80, align: 'left' },
+            ],
+
+            multiselect: false,
+
+            pager: "#gridPager",
+            sortname: 'PSDH',
+            viewrecords: true,
+            ondblClickRow: function (rowid, iRow, iCol, e) {
+                //btn_selectrow(rowid);
+            },
+            gridComplete: function () {
+                var ids = $("#gridList").getDataIDs();
+                var num = ids.length - 1;
+                for (i = 0; i <= num; i++) {
+                    //var lastRowoid = ids[ids.length - 1];
+                    var lastRowoid = ids[i];
+                    EnableInlineEditBox(lastRowoid);
+                }
+            }
+        });
+        $("#btn_search").click(function () {
+            $('#gridList').jqGrid("clearGridData");
+            $gridList.jqGrid('setGridParam', {
+                postData: { qybm: $("#yq").val(), psmxbhcxtj: '' },
+            }).trigger('reloadGrid');
+        });
+    }
+
+
+    //启用行内编辑
+    function EnableInlineEditBox(rowid) {
+        $("#gridList").jqGrid('editRow', rowid, false, initInlineFunc);//打开编辑模式
+        $("#jqg_gridList_" + rowid).trigger("click");
+    }
+
+    //初始化 浮层
+    function initInlineFunc(rowid) {
+        $("#" + rowid + "_PSYSLXXXXXXX").parent().next().children('select').append('<option value="1">预验收</option><option value="2">实验收</option>');//验收类型
+    }
+
+    //获取明细
+    $('#btn_search').click(function () {
+        if ($("#yq").val() == "" || $("#yq").val() == null) {
+            $.modalAlert("请选择供应商", 'warning');
+            return;
+        }
+        gridList();
+    });
+
+    //明细验收
+    $('#btn_accept').click(function () {
+        var rowData = $("#gridList").jqGridRowValue();
+        if (rowData == null) {
+            $.modalAlert("请选择需要验收的单据", 'warning');
+            return;
+        }
+        var postData = {
+            YQBM: rowData.YQBM,
+            PSMXBH: rowData.PSMXBH,
+            PSDTM: rowData.PSDTM,
+            ZXSPBM: rowData.ZXSPBM,
+            PSL: rowData.PSL,
+            SCPH: rowData.SCPH,
+            YSJG: "1",  //0 验收不通过 1 验收通过
+            YSJGBZ: rowData.YSJGBZ,
+        }
+
+        $.submitForm({
+            url: "/OutOrInStoredManage/Purchase/DeliveryAccept",
+            param: postData,
+            success: function () {
+                $.modalMsg('验收成功', 'success');
+                $.modalClose();
+            }
+        });
+    });
+
+
+</script>
+
+

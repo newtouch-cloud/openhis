@@ -14,11 +14,6 @@ namespace Newtouch.HIS.Domain.DTO.OutOrInStoredOperate
         public string crkId { get; set; }
 
         /// <summary>
-        /// 票单号
-        /// </summary>
-        public string pdh { get; set; }
-
-        /// <summary>
         /// 单据类型
         /// </summary>
         public int djlx { get; set; }
@@ -42,10 +37,5 @@ namespace Newtouch.HIS.Domain.DTO.OutOrInStoredOperate
         /// 出入库单据主表信息
         /// </summary>
         public SysMedicineStorageIOReceiptEntity dj { get; set; }
-
-        /// <summary>
-        /// 组织机构ID
-        /// </summary>
-        public string OrganizeId { get; set; }
     }
 }

@@ -463,7 +463,10 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// 85|评估日期时间|数值型|||Y|
         /// </summary> 
 		public string eval_time { get; set; }
-
+        /// <summary>
+        /// 86|责任护士姓名|字符型|50||Y|
+        /// </summary> 
+        public string resp_nurs_code { get; set; }
         /// <summary>
         /// 86|责任护士姓名|字符型|50||Y|
         /// </summary> 
@@ -533,6 +536,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
     }
     public class coursrinfo_4701
     {
+        public string codse_rcd_id { get; set; }
         /// <summary>
         /// 1|科室代码|字符型|30||Y|
         /// </summary> 
@@ -657,7 +661,10 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// 25|住院医师姓名|字符型|50||Y|
         /// </summary> 
         public string ipdr_name { get; set; }
-
+        /// <summary>
+        /// 26|上级医师姓名|字符型|50||Y|
+        /// </summary> 
+        public string prnt_doc_code { get; set; }
         /// <summary>
         /// 26|上级医师姓名|字符型|50||Y|
         /// </summary> 

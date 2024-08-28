@@ -4,7 +4,6 @@
 @{
     /**/
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     ViewBag.Title = "出入库单查询";
     Layout = "~/Views/Shared/_Index.cshtml";
 
@@ -14,17 +13,16 @@
 (int) EnumDanJuLX.shenlingfayao,
 (int) EnumDanJuLX.neibufayaotuihui,
 (int) EnumDanJuLX.keshifayao,
-(int) EnumDanJuLX.jiyaochuku,
-(int) EnumDanJuLX.shenqingdiaobo,
-                                }
-    : new[] {
+(int) EnumDanJuLX.jiyaochuku
+            }
+            : new[] {
 (int) EnumDanJuLX.yaopinruku,
 (int) EnumDanJuLX.waibucuku,
 (int) EnumDanJuLX.zhijiefayao,
 (int) EnumDanJuLX.shenlingfayao,
 (int) EnumDanJuLX.neibufayaotuihui,
-(int) EnumDanJuLX.shenqingdiaobo,
-                                    };
+(int) EnumDanJuLX.piliangchuku,
+            };
 }
 
 <script src="~/Content/js/bootstrap-multiselect.js"></script>
@@ -187,14 +185,14 @@
                 });
                 gyssStr = gyssStr.substring(0, gyssStr.length - 1);
             }
-            var param = "Organizeid=@ViewBag.OrganizeId|yfbmCode=@Constants.CurrentYfbm.yfbmCode" +
-                "|crkId=" +crkId +
-                "|fph=" +$("#txtFPH").val() +
-                "|shzt=" +$("#ddlSHZT").val() +
-                "|pdh=" +$("#txtPDH").val() +
-                "|kssj=" +$("#txtStartDate").val() +
-                "|jssj=" +$("#txtEndDate").val() +
-                "|gyss=" + gyssStr;
+            var param = "&Organizeid=@ViewBag.OrganizeId&yfbmCode=@Constants.CurrentYfbm.yfbmCode" +
+                "&crkId=" +crkId +
+                "&fph=" +$("#txtFPH").val() +
+                "&shzt=" +$("#ddlSHZT").val() +
+                "&pdh=" +$("#txtPDH").val() +
+                "&kssj=" +$("#txtStartDate").val() +
+                "&jssj=" +$("#txtEndDate").val() +
+                "&gyss=" + gyssStr;
 
             var reportType = "";
             switch (djlx) {
@@ -222,13 +220,17 @@
             case "@((int)EnumDanJuLX.jiyaochuku)":
                 reportType = "50";
                 //reportType = "crkd_ksfy";
-                break;
+                    break;
+            case "@((int)EnumDanJuLX.piliangchuku)":
+                reportType = "1252";
+            //reportType = "crkd_ksfy";
+            break;
             default:
                 reportType = "50";
                 //reportType = "OutOrInStorageBill";
                 break;
             }
-            var uri = '@reportUrl' + "?tempCode=" + reportType + "&systemCode=" + '@reportSystemCode'+ "&hospitalCode=" + '@ViewBag.OrganizeId';
+            var uri = '@reportUrl' + "?tempCode=" + reportType + "&hospitalCode=" + '@ViewBag.OrganizeId'+param;
             window.open(uri);
             //window.open("/Report/PrintReport?type=" + reportType+"&param="+param);
         });
@@ -294,7 +296,9 @@
                         }
                     }
                 },
-                { label: '单据类型', name: 'djlxmc', width: 80, align: 'left' },
+                {
+                    label: '单据类型', name: 'djlxmc', width: 80, align: 'left'
+                },
                 { label: '单据号', name: 'pdh', width: 130, align: 'left' },
                 { label: '出库库房', name: 'ckbmmc', width: 100, align: 'left' },
                 { label: '供应商', name: 'gysmc', width: 100, align: 'left' },
@@ -307,28 +311,25 @@
                 { label: '提交时间', name: 'czsj', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' } },
                 { label: '入库时间', name: 'Rksj', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' } },
 				{ label: '出库时间', name: 'Cksj', width: 100, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:s', newformat: 'Y-m-d H:s' } },
-                { label: 'crkId', name: 'crkId', hidden: true },
-                { label: 'djlx', name: 'djlx', hidden: true },
-                { label: 'rkbm', name: 'rkbm', hidden: true },
-                { label: 'crkfscode', name: 'crkfscode', hidden: true },
-                {
-                   label: "操作", name: "", align: "center", width: 100,
-                   formatter: function (cellvalue, options, rowobject) {
-                        if (rowobject.djlx == 1 || rowobject.djlx == 2) {
-                            if (rowobject.shzt == 2) {
-                                return "<a href=\#\" onclick='btn_edit(\"" + rowobject.crkId + "\",\"" + rowobject.djlx + "\")'' title='修改' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>修改</a>|<a href=\#\" onclick='btn_push(\"" + rowobject.crkId + "\")'' title='提交' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>提交</a>"
-                            }
-                            else {
-                                return "";
-                            }
-                        } else if (rowobject.djlx == @((int)EnumDanJuLX.shenqingdiaobo)) {
-                            if (rowobject.shzt == @((int)EnumDjShzt.WaitingApprove) && rowobject.rkbm == "@(Constants.CurrentYfbm.yfbmCode)") {
-                                return "<a href='#' onclick='btn_cancel(\"" + rowobject.crkId + "\"," + rowobject.djlx + ")'' title='撤销' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>撤销</a>";
-                            }
+				{ label: 'crkId', name: 'crkId', hidden: true },
+               {
+                    label: "操作", name: "", align: "center", width: 100,
+					formatter: function (cellvalue, options, rowobject) {
+						if (rowobject.djlx == 1 || rowobject.djlx == 2) {
+							if (rowobject.shzt == 2) {
+								return "<a href=\#\" onclick='btn_edit(\"" + rowobject.crkId + "\",\"" + rowobject.djlx + "\")'' title='修改' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>修改</a>|<a href=\#\" onclick='btn_push(\"" + rowobject.crkId + "\")'' title='提交' style='text-decoration: none;color: #dd4b39;cursor: pointer;'>提交</a>"
+							}
+							else {
+								return "";
+							}
+						} else {
+							return "";
+						}
+
                         }
-                        return "";
-                   }
-                }
+                },
+                { label: 'djlx', name: 'djlx', hidden: true, align: 'left' },
+                { label: 'crkfscode', name: 'crkfscode', hidden: true, align: 'left' }
             ],
             unwritten: false,
             multiselect: false,
@@ -477,30 +478,6 @@
 			}
 		});
 	}
+	
 
-    //撤销
-    function btn_cancel(crkId, djlx) {
-        if (djlx == @((int)EnumDanJuLX.shenqingdiaobo) ) {
-            $.modalConfirm("确定要撤销单据吗",
-                function (flag) {
-                    if (flag) {
-                        $.najax({
-                            url: "Cancel?crkId=" + crkId,
-                            dataType: "json",
-                            cache: false,
-                            success: function (res) {
-                                debugger;
-                                if (res.state === "success") {
-                                    $.modalMsg("撤销成功！", 'success', 1000);
-                                    $gridDjMainRecords.resetSelection();
-                                    $gridDjMainRecords.trigger("reloadGrid");
-                                } else {
-                                    $.modalAlert(res.message, 'error');
-                                }
-                            }
-                        });
-                    }
-                });
-        }
-    }
 </script>

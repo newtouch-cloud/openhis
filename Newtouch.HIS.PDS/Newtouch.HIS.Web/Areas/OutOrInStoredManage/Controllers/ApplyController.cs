@@ -18,7 +18,6 @@ namespace Newtouch.HIS.Web.Areas.OutOrInStoredManage.Controllers
         public ActionResult SubmitApply(DjInfoDTO djInfoDTO)
         {
             djInfoDTO.rkbm = Constants.CurrentYfbm.yfbmCode;
-            djInfoDTO.djlx = (int)EnumSldlx.neibushenlingdan;
             var result = new ApplyProcess(djInfoDTO).Process();
             return result.IsSucceed ? Success() : Error(result.ResultMsg);
         }

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Newtouch.HIS.Domain.Entity;
-using Newtouch.HIS.Domain.ValueObjects.PharmacyDrugStorage;
 using Newtouch.PDS.Requset.PharmacyDepartment;
 
 namespace Newtouch.HIS.Application.Interface
@@ -47,7 +46,5 @@ namespace Newtouch.HIS.Application.Interface
         /// <param name="req"></param>
         /// <returns></returns>
         string EmpowermentPharmacyDepartmentAndRemoveOld(EmpowermentPharmacyDepartmentAndRemoveOldRequestDto req);
-        //string SubmitEmpowermentPharmacyDepartment(int? ypId, string ypCode, string organizeId, string userCode, List<string> epds);
-
     }
 }

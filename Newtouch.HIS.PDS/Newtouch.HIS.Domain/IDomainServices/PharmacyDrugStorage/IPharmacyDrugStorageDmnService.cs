@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Newtouch.Core.Common;
 using Newtouch.HIS.Domain.DO;
 using Newtouch.HIS.Domain.DTO;
@@ -271,24 +270,5 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <returns></returns>
         MedicineDjandZhyzVO GetZYYPdj(string organizeId, string yfbmCode, string ypCode);
         #endregion
-
-        /// <summary>
-        /// 台账明细查询
-        /// </summary>
-        /// <param name="ypCode"></param>
-        /// <param name="kssj"></param>
-        /// <param name="jssj"></param>
-        /// <param name="yfbmCode"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        Task<List<StandingBookInventoryDetail>> StandingBookInventoryDetailQuery(string ypCode, DateTime kssj, DateTime jssj, string yfbmCode, string orgId);
-
-        /// <summary>
-        /// 获取机构下所有药房
-        /// </summary>
-        /// <param name="keyword"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        IList<SysPharmacyDepartmentVEntity> GetYfbmList(string keyword, string orgId);
     }
 }

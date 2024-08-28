@@ -30,6 +30,6 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
     }
 
     public class drugtracinfo {
-        public string drug_trac_code { get; set; }
+        public string drug_trac_codg { get; set; }
     }
 }

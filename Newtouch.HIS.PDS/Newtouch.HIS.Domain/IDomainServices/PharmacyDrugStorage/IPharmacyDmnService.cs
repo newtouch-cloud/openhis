@@ -11,6 +11,6 @@ namespace Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage
     public interface IPharmacyDmnService
     {
         IList<PharmacyWindowVO> GetPagintionList(Pagination pagination, string organizeId, string keyword = null);
-        //IList<PharmacyDepartmentOpenMedicineRepoVO> SelectDepartmentMedicine(string dlCode, string organizeId);
+        IList<PharmacyDepartmentOpenMedicineRepoVO> SelectDepartmentMedicine(string dlCode, string organizeId);
     }
 }

@@ -1,20 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Security.Principal;
 using FrameworkBase.MultiOrg.Domain.IDomainServices;
 using FrameworkBase.MultiOrg.Infrastructure;
-using Newtonsoft.Json.Linq;
 using Newtouch.Common.Operator;
 using Newtouch.Core.Common.Exceptions;
-using Newtouch.HIS.Domain.DO;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.Infrastructure;
-using Newtouch.Tools;
 
 namespace Newtouch.HIS.DomainServices
 {
@@ -26,7 +21,6 @@ namespace Newtouch.HIS.DomainServices
         private readonly ISysPharmacyDepartmentMedicineRepo _sysPharmacyDepartmentMedicineRepo;
         private readonly ISysMedicineStockInfoRepo _sysMedicineStockInfoRepo;
         private readonly IBaseDataDmnService _baseDataDmnService;
-        private readonly ISysMedicineRepo _sysMedicineRepo;
 
         public SysMedicineReceiptDmnService(IDefaultDatabaseFactory databaseFactory) : base(databaseFactory)
         {
@@ -117,15 +111,7 @@ namespace Newtouch.HIS.DomainServices
                                     crkdj.Rksj = DateTime.Now;
                                 }
                                 break;
-
                         }
-                    }
-                    if ((int)EnumDanJuLX.shenqingdiaobo == djlx)
-                    {
-                        //申请调拨
-                        Shenqingdiaobo(db, crkdj, djmxList, dstnShzt, curUser);
-                        crkdj.Cksj = DateTime.Now;
-                        crkdj.Rksj = DateTime.Now;
                     }
                 }
                 #region 更新单据的审核状态
@@ -163,7 +149,6 @@ namespace Newtouch.HIS.DomainServices
             }
             return true;
         }
-
         /// <summary>
         /// 出入库单据 审核
         /// </summary>
@@ -436,50 +421,6 @@ namespace Newtouch.HIS.DomainServices
         }
 
         /// <summary>
-        /// 申请调拨
-        /// </summary>
-        /// <param name="db"></param>
-        /// <param name="crkdj"></param>
-        /// <param name="mx"></param>
-        /// <param name="dstnShzt"></param>
-        /// <param name="curUser"></param>
-        private void Shenqingdiaobo(Infrastructure.EF.EFDbTransaction db, SysMedicineStorageIOReceiptEntity crkdj, List<SysMedicineStorageIOReceiptDetailEntity> mx, string dstnShzt, OperatorModel curUser)
-        {
-            var ypdms = mx.Select(p => p.Ypdm);
-            var ypInfos = _sysMedicineRepo.GetMedicineListByOrg(curUser.OrganizeId).Where(p => ypdms.Contains(p.ypCode) && p.zt == "1");
-
-            if (crkdj.shzt == ((int)EnumDjShzt.WaitingApprove).ToString() && dstnShzt == ((int)EnumDjShzt.Approved).ToString())   //操作类型：审核通过
-            {
-                var tmpYp = new Dictionary<string, string>();
-                foreach (var yp in ypInfos)
-                {
-                    tmpYp.Add(yp.ypCode, yp.ypmc);
-                }
-                FreezeKcsl(db, crkdj, mx, tmpYp, curUser);
-            }
-            else if (crkdj.shzt == ((int)EnumDjShzt.WaitingApprove).ToString() && dstnShzt == ((int)EnumDjShzt.Rejected).ToString())
-            {
-                UnFreezeKcsl(db, new UnFreezeKcslDO
-                {
-                    YfbmCode = crkdj.Ckbm,
-                    Operator = curUser.UserCode,
-                    OrganizeId = curUser.OrganizeId,
-                    Detail = mx.Select(p => new UnFreezeKcslDetailDO { YpCode = p.Ypdm, Kcsl = p.Sl * p.Rkzhyz, Pc = p.pc, Ph = p.Ph }).ToList()
-                });
-            }
-            else if (crkdj.shzt == ((int)EnumDjShzt.Approved).ToString() && dstnShzt == ((int)EnumDjShzt.Cancelled).ToString())
-            {
-                ReturningInventory(db, new ReturningInventoryDO
-                {
-                    NeedAddInventoryYfbmCode = crkdj.Ckbm,
-                    Operator = curUser.UserCode,
-                    OrganizeId = curUser.OrganizeId,
-                    Detail = mx.Select(p => new InventoryDetailDO { YpCode = p.Ypdm, Kcsl = p.Sl * p.Rkzhyz, Pc = p.pc, Ph = p.Ph }).ToList()
-                });
-            }
-        }
-
-        /// <summary>
         /// 内部发药退回
         /// </summary>
         /// <param name="db"></param>
@@ -653,196 +594,6 @@ namespace Newtouch.HIS.DomainServices
                 var ckbmkcEntity = ckbmkcEntities.FirstOrDefault();
                 ckbmkcEntity.kcsl += ckSysl;
                 db.Update(ckbmkcEntity);
-            }
-        }
-
-        /// <summary>
-        /// 库存冻结
-        /// </summary>
-        /// <param name="db">事务</param>
-        /// <param name="freezeKcslDO">冻结库存信息</param>
-        /// <exception cref="FailedException"></exception>
-        private void FreezeKcsl(Infrastructure.EF.EFDbTransaction db, SysMedicineStorageIOReceiptEntity crkdj, List<SysMedicineStorageIOReceiptDetailEntity> mx, Dictionary<string, string> medicines, OperatorModel curUser)
-        {
-            if (string.IsNullOrWhiteSpace(crkdj.Ckbm))
-            {
-                throw new FailedException("操作药房/库编码不能为空");
-            }
-            if (string.IsNullOrWhiteSpace(crkdj.OrganizeId))
-            {
-                throw new FailedException("组织机构Id不能为空");
-            }
-            if (mx == null || mx.Count == 0)
-            {
-                return;
-            }
-            if (mx.Exists(p => string.IsNullOrWhiteSpace(p.Ypdm) || p.Sl * p.Rkzhyz < 0))
-            {
-                throw new FailedException("被冻结药品信息中不能存在药品编码为空或冻结数量小于零的信息");
-            }
-            var ypCodes = mx.Select(p => p.Ypdm);
-            var kcxxs = db.IQueryable<SysMedicineStockInfoEntity>(p => ypCodes.Contains(p.ypdm) && p.zt == "1" && p.OrganizeId == crkdj.OrganizeId && p.yfbmCode == crkdj.Ckbm && p.kcsl > 0 && (p.kcsl - p.djsl) > 0 && p.yxq > DateTime.Now);
-
-            if (kcxxs == null || kcxxs.Count() == 0)
-            {
-                throw new FailedException($"[{string.Join("，", medicines.Values)}]在药房/库（{crkdj.Ckbm}）中有效库存不足");
-            }
-
-            foreach (var item in mx)
-            {
-                var ypKcxx = kcxxs.ToList().FindAll(p => p.ypdm == item.Ypdm).OrderBy(p => p.yxq);
-                if ((ypKcxx.Sum(p => p.kcsl) - ypKcxx.Sum(p => p.djsl)) < item.Sl * item.Rkzhyz)
-                {
-                    throw new FailedException($"[{medicines[item.Ypdm]}]可用库存不足，审核失败");
-                }
-
-                var sysl = item.Sl * item.Rkzhyz;//剩余库存数（还需要冻结的库存数）
-
-                foreach (var kcxx in ypKcxx)
-                {
-                    var kykc = kcxx.kcsl - kcxx.djsl;//可用库存数，最大支持冻结库存数量
-                    if (kykc >= sysl)
-                    {
-                        //当前批次可用库存足够
-                        kcxx.djsl += sysl;
-                        sysl = 0;
-                    }
-                    else
-                    {
-                        //当前批次库存不足，先冻结可用库存
-                        kcxx.djsl += kykc;
-                        sysl -= kykc;
-                    }
-
-                    item.pc = kcxx.pc;
-                    item.Ph = kcxx.ph;
-                    item.Yxq = kcxx.yxq;
-                    db.Update(item);
-
-                    db.Update(kcxx);
-
-                    if (sysl <= 0)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 库存冻结
-        /// </summary>
-        /// <param name="db">事务</param>
-        /// <param name="freezeKcslDO">取消冻结库存信息</param>
-        /// <exception cref="FailedException"></exception>
-        private void UnFreezeKcsl(Infrastructure.EF.EFDbTransaction db, UnFreezeKcslDO freezeKcslDO)
-        {
-            if (freezeKcslDO.Detail == null || freezeKcslDO.Detail.Count == 0)
-            {
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(freezeKcslDO.YfbmCode))
-            {
-                throw new FailedException("操作药房/库编码不能为空");
-            }
-            if (string.IsNullOrWhiteSpace(freezeKcslDO.OrganizeId))
-            {
-                throw new FailedException("组织机构Id不能为空");
-            }
-            if (freezeKcslDO.Detail.Exists(p => string.IsNullOrWhiteSpace(p.YpCode)))
-            {
-                throw new FailedException("被冻结药品信息中不能存在药品编码为空的信息");
-            }
-            var ypCodes = freezeKcslDO.Detail.Select(p => p.YpCode);
-            var tmpKcxxs = db.IQueryable<SysMedicineStockInfoEntity>(p => ypCodes.Contains(p.ypdm)
-            && p.OrganizeId == freezeKcslDO.OrganizeId && p.yfbmCode == freezeKcslDO.YfbmCode
-            && p.djsl > 0);
-
-            if (tmpKcxxs == null || tmpKcxxs.Count() == 0)
-            {
-                return;
-            }
-
-            var kcxxs = tmpKcxxs.ToList();
-            foreach (var item in freezeKcslDO.Detail)
-            {
-                var ypKcxx = kcxxs.FindAll(p => p.ypdm == item.YpCode && p.pc == item.Pc && p.ph == item.Ph);
-                var sysl = item.Kcsl;//剩余库存数（还需要解冻的库存数）
-
-                foreach (var kcxx in ypKcxx)
-                {
-                    if (kcxx.djsl >= sysl)
-                    {
-                        //当前批次可用库存足够
-                        kcxx.djsl -= sysl;
-                        sysl = 0;
-                    }
-                    else
-                    {
-                        //当前批次库存不足，先冻结可用库存
-                        sysl -= kcxx.djsl;
-                        kcxx.djsl = 0;
-                    }
-                    db.Update(kcxx);
-                    if (sysl <= 0)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-
-        private void ReturningInventory(Infrastructure.EF.EFDbTransaction db, ReturningInventoryDO returningInventory)
-        {
-            if (returningInventory.Detail == null || returningInventory.Detail.Count == 0)
-            {
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(returningInventory.NeedAddInventoryYfbmCode))
-            {
-                throw new FailedException("操作药房/库编码不能为空");
-            }
-            if (string.IsNullOrWhiteSpace(returningInventory.OrganizeId))
-            {
-                throw new FailedException("组织机构Id不能为空");
-            }
-            if (returningInventory.Detail.Exists(p => string.IsNullOrWhiteSpace(p.YpCode)))
-            {
-                throw new FailedException("要回退的药品信息中不能存在药品编码为空的信息");
-            }
-
-            var ypCodes = returningInventory.Detail.Select(p => p.YpCode);
-            var addKcxx = db.IQueryable<SysMedicineStockInfoEntity>(p => ypCodes.Contains(p.ypdm) && p.OrganizeId == returningInventory.OrganizeId && p.yfbmCode == returningInventory.NeedAddInventoryYfbmCode);
-
-            foreach (var item in returningInventory.Detail)
-            {
-                var addmx = addKcxx.Where(p => p.ypdm == item.YpCode && p.pc == item.Pc && p.ph == item.Ph);
-                if (addmx.Sum(p => p.djsl) < item.Kcsl)
-                {
-                    addmx = addKcxx.Where(p => p.ypdm == item.YpCode);
-                }
-
-                var sydjsl = item.Kcsl;
-                foreach (var kcxx in addmx)
-                {
-                    if (sydjsl == 0)
-                    {
-                        break;
-                    }
-
-                    if (kcxx.djsl >= sydjsl)
-                    {
-                        kcxx.djsl -= sydjsl;
-                        sydjsl = 0;
-                    }
-                    else
-                    {
-                        sydjsl -= kcxx.djsl;
-                        kcxx.djsl = 0;
-                    }
-
-                    db.Update(kcxx);
-                }
             }
         }
 

@@ -227,6 +227,15 @@ namespace Newtouch.HIS.Domain.DTO
         /// 卡性质:0 自费 1:医保
         /// </summary>
         public string brxzlb { get; set; }
+        /// <summary>
+        /// 医保结算流水号
+        /// </summary>
+        public string setl_id { get; set; }
+        /// <summary>
+        /// 人员编号
+        /// </summary>
+        public string psn_no { get; set; }
+        public string mdtrt_id { get; set; }
     }
 
     public class InSettlementInfoVO : InPatientInfoVO

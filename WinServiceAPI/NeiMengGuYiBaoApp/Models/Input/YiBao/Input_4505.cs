@@ -35,7 +35,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 5|冰冻号|字符型|50||Y|
         /// </summary> 
-		public string frozen_no { get; set; }
+		public string frez_no { get; set; }
 
         /// <summary>
         /// 6|送检日期|日期型|||Y|
@@ -45,7 +45,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 7|报告日期|日期型|||Y|
         /// </summary> 
-		public string rpot_date { get; set; }
+		public string rpt_date { get; set; }
 
         /// <summary>
         /// 8|送检材料|字符型|200||Y|
@@ -55,7 +55,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 9|临床诊断|字符型|1000||Y|
         /// </summary> 
-		public string clnc_dise { get; set; }
+		public string clnc_diag { get; set; }
 
         /// <summary>
         /// 10|检查所见|字符型|1000||Y|

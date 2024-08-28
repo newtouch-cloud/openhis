@@ -116,6 +116,10 @@ namespace Newtouch.PDS.Requset.ResourcesOperate
         /// 姓名
         /// </summary>
         public string xm { get; set; }
+        /// <summary>
+        /// 性别
+        /// </summary>
+        public string xb { get; set; }
 
         /// <summary>
         /// 年龄

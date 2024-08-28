@@ -249,6 +249,10 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 贴数
         /// </summary>
         public decimal ts { get; set; }
+        /// <summary>
+        /// 国家医保代码
+        /// </summary>
+        public string gjybdm { get; set; }
     }
 
     /// <summary>

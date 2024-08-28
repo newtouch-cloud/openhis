@@ -20,7 +20,6 @@ namespace Newtouch.HIS.Application.Implementation
         private readonly ISysMedicineStorageIOReceiptRepo _crkdj;
         private readonly ISysMedicineStorageIOReceiptDetailRepo _crkdjmx;
         private readonly ISysMedicineReceiptDmnService sysMedicineReceiptDmnService;
-        private readonly ISysMedicineRequisitionRepo sysMedicineRequisitionRepo;
 
         public OutOrInStorageBillApprovalProcess(OutOrInStorageBillApprovalDTO request) : base(request)
         {
@@ -67,17 +66,6 @@ namespace Newtouch.HIS.Application.Implementation
                 case (int)EnumDanJuLX.zhijiefayao:
                     djmc = EnumDanJuLX.zhijiefayao.GetDescription();
                     break;
-                case (int)EnumDanJuLX.shenqingdiaobo:
-                    djmc = EnumDanJuLX.shenqingdiaobo.GetDescription();
-                    var sldInfos = sysMedicineRequisitionRepo.IQueryable(p => p.Sldh == Request.pdh && p.OrganizeId == Request.OrganizeId && p.zt == "1");
-                    if (sldInfos != null && sldInfos.Any() && Request.shzt == ((int)EnumDjShzt.Cancelled).ToString())
-                    {
-                        if (sldInfos.ToList().Exists(p => p.ffzt != (int)EnumSLDDeliveryStatus.None))
-                        {
-                            throw new FailedException("申领单非`未发`状态，不允许撤销审核！");//非作废操作，应该不存在单据审核记录
-                        }
-                    }
-                    break;
                 default:
                     throw new FailedException("未匹配到有效单据类型！");
             }
@@ -98,17 +86,11 @@ namespace Newtouch.HIS.Application.Implementation
             }
             else if (Request.shzt == ((int)EnumDjShzt.Rejected).ToString())
             {
-                if (((int)EnumDjShzt.WaitingApprove).ToString() != Request.dj.shzt)
-                {
-                    throw new FailedException("只能操作待处理状态单据！");
-                }
+                if (((int)EnumDjShzt.WaitingApprove).ToString() != Request.dj.shzt) throw new FailedException("只能操作待处理状态单据！");
             }
             else
             {
-                if (((int)EnumDjShzt.WaitingApprove).ToString() != Request.dj.shzt)
-                {
-                    throw new FailedException("单据已审核，不能重复审核！");//非作废操作，应该不存在单据审核记录
-                }
+                if (((int)EnumDjShzt.WaitingApprove).ToString() != Request.dj.shzt) throw new FailedException("单据已审核，不能重复审核！");//非作废操作，应该不存在单据审核记录
             }
             Request.djmx = _crkdjmx.IQueryable(p => p.crkId == Request.crkId && p.zt == "1").ToList();
             if (Request.djmx == null || Request.djmx.Count <= 0)
@@ -135,7 +117,6 @@ namespace Newtouch.HIS.Application.Implementation
                 case (int)EnumDanJuLX.shenlingfayao:
                 case (int)EnumDanJuLX.waibucuku:
                 case (int)EnumDanJuLX.zhijiefayao:
-                case (int)EnumDanJuLX.shenqingdiaobo:
                     if (!sysMedicineReceiptDmnService.ApprovalStorageIoReceipt(Request.crkId, Request.djlx, Request.shzt))
                     {
                         actResult.IsSucceed = false;

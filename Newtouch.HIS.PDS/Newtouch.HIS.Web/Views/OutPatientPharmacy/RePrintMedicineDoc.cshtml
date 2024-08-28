@@ -1,9 +1,9 @@
-﻿
+﻿@using Newtouch.Common.Operator;
 @{
     ViewBag.Title = "RePrintMedicineDoc";
     Layout = "~/Views/Shared/_Index.cshtml";
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var opeator = OperatorProvider.GetCurrent();
 }
 <form id="form1">
     <div class="panel panel-default" style="margin-top:10px;">
@@ -41,15 +41,19 @@
         <table id="gridRpDetail"></table>
     </div>
     @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
-    {
-        ShowKeyList = new[] { 6 },
-        F6Text = "补打发药单"
-    })
+{
+    ShowKeyList = new[] { 6, 8, 9, 10 },
+    F6Text = "补打发药单",
+    F8Text = "补打雾化卡",
+    F9Text = "补打输液卡",
+    F10Text = "补打用法标签"
+})
 </form>
 <script>
-    $(".toolbar").width(160);
+    $(".toolbar").width(435);
     var $gridRpInfo = $("#gridRpInfo");
     var $gridRpDetail = $("#gridRpDetail");
+    var tempMzh = "";
     $(function () {
         gridRpInfo();
         gridRpDetail();
@@ -72,6 +76,7 @@
             caption: "处方列表",
             colModel: [
                 { label: '处方内码', name: 'cfnm', hidden: true },
+                { label: '门诊号', name: 'mzh', hidden: true },
                 { label: '卡号', name: 'CardNo', width: 80, align: 'left' },
                 { label: '姓名', name: 'xm', width: 70, align: 'left' },
                 { label: '发票号', name: 'Fph', width: 100, align: 'left' },
@@ -79,10 +84,12 @@
                 { label: '处方号', name: 'cfh', width: 100, align: 'left' },
                 { label: '医生', name: 'ysmc', width: 70, align: 'left' },
                 { label: '科室', name: 'ksmc', width: 80, align: 'left' },
-                { label: '发药时间', name: 'fysj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } }
+                { label: '发药时间', name: 'fysj', width: 100, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i', newformat: 'Y-m-d H:i' } },
+                { label: '门诊号', name: 'mzh', width: 80, align: 'left' }
             ],
             onSelectRow_page: function (rowid, status) {
                 var data = $gridRpInfo.jqGrid('getRowData', rowid);
+                tempMzh =  data.mzh;
                 $gridRpDetail.jqGrid('setGridParam', {
                     postData: { pCfh: data.cfh },
                     url: "/OutPatientPharmacy/pyDeailInfoSearch?r=" + Math.random()
@@ -97,6 +104,7 @@
                 //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
                 $gridRpInfo.setSelection(ids[0], true);
                 var pdata = $gridRpInfo.jqGrid('getRowData', ids[0]);
+                tempMzh = pdata.mzh;
                 if (pdata == null) return;
                 $gridRpDetail.jqGrid('setGridParam', {
                     postData: { pCfh: pdata.cfh },
@@ -149,12 +157,83 @@
     function newtouch_event_f6() {
         var id = $("#gridRpInfo").jqGrid("getGridParam", "selrow");
         if (id) {
-            var chf = $("#gridRpInfo").jqGrid('getRowData', id).cfh;
-            var uri = '@reportUrl' + "?tempCode=63" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + chf;
+            var cfh = $("#gridRpInfo").jqGrid('getRowData', id).cfh;
+            var uri = '@reportUrl' + "?tempCode=63" + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + cfh;
             window.open(uri);
             //window.open("/Report/PrintReport?type=MZFYBD_Bill&param=OrganizeId=@ViewBag.OrganizeId" + "|yfbmCode=@ViewBag.yfbmCode" + "|cfh=" + chf);
         } else {
             $.modalAlert("请选中患者信息！", 'warning');
         }
+    }
+
+     //补打打印雾化卡
+    function newtouch_event_f8() {
+    var id = $("#gridRpInfo").jqGrid("getGridParam", "selrow");
+    if (id) {
+        var cfhs = '';
+        var cfmx = $("#gridRpDetail").getCol('yfmc',true);
+        //取全部处方号
+        for (var i = 0; i < cfmx.length; i++) {
+            if (cfmx[i].value == "雾化") {
+                cfhs.push($("#gridRpInfo").jqGrid('getRowData', id).cfh);
+            }
+        }
+        if (cfhs.length > 0) {
+            var newcfhs = $.unique(cfhs);//去重
+            var cfh = newcfhs.join(",");//数组串连
+            var uri = '@reportUrl' + "?tempCode=1311" + "&orgId=" + '@ViewBag.OrganizeId' + "&cfh=" + cfh + "&mzh=" + tempMzh + "&UserCode=" + opeator.UserCode;
+            window.open(uri);
+        } else $.modalAlert("无雾化处方，不能打印雾化卡！", 'warning');
+    } else $.modalAlert("请选中患者信息！", 'warning');
+}
+     //补打打印输液卡
+    function newtouch_event_f9() {
+        var id = $("#gridRpInfo").jqGrid("getGridParam", "selrow");
+        if (id) {
+            var cfhs = [];
+            var cfmx = $("#gridRpDetail").getCol('yfmc',true);
+            //取全部处方号
+            for (var i = 0; i < cfmx.length; i++) {
+                if (cfmx[i].value == "静脉滴注") {
+                    cfhs.push($("#gridRpInfo").jqGrid('getRowData', id).cfh);
+                }
+            }
+            if (cfhs.length > 0) {
+                var newcfhs = $.unique(cfhs);//去重
+                var cfh = newcfhs.join(",");//数组串连
+                //查询含输液的组号
+                $.najax({
+                    type: "POST",
+                    url: "/OutPatientPharmacy/GetRecipeGroupNum",
+                    data: { cfh: cfh, type: "静脉滴注" },
+                    dataType: "text",
+                    success: function (res) {
+                        var uri = '@reportUrl' + "?tempCode=1299" + "&orgId=" + '@ViewBag.OrganizeId' + "&cfh=" + cfh + "&zh=" + res + "&mzh=" + tempMzh;
+                        window.open(uri);
+                    }
+                });
+            } else $.modalAlert("无静脉滴注处方，不能打印输液卡！", 'warning');
+        } else $.modalAlert("请选中患者信息！", 'warning');
+    }
+    //补打用法标签
+     function newtouch_event_f10() {
+         var id = $("#gridRpInfo").jqGrid("getGridParam", "selrow");
+         if (id) {
+             var cfh = $("#gridRpInfo").jqGrid('getRowData', id).cfh;
+             var cfmx = $("#gridRpDetail").getCol('yfmc', true);
+             var lscfmx = [];
+             //取全部处方号
+             for (var i = 0; i < cfmx.length; i++) {
+                 if (cfmx[i].value == "口服" || cfmx[i].value == "外用") {
+                     lscfmx.push(cfh);
+                 }
+             }
+             if (lscfmx.length > 0) {
+                 var newcfh = $.unique(lscfmx);//去重
+                 var cfhStr = newcfh.join();//数组串连
+                 var uri = '@reportUrl' + "?tempCode=1306" + "&orgId="+'@ViewBag.OrganizeId' +"&cfh=" + cfhStr;
+                 window.open(uri);
+             } else $.modalAlert("无口服、外用药处方，不能打印用法标签！", 'warning');
+         }
     }
 </script>

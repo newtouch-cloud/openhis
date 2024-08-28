@@ -5,7 +5,6 @@ using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using FrameworkBase.MultiOrg.Infrastructure;
 using Newtouch.Common.Operator;
 using Newtouch.Core.Common;
@@ -230,7 +229,6 @@ group by crkdj.djlx, crkdj.shzt, crkdj.crkId , crkdj.Pdh ,crkdj.Czsj, ypcrkfs.cr
             return QueryWithPage<ReceiptQueryVO>(sb.ToString(), pagination, par.ToArray());
         }
 
-
         /// <summary>
         /// 单据查询 主信息
         /// </summary>
@@ -240,19 +238,17 @@ group by crkdj.djlx, crkdj.shzt, crkdj.crkId , crkdj.Pdh ,crkdj.Czsj, ypcrkfs.cr
         {
             var sb = new StringBuilder(@"
 select crkdj.djlx, crkdj.shzt
-,case crkdj.djlx 
-    when 1 then  '药品入库' 
-    when 2 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '外部出库' end)
-    when 3 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '直接出库' end) 
-    when 4 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '申领出库' end)
-    when 5 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '内部发药退回' end)
-    when 6 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '科室发药' end) 
-    when 14 then '申请调拨' 
-    else '' end djlxmc
-,crkdj.crkId crkId, crkdj.Pdh pdh
+,case crkdj.djlx when 1 then  '药品入库' 
+when 2 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '外部出库' end)
+when 3 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '直接出库' end) 
+when 4 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '申领出库' end)
+when 5 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '内部发药退回' end)
+when 6 then (case crkdj.Crkfsdm when '13' then '基药出库' when '14' then '报损出库' else '科室发药' end) 
+when 14 then '批量出库' 
+else '' end djlxmc,crkdj.crkId crkId, crkdj.Pdh pdh
 ,(case crkdj.djlx when 1 then '' else ckyfbm.yfbmmc end) ckbmmc
 ,(case crkdj.djlx when 1 then ckypgys.gysmc when 2 then rkypgys.gysmc else '' end) gysmc
-,(case crkdj.djlx when 2 then '' else rkyfbm.yfbmmc end) rkbmmc, crkdj.Rkbm rkbm
+,(case crkdj.djlx when 2 then '' else rkyfbm.yfbmmc end) rkbmmc
 ,crkdj.Czsj czsj, ypcrkfs.crkfsmc crkfsmc,ypcrkfs.crkfsCode crkfscode
 ,convert(decimal(12,2),ISNULL(sum(crkmx.Pfj * crkmx.sl), 0)) pjze
 ,convert(decimal(12,2),ISNULL(sum(crkmx.Lsj * crkmx.sl), 0)) ljze
@@ -269,14 +265,14 @@ left join NewtouchHIS_Base.dbo.V_S_xt_yfbm(nolock) ckyfbm on ckyfbm.yfbmCode = c
 left join NewtouchHIS_Base.dbo.V_S_xt_yfbm(nolock) rkyfbm on rkyfbm.yfbmCode = crkdj.Rkbm and rkyfbm.OrganizeId = crkdj.OrganizeId
 left join NewtouchHIS_Base..sys_department(nolock) depart on crkdj.Rkbm = depart.Code and depart.OrganizeId = crkdj.OrganizeId
 left join NewtouchHIS_Base.dbo.V_S_xt_ypcrkfs(nolock) ypcrkfs on ypcrkfs.crkfsCode = crkdj.Crkfsdm
-where crkdj.OrganizeId =@Organizeid  and crkdj.zt='1' 
+where crkdj.OrganizeId =@Organizeid  and crkdj.zt='1'
 ");
             sb.AppendLine("and ( ");
-            sb.AppendLine("( crkdj.djlx = " + (int)EnumDanJuLX.yaopinruku + " and ckypgys.gysCode is not null and rkyfbm.yfbmCode is not null)  --药品入库 ");
-            sb.AppendLine(" or (crkdj.djlx = " + (int)EnumDanJuLX.waibucuku + " and ckyfbm.yfbmCode=@YfbmCode)  --外部出库 ");
-            sb.AppendLine(" or (rkyfbm.yfbmCode is not null or ckyfbm.yfbmCode is not null)  --药房 <->药库 ");
+            sb.AppendLine(" (crkdj.djlx = " + (int)EnumDanJuLX.yaopinruku + " and ckypgys.gysCode is not null and rkyfbm.yfbmCode is not null) --药品入库 ");
+            sb.AppendLine(" or(crkdj.djlx = " + (int)EnumDanJuLX.waibucuku + " and ckyfbm.yfbmCode=@YfbmCode)--外部出库 ");
+            sb.AppendLine(" or(rkyfbm.yfbmCode is not null or ckyfbm.yfbmCode is not null)--药房 <->药库 ");
             sb.AppendLine(") ");
-            //sb.AppendLine($" and ( crkdj.Ckbm = @YfbmCode {(param.IsApproval ? "": " or crkdj.Rkbm = @YfbmCode ")}) ");
+            sb.AppendLine(" and(crkdj.Rkbm = @YfbmCode or crkdj.Ckbm = @YfbmCode) ");
             var par = new List<SqlParameter>();
             if (param.qsrj.HasValue)
             {
@@ -296,15 +292,14 @@ where crkdj.OrganizeId =@Organizeid  and crkdj.zt='1'
             }
             if (param.djlx.HasValue)
             {
-                if (param.djlx == 13)
+                if (param.djlx==13)
                 {
                     sb.AppendLine(" and ypcrkfs.crkfsCode=@djlx");
-                }
-                else
+                }else
                 {
                     sb.AppendLine(" and crkdj.djlx = @djlx ");
                 }
-
+                
                 par.Add(new SqlParameter("@djlx", param.djlx));
             }
             if (!string.IsNullOrWhiteSpace(param.shzt))
@@ -318,14 +313,13 @@ where crkdj.OrganizeId =@Organizeid  and crkdj.zt='1'
                 sb.AppendLine(string.Format(" AND crkdj.djlx IN ({0}) ", string.Join(",", param.alldjlx)));
             }
             sb.AppendLine(FilterGys(param.gys, param.djlx));
-            sb.AppendLine(@"group by crkdj.djlx, crkdj.shzt, crkdj.crkId , crkdj.Pdh ,crkdj.Czsj, ypcrkfs.crkfsmc,ypcrkfs.crkfsCode,crkdj.Crkfsdm, crkdj.CreateTime,ckypgys.gysmc,rkypgys.gysmc,ckyfbm.yfbmmc,rkyfbm.yfbmmc,depart.Name,crkdj.Rksj,crkdj.Cksj,crkdj.Rkbm");
+            sb.AppendLine(@"group by crkdj.djlx, crkdj.shzt, crkdj.crkId , crkdj.Pdh ,crkdj.Czsj, ypcrkfs.crkfsmc,ypcrkfs.crkfsCode,crkdj.Crkfsdm, crkdj.CreateTime,ckypgys.gysmc,rkypgys.gysmc,ckyfbm.yfbmmc,rkyfbm.yfbmmc,depart.Name,crkdj.Rksj,crkdj.Cksj");
             par.Add(new SqlParameter("@Organizeid", param.orgId));
             par.Add(new SqlParameter("@YfbmCode", param.curYfbmCode));
             var cc = new StringBuilder(@"");
-            cc.AppendLine("select aa.*,sum(b.zje) jjzje from (" + sb.ToString() + ") aa,(" + sb.ToString() + ") b  group by aa.jxcj,aa.zje,aa.ljze,aa.pjze,aa.djlxmc,aa.djlx, aa.shzt, aa.crkId , aa.Pdh ,aa.Czsj, aa.crkfsmc,aa.crkfscode, aa.CreateTime,aa.gysmc,aa.ckbmmc,aa.rkbmmc,aa.Rksj,aa.Cksj,aa.rkbm");
+            cc.AppendLine("select aa.*,sum(b.zje) jjzje from ("+sb.ToString()+") aa,("+ sb.ToString()+ ") b  group by aa.jxcj,aa.zje,aa.ljze,aa.pjze,aa.djlxmc,aa.djlx, aa.shzt, aa.crkId , aa.Pdh ,aa.Czsj, aa.crkfsmc,aa.crkfscode, aa.CreateTime,aa.gysmc,aa.ckbmmc,aa.rkbmmc,aa.Rksj,aa.Cksj");
             return QueryWithPage<ReceiptQueryVO>(cc.ToString(), param.pagination, par.ToArray());
         }
-
         /// <summary>
         /// 科室备药查询 主信息
         /// </summary>
@@ -353,7 +347,7 @@ where ksby.OrganizeId=@Organizeid
                 par.Add(new SqlParameter("@startTime", param.qsrj == null ? DateTime.Now.AddDays(-1) : param.qsrj));
                 par.Add(new SqlParameter("@endTime", param.jsrj == null ? DateTime.Now : param.jsrj));
             }
-            if (param.shzt != null && param.shzt != "")
+            if (param.shzt!=null&& param.shzt != "")
             {
                 sb.AppendLine(" and ksby.shzt=@shzt ");
                 par.Add(new SqlParameter("@shzt", param.shzt));
@@ -472,16 +466,13 @@ where crkmx.crkId = @crkId
         public List<InventoryDateDropDownVO> GetPdDateDropdownList()
         {
             const string strSql = @"
-SELECT pdId, pdsj FROM (
-    SELECT TOP 500 pdxx.pdId,Convert(Varchar(20),pdxx.kssj,120) + '=>' + Isnull(Convert(Varchar(20),pdxx.jssj,120),' ') pdsj, pdxx.CreateTime
+    SELECT TOP 500 pdxx.pdId,Convert(Varchar(20),pdxx.kssj,120) + '=>' + Isnull(Convert(Varchar(20),pdxx.jssj,120),' ') pdsj
     FROM xt_yp_pdxx(NOLOCK) pdxx
-    INNER JOIN dbo.xt_yp_pdxxmx(NOLOCK) pdmx ON pdmx.pdId=pdxx.pdId
-    WHERE pdxx.yfbmCode =@yfbmCode 
-    and pdxx.OrganizeId=@OrganizeId
-    GROUP BY pdxx.pdId, pdxx.Kssj, pdxx.Jssj, pdxx.CreateTime
-	ORDER BY pdxx.CreateTime DESC
-) a
-ORDER BY a.CreateTime DESC ";
+    WHERE pdxx.yfbmCode=@yfbmCode 
+    AND pdxx.OrganizeId=@OrganizeId
+    AND EXISTS (SELECT 1 FROM dbo.xt_yp_pdxxmx(NOLOCK) pdmx WHERE pdmx.pdId=pdxx.pdId)
+	ORDER BY pdxx.CreateTime DESC";
+
             var param = new DbParameter[]
             {
                 new SqlParameter("@yfbmCode",Constants.CurrentYfbm.yfbmCode),
@@ -497,15 +488,13 @@ ORDER BY a.CreateTime DESC ";
         public List<InventoryDateDropDownVO> GetHangUpPdDates()
         {
             var strSql = new StringBuilder(@"
-SELECT pdId, pdsj FROM (
-    SELECT pdxx.pdId,Convert(Varchar(20),pdxx.kssj,120) + '=>' + Isnull(Convert(Varchar(20),pdxx.jssj,120),' ') pdsj, pdxx.CreateTime
+    SELECT pdxx.pdId,Convert(Varchar(20),pdxx.kssj,120) + '=>' + Isnull(Convert(Varchar(20),pdxx.jssj,120),' ') pdsj
     FROM xt_yp_pdxx(NOLOCK) pdxx
-    INNER JOIN dbo.xt_yp_pdxxmx(NOLOCK) pdmx ON pdmx.pdId=pdxx.pdId
-    WHERE pdxx.yfbmCode =@yfbmCode 
+    WHERE pdxx.yfbmCode=@yfbmCode 
     AND pdxx.OrganizeId=@OrganizeId
-    AND pdxx.Jssj IS NULL 
-    GROUP BY pdxx.pdId, pdxx.Kssj, pdxx.Jssj, pdxx.CreateTime
-) a ");
+    AND pdxx.Jssj IS NULL
+    AND EXISTS (SELECT 1 FROM dbo.xt_yp_pdxxmx(NOLOCK) pdmx WHERE pdmx.pdId=pdxx.pdId)
+");
             var param = new DbParameter[]
             {
                 new SqlParameter("@yfbmCode",Constants.CurrentYfbm.yfbmCode),
@@ -521,15 +510,13 @@ SELECT pdId, pdsj FROM (
         public List<MedicineCategoryVO> GetMedicineCategoryList()
         {
             var strSql = new StringBuilder(@"
-SELECT DISTINCT sfdl.dlCode, sfdl.dlmc 
-FROM NewtouchHIS_Base.dbo.V_S_xt_sfdl sfdl
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yp yp ON yp.dlCode=sfdl.dlCode AND yp.OrganizeId=sfdl.OrganizeId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx ypsx ON ypsx.ypId=yp.ypId AND ypsx.OrganizeId=yp.OrganizeId
-INNER JOIN dbo.xt_yp_bmypxx(NOLOCK) bmypxx ON bmypxx.Ypdm=yp.ypCode AND bmypxx.OrganizeId=sfdl.OrganizeId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yfbm yfbm ON yfbm.yfbmCode=bmypxx.yfbmCode AND yfbm.OrganizeId=sfdl.OrganizeId
-WHERE sfdl.OrganizeId=@Organizeid
-AND yfbm.yfbmCode=@YfbmCode
-                        ");
+SELECT sfdl.dlCode, sfdl.dlmc
+FROM NewtouchHIS_Base.dbo.xt_yfbm_yp(NOLOCK) yfyp
+INNER JOIN NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) sfdl ON yfyp.dlCode=sfdl.dlCode AND yfyp.OrganizeId=sfdl.OrganizeId
+WHERE yfyp.OrganizeId=@Organizeid AND yfyp.yfbmCode=@YfbmCode
+AND yfyp.zt='1' AND sfdl.zt='1'
+ORDER BY sfdl.px,sfdl.dlCode
+");
             SqlParameter[] param = {
                 new SqlParameter("@OrganizeId",OperatorProvider.GetCurrent().OrganizeId),
                 new SqlParameter("@YfbmCode",Constants.CurrentYfbm.yfbmCode)
@@ -590,7 +577,9 @@ AND yfbm.yfbmCode=@YfbmCode
         {
             var strSql = new StringBuilder(@"
 select  pdmxId,CreateTime,ypCode , ypmc , py ,a.ph ,a.pc ,yxq,bzdw,zxdw,llsl_zxbz ,llsl ,sjslstr ,pdscy,
- sjsl,deptSjsl,deptdw ,minSjsl,yksl ,pfj ,lsj ,ykpfj ,yklsj ,zhyz,CONVERT(NUMERIC(11,2),a.lsl*jj)llpfje,CONVERT(NUMERIC(11,2),a.lsl*Lsj)lllsje,CONVERT(NUMERIC(11,2),a.sjs*jj)sjpfje,CONVERT(NUMERIC(11,2),a.sjs*Lsj)sjlsje,pdlsjcy,pdpfjcy,pdsj,jj,ycmc,ypgg from  (
+ sjsl,deptSjsl,deptdw ,minSjsl,yksl ,pfj ,lsj ,ykpfj ,yklsj ,zhyz,CONVERT(NUMERIC(11,2),a.lsl*jj)llpfje,CONVERT(NUMERIC(11,2),a.lsl*Lsj)lllsje,CONVERT(NUMERIC(11,2),a.sjs*jj)sjpfje,CONVERT(NUMERIC(11,2),a.sjs*Lsj)sjlsje,pdlsjcy,pdpfjcy,pdsj,jj,ycmc,ypgg
+,CONVERT(NUMERIC(11,2),sjs * lsj) spje,CONVERT(NUMERIC(11,2),lsl * lsj) pqje,CONVERT(NUMERIC(11,2),sjs * lsj-lsl * lsj) ykje
+from  (
 SELECT  pdxxmx.pdmxId ,
 		pdxxmx.CreateTime,
 		yp.ypCode ,
@@ -609,7 +598,7 @@ SELECT  pdxxmx.pdmxId ,
 		(select dbo.[f_getYfbmYpComplexYpSlandDw]((pdxxmx.Sjsl-pdxxmx.Llsl),@yfbmCode,yp.ypcode,@OrganizeId)) pdscy,--盘点数差异
 		pdxxmx.sjsl sjsl, --实际最小包装数量
 		Floor(pdxxmx.sjsl / pdxxmx.zhyz) deptSjsl,
-		dbo.f_getyfbmDw(yfbm.yfbmCode, yp.ypCode, yp.OrganizeId) deptdw ,
+		dbo.f_getyfbmDw(@yfbmCode,yp.ypCode,@OrganizeId) deptdw ,
 		(pdxxmx.sjsl % pdxxmx.zhyz) minSjsl,
 		(pdxxmx.Sjsl - pdxxmx.Llsl) yksl ,
 		pdxxmx.pfj ,
@@ -624,18 +613,16 @@ SELECT  pdxxmx.pdmxId ,
 		, CONVERT(NUMERIC(12,2),pdxxmx.Lsj*(pdxxmx.Sjsl-pdxxmx.Llsl)/pdxxmx.Zhyz) pdlsjcy --盘点零售价差异
 		, CONVERT(NUMERIC(12,2),pdxxmx.Pfj*(pdxxmx.Sjsl-pdxxmx.Llsl)/pdxxmx.Zhyz) pdpfjcy --盘点进价差异
 		,@pdsj pdsj,pdxxmx.Llsl lsl,pdxxmx.Sjsl sjs
-FROM xt_yp_pdxxmx(NOLOCK) pdxxmx 
-INNER JOIN dbo.xt_yp_pdxx(NOLOCK) pdxx ON pdxx.pdId=pdxxmx.pdId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yp(NOLOCK) yp ON pdxxmx.Ypdm = yp.ypCode and yp.OrganizeId=pdxx.OrganizeId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx(NOLOCK) ypsx ON ypsx.ypId=yp.ypId AND ypsx.OrganizeId=pdxx.OrganizeId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yfbm yfbm on pdxx.yfbmCode=yfbm.yfbmCode AND yfbm.OrganizeId=pdxx.OrganizeId
-WHERE pdxx.OrganizeId=@OrganizeId
-AND pdxxmx.pdId = @pdId
-AND yfbm.yfbmCode = @yfbmCode AND (pdxxmx.Sjsl>0  or pdxxmx.Llsl>0)
+FROM xt_yp_pdxxmx(NOLOCK) pdxxmx
+INNER JOIN xt_yp_pdxx(NOLOCK) pdxx ON pdxx.pdId=pdxxmx.pdId
+INNER JOIN NewtouchHIS_Base.dbo.xt_yp(NOLOCK) yp ON yp.ypCode=pdxxmx.Ypdm AND yp.OrganizeId=pdxx.OrganizeId
+INNER JOIN NewtouchHIS_Base.dbo.xt_ypsx(NOLOCK) ypsx ON ypsx.ypId=yp.ypId
+WHERE pdxx.pdId=@pdId AND pdxx.OrganizeId=@OrganizeId AND pdxx.yfbmCode=@yfbmCode
+AND (pdxxmx.Sjsl>0 OR pdxxmx.Llsl>0)
 ");
             if (!string.IsNullOrEmpty(srm))
             {
-                strSql.AppendLine("And (yp.py LIKE @srm OR yp.Ypmc LIKE @srm) ");
+                strSql.AppendLine("AND (yp.py LIKE @srm OR yp.Ypmc LIKE @srm) ");
             }
             if (!string.IsNullOrEmpty(ypzt))
             {
@@ -660,21 +647,12 @@ AND yfbm.yfbmCode = @yfbmCode AND (pdxxmx.Sjsl>0  or pdxxmx.Llsl>0)
                     strSql.AppendLine("AND (Llsl <> 0 AND Sjsl<>0) ");
                     break;
             }
-
-            //			strSql.AppendLine(@"  )a 
-            //     left join(
-            //    select pc, Ph, jj, Ypdm from
-            //   xt_yp_crkdj dj
-            //   left join xt_yp_crkmx a on dj.crkId = a.crkId and a.zt = 1
-            //where dj.djlx = 1 and dj.OrganizeId = @OrganizeId and dj.zt = 1
-            //)b on a.pc = b.pc and a.Ph = b.Ph and a.ypCode = Ypdm  ");
-
-            strSql.AppendLine(@" )a 
-    left join(
-   select kcxx.OrganizeId,kcxx.ypdm,max(yfbmCode) yfbmCode,max(kcxx.jj) jj 
+            strSql.AppendLine(@" ) a 
+    left join (
+   select kcxx.OrganizeId,kcxx.yfbmCode,kcxx.ypdm,max(kcxx.jj) jj 
 			  from NewtouchHIS_PDS.dbo.xt_yp_kcxx(NOLOCK)  as kcxx 
-			  group by kcxx.OrganizeId,kcxx.ypdm,kcxx.yfbmCode
-)b on b.yfbmCode=@yfbmCode and a.ypCode = b.ypdm and b.OrganizeId=@OrganizeId
+			  group by kcxx.OrganizeId,kcxx.yfbmCode,kcxx.ypdm
+) b on b.yfbmCode=@yfbmCode and a.ypCode=b.ypdm and b.OrganizeId=@OrganizeId
 ");
             var inSqlParameterList = new List<DbParameter>
             {
@@ -720,7 +698,7 @@ SELECT  pdxxmx.pdmxId ,
 		(select dbo.[f_getYfbmYpComplexYpSlandDw](pdxxmx.Sjsl,@yfbmCode,yp.ypcode,@OrganizeId)) sjslstr ,--实际药房单位数量 
 		pdxxmx.sjsl sjsl, --实际最小包装数量
 		Floor(pdxxmx.sjsl / pdxxmx.zhyz) deptSjsl,
-		dbo.f_getyfbmDw(yfbm.yfbmCode, yp.ypCode, yp.OrganizeId) deptdw ,
+		dbo.f_getyfbmDw(@yfbmCode, yp.ypCode, @OrganizeId) deptdw ,
 		pdxxmx.sjsl minSjsl,
 		(pdxxmx.Sjsl - pdxxmx.Llsl) yksl ,
 		pdxxmx.pfj ,
@@ -735,16 +713,15 @@ SELECT  pdxxmx.pdmxId ,
 		,@pdsj pdsj
 FROM xt_yp_pdxxmx(NOLOCK) pdxxmx 
 INNER JOIN dbo.xt_yp_pdxx(NOLOCK) pdxx ON pdxx.pdId=pdxxmx.pdId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yp(NOLOCK) yp ON pdxxmx.Ypdm = yp.ypCode and yp.OrganizeId=pdxx.OrganizeId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx(NOLOCK) ypsx ON ypsx.ypId=yp.ypId AND ypsx.OrganizeId=pdxx.OrganizeId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yfbm yfbm on pdxx.yfbmCode=yfbm.yfbmCode AND yfbm.OrganizeId=pdxx.OrganizeId
+INNER JOIN NewtouchHIS_Base.dbo.xt_yp(NOLOCK) yp ON pdxxmx.Ypdm=yp.ypCode AND yp.OrganizeId=pdxx.OrganizeId
+INNER JOIN NewtouchHIS_Base.dbo.xt_ypsx(NOLOCK) ypsx ON ypsx.ypId=yp.ypId
 WHERE pdxx.OrganizeId=@OrganizeId
-AND pdxxmx.pdId = @pdId
-AND yfbm.yfbmCode = @yfbmCode
+AND pdxx.pdId = @pdId
+AND pdxx.yfbmCode = @yfbmCode
 ");
             if (!string.IsNullOrEmpty(srm))
             {
-                strSql.AppendLine("And (yp.Ypmc LIKE @srm OR pdxxmx.Ypdm LIKE @srm ) ");
+                strSql.AppendLine("AND (yp.Ypmc LIKE @srm OR pdxxmx.Ypdm LIKE @srm ) ");
             }
             if (!string.IsNullOrEmpty(ypzt))
             {
@@ -1025,11 +1002,11 @@ and jz.OrganizeId=@OrganizeId
         public List<MedicineCategoryVO> GetMedicineCategoryList2()
         {
             var strSql = new StringBuilder(@"
-SELECT DISTINCT sfdl.dlCode,sfdl.dlmc 
-FROM NewtouchHIS_Base.dbo.V_S_xt_sfdl sfdl 
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yfbm_yp yfbmyp ON yfbmyp.dlCode=sfdl.dlCode AND yfbmyp.OrganizeId=sfdl.OrganizeId AND yfbmyp.zt='1'
-WHERE sfdl.OrganizeId=@OrganizeId AND sfdl.zt='1'
-ORDER BY sfdl.dlmc
+SELECT sfdl.dlCode,sfdl.dlmc 
+FROM NewtouchHIS_Base.dbo.xt_sfdl(NOLOCK) sfdl 
+INNER JOIN NewtouchHIS_Base.dbo.xt_yfbm_yp(NOLOCK) yfbmyp ON yfbmyp.dlCode=sfdl.dlCode AND yfbmyp.OrganizeId=sfdl.OrganizeId
+WHERE yfbmyp.OrganizeId=@OrganizeId AND yfbmyp.yfbmCode=@yfbmCode AND sfdl.zt='1' AND yfbmyp.zt='1'
+ORDER BY sfdl.px,sfdl.dlCode
             ");
             DbParameter[] param =
             {
@@ -1335,89 +1312,5 @@ where a.ypCode = @ypCode and a.organizeId = @organizeId
             return list[0];
         }
         #endregion
-
-        #region 台账相关
-
-        public async Task<List<StandingBookInventoryDetail>> StandingBookInventoryDetailQuery(string ypCode, DateTime kssj, DateTime jssj, string yfbmCode, string orgId)
-        {
-            var sql = $@"
---药房入库
-SELECT '药房入库' crksm, dbo.f_getComplexYpSlandDw(mx.Sl*mx.Rkzhyz,yp.bzs,yp.bzdw,yp.zxdw) rkslanddw, '' ckslanddw, '' jzslanddw, dj.pdh pzh, '' ks, dj.Rksj fsrq
-FROM NewtouchHIS_PDS.dbo.xt_yp_crkmx(nolock) mx 
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yp yp ON yp.ypCode=mx.Ypdm AND yp.OrganizeId=@orgId
-INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx ypsx ON ypsx.ypId=yp.ypId AND ypsx.OrganizeId=@orgId
-INNER JOIN 	NewtouchHIS_PDS.dbo.xt_yp_crkdj(nolock) dj on dj.crkId=mx.crkId 
-WHERE dj.OrganizeId=@orgId AND dj.djlx in (1,5)	AND dj.shzt=1
-AND dj.Rkbm=@yfbmCode {(string.IsNullOrWhiteSpace(ypCode) ? "" : "AND mx.Ypdm=@ypdm ")}
-AND dj.Rksj BETWEEN @kssj AND @jssj
-
-UNION ALL
-
---门诊发药
-SELECT '门诊发药' crksm, '' rkslanddw,  CONCAT(CONVERT(INT,mxph.sl/mx.zhyz),mx.dw) ckslanddw, '' jzslanddw, cf.cfh pzh, cf.ksmc ks, fyjl.CreateTime fsrq 
-FROM mz_cfypczjl(nolock) fyjl
-INNER JOIN mz_cfmx(nolock) mx ON fyjl.mzcfmxId=mx.Id AND mx.OrganizeId = @orgId
-INNER JOIN mz_cf(nolock) cf on cf.cfh = mx.cfh AND cf.OrganizeId = @orgId
-INNER JOIN dbo.mz_cfmxph(NOLOCK) mxph ON mxph.cfh=mx.cfh AND mxph.gjzt='0' AND mxph.yp=mx.ypCode AND mxph.OrganizeId=@orgId AND mxph.fyyf=cf.lyyf AND mxph.zt='1' 
-WHERE  cf.zt = '1' 
-AND fyjl.operateType = '1'
-AND cf.lyyf = @yfbmCode {(string.IsNullOrWhiteSpace(ypCode) ? "" : "AND mx.ypCode=@ypdm ")}
-AND fyjl.CreateTime BETWEEN CONVERT(DATETIME, @kssj) AND CONVERT(DATETIME, @jssj) 
-
-UNION ALL
-
---住院发药
-SELECT '住院发药' crksm, '' rkslanddw, dbo.f_getYfbmYpComplexYpSlandDw(c.sl, @yfbmCode, yz.ypCode, @orgId) ckslanddw, '' jzslanddw, '' pzh, dept.name ksmc, fyjl.CreateTime fsrq 
-FROM zy_ypyzczjl(nolock) fyjl
-INNER JOIN zy_ypyzxx(nolock) yz ON fyjl.ypyzxxId = yz.Id and yz.OrganizeId=@orgId
-INNER JOIN NewtouchHIS_PDS.dbo.zy_ypyzzxph(NOLOCK) c ON c.zxId=yz.zxId AND c.yzId=yz.yzId AND c.ypCode=yz.ypCode AND c.zt='1' AND c.gjzt='0' AND c.OrganizeId=@orgId
-LEFT JOIN NewtouchHIS_Base.dbo.V_S_Sys_Department dept on dept.code=yz.ksCode and dept.zt='1' and dept.organizeId=@orgId
-WHERE fyjl.operateType = '1' 
-AND yz.fyyf=@yfbmCode {(string.IsNullOrWhiteSpace(ypCode) ? "" : "AND yz.ypCode=@ypdm ")}
-AND fyjl.CreateTime BETWEEN @kssj AND @jssj
-
-UNION ALL
-
---库存结转
-SELECT '库存结转' crksm, '' rkslanddw,  '' ckslanddw, dbo.f_getYfbmYpComplexYpSlandDw(jz.kcsl, @yfbmCode, jz.Ypdm, @orgId) jzslanddw, '' pzh, '' ks, jz.Jzsj fsrq 
-FROM xt_yp_kcjzk(NOLOCK) jz
-WHERE jz.organizeId=@orgId 
-AND jz.yfbmCode = @yfbmCode {(string.IsNullOrWhiteSpace(ypCode) ? "" : "AND jz.Ypdm=@ypdm ")}
-AND jz.Jzsj BETWEEN @kssj AND @jssj
-";
-            var param = new List<DbParameter>
-            {
-                new SqlParameter("@orgId", orgId),
-                new SqlParameter("@yfbmCode", yfbmCode),
-                new SqlParameter("@ypdm", ypCode??""),
-                new SqlParameter("@kssj", kssj),
-                new SqlParameter("@jssj", jssj)
-            };
-            return FindList<StandingBookInventoryDetail>(sql, param.ToArray());
-        }
-
-        #endregion
-
-        /// <summary>
-        /// 获取机构下所有药房
-        /// </summary>
-        /// <param name="keyword"></param>
-        /// <param name="orgId"></param>
-        /// <returns></returns>
-        public IList<SysPharmacyDepartmentVEntity> GetYfbmList(string keyword, string orgId)
-        {
-            const string strSql = @"
-SELECT B.yfbmId,B.yfbmmc,B.yfbmCode,B.OrganizeId,B.mzzybz,B.yjbmjb,B.ksCode
-FROM NewtouchHIS_Base.dbo.V_S_xt_yfbm(nolock) B 
-WHERE B.zt='1' AND B.OrganizeId=@Organizeid and B.mzzybz<>0
-AND (isnull(@keyword,'')='' or b.yfbmmc LIKE '%'+@keyword+'%' OR b.yfbmCode LIKE '%'+@keyword+'%' OR b.yfbmId LIKE '%'+@keyword+'%')
-
-";
-            DbParameter[] param = {
-                new SqlParameter("@keyword",keyword==null?"":keyword.Trim()),
-                new SqlParameter("@Organizeid",orgId)
-            };
-            return FindList<SysPharmacyDepartmentVEntity>(strSql, param).ToList();
-        }
     }
 }

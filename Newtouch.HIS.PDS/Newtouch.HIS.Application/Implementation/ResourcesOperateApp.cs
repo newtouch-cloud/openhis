@@ -387,20 +387,20 @@ namespace Newtouch.HIS.Application.Implementation
             rpInfo[0].LastModiFierCode = request.CreatorCode;
             rpInfo[0].LastModifyTime = DateTime.Now;
             if (_mzCfRepo.Update(rpInfo[0]) <= 0) throw new FailedException("", "门诊发药资源确认失败");
-            //var rq = new MqGeneralTaskRequestDto
-            //{
-            //    Timestamp = DateTime.Now,
-            //    body = new MqGeneralTaskBody
-            //    {
-            //        OperationType = "supplementPatientBaseInfo",
-            //        Content = new PatientBaseInfoQueryRequest
-            //        {
-            //            cfh = rpInfo[0].cfh,
-            //            OrganizeId = rpInfo[0].OrganizeId,
-            //        }.ToJson()
-            //    }.ToJson()
-            //};
-            //API.Common.Helper.MqClientHelper.SettGeneralTask(rq);
+            var rq = new MqGeneralTaskRequestDto
+            {
+                Timestamp = DateTime.Now,
+                body = new MqGeneralTaskBody
+                {
+                    OperationType = "supplementPatientBaseInfo",
+                    Content = new PatientBaseInfoQueryRequest
+                    {
+                        cfh = rpInfo[0].cfh,
+                        OrganizeId = rpInfo[0].OrganizeId,
+                    }.ToJson()
+                }.ToJson()
+            };
+            API.Common.Helper.MqClientHelper.SettGeneralTask(rq);
             return "";
 
         }

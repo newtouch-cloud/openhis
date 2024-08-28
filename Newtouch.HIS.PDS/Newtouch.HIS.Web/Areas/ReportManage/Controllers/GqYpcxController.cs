@@ -15,7 +15,8 @@ namespace Newtouch.HIS.Web.Areas.ReportManage.Controllers
 		{
 			ViewBag.ReportServerHOST = ConfigurationHelper.GetAppConfigValue("ReportServer.HOST");
 			ViewBag.OrganizeId = OrganizeId;
-			return View();
+            ViewBag.yfbmCode = Constants.CurrentYfbm.yfbmCode;
+            return View();
 		}
         public ActionResult IteamSumQuery()
         {

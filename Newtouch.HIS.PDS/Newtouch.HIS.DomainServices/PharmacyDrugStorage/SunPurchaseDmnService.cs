@@ -477,9 +477,10 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
                     db.Insert(purchaseLogEntity);
                     db.Commit();
                     //错误提示
-                    var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
-                    if (cwxx != null)
+                    var ztcljg = ReadXmlContent(responseXML, "XMLDATA/HEAD/ZTCLJG");
+                    if (ztcljg != "00000")
                     {
+                        var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
                         throw new Exception(cwxx);
                     }
                     return null;
@@ -597,9 +598,10 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
                     db.Insert(purchaseLogEntity);
                     db.Commit();
                     //错误提示
-                    var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
-                    if (cwxx != null)
+                    var ztcljg = ReadXmlContent(responseXML, "XMLDATA/HEAD/ZTCLJG");
+                    if (ztcljg != "00000")
                     {
+                        var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
                         throw new Exception(cwxx);
                     }
                     return tmpList;
@@ -654,9 +656,180 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
                     db.Insert(purchaseLogEntity);
                     db.Commit();
                     //错误提示
-                    var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
-                    if (cwxx != null)
+                    var ztcljg = ReadXmlContent(responseXML, "XMLDATA/HEAD/ZTCLJG");
+                    if (ztcljg != "00000")
                     {
+                        var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
+                        throw new Exception(cwxx);
+                    }
+                    return null;
+                }
+            }
+            catch (Exception e)
+            {
+                return e.Message;
+            }
+        }
+
+
+        /// <summary>
+        /// 获取配送单明细数据
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="yqbm"></param>
+        /// <param name="fpmxbh"></param>
+        /// <returns></returns>
+        public List<OutputStructYY003> Purchase_YY003(string orgId, string yqbm, string psmxbh)
+        {
+            try
+            {
+                //main
+                var mainsqlpar = new List<SqlParameter>();
+                var mainsql = @"exec usp_PurchaseMain_YY003 @orgId,@yqbm,@psmxbh";
+                mainsqlpar.Add(new SqlParameter("@orgId", orgId));
+                mainsqlpar.Add(new SqlParameter("@yqbm", yqbm));
+                mainsqlpar.Add(new SqlParameter("@psmxbh", psmxbh));
+                PurchaseMainYY003 main = FirstOrDefault<PurchaseMainYY003>(mainsql.ToString(), mainsqlpar.ToArray());
+
+                PurchaseHead head = GetHead();
+                PurchaseYY003 xmlData = new PurchaseYY003();
+                xmlData.MAIN = main;
+                xmlData.HEAD = head;
+                string responsexml = xmlData.XmlSerialize().Replace("\r\n", "").Replace(" ", "");
+                responsexml = responsexml.Replace("<?xmlversion=\"1.0\"?>", "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                //string responsexml = xmlData.XmlSerialize().Replace("<?xml version=\"1.0\"?>", "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+
+                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+                {
+                    var sXxlx = "YY003";
+                    var sSign = getMessageDigest(responsexml);
+                    //调用阳光采购平台WebService接口
+                    AppLogger.Info("============= " + sXxlx + " ============= ");
+                    AppLogger.Info("调用采购交易规定入参: " + sUser + "," + sPwd + "," + sJgbm + "," + sVersion + "," + sXxlx + "," + sSign);
+                    AppLogger.Info("调用采购交易请求url: " + responsexml);
+                    YsxtMainServiceClient ysxtMainServiceClient = new YsxtMainServiceClient();
+                    var responseXML = ysxtMainServiceClient.sendRecv(sUser, sPwd, sJgbm, sVersion, sXxlx, sSign, responsexml);
+                    AppLogger.Info("调用采购交易出参: " + responseXML);
+                    
+                    List<OutputStructYY003> tmpList = new List<OutputStructYY003>();
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(responseXML);
+                    XmlNodeList nodelist = xmlDoc.SelectNodes("XMLDATA/DETAIL/STRUCT");
+                    foreach (XmlNode node in nodelist)
+                    {
+                        OutputStructYY003 entity = new OutputStructYY003();
+                        if (node.SelectSingleNode("PSDH") != null) { entity.PSDH = node["PSDH"].InnerText; }
+                        if (node.SelectSingleNode("YQBM") != null) { entity.YQBM = node["YQBM"].InnerText; }
+                        if (node.SelectSingleNode("PSDBM") != null) { entity.PSDBM = node["PSDBM"].InnerText; }
+                        if (node.SelectSingleNode("CJRQ") != null) { entity.CJRQ = node["CJRQ"].InnerText; }
+                        if (node.SelectSingleNode("PSMXBH") != null) { entity.PSMXBH = node["PSMXBH"].InnerText; }
+                        if (node.SelectSingleNode("PSDTM") != null) { entity.PSDTM = node["PSDTM"].InnerText; }
+                        if (node.SelectSingleNode("ZXLX") != null) { entity.ZXLX = node["ZXLX"].InnerText; }
+                        if (node.SelectSingleNode("CGLX") != null) { entity.CGLX = node["CGLX"].InnerText; }
+                        if (node.SelectSingleNode("SPLX") != null) { entity.SPLX = node["SPLX"].InnerText; }
+                        if (node.SelectSingleNode("YPLX") != null) { entity.YPLX = node["YPLX"].InnerText; }
+                        if (node.SelectSingleNode("ZXSPBM") != null) { entity.ZXSPBM = node["ZXSPBM"].InnerText; }
+                        if (node.SelectSingleNode("CPM") != null) { entity.CPM = node["CPM"].InnerText; }
+                        if (node.SelectSingleNode("YPJX") != null) { entity.YPJX = node["YPJX"].InnerText; }
+                        if (node.SelectSingleNode("GG") != null) { entity.GG = node["GG"].InnerText; }
+                        if (node.SelectSingleNode("BZDWXZ") != null) { entity.BZDWXZ = node["BZDWXZ"].InnerText; }
+                        if (node.SelectSingleNode("BZDWMC") != null) { entity.BZDWMC = node["BZDWMC"].InnerText; }
+                        if (node.SelectSingleNode("YYDWMC") != null) { entity.YYDWMC = node["YYDWMC"].InnerText; }
+                        if (node.SelectSingleNode("BZNHSL") != null) { entity.BZNHSL=decimal.Parse(node["BZNHSL"].InnerText); }
+                        if (node.SelectSingleNode("SCQYMC") != null) { entity.SCQYMC = node["SCQYMC"].InnerText; }
+                        if (node.SelectSingleNode("SCPH") != null) { entity.SCPH = node["SCPH"].InnerText; }
+                        if (node.SelectSingleNode("SCRQ") != null) { entity.SCRQ = node["SCRQ"].InnerText; }
+                        if (node.SelectSingleNode("YXRQ") != null) { entity.YXRQ = node["YXRQ"].InnerText; }
+                        if (node.SelectSingleNode("JHDH") != null) { entity.JHDH = node["JHDH"].InnerText; }
+                        if (node.SelectSingleNode("XSDDH") != null) { entity.XSDDH = node["XSDDH"].InnerText; }
+                        if (node.SelectSingleNode("DDMXBH") != null) { entity.DDMXBH = node["DDMXBH"].InnerText; }
+                        if (node.SelectSingleNode("SXH") != null) { entity.SXH=int.Parse(node["SXH"].InnerText);}
+                        if (node.SelectSingleNode("PSL") != null) { entity.PSL =decimal.Parse(node["PSL"].InnerText); }
+                        tmpList.Add(entity);
+                    }
+                    var param = yqbm;
+                    var purchaseLogEntity = new PurchaseLogEntity
+                    {
+                        OrganizeId = orgId,
+                        jydm = "YY003",
+                        jymc = "获取配送单明细数据",
+                        param = param,
+                        XmlRequest = responsexml,
+                        XmlResponse = responseXML,
+                        zt = "1",
+                    };
+                    purchaseLogEntity.Create(true);
+                    db.Insert(purchaseLogEntity);
+                    db.Commit();
+                    //错误提示
+                    var ztcljg = ReadXmlContent(responseXML, "XMLDATA/HEAD/ZTCLJG");
+                    if (ztcljg != "00000")
+                    {
+                        var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
+                        throw new Exception(cwxx);
+                    }
+                    return tmpList;
+                }
+            }
+            catch (Exception e)
+            {
+                AppLogger.Info("调用采购交易失败: " + e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 配送明细验收
+        /// </summary>
+        /// <param name="main"></param>
+        /// <param name="orgId"></param>
+        /// <returns></returns>
+        public string Purchase_YY018(PurchaseMainYY018 main, string orgId)
+        {
+            try
+            {
+                string HospitalCode = ConfigurationHelper.GetAppConfigValue("OrganizeCodeSd");
+                string HospitalName = ConfigurationHelper.GetAppConfigValue("HospitalName");
+                PurchaseHead head = GetHead();
+                PurchaseYY018 xmlData = new PurchaseYY018();
+                xmlData.MAIN = main;
+                xmlData.HEAD = head;
+                //string responsexml = xmlData.XmlSerialize().Replace("<?xml version=\"1.0\"?>", "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+
+                string responsexml = xmlData.XmlSerialize().Replace("\r\n", "").Replace(" ", "");
+                responsexml = responsexml.Replace("<?xmlversion=\"1.0\"?>", "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+
+                var param = main.PSMXBH;
+                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+                {
+                    //var responseXML = "<XMLDATA><HEAD><JSSJ>20130831/102341/</JSSJ><ZTCLJG>00000</ZTCLJG><CWXX/><BZXX/></HEAD></XMLDATA>";
+                    var sXxlx = "YY018";
+                    var sSign = getMessageDigest(responsexml);
+                    //调用阳光采购平台WebService接口
+                    AppLogger.Info("============= " + sXxlx + " ============= ");
+                    AppLogger.Info("调用采购交易规定入参: " + sUser + "," + sPwd + "," + sJgbm + "," + sVersion + "," + sXxlx + "," + sSign);
+                    AppLogger.Info("调用采购交易请求url: " + responsexml);
+                    YsxtMainServiceClient ysxtMainServiceClient = new YsxtMainServiceClient();
+                    var responseXML = ysxtMainServiceClient.sendRecv(sUser, sPwd, sJgbm, sVersion, sXxlx, sSign, responsexml);
+                    AppLogger.Info("调用采购交易出参: " + responseXML);
+                    var purchaseLogEntity = new PurchaseLogEntity
+                    {
+                        OrganizeId = orgId,
+                        jydm = "YY018",
+                        jymc = "配送明细验收",
+                        param = param,
+                        XmlRequest = responsexml,
+                        XmlResponse = responseXML,
+                        zt = "1",
+                    };
+                    purchaseLogEntity.Create(true);
+                    db.Insert(purchaseLogEntity);
+                    db.Commit();
+                    //错误提示
+                    var ztcljg = ReadXmlContent(responseXML, "XMLDATA/HEAD/ZTCLJG");
+                    if (ztcljg != "00000")
+                    {
+                        var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
                         throw new Exception(cwxx);
                     }
                     return null;
@@ -715,7 +888,12 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
                     db.Commit();
                 }
                 //错误提示
-                GetErrorOut(responseXML);
+                var ztcljg = ReadXmlContent(responseXML, "XMLDATA/HEAD/ZTCLJG");
+                if (ztcljg != "00000")
+                {
+                    var cwxx = ReadXmlContent(responseXML, "XMLDATA/HEAD/CWXX");
+                    throw new Exception(cwxx);
+                }
 
                 return "Success";
             }

@@ -3,19 +3,16 @@ using Newtouch.Common;
 using Newtouch.Core.Common;
 using Newtouch.Core.Common.Exceptions;
 using Newtouch.HIS.Application.Interface;
-using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.ValueObjects.PharmacyDrugStorage;
 using Newtouch.Infrastructure;
-using Newtouch.PDS.Requset.PharmacyDepartment;
 using Newtouch.Tools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Web;
 using System.Web.Mvc;
 
@@ -30,7 +27,6 @@ namespace Newtouch.HIS.Web.Controllers
         private readonly ISysPharmacyDepartmentDmnService _sysPharmacyDepartmentDmnService;
         //private readonly ISysPharmacyDepartmentApp _sysPharmacyDepartmentApp;
         private readonly ISysPharmacyDepartmentMedicineRepo _sysPharmacyDepartmentMedicineRepo;
-        //private readonly IPharmacyDmnService _pharmacyDmnService;
 
 
         public SysMedicineController(
@@ -41,7 +37,6 @@ namespace Newtouch.HIS.Web.Controllers
             ,ISysPharmacyDepartmentDmnService sysPharmacyDepartmentDmnService
             //, ISysPharmacyDepartmentApp sysPharmacyDepartmentApp
             , ISysPharmacyDepartmentMedicineRepo sysPharmacyDepartmentMedicineRepo
-            //, IPharmacyDmnService pharmacyDmnService
             )
         {
             this._sysOrganizeDmnService = sysOrganizeDmnService;
@@ -51,7 +46,6 @@ namespace Newtouch.HIS.Web.Controllers
             this._sysPharmacyDepartmentDmnService = sysPharmacyDepartmentDmnService;
             //this._sysPharmacyDepartmentApp = sysPharmacyDepartmentApp;
             this._sysPharmacyDepartmentMedicineRepo = sysPharmacyDepartmentMedicineRepo;
-            //this._pharmacyDmnService = pharmacyDmnService;
         }
 
         public ActionResult SysMedicineAdd()
@@ -59,10 +53,6 @@ namespace Newtouch.HIS.Web.Controllers
             return View();
         }
 
-        public ActionResult YbbxblForm()
-        {
-            return View();
-        }
         //grid json 数据源
         [HttpGet]
         [HandlerAjaxOnly]
@@ -114,29 +104,29 @@ namespace Newtouch.HIS.Web.Controllers
         /// <param name="ypCode"></param>
         /// <param name="keyValue"></param>
         /// <returns></returns>
-        [HttpPost]
-        [HandlerAjaxOnly]
-        [ValidateAntiForgeryToken]
-        public ActionResult submitForm(SysMedicineVO model, List<string> p, string ypCode, int? keyValue)
-        {
-            model.zt = model.zt == "true" ? "1" : "0";
-            model.ycmc = model.ycmc ?? "";
-            //model.ybbz = model.ybbz == "true" ? "1" : "0";
-            if (string.IsNullOrWhiteSpace(model.OrganizeId))
-            {
-                throw new FailedException("请选择组织机构");
-            }
+        //[HttpPost]
+        //[HandlerAjaxOnly]
+        //[ValidateAntiForgeryToken]
+        //public ActionResult submitForm(SysMedicineVO model, List<string> p, string ypCode, int? keyValue)
+        //{
+        //    model.zt = model.zt == "true" ? "1" : "0";
+        //    model.ycmc = model.ycmc ?? "";
+        //    //model.ybbz = model.ybbz == "true" ? "1" : "0";
+        //    if (string.IsNullOrWhiteSpace(model.OrganizeId))
+        //    {
+        //        throw new FailedException("请选择组织机构");
+        //    }
 
-            if (!_sysOrganizeDmnService.IsMedicalOrganize(model.OrganizeId))
-            {
-                throw new FailedException("请选择医疗机构（医院或诊所）");
-            }
-            _sysMedicineDmnService.SubmitMedicine(model, keyValue);
-            var t = SubmitEmpowermentPharmacyDepartment(keyValue, ypCode, OrganizeId, UserIdentity.UserCode, p);
+        //    if (!_sysOrganizeDmnService.IsMedicalOrganize(model.OrganizeId))
+        //    {
+        //        throw new FailedException("请选择医疗机构（医院或诊所）");
+        //    }
+        //    _sysMedicineDmnService.SubmitMedicine(model, keyValue);
+        //    var t = _sysPharmacyDepartmentApp.SubmitEmpowermentPharmacyDepartment(keyValue, ypCode, OrganizeId, UserIdentity.UserCode, p);
 
-            var msg = string.IsNullOrWhiteSpace(t) ? "操作成功。" : ("保存药品信息成功，但授权药房药库失败，" + t);
-            return Success(msg);
-        }
+        //    var msg = string.IsNullOrWhiteSpace(t) ? "操作成功。" : ("保存药品信息成功，但授权药房药库失败，" + t);
+        //    return Success(msg);
+        //}
 
         /// <summary>
         /// 修改信息时，把信息带到新页面
@@ -156,37 +146,37 @@ namespace Newtouch.HIS.Web.Controllers
         /// </summary>
         /// <param name="ypCode"></param>
         /// <returns></returns>
-        [HttpPost]
-        [HandlerAjaxOnly]
-        public ActionResult YibaoUploadApi(int ypId, string flag)
-        {
-            if (ypId <= 0)
-            {
-                return Success("请选择同步的药品！");
-            }
-            var ypEntity = _sysMedicineDmnService.GetFormJson(ypId);
-            if (!string.IsNullOrWhiteSpace(ypEntity.ybdm))
-            {
-                var Result = newtouchyibao.YibaoUniteInterface.Mcatalogrl("Z092", "0", ypEntity.ybdm, ypEntity.ypCode, ypEntity.ypmc, ypEntity.jxmc, ypEntity.ycmc, ypEntity.ypgg, ypEntity.bzdw, ypEntity.lsj, flag);
-                if (Result.Code == 0 && Result.Data.Count > 0 && Result.Data[0].TPCODE == 0)
-                {
-                    string error = "";
-                    if (!_sysMedicineDmnService.YibaoUpload(ypId, out error))
-                    {
-                        return Error(error);
-                    }
-                    return Success(string.Format("[{0}]医保同步成功！", ypEntity.ypmc));
-                }
-                else
-                {
-                    return Error(string.Format("[{0}]医保同步失败：{1}", ypEntity.ypmc, Result.ErrorMsg));
-                }
-            }
-            else
-            {
-                return Success("缺少医保代码！");
-            }
-        }
+        //[HttpPost]
+        //[HandlerAjaxOnly]
+        //public ActionResult YibaoUploadApi(int ypId, string flag)
+        //{
+        //    if (ypId <= 0)
+        //    {
+        //        return Success("请选择同步的药品！");
+        //    }
+        //    var ypEntity = _sysMedicineDmnService.GetFormJson(ypId);
+        //    if (!string.IsNullOrWhiteSpace(ypEntity.ybdm))
+        //    {
+        //        var Result = newtouchyibao.YibaoUniteInterface.Mcatalogrl("Z092", "0", ypEntity.ybdm, ypEntity.ypCode, ypEntity.ypmc, ypEntity.jxmc, ypEntity.ycmc, ypEntity.ypgg, ypEntity.bzdw, ypEntity.lsj, flag);
+        //        if (Result.Code == 0 && Result.Data.Count > 0 && Result.Data[0].TPCODE == 0)
+        //        {
+        //            string error = "";
+        //            if (!_sysMedicineDmnService.YibaoUpload(ypId, out error))
+        //            {
+        //                return Error(error);
+        //            }
+        //            return Success(string.Format("[{0}]医保同步成功！", ypEntity.ypmc));
+        //        }
+        //        else
+        //        {
+        //            return Error(string.Format("[{0}]医保同步失败：{1}", ypEntity.ypmc, Result.ErrorMsg));
+        //        }
+        //    }
+        //    else
+        //    {
+        //        return Success("缺少医保代码！");
+        //    }
+        //}
 
         public ActionResult GetPcSelectJson()
         {
@@ -219,15 +209,15 @@ namespace Newtouch.HIS.Web.Controllers
         /// </summary>
         /// <param name="AntibioticInfo"></param>
         /// <returns></returns>
-        public ActionResult SubmitKssForm(SysMedicineAntibioticInfoVO AntibioticInfo)
-        {
-            AntibioticInfo.OrganizeId = OrganizeId;
-            AntibioticInfo.zt = "1";
-            AntibioticInfo.LastModifierCode = UserIdentity.UserCode;
-            AntibioticInfo.LastModifyTime = DateTime.Now;
-            var getId = _sysMedicineBaseDmnService.SubmitForm(AntibioticInfo);
-            return string.IsNullOrWhiteSpace(getId) ? Error("保存抗生素失败") : Success("", getId);
-        }
+        //public ActionResult SubmitKssForm(SysMedicineAntibioticInfoEntity AntibioticInfo)
+        //{
+        //    AntibioticInfo.OrganizeId = OrganizeId;
+        //    AntibioticInfo.zt = "1";
+        //    AntibioticInfo.LastModifierCode = UserIdentity.UserCode;
+        //    AntibioticInfo.LastModifyTime = DateTime.Now;
+        //    var getId = _sysMedicineAntibioticInfoRepo.SubmitForm(AntibioticInfo);
+        //    return string.IsNullOrWhiteSpace(getId) ? Error("保存抗生素失败") : Success("", getId);
+        //}
 
         #region 自动授权药房药库
 
@@ -379,250 +369,6 @@ namespace Newtouch.HIS.Web.Controllers
         }
 
         #endregion
-
-
-        #region 系统药品_药房部门
-
-        /// <summary>
-        /// 授权药房部门
-        /// </summary>
-        /// <param name="ypId"></param>
-        /// <param name="ypCode"></param>
-        /// <param name="organizeId"></param>
-        /// <param name="userCode"></param>
-        /// <param name="epds"></param>
-        /// <returns></returns>
-        public string SubmitEmpowermentPharmacyDepartment(int? ypId, string ypCode, string organizeId, string userCode, List<string> epds)
-        {
-            if (epds == null || epds.Count == 0) return "";
-
-            var ypxx = _sysMedicineDmnService.SelectMedicineInfo(ypCode, organizeId);
-            if (ypxx == null) return string.Format("授权药房失败，根据药品代码【{0}】未找到药品信息", ypCode);
-            var yfbmyp = _sysMedicineBaseDmnService.SelectDepartmentMedicine(ypxx.dlCode, organizeId);
-
-            return ypId == null ? NewEpd(yfbmyp, ypxx, epds) : UpdateEpd(yfbmyp, ypxx, epds);
-        }
-
-        /// <summary>
-        /// 新增药房部门授权
-        /// </summary>
-        /// <param name="yfbmyp"></param>
-        /// <param name="ypxx"></param>
-        /// <param name="epds"></param>
-        /// <returns></returns>
-        private string NewEpd(IList<PharmacyDepartmentOpenMedicineRepoVO> yfbmyp, SysMedicineVO ypxx, List<string> epds)
-        {
-            var result = new StringBuilder();
-            epds.Distinct().ToList().ForEach(p =>
-            {
-                if (yfbmyp == null || yfbmyp.Count == 0)
-                {
-                    result.Append(InsertSysPharmacyDrug(p, ypxx));
-                }
-                else if (yfbmyp.All(o => o.yfbmCode != p))
-                {
-                    result.Append(InsertSysPharmacyDrug(p, ypxx));
-                }
-                var reqObj = new EmpowermentPharmacyDepartmentRequestDto
-                {
-                    bmypId = Guid.NewGuid().ToString(),
-                    yfbmCode = p,
-                    Ypdm = ypxx.ypCode,
-                    OrganizeId = ypxx.OrganizeId,
-                    Ypkw = "",
-                    Zcxh = "",
-                    px = null,
-                    Pxfs1 = "",
-                    Pxfs2 = "",
-                    Kcsx = 0,
-                    Kcxx = 0,
-                    Jhd = 0,
-                    Jhl = 0,
-                    Ypsxdm = null,
-                    Sysx = 0,
-                    Ylsx = 0,
-                    zt = "1",
-                    CreateTime = DateTime.Now,
-                    CreatorCode = ypxx.CreatorCode,
-                    LastModifierCode = "",
-                    LastModifyTime = null,
-                    Timestamp = DateTime.Now
-                };
-
-                //var apiResp = SitePdsApiHelper.Request<APIRequestHelper.DefaultResponse>("api/PharmacyDepartment/EmpowermentPharmacyDepartment", reqObj);
-                //var response = apiResp.data.ToString();
-                var response = EmpowermentPharmacyDepartment(reqObj).ToString();
-                if (!string.IsNullOrWhiteSpace(response)) result.Append(response);
-            });
-            return result.ToString();
-        }
-
-        /// <summary>
-        /// 新增药房部门授权
-        /// </summary>
-        /// <param name="yfbmyp"></param>
-        /// <param name="ypxx"></param>
-        /// <param name="epds"></param>
-        /// <returns></returns>
-        private string UpdateEpd(IList<PharmacyDepartmentOpenMedicineRepoVO> yfbmyp, SysMedicineVO ypxx, List<string> epds)
-        {
-            var result = new StringBuilder();
-            var request = new EmpowermentPharmacyDepartmentAndRemoveOldRequestDto
-            {
-                epds = new List<EmpowermentPharmacyDepartment>(),
-                Timestamp = DateTime.Now
-            };
-            epds.Distinct().ToList().ForEach(p =>
-            {
-                if (yfbmyp == null || yfbmyp.Count == 0)
-                {
-                    result.Append(InsertSysPharmacyDrug(p, ypxx));
-                }
-                else if (yfbmyp.All(o => o.yfbmCode != p))
-                {
-                    result.Append(InsertSysPharmacyDrug(p, ypxx));
-                }
-                request.epds.Add(new EmpowermentPharmacyDepartment
-                {
-                    bmypId = Guid.NewGuid().ToString(),
-                    yfbmCode = p,
-                    Ypdm = ypxx.ypCode,
-                    OrganizeId = ypxx.OrganizeId,
-                    Ypkw = "",
-                    Zcxh = "",
-                    px = null,
-                    Pxfs1 = "",
-                    Pxfs2 = "",
-                    Kcsx = 0,
-                    Kcxx = 0,
-                    Jhd = 0,
-                    Jhl = 0,
-                    Ypsxdm = null,
-                    Sysx = 0,
-                    Ylsx = 0,
-                    zt = "1",
-                    CreateTime = DateTime.Now,
-                    CreatorCode = ypxx.CreatorCode,
-                    LastModifierCode = "",
-                    LastModifyTime = null
-                });
-            });
-            //var apiResp = SitePdsApiHelper.Request<APIRequestHelper.DefaultResponse>("api/PharmacyDepartment/EmpowermentPharmacyDepartmentAndRemoveOld", request);
-            //var response = apiResp.data.ToString();
-            var response = EmpowermentPharmacyDepartmentAndRemoveOld(request).ToString();
-            if (!string.IsNullOrWhiteSpace(response)) result.Append(response);
-            return result.ToString();
-        }
-
-
-        /// <summary>
-        /// 插入药房部门药品
-        /// </summary>
-        /// <param name="p"></param>
-        /// <param name="ypxx"></param>
-        /// <returns></returns>
-        private string InsertSysPharmacyDrug(string p, SysMedicineVO ypxx)
-        {
-            var yfbmypEntity = new SysPharmacyDepartmentOpenMedicineVO
-            {
-                Id = Guid.NewGuid().ToString(),
-                yfbmCode = p,
-                dlCode = ypxx.dlCode,
-                OrganizeId = OrganizeId,
-                CreatorCode = ypxx.CreatorCode,
-                CreateTime = DateTime.Now,
-                zt = "1",
-                px = null
-            };
-
-            var r1 = _sysMedicineBaseDmnService.Insertyfbmyp(yfbmypEntity);
-            return r1 <= 0 ? string.Format("药房部门{0}赋予药品大类{1}权限失败;", p, ypxx.dlCode) : "";
-        }
-
-
-        /// <summary>
-        /// 药品授权药房部门
-        /// </summary>
-        /// <param name="req"></param>
-        /// <returns></returns>
-        public string EmpowermentPharmacyDepartment(EmpowermentPharmacyDepartmentRequestDto req)
-        {
-            if (req == null || string.IsNullOrWhiteSpace(req.bmypId)) return "请传入有效的本部门医药品信息；";
-            var oldData = _sysPharmacyDepartmentMedicineRepo.SelectData(req.Ypdm, req.OrganizeId, req.yfbmCode);
-            if (oldData != null && oldData.Count > 0)
-            {
-                if (oldData.Any(p => p.zt == "1")) return "";
-                var item = oldData.FirstOrDefault();
-                if (item != null)
-                {
-                    var t = _sysPharmacyDepartmentMedicineRepo.UpdateZt(item.bmypId, "1", req.CreatorCode, req.CreateTime);
-                    return t > 0 ? "" : string.Format("修改授权部门药品为【{0}】的药品【{1}】失败；", req.yfbmCode, req.Ypdm);
-                }
-            }
-            var bmypxx = new SysPharmacyDepartmentMedicineEntity
-            {
-                bmypId = req.bmypId,
-                yfbmCode = req.yfbmCode,
-                Ypdm = req.Ypdm,
-                OrganizeId = req.OrganizeId,
-                Ypkw = req.Ypkw,
-                Zcxh = req.Zcxh,
-                px = req.px,
-                Pxfs1 = req.Pxfs1,
-                Pxfs2 = req.Pxfs2,
-                Kcsx = req.Kcsx,
-                Kcxx = req.Kcxx,
-                Jhd = req.Jhd,
-                Jhl = req.Jhl,
-                Ypsxdm = req.Ypsxdm,
-                Sysx = req.Sysx,
-                Ylsx = req.Ylsx,
-                zt = req.zt,
-                CreateTime = req.CreateTime,
-                CreatorCode = req.CreatorCode,
-                LastModifierCode = req.LastModifierCode,
-                LastModifyTime = req.LastModifyTime
-            };
-            var rt = _sysPharmacyDepartmentMedicineRepo.Insert(bmypxx);
-            return rt > 0 ? "" : string.Format("新增授权部门药品为【{0}】的药品【{1}】失败；", req.yfbmCode, req.Ypdm);
-        }
-
-        /// <summary>
-        /// 药品授权药房部门 与EmpowermentPharmacyDepartment不同，该方法会先取消该药品所有药房的授权，在重新赋予权限
-        /// </summary>
-        /// <param name="req"></param>
-        /// <returns></returns>
-        public string EmpowermentPharmacyDepartmentAndRemoveOld(EmpowermentPharmacyDepartmentAndRemoveOldRequestDto req)
-        {
-            var result = new StringBuilder();
-            if (req == null || req.epds == null || req.epds.Count == 0) return "请传入有效的本部门医药品信息；";
-            req.epds.Select(p => p.Ypdm).Distinct().ToList().ForEach(o =>
-            {
-                _sysPharmacyDepartmentMedicineRepo.DeleteItem(o, req.epds[0].OrganizeId);
-            });
-            req.epds.ForEach(p =>
-            {
-                var tp = p.ToJson().ToObject<EmpowermentPharmacyDepartmentRequestDto>();
-                result.Append(EmpowermentPharmacyDepartment(tp));
-            });
-            return result.ToString();
-        }
-
-        #endregion
-
-        #region 限用
-
-        public ActionResult Getybbxbldata(string keyValue)
-        {
-            var list = _sysMedicineBaseDmnService.Getybbxbldata(keyValue, this.OrganizeId);
-            return Content(list.ToJson());
-        }
-
-        public ActionResult SaveYbblValue(List<Sh_YbfyxzblVO> entity, string xmbm, string xmmc)
-        {
-            _sysMedicineBaseDmnService.SaveYbblValue(entity, xmbm, xmmc, this.OrganizeId, this.UserIdentity.rygh);
-            return Success();
-        }
-        #endregion
+        
     }
 }

@@ -132,6 +132,7 @@ namespace Newtouch.HIS.Application.Implementation.Process
                         jsnm = 0,
                         CardNo = cfxx.CardNo ?? "",
                         xm = cfxx.xm ?? "",
+                        xb = cfxx.xb ?? "",
                         Fph = "",
                         nl = cfxx.nl,
                         brxzmc = cfxx.brxzmc,

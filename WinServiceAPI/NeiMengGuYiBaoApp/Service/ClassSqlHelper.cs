@@ -687,7 +687,7 @@ where  jz.zyh = '{hisId}'");
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@zyh", hisid);
-            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_setlinfoV", Parameters);
+            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_setlinfoV2", Parameters);
         }
 
         /// <summary>
@@ -1733,6 +1733,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         }
         #endregion
 
+        #region 【3501】商品盘存上传
         public static DataTable QueryInventory3501(string pdId,string orgId,string ddyyid,string ddyymc)
         {
             Parameters.Clear();
@@ -1742,7 +1743,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@ddyymc", ddyymc);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_invinfo", Parameters);
         }
-        public static DataTable QueryInventory3501(string orgId)
+        public static DataTable QueryInventory3501A(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1752,6 +1753,13 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         {
             return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id = '{id}' and type = '{type}' "));
         }
+        public static DataTable getdrugtracinfo(string ypdm,string pc,string ph)
+        {
+            string sql = string.Format($@"select zsm drug_trac_codg from NewtouchHIS_PDS..yb_inventory where ypdm= '{ypdm}' and pc = '{pc}' and  ph='{ph}'");
+            return platFormServer.Query(sql).Tables[0];
+           
+        }
+        #endregion
         public static DataTable QueryInventory3502(string crkId, string orgId, string ddyyid, string ddyymc)
         {
             Parameters.Clear();

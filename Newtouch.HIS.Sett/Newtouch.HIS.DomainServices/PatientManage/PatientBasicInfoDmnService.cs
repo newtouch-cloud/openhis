@@ -1674,7 +1674,10 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
     ,lxrItem.Code AS contPerRel 
     ,lxrItem.Name AS contPerRelValue
     ,zyxx.ks, ks.Name ksmc, ysStaff.Name doctor,'' jzDoctor, '' pkbz,ysStaff.Name ysxm
-    ,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.lxrdh,mz.mzmc,zyxx.rybq,(case isnull(basy.zyh,'0') when '0' then '未上传' else '已上传' end) issc
+    ,zyxx.kh, zyxx.CardType, zyxx.CardTypeName,zyxx.jzh,zyxx.lxrdh,mz.mzmc,zyxx.rybq
+    ,case isnull(ybjs.jsqd_sclsh,'0') when '0' then '未上传' else '已上传' end isscm
+	,ybjs.setl_id,
+    ybjs.psn_no,ybjs.mdtrt_id
 from zy_brjbxx(nolock) zyxx
 left join [Newtouch_CIS].[dbo].[zy_brxxk] xx
     on zyxx.zyh = xx.zyh AND zyxx.OrganizeId = xx.OrganizeId  AND xx.zt = '1'
@@ -1697,7 +1700,7 @@ left join NewtouchHIS_Base..V_S_Sys_Staff ysStaff
     on ysStaff.gh = zyxx.doctor and ysStaff.OrganizeId = zyxx.OrganizeId
 left join xt_card kh on kh.CardNo=zyxx.kh and kh.OrganizeId=zyxx.OrganizeId and kh.zt=1
 left join NewtouchHIS_Base..xt_mz mz on mz.mzCode=zyxx.mz and mz.zt=1
-left join drjk_basyup_output basy on basy.zyh=zyxx.zyh and basy.zt=1 
+left join drjk_zyjs_output ybjs on ybjs.zyh=zyxx.zyh and ybjs.zt=1 
 left join [NewtouchHIS_Base].[dbo].[Sys_ItemsDetail] zdb on zdb.Code=zyxx.zy and zdb.zt=1
 where zyxx.zt = '1'
 and zyxx.OrganizeId = @orgId
