@@ -31,11 +31,11 @@ namespace Newtouch.HIS.Repository.PatientManage
             {
                 case "1301":
                     sqlstr = @"select  MED_LIST_CODG ,REG_NAME,DRUGSTDCODE,DRUG_DOSFORM,DRUG_DOSFORM_NAME,DRUG_TYPE,DRUG_SPEC,REG_DOSFORM,REG_SPEC,EACH_DOS,OTC_FLAG
-,PACMATL,EFCC_ATD, MIN_PAC_CNT,MIN_PACUNT,MIN_PREPUNT,DRUG_EXPY,MIN_PRCUNT,PRODENTP_CODE,PRODENTP_NAME,MKT_STAS,VALI_FLAG,VER_NAME 
+,PACMATL,EFCC_ATD, MIN_PAC_CNT,MIN_PACUNT,MIN_PREPUNT,DRUG_EXPY,MIN_PRCUNT,PRODENTP_CODE,PRODENTP_NAME,MKT_STAS,VALI_FLAG,VER,VER_NAME 
 from NewtouchHIS_Base.[dbo].G_yb_wm_tcmpat_info_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or REG_NAME=@key) ";
                     break;
                 case "1302":
-                    sqlstr = @"select MED_LIST_CODG,TCMHERB_NAME,MED_PART,CNVL_USED,NATFLA,CAT,BEGNDATE,ENDDATE,VALI_FLAG,VER_NAME,MLMS_NAME,EFCC_ATD,PSDG_MTD,ECY_TYPE,MLMS_CAT_SOUC
+                    sqlstr = @"select MED_LIST_CODG,TCMHERB_NAME,MED_PART,CNVL_USED,NATFLA,CAT,BEGNDATE,ENDDATE,VALI_FLAG,VER,VER_NAME,MLMS_NAME,EFCC_ATD,PSDG_MTD,ECY_TYPE,MLMS_CAT_SOUC
                         from NewtouchHIS_Base.[dbo].G_yb_tcmherb_info_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or TCMHERB_NAME=@key)";
                     break;
                 case "1303":
