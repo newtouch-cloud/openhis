@@ -21,6 +21,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using wqsj_PlatForm_DAS;
+using System.Reflection;
+using System.Collections;
 
 namespace NeiMengGuYiBaoApp.Service
 {
@@ -629,6 +631,18 @@ where  jz.zyh = '{hisId}'");
         {
             string sql = string.Format($"select psn_no  人员编号,tel 联系电话,addr  联系地址,insutype  险种类型,opsp_dise_name  门慢门特病种名称,trt_dcla_detl_sn 待遇申报明细流水号,opsp_dise_code  门慢门特病种目录代码,ide_fixmedins_name 鉴定定点医药机构名称,hosp_ide_date  医院鉴定日期,diag_dr_name  诊断医师姓名,czrq 办理日期,case zt when 0 then '已撤销' else '正常'end 状态,zt_rq 撤销日期 from Drjk_rymtbba_input where czrq>='{qrq}' and czrq<='{zrq}'");
             return platFormServer.Query(sql).Tables[0];
+
+        }
+
+        /// <summary>
+        ///  更细科室的医保上传字段
+        /// <param name="uploadYB"></param>
+        /// <param name="kdCodes"></param>
+        /// <returns></returns>
+        public static int Update3401(int uploadYB, string[] kdCodes)
+        {
+                string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
+                return platFormServer.ExecuteSql(string.Format($"update [NewtouchHIS_Base].[dbo].[Sys_Department] set UploadYB={uploadYB} where Code in ({ks_codes_in_clause}) and zt=1 "));
 
         }
 
@@ -1732,6 +1746,17 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
 
         }
         #endregion
+
+
+        public static DataTable QueryDepartmentInfo3401(string orgId, string[] kdCodes) {
+            {
+                string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
+                string sql = "SELECT d.[Name] AS hosp_dept_name,d.[Code] AS hosp_dept_codg,FORMAT(d.[CreateTime], 'yyyy-MM-dd HH:mm:ss') AS begntime,d.[Name] + '的简介' AS itro,d.[ybksbm] AS caty,s.[Name] AS dept_resper_name,s.[MobilePhone] AS dept_resper_tel,FORMAT(d.[CreateTime], 'yyyy-MM-dd HH:mm:ss') AS dept_estbdat FROM [NewtouchHIS_Base].[dbo].[Sys_Department] d\r\nLEFT JOIN (SELECT TOP 1 WITH TIES s.* FROM [NewtouchHIS_Base].[dbo].[Sys_Staff] s WHERE s.[MobilePhone] IS NOT NULL AND s.[zt] = 1 AND s.[OrganizeId] = '@orgId' ORDER BY ROW_NUMBER() OVER (PARTITION BY s.[DepartmentCode] ORDER BY s.[CreateTime] ASC)) s ON d.[Code] = s.[DepartmentCode] \r\nWHERE d.[Code] IN (@ks_codes) AND d.[zt] = 1 AND d.[OrganizeId] = '@orgId';";
+                sql = sql.Replace("@ks_codes", ks_codes_in_clause);
+                sql = sql.Replace("@orgId", orgId);
+                return platFormServer.Query(sql).Tables[0];
+            }
+        }
 
         #region 【3501】商品盘存上传
         public static DataTable QueryInventory3501(string pdId,string orgId,string ddyyid,string ddyymc)

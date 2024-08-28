@@ -120,6 +120,14 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
             return Success("操作成功。");
         }
 
+        [HttpPost]
+        [HandlerAjaxOnly]
+        public ActionResult UpdateYbUpload(int uploadYB, string id)
+        {
+            _sysDepartmentRepository.UpdateYbUpload(uploadYB, id);
+            return Success("操作成功。");
+        }
+
         #region 关联病区
 
         public virtual ActionResult WardInfo()

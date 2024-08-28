@@ -2,6 +2,8 @@
 @{
     ViewBag.Title = "Index";
     Layout = "~/Views/Shared/_Index.cshtml";
+
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
 <div class="topPanel">
@@ -15,6 +17,15 @@
         </div>
         <div class="btn-group">
             <a id="NF-Wards" class="btn btn-primary" onclick="btn_wards()"><i class="fa fa-pencil-square-o"></i>病区信息</a>
+        </div>
+        <div class="btn-group">
+            <a id="YBKS-upload" class="btn btn-primary" onclick="btn_ybks_upload()"><i class="fa"></i>医保科室上传</a>
+        </div>
+        <div class="btn-group">
+            <a id="YBKS-update" class="btn btn-primary" onclick="btn_ybks_update()"><i class="fa fa-pencil-square-o"></i>医保科室更新</a>
+        </div>
+        <div class="btn-group">
+            <a id="YBKS-revoke" class="btn btn-primary" onclick="btn_ybks_revoke()"><i class="fa fa-trash-o"></i>医保科室撤销</a>
         </div>
     </div>
     <div class="search">
@@ -53,7 +64,8 @@
             colModel: [
 				{ label: "主键", name: "Id", hidden: true, key: true },
 				{ label: "国家科室名称", width: 80, name: "gjksmc" },
-                { label: "国家科室编码", width: 80,name: "ybksbm"},
+                { label: "国家科室编码", width: 80, name: "ybksbm" },
+                { label: '上传医保', name: 'UploadYB', width: 60, align: 'left' },
                 { label: '名称', name: 'Name', width: 100, align: 'left' },
                 { label: '编码', name: 'Code', width: 60, align: 'left' },
                 { label: '机构名称', name: 'OrganizeName', width: 200, align: 'left' },
@@ -144,4 +156,112 @@
         });
     }
 
+    function btn_ybks_upload() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var codeValue = jQuery("#gridList").jqGrid('getCell', seleRowid, 'Code');
+        var uploadYBValue = jQuery("#gridList").jqGrid('getCell', seleRowid, 'UploadYB');
+        if (uploadYBValue == "1") {
+            $.modalAlert("该科室已经上传医保", 'warning');
+            return;
+        }
+        var ybresp = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId", ksCode: codeValue };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/DepartmentInfoUpload_3401",
+            data: ybresp,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var upDataReturn = eval('(' + data + ')');
+                if (upDataReturn.infcode == "0") {
+                    $.modalAlert("医保科室上传成功", 'success');
+                    gridList();
+                    $('#btn_search').trigger('click');
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("医保科室上传失败：" + upDataReturn.err_msg, 'error');
+                    return;
+                }
+
+            }
+        });
+    }
+
+    function btn_ybks_update() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var codeValue = jQuery("#gridList").jqGrid('getCell', seleRowid, 'Code');
+        var uploadYBValue = jQuery("#gridList").jqGrid('getCell', seleRowid, 'UploadYB');
+        if (uploadYBValue == "0") {
+            $.modalAlert("该科室尚未上传医保", 'warning');
+            return;
+        }
+        var ybresp = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId", ksCode: codeValue };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/DepartmentInfoUpdate_3402",
+            data: ybresp,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var upDataReturn = eval('(' + data + ')');
+                if (upDataReturn.infcode == "0") {
+                    $.modalAlert("医保科室更新成功", 'success');
+                    gridList();
+                    $('#btn_search').trigger('click');
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("医保科室更新失败：" + upDataReturn.err_msg, 'error');
+                    return;
+                }
+            }
+        });
+    }
+
+    function btn_ybks_revoke() {
+        var seleRowid = jQuery("#gridList").jqGrid("getGridParam", "selrow");
+        if (!(seleRowid)) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var codeValue = jQuery("#gridList").jqGrid('getCell', seleRowid, 'Code');
+        var uploadYBValue = jQuery("#gridList").jqGrid('getCell', seleRowid, 'UploadYB');
+        if (uploadYBValue == "0") {
+            $.modalAlert("该科室尚未上传医保", 'warning');
+            return;
+        }
+        var ybresp = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId", ksCode: codeValue };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/DepartmentInfoRevoke_3403",
+            data: ybresp,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var upDataReturn = eval('(' + data + ')');
+                if (upDataReturn.infcode == "0") {
+                    $.modalAlert("医保科室撤销成功", 'success');
+                    gridList();
+                    $('#btn_search').trigger('click');
+                }
+                else {
+                    $.loading(false);
+                    isuccer = false;
+                    $.modalAlert("医保科室撤销失败：" + upDataReturn.err_msg, 'error');
+                    return;
+                }
+            }
+        });
+    }
 </script>

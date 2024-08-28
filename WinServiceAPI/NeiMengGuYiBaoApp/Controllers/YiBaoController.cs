@@ -23,6 +23,7 @@ using NeiMengGuYiBaoApp.Service;
 using NeiMengGuYiBaoApp.Models.Output.HeaSecReadInfo;
 using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
 using AutoMapper;
+using System.Globalization;
 
 namespace NeiMengGuYiBaoApp.Controllers
 {
@@ -455,8 +456,33 @@ namespace NeiMengGuYiBaoApp.Controllers
             return jsonStr;
         }
 
+        #endregion
 
+        #region 【1201】医药机构信息获取
+        /// <summary>
+        /// 【3403】科室信息撤销
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetfixmedinsInfo1201(PostBase post)
+        {
+            post.tradiNumber = "1201";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
 
+            Input_1201 input1201 = new Input_1201();
+
+            input1201.medinsinfo = new medinsinfo1201();
+            input1201.medinsinfo.fixmedins_type = "1";
+            input1201.medinsinfo.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+           
+            Output_1201 output = new Output_1201();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input1201, out output, post, out code);
+            return json;
+        }
         #endregion
 
         #region 1301 1302 1303 1305 1306 1307 1308 1309 1310 1311 1313 1314 1315 1320 1321 9102 目录查询下载(第二版目录下载的接口)
@@ -2434,6 +2460,165 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
+        #region 3401 科室信息上传 3402 科室信息变更 3403 科室信息撤销
+        /// <summary>
+        /// 【3401】科室信息上传
+        /// </summary>
+        /// <param name="post3401"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoUpload_3401(Post_3401 post3401)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3401.hisId;
+            post.tradiNumber = "3401";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3401.operatorId;
+            post.operatorName = post3401.operatorName;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3401 input3401 = new Input_3401();
+            string[] ks_codes = { post3401.ksCode };
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            input3401.deptinfo = new Deptinfo3401();
+            List<Deptinfo3401> list = Function.ToList<Deptinfo3401>(dtDiseinfo);
+            input3401.deptinfo = list[0];
+            if (string.IsNullOrEmpty(input3401.deptinfo.dept_resper_name)) {
+                return YiBaoHelper.BuildReturnJson("-99", "该科室没有主任（系统人员选择该科室并且有联系方式）");
+            }
+            input3401.deptinfo.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"];;
+            input3401.deptinfo.dr_psncnt = 5;
+            input3401.deptinfo.phar_psncnt = 2;
+            input3401.deptinfo.nurs_psncnt = 4;
+            input3401.deptinfo.tecn_psncnt = 2;
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3401, out output, post, out code);
+            if (code == "0") {
+                ClassSqlHelper.Update3401(1, ks_codes);
+            }
+            return json;
+        }
+        /// <summary>
+        /// 【3401A】批量科室信息上传
+        /// </summary>
+        /// <param name="post3401A"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoUpload_3401A(Post_3401A post3401A)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3401A.hisId;
+            post.tradiNumber = "3401A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3401A.operatorId;
+            post.operatorName = post3401A.operatorName;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3401A input3401A = new Input_3401A();
+            string[] ks_codes = post3401A.ksCodes.ToArray();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            List<Deptinfo3401> deptinfo3401List = new List<Deptinfo3401>{ };
+            for (int i = 0; i < post3401A.ksCodes.LongCount(); i++) {
+                Deptinfo3401 deptinfo3401 = Function.ToList<Deptinfo3401>(dtDiseinfo)[i];
+                if (string.IsNullOrEmpty(deptinfo3401.dept_resper_name))
+                {
+                    return YiBaoHelper.BuildReturnJson("-99", deptinfo3401.hosp_dept_codg + "科室没有主任（系统人员选择该科室并且有联系方式）");
+                }
+                deptinfo3401.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"]; ;
+                deptinfo3401.dr_psncnt = 5;
+                deptinfo3401.phar_psncnt = 2;
+                deptinfo3401.nurs_psncnt = 4;
+                deptinfo3401.tecn_psncnt = 2;
+                deptinfo3401List.Add(deptinfo3401);
+            }
+            input3401A.deptinfo = deptinfo3401List;
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3401A, out output, post, out code);
+            if (code == "0")
+            {
+                ClassSqlHelper.Update3401(1, ks_codes);
+            }
+            return json;
+        }
+        /// <summary>
+        /// 【3402】科室信息变更
+        /// </summary>
+        /// <param name="post3402"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoUpdate_3402(Post_3402 post3402)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3402.hisId;
+            post.tradiNumber = "3402";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3402.operatorId;
+            post.operatorName = post3402.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3402 input3402 = new Input_3402();
+            string[] ks_codes = { post3402.ksCode };
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            input3402.deptinfo = new Deptinfo3402();
+            input3402.deptinfo = Function.ToList<Deptinfo3402>(dtDiseinfo)[0];
+            if (string.IsNullOrEmpty(input3402.deptinfo.dept_resper_name))
+            {
+                return YiBaoHelper.BuildReturnJson("-99", "该科室没有主任（系统人员选择该科室并且有联系方式）");
+            }
+            input3402.deptinfo.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"]; ;
+            input3402.deptinfo.dr_psncnt = 5;
+            input3402.deptinfo.phar_psncnt = 2;
+            input3402.deptinfo.nurs_psncnt = 4;
+            input3402.deptinfo.tecn_psncnt = 2;
+
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3402, out output, post, out code);
+
+            return json;
+        }
+        /// <summary>
+        /// 【3403】科室信息撤销
+        /// </summary>
+        /// <param name="post3403"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string DepartmentInfoRevoke_3403(Post_3403 post3403)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post3403.hisId;
+            post.tradiNumber = "3403";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3403.operatorId;
+            post.operatorName = post3403.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_3403 input3403 = new Input_3403();
+            string[] ks_codes = { post3403.ksCode };
+            DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
+
+            input3403.data = new Data3403();
+            input3403.data = Function.ToList<Data3403>(dtDiseinfo)[0];
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3403, out output, post, out code);
+            if (code == "0")
+            {
+                ClassSqlHelper.Update3401(0, ks_codes);
+            }
+            return json;
+        }
+        #endregion
+
+        #region 3501 3502 3503 3504 产品采购
         #region 3501 3502 3503 3504 3505 3506 3507 进销存管理
         /// <summary>
         /// 3501  商品盘存上传
