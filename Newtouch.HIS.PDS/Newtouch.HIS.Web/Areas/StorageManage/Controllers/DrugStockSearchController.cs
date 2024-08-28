@@ -1,5 +1,7 @@
-﻿using System.Web.Mvc;
+﻿using System;
+using System.Web.Mvc;
 using Newtouch.Core.Common;
+using Newtouch.Core.Common.Utils;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.Infrastructure;
@@ -15,6 +17,7 @@ namespace Newtouch.HIS.Web.Areas.StorageManage.Controllers
 		private readonly IDrugStorageDmnService drugStorageDmnService;
 		private readonly ISysMedicineStockInfoRepo _kcxxRepo;
         private readonly ISysMedicineStockInfoRepo _sysMedicineStockInfoRepo;
+
 
 
 
@@ -38,34 +41,20 @@ namespace Newtouch.HIS.Web.Areas.StorageManage.Controllers
 		/// <param name="keyWord"></param>
 		/// <returns></returns>
 		[HttpGet]
-		[Core.Attributes.HandlerAuthorizeIgnore]
 		public ActionResult DrugAndStockSearch(string keyword)
 		{
 			var result = drugStorageDmnService.GetDrugAndStock(Constants.CurrentYfbm.yfbmCode, keyword, OrganizeId);
 			return Content(result.ToJson());
-        }
+		}
 
-        /// <summary>
-        /// 获取当前部门拥有的药品和库存信息  （外部入库）
-        /// </summary>
-        /// <param name="rkbm"></param>
-        /// <param name="keyWord"></param>
-        /// <returns></returns>
-        [HttpGet]
-        public ActionResult DrugStockSearch(string keyword, string yfbmCode)
-        {
-            var result = drugStorageDmnService.GetDrugAndStock(yfbmCode, keyword, OrganizeId);
-            return Content(result.ToJson());
-        }
-
-        /// <summary>
-        /// 获取当前部门拥有的药品和库存信息  （外部入库）
-        /// </summary>
-        /// <param name="keyword"></param>
-        /// <param name="fph"></param>
-        /// <param name="gysCode"></param>
-        /// <returns></returns>
-        [HttpGet]
+		/// <summary>
+		/// 获取当前部门拥有的药品和库存信息  （外部入库）
+		/// </summary>
+		/// <param name="keyword"></param>
+		/// <param name="fph"></param>
+		/// <param name="gysCode"></param>
+		/// <returns></returns>
+		[HttpGet]
 		[Core.Attributes.HandlerAuthorizeIgnore]
 		public ActionResult DrugAndStockSearchByFph(string keyword, string fph, string gysCode)
 		{
@@ -177,8 +166,11 @@ namespace Newtouch.HIS.Web.Areas.StorageManage.Controllers
 		/// </summary>
 		/// <returns></returns>
 		public ActionResult ExpiredDrugsView()
-		{
-			return View();
+        {
+            ViewBag.ReportServerHOST = ConfigurationHelper.GetAppConfigValue("ReportServer.HOST");
+            ViewBag.OrganizeId = OrganizeId;
+            ViewBag.yfbmCode = Constants.CurrentYfbm.yfbmCode;
+            return View();
 		}
 
 		/// <summary>
@@ -249,6 +241,8 @@ namespace Newtouch.HIS.Web.Areas.StorageManage.Controllers
 			return Content(data.ToJson());
 		}
         #endregion
+
+
         #region 药品有效期管理页面
         public ActionResult ExpiredDateManage()
         {
@@ -267,28 +261,29 @@ namespace Newtouch.HIS.Web.Areas.StorageManage.Controllers
         /// <returns></returns>
         [HttpGet]
         [Core.Attributes.HandlerAuthorizeIgnore]
-        public ActionResult GetStockExpiredSearchByPage(Pagination pagination, string keyword, string show0kc)
+        public ActionResult GetStockExpiredSearchByPage(Pagination pagination, string keyword,string show0kc)
         {
             var result = new
             {
-                rows = drugStorageDmnService.GetStockExpiredSearch(pagination, keyword, show0kc, Constants.CurrentYfbm.yfbmCode, OrganizeId),
+                rows = drugStorageDmnService.GetStockExpiredSearch(pagination, keyword, show0kc,Constants.CurrentYfbm.yfbmCode, OrganizeId),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records
             };
             return Content(result.ToJson());
         }
-
+        
         /// <summary>
         /// 更新药品有效期
         /// </summary>
         /// <param name="kcId"></param>
         /// <param name="yxq"></param>
         /// <returns></returns>
-        public ActionResult UpdateExpired(string kcId, string yxq)
-        {
+        public ActionResult UpdateExpired(string kcId, string yxq) {
             return _sysMedicineStockInfoRepo.UpdateExpired(kcId, yxq) > 0 ? Success() : Error("修改有效期失败");
-        }
+        } 
+        
+
         #endregion
     }
 }

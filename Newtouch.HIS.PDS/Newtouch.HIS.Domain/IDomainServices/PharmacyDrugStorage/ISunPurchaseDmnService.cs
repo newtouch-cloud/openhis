@@ -22,7 +22,10 @@ namespace Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage
         List<OutputStructYY004> Purchase_YY004(string orgId, string yqbm, string fpmxbh);
         //发票验收 (YY019)
         string Purchase_YY019(PurchaseMainYY019 main, string orgId);
-
+        //获取配送单明细数据
+        List<OutputStructYY003> Purchase_YY003(string orgId, string yqbm, string psmxbh);
+        //配送明细验收
+        string Purchase_YY018(PurchaseMainYY018 main, string orgId);
         //退货单填报（YY011）
         string Purchase_YY011(string orgId, string cgId);
         //退货单填报确认（YY012）

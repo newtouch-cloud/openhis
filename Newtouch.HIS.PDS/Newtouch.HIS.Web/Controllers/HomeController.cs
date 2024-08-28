@@ -11,7 +11,6 @@ using Newtouch.HIS.Domain.DO;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.Infrastructure.Model;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.Common;
 
 namespace Newtouch.HIS.Web.Controllers
 {
@@ -187,52 +186,5 @@ namespace Newtouch.HIS.Web.Controllers
             return Content(data.ToJson());
 		}
         #endregion
-
-
-        /// <summary>
-        /// 获取业务字段的随机产生值（自增+Format）
-        /// </summary>
-        /// <param name="fieldName"></param>
-        /// <param name="orgIdIsStar"></param>
-        /// <param name="topOrgIdIsStar"></param>
-        /// <param name="initFormat"></param>
-        /// <param name="initFieldLength"></param>
-        /// <returns></returns>
-        public ActionResult GetNewFieldUniqueValue(string fieldName, bool? orgIdIsStar = null, bool? topOrgIdIsStar = null, string orgId = null, string topOrgId = null, string initFormat = "", int initFieldLength = 0)
-        {
-            if (string.IsNullOrWhiteSpace(orgId))
-            {
-                if (orgIdIsStar.HasValue)
-                {
-                    orgId = orgIdIsStar.Value ? "*" : OperatorProvider.GetCurrent().OrganizeId;
-                }
-            }
-            if (string.IsNullOrWhiteSpace(topOrgId))
-            {
-                if (topOrgIdIsStar.HasValue)
-                {
-                    topOrgId = topOrgIdIsStar.Value ? "*" : Constants.TopOrganizeId;
-                }
-            }
-            if (string.IsNullOrWhiteSpace(initFormat) && initFieldLength > 0)
-            {
-                initFormat = "{0:D" + initFieldLength + "}";
-            }
-            string value = null;
-            if (string.IsNullOrWhiteSpace(orgId) || string.IsNullOrWhiteSpace(topOrgId) || initFormat == null)
-            {
-                value = null;
-            }
-            //else if(orgId == topOrgId)
-            //{
-            //    value = null;   //???????????????这样合适么
-            //}
-            else
-            {
-                value = EFDBBaseFuncHelper.Instance.GetNewFieldUniqueValue(fieldName, orgId, initFormat);
-            }
-            return Content(new AjaxResult { state = ResultType.success.ToString(), message = null, data = value }.ToJson());
-        }
-
     }
 }

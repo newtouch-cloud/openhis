@@ -28,7 +28,6 @@ namespace Newtouch.HIS.Domain.Entity
         /// 3：直接出库  单据号NBFYD111111111111
         /// 4：申领出库  单据号SLCKD111111111111
         /// 5：内部发药退回    单据号NBFYTHD111111111111
-        /// 6：申请调拨    单据号DBSQD111111111111
         /// </summary>
         public int djlx { get; set; }
 

@@ -23,7 +23,7 @@ namespace Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage
         /// </summary>
         /// <param name="ypId"></param>
         /// <returns></returns>
-        bool YibaoUpload(int ypId, out string error);
+        //bool YibaoUpload(int ypId, out string error);
 
         /// <summary>
         /// 绑定药品list集合

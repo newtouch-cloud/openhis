@@ -32,6 +32,7 @@ namespace Newtouch.HIS.Web.Areas.OutOrInStoredManage.Controllers
         private readonly IPurchaseBillDetailRepo _purchaseBillDetailRepo;
 
         // GET: OutOrInStoredManage/Purchase
+        #region 页面
         public ActionResult Index()
         {
             return View();
@@ -68,6 +69,15 @@ namespace Newtouch.HIS.Web.Areas.OutOrInStoredManage.Controllers
         {
             return View();
         }
+
+        //配送单获取验收
+        public ActionResult Delivery()
+        {
+            return View();
+        }
+        #endregion
+
+
         #region 采购管理
 
         /// <summary>
@@ -377,6 +387,25 @@ namespace Newtouch.HIS.Web.Areas.OutOrInStoredManage.Controllers
             return Success();
         }
         #endregion
+
+
+        #region 配送单获取验收
+
+        //配送单查询
+        public ActionResult GetDeliveryGridJson(string qybm, string psmxbh)
+        {
+            var result = _sunPurchaseDmnService.Purchase_YY003(OrganizeId, qybm, psmxbh);
+            return Content(result.ToJson());
+        }
+
+        //配送单验收
+        public ActionResult DeliveryAccept(PurchaseMainYY018 main)
+        {
+            var result = _sunPurchaseDmnService.Purchase_YY018(main, this.OrganizeId);
+            return Success();
+        }
+        #endregion
+
 
         #region
         public ActionResult PurchaseReturnUpload(string thId, int ddzt)

@@ -110,8 +110,7 @@ namespace Newtouch.HIS.Web.Controllers
                 ((int) EnumDanJuLX.zhijiefayao).ToString(),
                 ((int) EnumDanJuLX.shenlingfayao).ToString(),
                 ((int) EnumDanJuLX.neibufayaotuihui).ToString(),
-                ((int) EnumDanJuLX.keshifayao).ToString(),
-                ((int) EnumDanJuLX.shenqingdiaobo).ToString()
+                ((int) EnumDanJuLX.keshifayao).ToString()
             };
             switch (from)
             {
@@ -124,7 +123,7 @@ namespace Newtouch.HIS.Web.Controllers
                             ((int) EnumDanJuLX.shenlingfayao).ToString(),
                             ((int) EnumDanJuLX.neibufayaotuihui).ToString(),
                             ((int) EnumDanJuLX.keshifayao).ToString(),
-                            ((int) EnumDanJuLX.shenqingdiaobo).ToString()
+                            ((int) EnumDanJuLX.piliangchuku).ToString()
                         };
                     }
                     else
@@ -136,28 +135,28 @@ namespace Newtouch.HIS.Web.Controllers
                             ((int) EnumDanJuLX.zhijiefayao).ToString(),
                             ((int) EnumDanJuLX.shenlingfayao).ToString(),
                             ((int) EnumDanJuLX.neibufayaotuihui).ToString(),
-                            ((int) EnumDanJuLX.shenqingdiaobo).ToString()
+                            ((int) EnumDanJuLX.piliangchuku).ToString()
                         };
                     }
                     break;
                 case "approval":
                     if (curYfbmjb != "1")
                     {
-                        allUseableDjlx = new[] {
-                            ((int)EnumDanJuLX.zhijiefayao).ToString(),
-                            ((int)EnumDanJuLX.shenlingfayao).ToString(),
-                            ((int)EnumDanJuLX.keshifayao).ToString(),
-                            ((int)EnumDanJuLX.shenqingdiaobo).ToString(),
+                        allUseableDjlx = new[]
+                        {
+                            ((int) EnumDanJuLX.zhijiefayao).ToString(),
+                            ((int) EnumDanJuLX.shenlingfayao).ToString(),
+                            ((int) EnumDanJuLX.keshifayao).ToString(),
+                            ((int) EnumDanJuLX.piliangchuku).ToString()
                         };
                     }
                     else
                     {
                         allUseableDjlx = new[] {
-                            ((int)EnumDanJuLX.yaopinruku).ToString(),
-                            ((int)EnumDanJuLX.waibucuku).ToString(),
-                            ((int)EnumDanJuLX.neibufayaotuihui).ToString(),
-                            ((int)EnumDanJuLX.keshifayao).ToString(),
-                            ((int)EnumDanJuLX.shenqingdiaobo).ToString()
+                            ((int) EnumDanJuLX.yaopinruku).ToString(),
+                            ((int) EnumDanJuLX.waibucuku).ToString(),
+                            ((int) EnumDanJuLX.neibufayaotuihui).ToString(),
+                            ((int) EnumDanJuLX.keshifayao).ToString()
                         };
                     }
                     break;
@@ -175,8 +174,7 @@ namespace Newtouch.HIS.Web.Controllers
                 alldjlx = allUseableDjlx,
                 orgId = OperatorProvider.GetCurrent().OrganizeId,
                 curYfbmCode = Constants.CurrentYfbm.yfbmCode,
-                gys = Request.QueryString["gys[]"],
-                IsApproval = from == "approval"
+                gys = Request.QueryString["gys[]"]
             };
             var receiptMaininfoList = new
             {
@@ -298,7 +296,7 @@ namespace Newtouch.HIS.Web.Controllers
             var list = _pharmacyDrugStorageApp.SelectStockDetail(ypCode, yfbmCode);
             return Content(list.ToJson());
         }
-
+        
         #region 库存盘点
 
 

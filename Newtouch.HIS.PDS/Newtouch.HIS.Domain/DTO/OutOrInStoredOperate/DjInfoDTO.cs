@@ -100,11 +100,6 @@ namespace Newtouch.HIS.Domain.DTO.OutOrInStoredOperate
         public decimal? jj { get; set; }
 
         /// <summary>
-        /// 最小单位进价
-        /// </summary>
-        public decimal? zxdwjj { get; set; }
-
-        /// <summary>
         /// 药库单位批发价
         /// </summary>
         public decimal ykpfj { get; set; }

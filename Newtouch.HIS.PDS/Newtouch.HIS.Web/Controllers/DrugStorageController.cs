@@ -570,10 +570,9 @@ namespace Newtouch.HIS.Web.Controllers
         public ActionResult RequestInfo(Pagination pagination, string sldh, string slbm, string ffzt, string txtStartDate, string txtEndDate)
         {
             ffzt = ffzt == "" ? "-1" : ffzt;
-            var yfbmCode = Constants.CurrentYfbm.yfbmCode;
             var data = new
             {
-                rows = _drugStorageDmnService.GetMedicineRequestInfo(pagination, sldh, slbm, ffzt, txtStartDate, txtEndDate, enumSldlx: EnumSldlx.neibushenlingdan, ckbm: yfbmCode),
+                rows = _drugStorageDmnService.GetMedicineRequestInfo(pagination, sldh, slbm, ffzt, txtStartDate, txtEndDate),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records
@@ -813,6 +812,8 @@ namespace Newtouch.HIS.Web.Controllers
         /// <returns></returns>
         public ActionResult PSIStatistics2018()
         {
+            ViewBag.YfbmCode = Constants.CurrentYfbm.yfbmCode;
+            ViewBag.OrganizeId= this.OrganizeId;
             return View();
         }
 
@@ -840,7 +841,7 @@ namespace Newtouch.HIS.Web.Controllers
             return View();
         }
         public ActionResult ExcelGet(string ksjzsj, string jsjzsj, string ypzt, string srm, string dl, string jx, string rate, string noPSI,
-            bool? isContainFilter, int colStanWidth, string cols, string jxtext, string lbtext)
+            bool? isContainFilter, int colStanWidth, string cols,string jxtext,string lbtext)
         {
             var orgId = this.OrganizeId;
             if (string.IsNullOrEmpty(orgId))
@@ -897,7 +898,7 @@ namespace Newtouch.HIS.Web.Controllers
             {
                 t.NumberDigits = 2;
             });
-            sheet.columns.Where(p => p.Name == "ckpfze").ToList().ForEach(t =>
+            sheet.columns.Where(p => p.Name == "ckpfze" ).ToList().ForEach(t =>
             {
                 t.NumberDigits = 2;
             });
@@ -905,11 +906,11 @@ namespace Newtouch.HIS.Web.Controllers
             {
                 t.NumberDigits = 2;
             });
-            sheet.columns.Where(p => p.Name == "pyze").ToList().ForEach(t =>
+            sheet.columns.Where(p => p.Name == "pyze").ToList().ForEach(t => 
             {
                 t.NumberDigits = 2;
             });
-            sheet.columns.Where(p => p.Name == "pkze").ToList().ForEach(t =>
+            sheet.columns.Where(p => p.Name == "pkze").ToList().ForEach(t => 
             {
                 t.NumberDigits = 2;
             });
@@ -927,7 +928,7 @@ namespace Newtouch.HIS.Web.Controllers
                 p.Width = 0;    //Width都置为0
             });
 
-            var path = DateTime.Now.ToString("\\\\yyyyMMdd\\\\HHmmssfff") + "进销存统计" + ".xls";
+            var path = DateTime.Now.ToString("\\\\yyyyMMdd\\\\HHmmssfff")+"进销存统计" + ".xls";
             var filePath = CommmHelper.GetLocalFilePath("\\Excel导出\\药库查询导出" + path, "D:\\");
 
             if (isContainFilter == true)
@@ -945,7 +946,7 @@ namespace Newtouch.HIS.Web.Controllers
                 }
                 if (!string.IsNullOrWhiteSpace(sticsParam.ypzt))
                 {
-                    filterDict.Add("药品状态", sticsParam.ypzt == "1" ? "启用" : "停用");
+                    filterDict.Add("药品状态", sticsParam.ypzt=="1"?"启用":"停用");
                 }
                 if (!string.IsNullOrWhiteSpace(sticsParam.rate))
                 {
@@ -965,7 +966,7 @@ namespace Newtouch.HIS.Web.Controllers
                 }
                 if (!string.IsNullOrWhiteSpace(sticsParam.noPSI))
                 {
-                    filterDict.Add("显示未发生进销存药品", sticsParam.noPSI == "0" ? "显示" : "不显示");
+                    filterDict.Add("显示未发生进销存药品", sticsParam.noPSI=="0"?"显示":"不显示");
                 }
                 if (filterDict.Count > 0)
                 {
@@ -1023,7 +1024,7 @@ namespace Newtouch.HIS.Web.Controllers
         /// <returns></returns>
         public ActionResult DirectDeliveryBatch()
         {
-            ViewBag.OrganizeId = this.OrganizeId;
+            ViewBag.OrganizeId = OrganizeId;
             return View();
         }
 
@@ -1076,7 +1077,7 @@ namespace Newtouch.HIS.Web.Controllers
                     Organizeid = OrganizeId,
                     djh = djh,
                     crkId = Guid.NewGuid().ToString(),
-                    djlx = (int)EnumDanJuLX.zhijiefayao,
+                    djlx = (int)EnumDanJuLX.piliangchuku,
                     rkbm = rkbm,
                     yfbmCode = Constants.CurrentYfbm.yfbmCode,
                     userCode = OperatorProvider.GetCurrent().UserCode,
@@ -1085,7 +1086,7 @@ namespace Newtouch.HIS.Web.Controllers
                     ypCodes = string.Join(",", li)
                 };
                 var result = _handOutMedicineDmnService.DirectDeliveryBatchSubmit(param);
-                return  Success(result);
+                return Success(result);
             }
             catch (Exception e)
             {

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Newtouch.Core.Common;
-using Newtouch.HIS.Domain.DO;
 using Newtouch.HIS.Domain.DTO.DrugStorage;
 using Newtouch.HIS.Domain.Entity.V;
 using Newtouch.HIS.Domain.ValueObjects;
@@ -109,12 +108,5 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="paraDto"></param>
         /// <returns></returns>
         string DirectDeliveryBatchSubmit(DirectDeliveryBatchDTO paraDto);
-
-        /// <summary>
-        /// 调拨入库
-        /// </summary>
-        /// <param name="rkdmx">申请调拨单集合</param>
-        /// <returns></returns>
-        string TransferWarehousing(Dictionary<string, List<SysMedicineReDetailVO>> rkdmx, string rkbm, string operatorCode, string orgId);
     }
 }

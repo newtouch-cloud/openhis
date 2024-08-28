@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using Newtouch.HIS.Domain.Entity.V;
 using Newtouch.HIS.Domain.DTO.DrugStorage;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.Infrastructure;
-using System;
 
 namespace Newtouch.HIS.Domain.IDomainServices
 {
@@ -51,19 +49,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="txtStartDate">开始日期</param>
         /// <param name="txtEndDate">结束日期</param>
         /// <returns></returns>
-        IList<SysMedicineReInfoVO> GetMedicineRequestInfo(Pagination pagination, string sldh, string slbm, string ffzt, string txtStartDate = "", string txtEndDate = "", EnumSldlx enumSldlx = EnumSldlx.neibushenlingdan, string ckbm = "");
-
-        /// <summary>
-        /// 获取申请调拨单号（已审核通过单据）
-        /// </summary>
-        /// <param name="sldh">申领单号</param>
-        /// <param name="slbm">申领部门</param>
-        /// <param name="ckbm">出库部门</param>
-        /// <param name="ffzt">发药状态</param>
-        /// <param name="startDate"></param>
-        /// <param name="endDate"></param>
-        /// <returns></returns>
-        IList<SysMedicineReInfoVO> GetTransferOrders(string sldh, string slbm, string ckbm, string ffzt, DateTime startDate, DateTime endDate);
+        IList<SysMedicineReInfoVO> GetMedicineRequestInfo(Pagination pagination, string sldh, string slbm, string ffzt, string txtStartDate = "", string txtEndDate = "");
 
         /// <summary>
         /// 获取申领单明细
@@ -71,13 +57,6 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="sldId"></param>
         /// <returns></returns>
         List<SysMedicineReDetailVO> GetMedicineDetail(string sldId);
-
-        /// <summary>
-        /// 获取申领单明细
-        /// </summary>
-        /// <param name="sldId"></param>
-        /// <returns></returns>
-        List<SysMedicineReDetailVO> GetSldInfo(string sldId);
 
         /// <summary>
         /// 入库
@@ -183,15 +162,6 @@ namespace Newtouch.HIS.Domain.IDomainServices
         List<DrugStockInfoVEntity> GetDrugAndStock(string ckbm, string rkbm, string keyWord, string organizeid);
 
         /// <summary>
-        /// 获取部门药品信息和库存（申请调拨）
-        /// </summary>
-        /// <param name="currentYfbmCode"></param>
-        /// <param name="keyWord"></param>
-        /// <param name="organizeid"></param>
-        /// <returns></returns>
-        List<DrugStockInfoVEntity> GetDrugStock(string ckbm, string rkbm, string keyWord, string organizeid);
-
-        /// <summary>
         /// 获取当前部门拥有的药品和库存信息  （外部入库）
         /// </summary>
         /// <param name="currentYfbmCode"></param>
@@ -229,7 +199,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="fph"></param>
         /// <param name="gysCode"></param>
         /// <returns></returns>
-        List<DrugStockInfoVEntity> GetStockGroupByBatchByFph(string ypdm, string yfbmCode, string organizeid, string fph, string gysCode, string pc = null);
+        List<DrugStockInfoVEntity> GetStockGroupByBatchByFph(string ypdm, string yfbmCode, string organizeid, string fph, string gysCode,string pc =null);
 
         /// <summary>
         /// 批次分组
@@ -251,7 +221,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="show0kc">是否展示零库存  0-不展示 1-展示</param>
         /// <param name="organizeid"></param>
         /// <returns></returns>
-        IList<DrugStockInfoVEntity> GetDrugAndStock(Pagination pagination, string yfbmCode, string keyWord, string tybz, string kczt, string show0kc, string organizeid, string kcyjcode);
+        IList<DrugStockInfoVEntity> GetDrugAndStock(Pagination pagination, string yfbmCode, string keyWord, string tybz, string kczt, string show0kc, string organizeid,string kcyjcode);
 
         /// <summary>
         /// 库存查询
@@ -273,36 +243,39 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <returns></returns>
         IList<DrugStockInfoVEntity> SelectExpiredDrugs(Pagination pagination, string keyword, int gpyf, string yfbmCode, string organizeId, string gqyjcode, int? gqyyjts);
 
-        /// <summary>
-        ///获取单据全部数据
-        /// </summary>
-        /// <param name="crkId"></param>
-        /// <returns></returns>
-        IList<CrkMxAll> GetCrkMxAll(string crkId);
+		/// <summary>
+		///获取单据全部数据
+		/// </summary>
+		/// <param name="crkId"></param>
+		/// <returns></returns>
+		IList<CrkMxAll> GetCrkMxAll(string crkId);
 
-        /// <summary>
-        /// 删除单据
-        /// </summary>
-        /// <param name="crkId"></param>
-        /// <returns></returns>
-        int DeleteCrkDj(string crkId);
+		/// <summary>
+		/// 删除单据
+		/// </summary>
+		/// <param name="crkId"></param>
+		/// <returns></returns>
+		int DeleteCrkDj(string crkId);
 
-        /// <summary>
-        /// 修改单据
-        /// </summary>
-        /// <param name="crkId"></param>
-        /// <returns></returns>
-        int ReviseCrkDj(string crkId);
+		/// <summary>
+		/// 修改单据
+		/// </summary>
+		/// <param name="crkId"></param>
+		/// <returns></returns>
+		int ReviseCrkDj(string crkId);
 
-        /// <summary>
-        /// 获取单据数据
-        /// </summary>
-        /// <param name="crkId"></param>
-        /// <returns></returns>
-        DjGys GetCrkDjh(string crkId, int? djlx);
+		/// <summary>
+		/// 获取单据数据
+		/// </summary>
+		/// <param name="crkId"></param>
+		/// <returns></returns>
+		DjGys GetCrkDjh(string crkId,int ? djlx);
+
+
         #region 药品有效期管理
-        IList<DrugExpiredInfoVEntity> GetStockExpiredSearch(Pagination pagination, string keyword, string show0kc, string yfbmCode, string organizeid);
+        IList<DrugExpiredInfoVEntity> GetStockExpiredSearch(Pagination pagination, string keyword, string show0kc,string yfbmCode, string organizeid);
         #endregion
+
 
     }
 }

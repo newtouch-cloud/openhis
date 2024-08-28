@@ -52,7 +52,6 @@ namespace Newtouch.HIS.Application.Implementation.Process
                 Sldh = Request.djh,
                 Slbm = Request.rkbm,
                 ffzt = (int)EnumSLDDeliveryStatus.None,
-                Sldlx = Request.djlx,
                 zt = "1"
             };
             sysMedicineRequisitionEntity.Create(true, Guid.NewGuid().ToString());
@@ -68,16 +67,7 @@ namespace Newtouch.HIS.Application.Implementation.Process
                     yfsl = 0,   //已发数量
                     zt = "1"
                 };
-                if (!string.IsNullOrWhiteSpace(p.sldmxId))
-                {
-                    item.sldmxId = p.sldmxId;
-                    item.CreateTime = DateTime.Now;
-                    item.CreatorCode = sysMedicineRequisitionEntity.CreatorCode;
-                }
-                else
-                {
-                    item.Create(true, Guid.NewGuid().ToString());
-                }
+                item.Create(true, Guid.NewGuid().ToString());
                 sysMedicineRequisitionDetailEntities.Add(item);
             });
         }

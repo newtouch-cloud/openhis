@@ -8,14 +8,10 @@ using System.Text;
 using FrameworkBase.MultiOrg.Infrastructure;
 using Newtouch.Common.Operator;
 using Newtouch.Core.Common;
-using Newtouch.HIS.Domain.DO;
 using Newtouch.HIS.Domain.DTO.DrugStorage;
-using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.Entity.V;
 using Newtouch.HIS.Domain.IDomainServices;
-using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Repository;
 using Newtouch.Infrastructure;
 using Newtouch.Infrastructure.TSQL;
 using Newtouch.Tools;
@@ -27,12 +23,6 @@ namespace Newtouch.HIS.DomainServices
     /// </summary>
     public class HandOutMedicineDmnService : DmnServiceBase, IHandOutMedicineDmnService
     {
-        private readonly ISysMedicineStockInfoRepo _xtypkcxxRepo;
-        private readonly ISysMedicineRequisitionDetailRepo _xtypsldmxRepo;
-        private readonly ISysMedicineRequisitionRepo _xtypsldRepo;
-        private readonly ISysPharmacyDepartmentMedicineRepo _sysPharmacyDepartmentMedicineRepo;
-        private readonly ISysMedicineRepo _sysMedicineRepo;
-
         public HandOutMedicineDmnService(IDefaultDatabaseFactory databaseFactory) : base(databaseFactory)
         {
 
@@ -432,189 +422,6 @@ ORDER BY s.yxq ASC
                 new SqlParameter("@ypCodes", paraDto.ypCodes),
             };
             return FindList<string>(TSqlStock.direct_delivery_batch_submit, param).FirstOrDefault();
-        }
-
-        /// <summary>
-        /// 调拨入库
-        /// </summary>
-        /// <param name="rkdmx">入库药品信息</param>
-        /// <returns></returns>
-        public string TransferWarehousing(Dictionary<string, List<SysMedicineReDetailVO>> rkdmx, string rkbm, string operatorCode, string orgId)
-        {
-            if (rkdmx == null || rkdmx.Count <= 0 || rkdmx.Values == null || rkdmx.Values.Count == 0)
-            {
-                return "入库药品明细不能为空";
-            }
-
-            using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
-            {
-                var allYpxx = _sysMedicineRepo.GetMedicineListByOrg(orgId);//所有药品
-                foreach (var item in rkdmx)
-                {
-                    //单个出库部门
-                    var inventoryDetail = item.Value;
-                    var allYpCodes = inventoryDetail.Select(p => p.Ypdm).Distinct().ToList();
-                    if (allYpCodes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    var kcxxs = db.IQueryable<SysMedicineStockInfoEntity>(p => allYpCodes.Contains(p.ypdm) && p.yfbmCode == item.Key
-                    && p.zt == "1" && p.OrganizeId == orgId && p.kcsl > 0 && (p.kcsl - p.djsl) > 0)?.ToList();
-                    if (kcxxs == null || kcxxs.Count == 0)
-                    {
-                        return $"出库部门[{item.Key}]部分药品库存不足";
-                    }
-
-                    var rkbmKcxxs = db.IQueryable<SysMedicineStockInfoEntity>(p => allYpCodes.Contains(p.ypdm) && p.yfbmCode == rkbm
-                    && p.zt == "1" && p.OrganizeId == orgId)?.ToList();
-
-                    var bmypxxs = db.IQueryable<SysPharmacyDepartmentMedicineEntity>(p => allYpCodes.Contains(p.Ypdm) && p.yfbmCode == rkbm && p.zt == "1" && p.OrganizeId == orgId).ToList();
-                    if (bmypxxs == null || bmypxxs.Count == 0)
-                    {
-                        return $"药品不在入库部门[{item.Key}]本部门药品信息范围内";
-                    }
-
-                    var invalidYp = allYpCodes.Where(p => !bmypxxs.Select(s => s.Ypdm).Contains(p));
-                    if (invalidYp != null && invalidYp.Count() > 0)
-                    {
-                        var ypxx = allYpxx.Where(p => invalidYp.Contains(p.ypCode));
-                        var errorMsg = new StringBuilder();
-                        foreach (var yp in ypxx)
-                        {
-                            errorMsg.Append(yp.ypmc).Append(",");
-                        }
-                        return $"药品[{errorMsg.ToString().Trim(',')}]不在入库部门[{item.Key}]本部门药品信息范围内";
-                    }
-
-                    foreach (var inventory in inventoryDetail)
-                    {
-                        #region 出库
-
-                        var sysl = inventory.kcsl;
-                        var sydjsl = inventory.kcsl;
-                        var ypkcxxs = kcxxs.FindAll(p => p.ypdm == inventory.Ypdm && p.pc == inventory.pc && p.ph == inventory.Ph);
-                        if (ypkcxxs == null || ypkcxxs.Sum(p => p.kcsl) < sysl)
-                        {
-                            ypkcxxs = kcxxs.FindAll(p => p.ypdm == inventory.Ypdm);
-                            if (ypkcxxs == null || ypkcxxs.Sum(p => p.kcsl) < sysl)
-                            {
-                                var ypxx = allYpxx.FirstOrDefault(p => inventory.Ypdm == p.ypCode);
-                                return $"申请调拨单[{inventory.sldh}]出库部门[{item.Key}]部药品[{ypxx.ypmc}]库存不足";
-                            }
-                        }
-
-                        ypkcxxs = ypkcxxs.OrderByDescending(p => p.djsl).ToList();
-                        foreach (var ypkcxx in ypkcxxs)
-                        {
-                            if (sysl > 0)
-                            {
-                                if (ypkcxx.kcsl >= sysl)
-                                {
-                                    ypkcxx.kcsl -= sysl;
-                                    sysl = 0;
-                                }
-                                else
-                                {
-                                    sysl -= ypkcxx.kcsl;
-                                    ypkcxx.kcsl = 0;
-                                }
-                            }
-
-                            if (sydjsl > 0)
-                            {
-                                if (ypkcxx.djsl >= sydjsl)
-                                {
-                                    ypkcxx.djsl -= sydjsl;
-                                    sydjsl = 0;
-                                }
-                                else
-                                {
-                                    sydjsl -= ypkcxx.djsl;
-                                    ypkcxx.djsl = 0;
-                                }
-                            }
-
-                            db.Update(ypkcxx);
-                            if (sysl == 0 && sydjsl == 0)
-                            {
-                                break;
-                            }
-                        }
-
-                        #endregion
-
-                        #region 入库
-
-                        var rkkcxx = rkbmKcxxs.FirstOrDefault(p => p.ypdm == inventory.Ypdm && p.pc == inventory.pc && p.ph == inventory.Ph);
-                        if (rkkcxx != null)
-                        {
-                            rkkcxx.kcsl += inventory.kcsl;
-                            db.Update(rkkcxx);
-                        }
-                        else
-                        {
-                            var bmypxx = bmypxxs.FirstOrDefault(p => p.Ypdm == inventory.Ypdm);
-                            if (bmypxx == null)
-                            {
-                                var ypxx = allYpxx.FirstOrDefault(p => inventory.Ypdm == p.ypCode);
-                                return $"药品[{ypxx.ypmc}]不在入库部门[{item.Key}]本部门药品信息范围内";
-                            }
-
-                            var newKcxx = new SysMedicineStockInfoEntity
-                            {
-                                kcId = Guid.NewGuid().ToString(),
-                                OrganizeId = orgId,
-                                yfbmCode = rkbm,
-                                ypdm = inventory.Ypdm,
-                                ph = inventory.Ph,
-                                pc = inventory.pc,
-                                yxq = inventory.Yxq,
-                                kcsl = inventory.kcsl,
-                                djsl = 0,
-                                ypkw = bmypxx.Ypkw,  //部门药品信息
-                                kzbz = 0,
-                                tybz = 0,
-                                crkmxId = inventory.crkmxId,
-                                jj = inventory.jj,
-                                zhyz = inventory.Rkzhyz,   //药库部门 该 药品 的 转换因子
-                                zt = "1",
-                                CreateTime = DateTime.Now,
-                                CreatorCode = operatorCode
-                            };
-                            db.Insert(newKcxx);
-                        }
-
-                        #endregion
-                    }
-
-                    #region 反写申请调拨单和调拨单明细（发放状态、发药数量）
-
-                    var sldIds = inventoryDetail.Select(p => p.sldId)?.Distinct().ToList();
-                    var slds = db.IQueryable<SysMedicineRequisitionEntity>(p => sldIds.Contains(p.sldId));
-                    foreach (var sldInfo in slds)
-                    {
-                        sldInfo.ffzt = (int)EnumSLDDeliveryStatus.All;
-                        sldInfo.LastModifierCode = operatorCode;
-                        sldInfo.LastModifyTime = DateTime.Now;
-                        db.Update(sldInfo);
-                    }
-
-                    var sldmxs = db.IQueryable<SysMedicineRequisitionDetailEntity>(p => sldIds.Contains(p.sldId) && p.zt == "1")?.ToList();
-                    foreach (var mx in sldmxs)
-                    {
-                        mx.yfsl = mx.slsl;
-                        mx.LastModifierCode = operatorCode;
-                        mx.LastModifyTime = DateTime.Now;
-                        db.Update(mx);
-                    }
-
-                    #endregion
-                }
-
-                db.Commit();
-                return "";
-            }
         }
     }
 }

@@ -44,5 +44,26 @@ and (isnull(@keyword, '') = '' or yfck.yfckCode like @searchkeyword or yfck.yfck
             return this.QueryWithPage<PharmacyWindowVO>(strSql, pagination, param);
         }
 
+        /// <summary>
+        /// 查看药房部门药品信息(大类)
+        /// </summary>
+        /// <param name="dlCode"></param>
+        /// <param name="organizeId"></param>
+        /// <returns></returns>
+        public IList<PharmacyDepartmentOpenMedicineRepoVO> SelectDepartmentMedicine(string dlCode, string organizeId)
+        {
+            const string sql = @"
+SELECT * 
+FROM [NewtouchHIS_Base].dbo.xt_yfbm_yp(NOLOCK) yfbmyp
+WHERE yfbmyp.OrganizeId=@organizeId 
+AND yfbmyp.dlCode=@dlCode
+AND yfbmyp.zt='1'
+";
+            DbParameter[] parame = {
+                new SqlParameter("@dlCode",dlCode ?? ""),
+                new SqlParameter("@organizeId",organizeId)
+            };
+            return FindList<PharmacyDepartmentOpenMedicineRepoVO>(sql, parame);
+        }
     }
 }

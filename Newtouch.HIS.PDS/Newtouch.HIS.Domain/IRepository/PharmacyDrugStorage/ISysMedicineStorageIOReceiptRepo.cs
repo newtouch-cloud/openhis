@@ -7,5 +7,6 @@ namespace Newtouch.HIS.Domain.IRepository
     /// </summary>
     public interface ISysMedicineStorageIOReceiptRepo : IRepositoryBase<SysMedicineStorageIOReceiptEntity>
     {
+
     }
 }

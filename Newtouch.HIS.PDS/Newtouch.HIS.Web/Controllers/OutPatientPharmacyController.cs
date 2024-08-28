@@ -15,7 +15,6 @@ using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Domain.ValueObjects.Clinic;
 using Newtouch.HIS.Domain.ValueObjects.OutPatientPharmacy;
 using Newtouch.HIS.Domain.VO;
 using Newtouch.HIS.DomainServices;
@@ -25,7 +24,6 @@ using Newtouch.Infrastructure.Log;
 using Newtouch.PDS.Requset;
 using Newtouch.Tools;
 using static Newtouch.Common.Web.APIRequestHelper;
-using Newtouch.Infrastructure;
 
 namespace Newtouch.HIS.Web.Controllers
 {
@@ -1077,7 +1075,7 @@ namespace Newtouch.HIS.Web.Controllers
         /// <param name="patients"></param>
         /// <returns></returns>
         [HttpPost]
-        public ActionResult ExecAllDeliveryDrug(patientInfoVO[] patients,string ksmc)
+        public ActionResult ExecAllDeliveryDrug(patientInfoVO[] patients)
         {
             var cfhls = new List<string>();
             var eq = new OutpatienDrugDeliveryInfo
@@ -1087,64 +1085,7 @@ namespace Newtouch.HIS.Web.Controllers
                 userCode = OperatorProvider.GetCurrent().UserCode,
                 organizeId = OrganizeId
             };
-            var result = "";
-            //var result = _outPatientDispensingApp.ExecAllDeliveryDrugV2(eq, out cfhls);
-            if (ksmc == "远程诊疗")
-            {
-                if (eq.PatientInfo.Count >= 1)
-                {
-                    //获取收件人信息
-                    var cfh = eq.PatientInfo[0].cfh;
-                    var mzh = _fyDmnService.getMzhByCfh(cfh, this.OrganizeId);//获取门诊号
-                    var DataObj = new
-                    {
-                        OrganizeId = this.OrganizeId,
-                        visitNo = mzh,
-                        ks = "00000080",
-                    };
-                    var ReqObj = new
-                    {
-                        Data = DataObj,
-                        AppId = AuthenManageHelper.appId,
-                        OrganizeId = OrganizeId,
-                        Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                    };
-                    var outstrAddress = AuthenManageHelper.HttpPost<SysPatientAddressVO>(ReqObj.ToJson(), AuthenManageHelper.SiteConmonAPIHost + "api/patient/PatientOrderAddressQuery", this.UserIdentity);
-
-                    if (!(outstrAddress.msg == "" || outstrAddress.msg == "请求成功"))
-                    {
-                        throw new FailedException(outstrAddress.msg);
-                    }
-                    //发药通知诊所
-                    var applyInfo = _fyDmnService.getApplyInfoByMzh(mzh, this.OrganizeId);
-                    var sqjgDataObj = new
-                    {
-                        ApplyId = applyInfo.Id,
-                        Sqlsh = applyInfo.sqlsh,
-                        ApplyStu = (int)Emunzlzt.yfy,
-                        IsConfirm = "True",  //医生是否同意申请 True同意 false拒绝
-                        roomid = applyInfo.mettingId,
-                    };
-                    var sqjgReqObj = new
-                    {
-                        Data = sqjgDataObj,
-                        AppId = AuthenManageHelper.appId,
-                        OrganizeId = OrganizeId,
-                        Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                    };
-                    var outstrSqjg = AuthenManageHelper.HttpPost<bool>(sqjgReqObj.ToJson(), AuthenManageHelper.SiteConmonAPIHost + "api/Clinic/TreatedApplyResult", this.UserIdentity);
-
-                    if (!(outstrSqjg.msg == "" || outstrSqjg.msg == "请求成功"))
-                    {
-                        throw new FailedException(outstrSqjg.msg);
-                    }
-                    result = _outPatientDispensingApp.ExecAllDeliveryDrugV2(eq, out cfhls);
-
-                }
-            }
-            else {
-                result = _outPatientDispensingApp.ExecAllDeliveryDrugV2(eq, out cfhls);
-            }
+            var result = _outPatientDispensingApp.ExecAllDeliveryDrugV2(eq, out cfhls);
             var cfhStr = new StringBuilder();
             cfhls.ForEach(p => cfhStr.Append(p).Append(","));
             return string.IsNullOrWhiteSpace(result) ? Success("", cfhStr.ToString().Trim(',')) : Error(result);
@@ -1180,6 +1121,32 @@ namespace Newtouch.HIS.Web.Controllers
             }
 
             return result.ToString();
+        }
+
+        /// <summary>
+        /// 通过处方号获取组号
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <returns></returns>
+        public string GetRecipeGroupNum(string cfh, string type)
+        {
+            try
+            {
+                string zh = "";
+                var output = _mzCfRepo.GetZhInOutpatient(cfh,type);
+                List<string> result = new List<string>();
+                foreach (var item in output)
+                {
+                    result.Add(item.zh);
+                }
+                HashSet<string> tmp = new HashSet<string>(result);
+                var returnStr = string.Join(",", tmp);
+                return returnStr;
+            }
+            catch (Exception)
+            {
+                return "";
+            }
         }
         #endregion 
 
