@@ -456,8 +456,33 @@ namespace NeiMengGuYiBaoApp.Controllers
             return jsonStr;
         }
 
+        #endregion
 
+        #region 【1201】医药机构信息获取
+        /// <summary>
+        /// 【3403】科室信息撤销
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetfixmedinsInfo1201(PostBase post)
+        {
+            post.tradiNumber = "1201";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
 
+            Input_1201 input1201 = new Input_1201();
+
+            input1201.medinsinfo = new medinsinfo1201();
+            input1201.medinsinfo.fixmedins_type = "1";
+            input1201.medinsinfo.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+           
+            Output_1201 output = new Output_1201();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input1201, out output, post, out code);
+            return json;
+        }
         #endregion
 
         #region 1301 1302 1303 1305 1306 1307 1308 1309 1310 1311 1313 1314 1315 1320 1321 9102 目录查询下载(第二版目录下载的接口)
@@ -2592,6 +2617,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             return json;
         }
         #endregion
+
         #region 3501 3502 3503 3504 产品采购
         /// <summary>
         /// 3501  商品盘存上传
