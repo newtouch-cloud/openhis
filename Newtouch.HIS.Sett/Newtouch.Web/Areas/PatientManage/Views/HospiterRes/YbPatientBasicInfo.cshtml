@@ -1,4 +1,5 @@
-﻿@using Newtouch.Infrastructure;
+﻿@using Newtouch.Common.Operator
+@using Newtouch.Infrastructure
 @{
     ViewBag.Title = "医保病人信息";
     Layout = "~/Views/Shared/_Index.cshtml";
@@ -10,7 +11,7 @@
     var openYbSett = SysConfigReader.Bool("Outpatient_ChargeFee_OpenYbSett");
     //医保患者必须一次结掉
     bool? ybSettOnce = (openYbSett ?? false) && (SysConfigReader.Bool("Outpatient_ChargeFee_yb_SettOnce") ?? false);
-    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+    var opr = OperatorProvider.GetCurrent();
     //医保所属地
     var medicalInsurance = SysConfigReader.String("Outpatient_MedicalInsurance");
 }
@@ -44,8 +45,12 @@
 </style>
 
 <ul id="myTab" class="nav nav-tabs">
-    <li class="active"><a href="#jzxxcx" data-toggle="tab">就诊信息查询</a></li>
-    <li><a href="#yljgxxcx" data-toggle="tab">医疗机构信息查询</a></li>
+    <li class="active">
+        <a href="#jzxxcx" data-toggle="tab">就诊信息查询</a>
+    </li>
+    <li>
+        <a href="#yljgxxcx" data-toggle="tab">医疗机构信息查询</a>
+    </li>
 </ul>
 <div id="myTabContent" class="tab-content">
     <div class="tab-pane fade in active" id="jzxxcx">
@@ -64,36 +69,19 @@
                         <th class="formTitle">开始日期：</th>
                         <td class="formValue">
                             <input id="kssj" type="text" class="form-control input-wdatepicker form-an"
-                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))"/>
                         </td>
                         <th class="formTitle">结束日期：</th>
                         <td class="formValue">
                             <input id="jssj" type="text" class="form-control input-wdatepicker form-an"
-                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))"/>
                         </td>
                         <td class="formTitle" style="width:50px">
-                            <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="查询" onclick="GetYbInfo()" />
+                            <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="查询" onclick="GetYbInfo()"/>
                         </td>
                         <td class="formValue">
                             @Html.Partial("YibaoRedCardCommon")
                         </td>
-                        @*<td class="formValue">
-                                @if (openYbSett == true || openXnhSett == true)
-                                {
-                                    <div id="readCard" style="color:orangered;display:initial;">
-                                        <input type="button" id="btkhsr" value="证件号输入" class="form-control" style="border-color:#00a0e9; margin-left: 0px;margin-top: 2px; height: 23px;width:44px;float: left;vertical-align:central;" onclick="GetPatSbkh()" />
-                                        <i class="fa fa-id-card" style="font-size: 27px; float: left;vertical-align:central;" title="读卡"></i>
-                                        <select id="readCardCardType" class="form-control" style="margin-left: 0px;margin-top: 2px; height: 22px;width:36px;float: left;vertical-align:central;">
-                                            @if (openYbSett == true)
-                                            {
-                                                <option value="03">社</option>
-                                            }
-                                            <option value="01">社(电)</option>
-                                            <option value="02">身</option>
-                                        </select>
-                                    </div>
-                                }
-                            </td>*@
                     </tr>
                     <tr>
                         <th class="formTitle">医疗类别：</th>
@@ -103,14 +91,14 @@
                         </td>
                         <th class="formTitle">结算ID：</th>
                         <td class="formValue">
-                            <input type="text" id="settId" name="settId" class="form-control" style="width:150px" />
+                            <input type="text" id="settId" name="settId" class="form-control" style="width:150px"/>
                         </td>
                         <th class="formTitle">就诊ID：</th>
                         <td class="formValue">
-                            <input type="text" id="jzId" name="jzId" class="form-control" style="width:150px" />
+                            <input type="text" id="jzId" name="jzId" class="form-control" style="width:150px"/>
                         </td>
                         <td class="formValue">
-                            <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="签退" onclick="SiginOut()" />
+                            <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="签退" onclick="SiginOut()"/>
                         </td>
                     </tr>
                 </table>
@@ -174,25 +162,86 @@
             </div>
         </div>
     </div>
-    <div class="tab-pane fade in active" id="yljgxxcx">
-        医疗结构信息查询
-    </div>
+    @* 医疗结构信息查询 tap *@
+    <div class="tab-pane fade" id="yljgxxcx">
+        <div class="panel panel-default" style="margin-bottom: 4px;">
+            <div class="panel-heading navb-bg">
+                筛选条件
+            </div>
+
+            <div style="padding-right:20px;">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">类型：</th>
+                        <td class="formValue" style="width:180px">
+                            @Html.DropDownList("sel_jgcxtype", EnumYbJGQuery.jgxx.ToDescSelectList(), new { @class = "form-control form-an" })
+                        </td>
+                        <th class="formTitle 1201-show">医药机构名称：</th>
+                        <td class="formValue 1201-show" style="width: 180px">
+                            <input type="text" id="fixmedins_name" name="fixmedins_name" class="form-control" style="width:150px"/>
+                        </td>
+                        <th class="formTitle  1201-show">医药机构编号：</th>
+                        <td class="formValue  1201-show">
+                            <input type="text" id="fixmedins_code" name="fixmedins_code" class="form-control" style="width:150px"/>
+                        </td>
+                        <th class="formTitle time-show">开始日期：</th>
+                        <td class="formValue  time-show">
+                            <input id="jg_kssj" type="text" class="form-control input-wdatepicker form-an" style="width:150px"
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))"/>
+                        </td>
+                        <th class="formTitle  time-show">结束日期：</th>
+                        <td class="formValue  time-show">
+                            <input id="jg_jssj" type="text" class="form-control input-wdatepicker form-an" style="width:150px"
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))"/>
+                        </td>
+                        <td class="formTitle" style="width:50px">
+                            <input type="button" class="btn btn-default btn-md btn-default-color" id="jg_btkhsr" value="查询" onclick="GetYbJGInfo()"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle 35-show">机构目录编码：</th>
+                        <td class="formValue 35-show" style="width: 180px">
+                            <input type="text" id="medins_list_codg" name="medins_list_codg" class="form-control" style="width:150px"/>
+                        </td>
+                        <th class="formTitle 35-show">机构批次流水号：</th>
+                        <td class="formValue 35-show">
+                            <input type="text" id="fixmedins_bchno" name="fixmedins_bchno" class="form-control" style="width:150px"/>
+                        </td>
+                        <th class="formTitle 35-show">医疗目录编码：</th>
+                        <td class="formValue 35-show">
+                            <input type="text" id="med_list_codg" name="med_list_codg" class="form-control" style="width:150px"/>
+                        </td>
+                        <th class="formTitle 35-show">就诊ID：</th>
+                        <td class="formValue 35-show">
+                            <input type="text" id="mdtrt_id" name="mdtrt_id" class="form-control" style="width:150px"/>
+                        </td>
+                    </tr>
+                </table>
+
+            </div>
+        </div>
+        <div class="panel panel-default" style="margin-bottom: 4px;">
+            <div class="panel-heading navb-bg">
+                信息列表
+            </div>
+            <div style="padding-right:20px;">
+                <form id="jg_formPat">
+                    <div class="jg_gridPanel" style="margin-top:10px;border-radius:5px;">
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
+</div>
 
-    <script type="text/javascript">
+
+<script type="text/javascript">
     var openYbSett = '@openYbSett' === 'True'; //开关配置：医保患者是否使用医保交易流程
     var ybSettOnce = '@ybSettOnce' === 'True'; //开关配置：医保患者是否一次结
     var medicalInsurance = '@medicalInsurance';//医保所属地配置:区分医院所属医保区域
-    var cqPatInfo = {};//患者读卡信息
-    //读卡
-    //function readCard() {
-    //    var cardInfo;
-    //    var yibaoCardInfo;
-    //    var cqcardInfo;
-    //    var cqyibaoCardInfo;
-    //    GetReadCardInfo(null,false);
-    //}
+        var cqPatInfo = {};//患者读卡信息
+
     $('#jzId').newtouchBatchFloatingSelector({
         width: 700,
         height: 200,
@@ -778,76 +827,6 @@
     }
 
 
-
-    //读卡 调用01,13接口
-    @*function GetReadCardInfo(sbkobj, boolVal) {
-        var cardInfo1;
-        var cardInfo2;
-        var cardInfo3;
-        var yibaoCardInfo;
-        var patsbkh = null;
-
-        var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
-        var payoptype = { "mdtrt_cert_type": $('#readCardCardType').val(), "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
-        if ($('#readCardCardType').val() === "02") {
-            payoptype.mdtrt_cert_no = sbkobj.sbkh;
-            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
-        }
-        else if ($('#readCardCardType').val() === "01") {
-            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
-        }
-        $.ajax({
-            type: "POST",
-            url: url,
-            dataType: "json",
-            data: payoptype,
-            async: false,
-            success: function (data) {
-                yibaoCardInfo = eval('(' + data + ')');
-            }
-        });
-        $.loading(false);
-        if (yibaoCardInfo) {
-
-            if (yibaoCardInfo.infcode == "0") {
-                if (!yibaoCardInfo || !yibaoCardInfo.output.baseinfo || !yibaoCardInfo.output.insuinfo[0]) {
-                    $.modalAlert("读卡失败:" + yibaoCardInfo.err_msg, 'error');
-                    return;
-                }
-                var ybklx = $('#readCardCardType').val();
-                cardInfo1 = yibaoCardInfo.output.baseinfo; //医保基本信息
-                cardInfo2 = yibaoCardInfo.output.insuinfo[0];//参保信息
-                if (ybklx !== "02") {
-                    cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
-                    cqPatInfo.ecToken = cardInfo3.ecToken;
-                    cqPatInfo.sbkh = cardInfo3.cardno;
-                }
-                cqPatInfo.xm = cardInfo1.psn_name;
-                cqPatInfo.sfzh = cardInfo1.certno;
-                cqPatInfo.xzqh = cardInfo2.insuplc_admdvs;
-                cqPatInfo.cblb = cardInfo2.psn_type;
-                cqPatInfo.xzlx = cardInfo2.insutype;
-                cqPatInfo.grbh = cardInfo1.psn_no;
-
-                $("#rybh").html(cardInfo1.psn_no);
-                $("#zjhm").html(cardInfo1.certno);
-                $("#xm").html(cardInfo1.psn_name);
-                $("#xb").html(cardInfo1.gend=="1"?"男":"女");
-                //$("#mz").html(cardInfo1.naty);
-                $("#csny").html(cardInfo1.brdy);
-                $("#nl").html(cardInfo1.age+"岁");
-
-            } else {
-                $.loading(false);
-                $.modalAlert("刷卡失败:" + yibaoCardInfo.err_msg, 'error');
-            }
-        }
-        else {
-            $.loading(false);
-            $.modalAlert("刷卡获取医保信息失败！失败原因：医保中心无信息返回，请重试！", 'error');
-        }
-    }*@
-
     function ReadCardCall(readCardObj) {
         $("#rybh").html(cqPatInfo.grbh);
         $("#zjhm").html(cqPatInfo.sfzh);
@@ -859,28 +838,83 @@
         $.loading(false);
     }
 
-    //手输社保卡号
-    function GetPatSbkh() {
-        $.modalOpen({
-            id: "sbkhInput",
-            title: "卡号输入",
-            url: "/OutpatientManage/OutpatientReg/OutPatientSbkhInput?t=" + Math.random(),
-            width: "300px",
-            height: "150px",
-            callBack: function (iframeId) {
-                top.frames[iframeId].PatSbkhData();
-            }
-        });
+    function GetYbJGInfo() {
+        var type = $('#sel_jgcxtype').val();
+        if (type === 1201) {
+            var rcData = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId" };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:33333/api/YiBao/GetfixmedinsInfo1201",
+                dataType: "json",
+                data: rcData,
+                async: false,
+                success: function (data) {
+                    var refReg = eval('(' + data + ')');
+                    if (refReg) {
+                        if (refReg.infcode == "0" && !!refReg.output.medinsinfo) {
+                            gridListData(refReg.output.medinsinfo, type);
+                        }
+                        else {
+                            gridListData("", type);
+                            $.modalAlert(refReg.err_msg, 'error');
+                        }
+                    }
+                },
+                error: function () {
+                    $.modalAlert("服务不可访问", 'warning');
+                }
+            });
+        }
+        $.modalAlert(type, "success")
     }
-    //$('#readCard i').click(function () {
-    //    setTimeoutReadCard();
-    //});
 
-    ////触发读卡
-    //function setTimeoutReadCard() {
-    //    $.loading(true, '正在读卡，请稍后…');
-    //    setTimeout("readCard();", 50);
-    //}
+    function jgGridListData(mydata, type) {
+        var colModel;
+        var captionCon = "";
+        switch (type) {
+            case "1201":
+                captionCon = "医药机构信息";
+                colModel = [
+                    { label: '定点医药机构编号', name: 'fixmedins_code', width: 105, align: 'center' },
+                    { label: '定点医药机构名称', name: 'fixmedins_name', width: 160, align: 'center' },
+                    { label: '统一社会信用代码', name: 'uscc', width: 200, align: 'center' },
+                    { label: '定点医疗服务机构类型', name: 'fixmedins_type', width: 120, align: 'center' },
+                    { label: '医院等级', name: 'hosp_lv', width: 100, align: 'center' }
+                ];
+                break;
+        }
+        $("#jg_gridList").remove();
+        $(".jg_gridPanel").append('<table id="jg_gridList"></table>');
+        $('#jg_gridList').jqGrid("clearGridData");
+        var $gridList = $("#jg_gridList");
 
+        $gridList.newtouchLocalDataGrid({
+            height: $(window).height() - 330,
+            autowidth: false,
+            unwritten: false,
+            width: $("#jg_formPat").width() - 10,
+            caption: captionCon,
+            colModel: colModel,
+        }, mydata);
+    }
 
-    </script>
+    //判断医疗机构信息展示什么搜索条件
+    function showTH() {
+        var type = $('#sel_jgcxtype').val();
+        if (type === '1201') {
+            $('.1201-show').show(); // 显示医药机构信息
+            $('.time-show').hide();
+            $('.35-show').hide();
+        } else {
+            $('.1201-show').hide(); // 隐藏医药机构信息
+            $('.time-show').show();
+            $('.35-show').show();
+        }
+    }
+    //页面加载时执行
+    showTH();
+
+    $('#sel_jgcxtype').change(function () {
+        showTH();
+    });
+</script>

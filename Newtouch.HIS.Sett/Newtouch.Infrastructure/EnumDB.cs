@@ -1236,6 +1236,27 @@ namespace Newtouch.Infrastructure
         zyxx = 11,
 
     }
+
+    public enum EnumYbJGQuery
+    {
+        [Description("【1201】医药机构信息获取")]
+        jgxx = 1201,
+        [Description("【3508】定点医药机构商品库存信息查询")]
+        yljgspkcxx = 3508,
+        [Description("【3509】定点医药机构商品库存变更记录查询")]
+        yljgspkcbgjl = 3509,
+        [Description("【3510】定点医药机构商品采购信息查询")]
+        yljgspcgxx = 3510,
+        [Description("【3511】定点医药机构商品销售信息查询")]
+        yljgspxsxx = 3511,
+        [Description("【3512】定点医药机构入库商品追溯信息查询")]
+        yljgrkspzsxx = 3512,
+        [Description("【3513】定点医药机构商品销售追溯信息查询")]
+        yljgspxszsxx = 3513,
+        [Description("【3607】结算清单质控结果查询")]
+        jsqdzkjg = 3607,
+
+    }
     /// <summary>
     /// 待遇检查类型
     /// </summary>
