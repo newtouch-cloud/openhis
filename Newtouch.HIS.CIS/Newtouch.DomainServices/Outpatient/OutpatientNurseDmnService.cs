@@ -35,7 +35,7 @@ namespace Newtouch.DomainServices
             par.Add(new SqlParameter("@orgId", orgId));
             par.Add(new SqlParameter("@keyword", "%" + keyword + "%"));
 
-            if (type=="1")
+            if (type == "1")
             {
                 sql += "  and not exists(select 1 from xt_gmxx x with(nolock) where c.cfmxid = x.cfmxid and x.zt = '1')";
             }
@@ -129,7 +129,7 @@ and not exists(select 1 from xt_gmxx c with(nolock) where a.OrganizeId=c.Organiz
             return null;
         }
 
-        public IList<OutpatientNursequeryVO> skintesfrom(Pagination pagination, string keyword, DateTime? kssj, DateTime? jssj,string orgId)
+        public IList<OutpatientNursequeryVO> skintesfrom(Pagination pagination, string keyword, DateTime? kssj, DateTime? jssj, string orgId)
         {
             string sql = @"select a.cfmxId,c.mzh,c.blh,c.xm,a.ypmc,a.zh,a.CreateTime kssj,a.ypCode
  ,(a.ypmc + ' ' + d.ypgg + ' ' + convert(varchar(8), a.sl) + a.dw ) cfmxnr
@@ -148,7 +148,7 @@ and not exists(select 1 from xt_gmxx c with(nolock) where a.OrganizeId=c.Organiz
             var par = new List<SqlParameter>();
             par.Add(new SqlParameter("@orgId", orgId));
             par.Add(new SqlParameter("@keyword", "%" + keyword + "%"));
-            if (kssj.HasValue&& jssj.HasValue)
+            if (kssj.HasValue && jssj.HasValue)
             {
                 sql += " and gm.CreateTime>@kssj and gm.CreateTime<@jssj+' 23:59:59'";
                 par.Add(new SqlParameter("@kssj", kssj));
@@ -200,12 +200,12 @@ and not exists(select 1 from xt_gmxx c with(nolock) where a.OrganizeId=c.Organiz
             return this.FindList<OutpatientNurseTreeVO>(sql, par.ToArray());
         }
 
-        public IList<OutpatientNursequeryVO> prescriptionfrom(Pagination pagination, string jzid, DateTime? klsj, string orgid,string cflb)
+        public IList<OutpatientNursequeryVO> prescriptionfrom(Pagination pagination, string jzid, DateTime? klsj, string orgid, string cflb)
         {
 
             string sql = @" select a.cfmxId,c.mzh,c.blh,c.xm,isnull(a.ypmc,a.xmmc) ypmc,a.zh,a.CreateTime kssj,isnull(a.ypCode,a.xmcode)ypCode
  ,(isnull(a.ypmc,a.xmmc) + ' ' + isnull(d.ypgg,'') + ' ' + convert(varchar(8), a.sl) + a.dw ) cfmxnr
- ,c.xb,b.cfh,b.cfId,f.yfmc ypyfmc,a.yfcode,b.ys yscode,ys.name ysmc,b.cflx
+ ,c.xb,b.cfh,b.cfId,f.yfmc ypyfmc,a.yfcode,b.ys yscode,ys.name ysmc,b.cflx,isnull(a.je,0)je
    from xt_cfmx(nolock) a
  left join xt_cf(nolock) b on a.cfId = b.cfId and a.OrganizeId=b.OrganizeId
  left join xt_jz(nolock) c on c.jzId = b.jzId and a.OrganizeId=c.OrganizeId
@@ -225,10 +225,10 @@ and not exists(select 1 from xt_gmxx c with(nolock) where a.OrganizeId=c.Organiz
                 sql += "  and SUBSTRING(CONVERT(varchar(15),b.CreateTime,120),0,11)=@klsj";
                 par.Add(new SqlParameter("@klsj", klsj));
             }
-            var cflbint= cflb== "xycf"?"1" : cflb == "zycf" ? "2" : cflb == "jycf" ? "4" : cflb == "jccf" ? "5" : cflb == "zscf" ? "7" : cflb == "kfcf" ? "3" : cflb == "cgcf" ? "6" : "";
+            var cflbint = cflb == "xycf" ? "1" : cflb == "zycf" ? "2" : cflb == "jycf" ? "4" : cflb == "jccf" ? "5" : cflb == "zscf" ? "7" : cflb == "kfcf" ? "3" : cflb == "cgcf" ? "6" : "";
             if (cflbint != "")
             {
-                if (cflbint!="7")
+                if (cflbint != "7")
                 {
                     sql += " and b.cflx=@cflb";
                     par.Add(new SqlParameter("@cflb", cflbint));
@@ -238,8 +238,7 @@ and not exists(select 1 from xt_gmxx c with(nolock) where a.OrganizeId=c.Organiz
                     sql += " and a.yfcode in('402','401','404','403','4')";
 
                 }
-            }
-
+            } 
             return this.QueryWithPage<OutpatientNursequeryVO>(sql, pagination, par.ToArray(), false);
         }
 
@@ -253,7 +252,7 @@ and not exists(select 1 from xt_gmxx c with(nolock) where a.OrganizeId=c.Organiz
                 var par = new List<SqlParameter>();
                 par.Add(new SqlParameter("@cfid", cfid));
                 par.Add(new SqlParameter("@orgid", orgid));
-                retcfh= FirstOrDefault<string>(sql, par.ToArray());
+                retcfh = FirstOrDefault<string>(sql, par.ToArray());
             }
             catch (Exception ex)
             {
@@ -308,7 +307,7 @@ order by b.createtime ";
             var par = new List<SqlParameter>();
             par.Add(new SqlParameter("@orgId", orgid));
             par.Add(new SqlParameter("@keyword", syxxids));
-            return this.FindList<ObservationFromVO>(sql,  par.ToArray());
+            return this.FindList<ObservationFromVO>(sql, par.ToArray());
         }
 
         public string SavaLgdj(IList<ObservationFromVO> lgdjlist, string orgid, OperatorModel user)
@@ -322,8 +321,8 @@ order by b.createtime ";
                 sql = "insert into mz_lgjl(lgjlId,OrganizeId,cfid,cfh,syxxid,miaoshu,lgksrq,lgjsrq,mzh,xm,djrq,djrycode,zt,createtime,createcode,lastmodifytime,lastmodifiercode)";
                 for (int i = 0; i < lgdjlist.Count; i++)
                 {
-                    
-                    if (lgdjlist[i].lgjlid!=null)
+
+                    if (lgdjlist[i].lgjlid != null)
                     {
                         if (lgdjlist[i].deltag != null && lgdjlist[i].deltag == true)
                         {
@@ -354,7 +353,7 @@ where a.zt = '1' and a.OrganizeId = @orgid
 and a.Id ='" + lgdjlist[i].syxxid + @"'  union all   ";
                         }
                     }
-                   
+
                 }
                 if (insert)
                 {
@@ -365,7 +364,7 @@ and a.Id ='" + lgdjlist[i].syxxid + @"'  union all   ";
                     sql = upsql;
                 }
 
-              refcount=  ExecuteSqlCommand(sql, new SqlParameter[] {
+                refcount = ExecuteSqlCommand(sql, new SqlParameter[] {
                     new SqlParameter("@orgid",orgid),
                     new SqlParameter("@user",user.rygh),
                 });
@@ -376,7 +375,7 @@ and a.Id ='" + lgdjlist[i].syxxid + @"'  union all   ";
                 return ex.Message;
             }
             string refsts = "F";
-            if (refcount>0)
+            if (refcount > 0)
             {
                 refsts = "T";
             }

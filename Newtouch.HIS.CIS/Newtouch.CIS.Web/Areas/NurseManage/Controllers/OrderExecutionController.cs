@@ -21,6 +21,9 @@ using Newtouch.Infrastructure;
 using Newtouch.PDS.Requset.Zyypyz;
 using Newtouch.Tools;
 using Newtouch.Domain.ValueObjects.Apply;
+using Newtouch.Domain.Entity.Inpatient;
+using Newtouch.Domain.Entity;
+using Newtouch.Infrastructure.EF;
 
 namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
 {
@@ -35,6 +38,9 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         private readonly IInpatientPatientInfoRepo _inpatientPatientInfoRepo;
         private readonly ISysUserDmnService _sysUserDmnService;
         private readonly IDoctorserviceDmnService _doctorserviceDmnService;
+        private readonly IMedicalAdviceBindingFeeRepo _medicalAdviceBindingFeeRepo;
+        private readonly IInpatientLongTermOrderRepo _InpatientLongTermOrderRepo;
+        private readonly IInpatientSTATOrderRepo _inpatientSTATOrderRepo;
         int lyxh = 0;
         private string IsRehabAuthtoNurse;
         private bool isNurse;
@@ -80,16 +86,17 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                     {
                         rowData = _OrderExecutionDmnService.GetOrderExecutionYZList(ref pagination, patList, OrganizeId, zxsj, wnes);
                     }
-                    else if (isRehabDoctor) 
+                    else if (isRehabDoctor)
                     {
-                        rowData = _OrderExecutionDmnService.GetOrderExecutionYZList(ref pagination, patList, OrganizeId, zxsj, wnes, IsRehabAuthtoNurse, true,this.UserIdentity.DepartmentCode);
+                        rowData = _OrderExecutionDmnService.GetOrderExecutionYZList(ref pagination, patList, OrganizeId, zxsj, wnes, IsRehabAuthtoNurse, true, this.UserIdentity.DepartmentCode);
                     }
-                    else if(isNurse)
+                    else if (isNurse)
                     {
                         rowData = _OrderExecutionDmnService.GetOrderExecutionYZList(ref pagination, patList, OrganizeId, zxsj, wnes, IsRehabAuthtoNurse, false);
                     }
                 }
-                else {
+                else
+                {
                     rowData = _OrderExecutionDmnService.GetOrderExecutionYZList(ref pagination, patList, OrganizeId, zxsj, wnes);
                 }
             }
@@ -108,7 +115,10 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         {
             return View();
         }
-
+        public ActionResult BindingFeeForm()
+        {
+            return View();
+        }
         /// <summary>
         /// 获取病区患者待执行医嘱树
         /// </summary>
@@ -131,20 +141,22 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             foreach (var item in wardTree)
             {
                 var patInfo = patTree.Where(p => p.bqCode == item.bqCode).ToList();
-
-                foreach (var itempat in patInfo)
-                {
+                var NewPatInfo = patInfo.OrderBy(p => p.BedNo);
+                foreach (var itempat in NewPatInfo)
+                { 
+                    string gender = itempat.sex == "1" ? "男" : "女";
                     var treepat = new TreeViewModel
                     {
                         id = itempat.zyh,
-                        text = itempat.zyh + "-"+itempat.BedNo +"-"+ itempat.hzxm,
+                        //床号 + 姓名(住院天数)+住院号 + 年龄 +性别
+                        text = itempat.BedNo + "-" + itempat.hzxm + "(" + itempat.inHosDays + "天)" + "-" + itempat.zyh + "-" + itempat.nl + "岁-" + gender,
                         value = itempat.zyh,
                         parentId = item.bqCode,
                         isexpand = false,
                         complete = true,
                         showcheck = true,
                         //checkstate = 0,
-                        checkstate=0,
+                        checkstate = 0,
                         hasChildren = false,
                         Ex1 = "c"
                     };
@@ -171,7 +183,8 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                 treeList.Add(tree);
             }
             return Content(treeList.TreeViewJson(null));
-        }
+        } 
+         
         #region 执行当前
         /// <summary>
         /// 执行当前医嘱
@@ -196,22 +209,22 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         /// <param name="orderListAll">Apilist</param>
         /// <param name="Vzxsj">执行时间</param>
         /// <returns></returns>
-        public string doOrderExecution(IList<ApiResponseVO> orderListAll, DateTime Vzxsj, int? yzxz=null)
+        public string doOrderExecution(IList<ApiResponseVO> orderListAll, DateTime Vzxsj, int? yzxz = null)
         {
             try
             {
                 var user = UserIdentity;
                 //可以执行的医嘱
-                var isOkOrderExecutionresult = _OrderExecutionDmnService.IsOKOrderExecution(orderListAll, Vzxsj,UserIdentity.rygh);
+                var isOkOrderExecutionresult = _OrderExecutionDmnService.IsOKOrderExecution(orderListAll, Vzxsj, UserIdentity.rygh);
                 if (isOkOrderExecutionresult.Split('|')[0] != "T") return isOkOrderExecutionresult;
                 //药品医嘱(推送药房)
-                IList<ApiResponseVO> orderYpList = orderListAll.Where(a => (a.yzlx == Convert.ToInt32(EnumYzlx.Yp) || a.yzlx == Convert.ToInt32(EnumYzlx.Cydy) || a.yzlx == Convert.ToInt32(EnumYzlx.zcy)) 
-                && a.isjf != EnumSF.f.GetDescription()&& a.yply!=EnumYply.ksby.GetDescription()).ToList();
+                IList<ApiResponseVO> orderYpList = orderListAll.Where(a => (a.yzlx == Convert.ToInt32(EnumYzlx.Yp) || a.yzlx == Convert.ToInt32(EnumYzlx.Cydy) || a.yzlx == Convert.ToInt32(EnumYzlx.zcy))
+                && a.isjf != EnumSF.f.GetDescription() && a.yply != EnumYply.ksby.GetDescription()).ToList();
                 //项目医嘱
-                IList<ApiResponseVO> orderXmList = orderListAll.Where(a => (a.yzlx != Convert.ToInt32(EnumYzlx.Yp) && a.yzlx != Convert.ToInt32(EnumYzlx.Cydy) && a.yzlx != Convert.ToInt32(EnumYzlx.zcy)) ||a.yfztbs!=null).ToList();
+                IList<ApiResponseVO> orderXmList = orderListAll.Where(a => (a.yzlx != Convert.ToInt32(EnumYzlx.Yp) && a.yzlx != Convert.ToInt32(EnumYzlx.Cydy) && a.yzlx != Convert.ToInt32(EnumYzlx.zcy)) || a.yfztbs != null).ToList();
                 //不计费医嘱、科室备药医嘱 
-                IList<ApiResponseVO> nofeeorderYpList = orderListAll.Where(a => (a.yzlx == Convert.ToInt32(EnumYzlx.Yp) || a.yzlx == Convert.ToInt32(EnumYzlx.Cydy) || a.yzlx == Convert.ToInt32(EnumYzlx.zcy)) 
-                && (a.isjf == EnumSF.f.GetDescription()||a.yply== EnumYply.ksby.GetDescription())).ToList();
+                IList<ApiResponseVO> nofeeorderYpList = orderListAll.Where(a => (a.yzlx == Convert.ToInt32(EnumYzlx.Yp) || a.yzlx == Convert.ToInt32(EnumYzlx.Cydy) || a.yzlx == Convert.ToInt32(EnumYzlx.zcy))
+                && (a.isjf == EnumSF.f.GetDescription() || a.yply == EnumYply.ksby.GetDescription())).ToList();
                 //领药序号
                 lyxh = EFDBBaseFuncHelper.Instance.GetNewFieldUniqueIntValue("fyqqk_lyxh", OrganizeId);
 
@@ -236,9 +249,9 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                             List<YzDetail> successDoOrderYp = Tools.Json.ToList<YzDetail>(successDoOrder.Data.ToString());
                             if (successDoOrderYp.Count >= 30)
                             {
-                                AppLogger.Info("药房执行成功："+successDoOrderYp.ToArray().ToJson());
+                                AppLogger.Info("药房执行成功：" + successDoOrderYp.ToArray().ToJson());
                                 //防止截断 
-                                var zyhlist = successDoOrderYp.Select(p=>p.zyh).Distinct();
+                                var zyhlist = successDoOrderYp.Select(p => p.zyh).Distinct();
                                 foreach (string zyh in zyhlist)
                                 {
                                     var zyhorder = successDoOrderYp.FindAll(p => p.zyh == zyh);
@@ -247,10 +260,11 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                                         resultMsg += _OrderExecutionDmnService.OrderExecutionSubmit(user, zyhorder, lyxh, Vzxsj);
                                         resultMsg += "【" + zyh + "】";
                                         AppLogger.Info(resultMsg);
-                                    }                                    
+                                    }
                                 }
                             }
-                            else {
+                            else
+                            {
                                 resultMsg = _OrderExecutionDmnService.OrderExecutionSubmit(user, successDoOrderYp, lyxh, Vzxsj);
                                 if (resultMsg.Split('|')[0] != "T")
                                 {
@@ -279,8 +293,8 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                 }
                 if (orderXmList.Count <= 0) return "T|执行成功";
                 //项目执行
-                var xmMsg = wnes ? _OrderExecutionDmnService.OrderExecutionXmWithWzyz(user.rygh, orderXmList, lyxh, Vzxsj,this.OrganizeId,yzxz)
-                    : _OrderExecutionDmnService.OrderExecutionXM(user, orderXmList, lyxh, Vzxsj,this.OrganizeId, medicalInsurance,yzxz);
+                var xmMsg = wnes ? _OrderExecutionDmnService.OrderExecutionXmWithWzyz(user.rygh, orderXmList, lyxh, Vzxsj, this.OrganizeId, yzxz)
+                    : _OrderExecutionDmnService.OrderExecutionXM(user, orderXmList, lyxh, Vzxsj, this.OrganizeId, medicalInsurance, yzxz);
                 return xmMsg.Split('|')[0] != "T" ? xmMsg : "T|执行成功";
 
             }
@@ -308,7 +322,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                 if (isNurse && isRehabDoctor)
                 {
                     apiList = wnes ? _OrderExecutionDmnService.GetAllYZWithWzYz(OrganizeId, patlist, yzxz, Vzxsj) :
-                             _OrderExecutionDmnService.GetAllYZ(patlist, yzxz, Vzxsj,IsRehabAuthtoNurse);//获取执行全部医嘱
+                             _OrderExecutionDmnService.GetAllYZ(patlist, yzxz, Vzxsj, IsRehabAuthtoNurse);//获取执行全部医嘱
                 }
                 else if (isRehabDoctor)
                 {
@@ -316,7 +330,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                 }
                 else if (isNurse)
                 {
-                    apiList = wnes ? _OrderExecutionDmnService.GetAllYZWithWzYz(OrganizeId, patlist, yzxz, Vzxsj,IsRehabAuthtoNurse) :
+                    apiList = wnes ? _OrderExecutionDmnService.GetAllYZWithWzYz(OrganizeId, patlist, yzxz, Vzxsj, IsRehabAuthtoNurse) :
                              _OrderExecutionDmnService.GetAllYZ(patlist, yzxz, Vzxsj, IsRehabAuthtoNurse);//获取执行全部医嘱
                 }
             }
@@ -327,7 +341,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             }
 
             //接口返回 list 
-            var result = doOrderExecution(apiList, Vzxsj,yzxz);
+            var result = doOrderExecution(apiList, Vzxsj, yzxz);
             if (result.Split('|')[0] != "T") return Error(result.Split('|')[1]);
             var cnt = apiList.Where(a => a.yzlx == Convert.ToInt32(EnumYzlx.Yp) || a.yzlx == Convert.ToInt32(EnumYzlx.Cydy) || a.yzlx == Convert.ToInt32(EnumYzlx.zcy)).ToList().Count;
             var data = new { cnt = cnt, lyxh = lyxh };
@@ -378,8 +392,8 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         public ActionResult pushApplicationform(IList<ApiResponseVO> orderList)
         {
 
-			var uri = ConfigurationHelper.GetAppConfigValue("pacsUrl");
-			List<CheckApplicationfromDTO> datalist = new List<CheckApplicationfromDTO>();
+            var uri = ConfigurationHelper.GetAppConfigValue("pacsUrl");
+            List<CheckApplicationfromDTO> datalist = new List<CheckApplicationfromDTO>();
             foreach (var item in orderList)
             {
                 if (item != null)
@@ -392,7 +406,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
 
                 }
             }
-            var url = uri+"URISService/services/interface/requestorder";
+            var url = uri + "URISService/services/interface/requestorder";
             if (datalist == null)
             {
                 return Success("无数据");
@@ -401,7 +415,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             foreach (var data in datalist)
             {
                 string datajson = Tools.Json.ToJson(data);
-				try
+                try
                 {
                     System.Net.HttpWebRequest request = null;
                     System.Net.WebResponse response = null;
@@ -434,14 +448,14 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
 
                     var apiresp = JavaScriptJsonSerializerHelper.Deserialize<RefJson>(outputText);
 
-					AppLogger.Info(string.Format("Pacs检查申请单入参：{0}，出参结果：{1}", datajson, outputText));
+                    AppLogger.Info(string.Format("Pacs检查申请单入参：{0}，出参结果：{1}", datajson, outputText));
 
-					if (apiresp == null||apiresp.status== "Failure")
+                    if (apiresp == null || apiresp.status == "Failure")
                     {
                         msagss = apiresp.errorCode;
                         AppLogger.Info(string.Format("Pacs检查申请单入参：{0}，出参结果：{1}", datajson, outputText));
                     }
-                    
+
                 }
                 catch (Exception e)
                 {
@@ -466,12 +480,12 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         {
             return View();
         }
-        public ActionResult GetJyjcExecGridJson(Pagination pagination,DateTime kssj,DateTime jssj, string fylx, string hzlx,
-            string sqdlx, string zxzt,string keyword=null)
+        public ActionResult GetJyjcExecGridJson(Pagination pagination, DateTime kssj, DateTime jssj, string fylx, string hzlx,
+            string sqdlx, string zxzt, string keyword = null)
         {
             var data = new
             {
-                rows = _OrderExecutionDmnService.GetJyjcSqd(pagination,OrganizeId,kssj,jssj,zxzt,hzlx,fylx,sqdlx,keyword),
+                rows = _OrderExecutionDmnService.GetJyjcSqd(pagination, OrganizeId, kssj, jssj, zxzt, hzlx, fylx, sqdlx, keyword),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records,
@@ -485,7 +499,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         /// <returns></returns>
         public ActionResult jyjcExec(List<jyjcExecReq> jyjclist)
         {
-            _doctorserviceDmnService.jyjcExec(jyjclist,OrganizeId,UserIdentity.rygh);
+            _doctorserviceDmnService.jyjcExec(jyjclist, OrganizeId, UserIdentity.rygh);
             return Success();
         }
         /// <summary>
@@ -498,7 +512,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             _doctorserviceDmnService.CancaljyjcExec(jyjclist, OrganizeId, UserIdentity.rygh);
             return Success();
         }
-        
+
         public ActionResult GetJyjcExecRecordJson(Pagination pagination, DateTime kssj, DateTime jssj, string fylx, string hzlx,
            string sqdlx, string keyword = null)
         {
@@ -512,5 +526,76 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             return Content(data.ToJson());
         }
         #endregion
+        /// <summary>
+        /// 保存操作
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult AddData(string zyh, string yzh, string zh, List<YzbindingfeeVo> ItemFeeVO, string yzId)
+        {
+            try
+            {
+
+
+                //var bindinglist = _medicalAdviceBindingFeeRepo.IQueryable().Where(p => p.zyh == zyh && p.OrganizeId == OrganizeId && p.yzh == yzh && p.zt == "1").ToList();
+                //if (bindinglist != null && bindinglist.Count > 0)
+                //{
+                //    foreach (var item in bindinglist)
+                //    {
+                //        _medicalAdviceBindingFeeRepo.DeleteForm(item.newid);
+                //    }
+                //}
+                if (ItemFeeVO != null)
+                {
+                    foreach (var item in ItemFeeVO)
+                    {
+                        MedicalAdviceBindingFeeEntity medicalAdviceBindingFeeEntity = new MedicalAdviceBindingFeeEntity();
+                        medicalAdviceBindingFeeEntity.zyh = zyh;
+                        medicalAdviceBindingFeeEntity.yzh = yzh;
+                        medicalAdviceBindingFeeEntity.zh = zh;
+                        medicalAdviceBindingFeeEntity.sfxm = item.sfxm;
+                        medicalAdviceBindingFeeEntity.sfxmmc = item.sfxmmc;
+                        medicalAdviceBindingFeeEntity.dlmc = item.dlmc;
+                        medicalAdviceBindingFeeEntity.sl = item.sl;
+                        medicalAdviceBindingFeeEntity.dw = item.dw;
+                        medicalAdviceBindingFeeEntity.dl = item.dl;
+                        medicalAdviceBindingFeeEntity.dj = item.dj;
+                        medicalAdviceBindingFeeEntity.je = item.je;
+                        medicalAdviceBindingFeeEntity.yfdm = item.yfdm;
+                        medicalAdviceBindingFeeEntity.cls = item.cls;
+                        medicalAdviceBindingFeeEntity.zt = "1";
+                        medicalAdviceBindingFeeEntity.OrganizeId = this.OrganizeId;
+                        medicalAdviceBindingFeeEntity.gg = item.gg;
+                        medicalAdviceBindingFeeEntity.pcmc = item.pcmc;
+                        medicalAdviceBindingFeeEntity.yzxz = item.yzxz;
+                        medicalAdviceBindingFeeEntity.yzId = yzId;
+                        medicalAdviceBindingFeeEntity.Create(true);
+                        medicalAdviceBindingFeeEntity.newid = Guid.NewGuid().ToString();
+                        _medicalAdviceBindingFeeRepo.SubmitForm(medicalAdviceBindingFeeEntity, null);
+
+                    }
+                    _doctorserviceDmnService.addcqyz(zyh, yzh, zh, ItemFeeVO, this.OrganizeId, this.UserIdentity.UserCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Success(ex.Message.ToString());
+            }
+            return Success("保存成功！");
+        }
+        public ActionResult GetbindingfeeData(string zyh, string yzh, string zh)
+        {
+            var bindinglist = _medicalAdviceBindingFeeRepo.IQueryable().Where(p => p.zyh == zyh && p.OrganizeId == OrganizeId && p.yzh == yzh && p.zt == "1").ToList();
+            return Content(bindinglist.ToJson());
+        }
+        public ActionResult GetlsorcqyzData(string zyh, string yzid)
+        {
+            var data = _doctorserviceDmnService.GetlsorcqyzData(zyh, yzid, this.OrganizeId);
+            return Content(data.ToJson());
+        }
+        public ActionResult DeleteBind(string zyh, string yzid, string yzxz)
+        {
+            var data = _doctorserviceDmnService.DeleteBind(zyh, yzid, yzxz, this.OrganizeId);
+            return Success(data);
+        }
     }
 }

@@ -543,7 +543,7 @@ namespace Newtouch.CIS.Web.Controllers
                         matchCf.zje += cfitem.je;    //引用类型  能够直接改变list中的值
                         var cfmx = new PrescriptionDetailVO();
                         cfitem.MapperTo(cfmx);
-                        matchCf.cfmxList.Add(cfmx);
+
                         if (!string.IsNullOrWhiteSpace(cfitem.yfztbm) && !string.IsNullOrWhiteSpace(cfitem.yfztmc))
                         {
                             var results = _medicalRecordDmnService.Getsfmbxm(this.OrganizeId, cfitem.yfztbm, cfitem.yfztmc);
@@ -566,24 +566,24 @@ namespace Newtouch.CIS.Web.Controllers
                             {
 
                                 var ztcf = matchCf.Clone();
-                            ztcf.cfh = EFDBBaseFuncHelper.Instance.GetRequisitionNo(this.OrganizeId);
-                            ztcf.cflx = (int)EnumCflx.RegularItemPres;
-                            ztcf.cfmxList = new List<PrescriptionDetailVO>();
-                            if (results.Count > 0) {
-                                string guid= Guid.NewGuid().ToString();
-                                for (int i = 0; i < results.Count; i++)
-                                {
-                                    results[i].px = i + 1;
-                                    results[i].ztsl = ztsl2;
-                                    results[i].sl = results[i].sl * cfitem.sl;
-                                    results[i].syncfbz = guid;
-                                    ztcf.cfmxList.Add(results[i]);
+                                ztcf.cfh = EFDBBaseFuncHelper.Instance.GetRequisitionNo(this.OrganizeId);
+                                ztcf.cflx = (int)EnumCflx.RegularItemPres;
+                                ztcf.cfmxList = new List<PrescriptionDetailVO>();
+                                if (results.Count > 0) {
+                                    string guid= Guid.NewGuid().ToString();
+                                    for (int i = 0; i < results.Count; i++)
+                                    {
+                                        results[i].px = i + 1;
+                                        results[i].ztsl = ztsl2;
+                                        results[i].sl = results[i].sl * cfitem.sl;
+                                        results[i].syncfbz = guid;
+                                        ztcf.cfmxList.Add(results[i]);
+                                    }
+                                    ztcf.zje = ztcf.cfmxList.Sum(p => p.je);
+                                    cfmx.syncfbz = guid;
+                                    cfList.Add(ztcf);
                                 }
-                                ztcf.zje = ztcf.cfmxList.Sum(p => p.je);
-                                cfmx.syncfbz = guid;
-                                cfList.Add(ztcf);
                             }
-                        }
                         }
                         else
                         {
@@ -2342,6 +2342,17 @@ namespace Newtouch.CIS.Web.Controllers
             //    });
             //}
             //return Content(RespList.ToJson());
+        }
+
+
+        public ActionResult CountLISztmz(string jzId)
+        {
+            var num = _medicalRecordDmnService.CountLISztmz(OrganizeId, jzId);
+            var data = new
+            {
+                num = num
+            };
+            return Content(data.ToJson());
         }
     }
 }

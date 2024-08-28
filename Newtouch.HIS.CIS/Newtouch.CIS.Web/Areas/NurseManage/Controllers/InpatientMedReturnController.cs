@@ -45,17 +45,18 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             var wardTree = _InpatientMedReturnDmnService.GetPatTree(keyword, staffId, this.OrganizeId, ReturnZcyMed);
             var wardonly = wardTree.GroupBy(p => new { p.bqCode, p.bqmc }).Select(p => new { p.Key.bqCode, p.Key.bqmc });
 
-
             var treeList = new List<TreeViewModel>();
             foreach (var item in wardonly)
             {
                 var patInfo = wardTree.Where(p => p.bqCode == item.bqCode).Where(p => p.zyh != "").Where(p => p.zyh != null).ToList();
-
-                foreach (InpWardPatTreeVO itempat in patInfo)
-                {
+                var NewPatInfo = patInfo.OrderBy(p => p.BedNo);
+                foreach (InpWardPatTreeVO itempat in NewPatInfo)
+                { 
+                    string gender = itempat.sex == "1" ? "男" : "女";
                     TreeViewModel treepat = new TreeViewModel();
                     treepat.id = itempat.zyh;
-                    treepat.text = itempat.zyh + "-" + itempat.hzxm;
+                    //床号 + 姓名(住院天数)+住院号 + 年龄 +性别
+                    treepat.text = itempat.BedNo + "-"  + itempat.hzxm + "(" + itempat.inHosDays + "天)" + "-" + itempat.zyh+ "-" + itempat.nl + "岁-" + gender;
                     treepat.value = itempat.zyh;
                     treepat.parentId = item.bqCode;
                     treepat.isexpand = false;
@@ -84,7 +85,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             var a = treeList.TreeViewJson(null);
             return Content(treeList.TreeViewJson(null));
         }
-
+        
         public ActionResult MedReturnSubmit(string medIds)
         {
             OperatorModel user = this.UserIdentity;
@@ -134,18 +135,18 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             string staffId = this.UserIdentity.StaffId;
             var wardTree = _IDrug_withdrawalzy_tyjlRepo.treecx(keyword, this.UserIdentity.StaffId, this.OrganizeId);
             var wardonly = wardTree.GroupBy(p => new { p.bqCode, p.bqmc }).Select(p => new { p.Key.bqCode, p.Key.bqmc });
-
-
+             
             var treeList = new List<TreeViewModel>();
             foreach (var item in wardonly)
             {
                 var patInfo = wardTree.Where(p => p.bqCode == item.bqCode).Where(p => p.zyh != "").Where(p => p.zyh != null).ToList();
-
-                foreach (GrugTreezsVO itempat in patInfo)
+                var NewPatInfo = patInfo.OrderBy(p => p.BedNo);
+                foreach (GrugTreezsVO itempat in NewPatInfo)
                 {
+                    string gender = itempat.sex == "1" ? "男" : "女";
                     TreeViewModel treepat = new TreeViewModel();
                     treepat.id = itempat.zyh;
-                    treepat.text = itempat.zyh + "-" + itempat.hzxm;
+                    treepat.text = itempat.BedNo + "-" + itempat.hzxm + "(" + itempat.inHosDays + "天)" + "-" +itempat.zyh + "-" + itempat.nl + "岁-" + gender;
                     treepat.value = itempat.zyh;
                     treepat.parentId = item.bqCode;
                     treepat.isexpand = false;

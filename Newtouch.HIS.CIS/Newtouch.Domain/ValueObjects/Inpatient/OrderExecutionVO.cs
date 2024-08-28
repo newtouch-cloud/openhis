@@ -80,7 +80,7 @@ namespace Newtouch.Domain.ValueObjects
         /// <summary>
         /// 收费项目单价
         /// </summary>
-        public Decimal dj { get; set; }
+        public decimal? dj { get; set; }
         /// <summary>
         /// 组号
         /// </summary>
@@ -101,7 +101,10 @@ namespace Newtouch.Domain.ValueObjects
         /// 药品开立库存来源 1：医生站科室备药库存 2：药房库存
         /// </summary>
         public int? yply { get; set; }
-
+        public decimal? je { get; set; }
+        public int? sl { get; set; }
+        public string yzh { get; set; }
+        public string isfsyz { get; set; }
     }
 
     public class ApiResponseVO

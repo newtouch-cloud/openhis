@@ -1,12 +1,13 @@
 ﻿@using Newtouch.Infrastructure;
 @{
+    //西药处方
     ViewBag.Title = "WMPrescription";
     Layout = null;
     //药品检索，药品是否关联药房库存
     var isMedicineSearchRelatedKC = (ViewBag.ISMedicineSearchRelatedKC as bool?) ?? false;
     var IsQyKssKz = (ViewBag.IsQyKssKz as bool?) ?? false;//启用抗生素
     var qxjb = ViewBag.qxjb;//权限级别
-    
+
 }
 <script src="~/Content/js/bootstrap-multiselect.js"></script>
 <link href="~/Content/js/bootstrap-multiselect.css" rel="stylesheet" />
@@ -28,6 +29,11 @@
 		padding: 2px 2px;
 		margin: 2px 2px;
 	}
+    #tip_yfly {
+        border-radius: 3px;
+        padding: 2px 2px;
+        margin: 2px 2px;
+    }
 </style>
 <div id="linkxycf" role="tabpanel" class="tab-pane" style="width:96.5%; float:right; margin-right: 10px; border:solid 1px #ddd; margin-top: 3px;">
 	<div class="contentPanel">
@@ -46,13 +52,12 @@
 					<th class="formTitle" style="height:32.8px;" rowspan="2"><b><span class="required">*</span>诊断选择：</b></th>
 					<td id="selg" class="formValue" style="z-index:999999;position:absolute;"></td>
 				</tr>
-				<tr>
-					<th class="formTitle">总金额：</th>
-					<td class="formValue" id="tdWMTotalAmount"></td>
-					<td style="width: 90px;"></td>
-					<td></td>
-				</tr>
-				<tr><td style="height:15.8px;"></td><td></td><td><input id="mzbck" type="checkbox" class="checkbox" style="float:right;position:relative;top:-2px" /></td><td>慢性病</td></tr>
+                <tr>
+                    <th class="formTitle">总金额：</th>
+                    <td class="formValue" id="tdWMTotalAmount"></td>
+                    <td><input id="mzbck" type="checkbox" class="checkbox" style="float:right;position:relative;top:-2px" /></td>
+                    <td>慢性病</td>
+                </tr>
 				<tr>
 					<td></td>
 					<td class="formValue">
@@ -69,7 +74,6 @@
 		</div>
 	</div>
 </div>
-
 <script>
     var isMedicineSearchRelatedKC = '@(isMedicineSearchRelatedKC)';
     var xycfflag = 0;
@@ -123,7 +127,29 @@
             maxHeight: 1000,
             dropUp: true
         });
-        $("#gridxycfPager_right").append('&nbsp;&nbsp;&nbsp;<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="JI">精神I类处方</option><option value="JII">精神II类处方</option><option value="MZ">麻醉处方</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option></select>');
+        $("#gridxycfPager_right").append('<span style="color:red;">药房：</span><select id="tip_yfly"></select>');
+        $("#gridxycfPager_right").append('&nbsp;&nbsp;&nbsp;<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="JI">精神I类处方</option><option value="JII">精神II类处方</option><option value="MZ">麻醉处方</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option><option value="MXB">慢性病</option><option value="RK">儿科</option></select>');
+        $("#tip_yfly").empty();
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/Prescription/GetYfData",
+            data: { },
+            async: false,
+            success: function (ret) {
+                var res=false;
+                var currYfdm = sessionStorage.getItem('curremzyf');
+                $.each(ret, function () {
+                    if((this.mzzybz=="1" && res==false && !currYfdm)||(currYfdm==this.yfbmCode && res==false)){
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "' selected>" + this.yfbmmc + "</option>";
+                        res=true;
+                    }
+                    else
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz+ "'>" + this.yfbmmc + "</option>";
+                    $("#tip_yfly").append(option);
+                });
+            }
+        });
         //if ($('#tablexyzd .zdText').length == 1) {
         //    $("input[id ='zd0']").prop("checked", true);
         //}
@@ -143,6 +169,9 @@
         //    }
         //});
         selectzd();
+        $("#tip_yfly").change(function(){
+            sessionStorage.setItem("curremzyf", $("#tip_yfly").val().split('|')[0]);
+        });
     }
     var isselzd = false;
     function mxbzdselect(zdcode) {
@@ -177,6 +206,14 @@
             $("#mzbck").prop("checked", false);
         }
     }
+    //首次选择默认当前药房
+    //function selectcurryf(obj)
+    //{
+    //    alert(obj);
+    //    var dd=$("#tip_yfly").val();
+    //    sessionStorage.setItem("curremzyf", $("#tip_yfly").val());
+    //    alert(dd);
+    //}
     function init_WMPrescription() {
         //仅尚未保存到数据库的处方需要初始化在grid中
         xylocaldata = new Array();
@@ -332,7 +369,6 @@
                                 type:'keydown',
                                 fn:function(e){
                                     if (e.keyCode == 13){
-                                        ;
                                         var rowid=$(e.target).closest('tr.jqgrow').attr('id');
                                         $("#"+rowid+"_yfztmc").focus();
                                     }
@@ -355,7 +391,6 @@
                                     type:'keydown',
                                     fn:function(e){
                                         if (e.keyCode == 13){
-                                            ;
                                             var rowid=$(e.target).closest('tr.jqgrow').attr('id');
                                             $("#"+rowid+"_yfmc").focus();
                                         }
@@ -831,7 +866,10 @@
                 if (window.currPatientInfo.brxzCode != "" &&'@ViewBag.ControlbrxzCode'.indexOf(window.currPatientInfo.brxzCode) > -1) {
                     flag = true;
                 }
-                return "onlyybflag=" + flag + "&mzzybz=1&dllb=1&sfdllx=WM&keyword=" + $.trim($thisinput.val()) + "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb ;
+                var mzzybz=$('#tip_yfly option:selected').val().split('|')[1];
+                if(mzzybz=="3")
+                    mzzybz="1";
+                return "onlyybflag=" + flag + "&mzzybz="+mzzybz+"&dllb=1&sfdllx=WM&keyword=" + $.trim($thisinput.val()) + "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb+"&ypyfbmCode="+$('#tip_yfly option:selected').val().split('|')[0];
 			},
 			itemdbclickhandler: function ($this) {
                 var xzyysm=$this.attr('data-xzyysm');
@@ -1312,7 +1350,6 @@
                 return;   //保存失败，则return
             }
         }
-
         var gridxycfData = $("#gridxycf").jqGrid('getRowData_AllLine', null, true);
         $.each(gridxycfData, function () {    //去掉action
 

@@ -131,6 +131,8 @@ namespace Newtouch.Domain.DBContext.Infrastructure
             modelBuilder.Entity<AdmissionNoticeEntity>().RegisterTable().HasKey(p => p.Id);
             //远程诊疗
             modelBuilder.Entity<ClinicApplyInfoEntity>().RegisterTable().HasKey(p => p.Id);
+            //医嘱执行绑定费用
+            modelBuilder.Entity<MedicalAdviceBindingFeeEntity>().RegisterTable().HasKey(p => p.newid);
         }
 
     }

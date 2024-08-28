@@ -1,0 +1,179 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+@*<script src="~/Content/framework-ui.js"></script>
+    <script src="~/Content/framework-clientdata.js"></script>
+    <script src="~/Content/framework-clientdata.framepage.js"></script>*@
+<form method="post" action="#">
+
+    <div>
+        <div class="topPanel">
+            <div class="toolbar " style="float:right;">
+                <div class="btn btn-default">
+                    <a id="printDoc" authorize="yes" onclick="PrintDoc()"><i class="glyphicon glyphicon-print"></i>打印</a>
+                    <script language=javascript>
+                        function PrintDoc() {
+                            var ctl = document.getElementById("myWriterControl");
+                            ctl.Options.isTransformLandscape = false;
+                            var flag = document.getElementById("idJumpPrint").checked;
+                            ctl.SetJumpPrintMode(flag);
+                            ctl.PrintDocument();
+                            //ctl.DCExecuteCommand("FilePrint", true, null);
+                        }
+                    </script>
+                </div>
+                <div class="btn">
+                    <input type="checkbox" id="idJumpPrint" name="idJumpPrint" onclick="JumpPrint();" />
+                    <label for="idJumpPrint">续打</label>
+                    <script language=javascript>
+						function JumpPrint() {
+							var flag = document.getElementById("idJumpPrint").checked;
+							var ctl = document.getElementById("myWriterControl");
+							ctl.SetJumpPrintMode(flag);
+							//if (flag) {
+							//    ctl.PrintDocument();
+							//}
+							//ctl.DCExecuteCommand("JumpPrintMode", true, document.getElementById("idJumpPrint").checked);
+						}
+
+                    </script>
+                </div>
+
+                <div class="btn" id="btn_editctrl">
+
+                    @if (ViewBag.mbqx == (int)EnummbqxFp.edit)
+                    {
+                        if (string.IsNullOrWhiteSpace(ViewBag.isLocker))
+                        {
+                            @Html.ActionLink("编辑病历", "MedicalRecordEdit", new { jzbl = "", blid = ViewBag.blid, bllx = ViewBag.bllx, zyh = ViewBag.zyh, mzh = ViewBag.mzh, blxtmc_yj = ViewBag.blxtmc_yj }, new { @class = "btn btn-primary " })
+                        }
+                        else
+                        {
+                            <a href="#" class="btn btn-primary " title="@ViewBag.isLocker" data-options=" plain:true">@ViewBag.isLocker</a>
+                        }
+
+                    }
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    @Html.Raw(ViewBag.WriterControlHtml)
+</form>
+
+<script language=javascript>
+	var blid = null;
+    var justshow = null;
+
+    $(function ($) {
+        setTimeout(function () {
+            // 提交按钮的点击操作
+            $("#printDoc").trigger('click');
+        }, 1000); // 延迟1秒钟
+    });
+
+	$(function () {
+
+		blid = GetQueryValue('blid');
+		justshow = GetQueryValue('justshow');
+		$.each(top.$('a.menuTab'), function () {
+			if ($(this).attr("data-id").indexOf(blid) > 0) {
+				$(this).find("i").show();
+				$(this).find("span").hide();
+			}
+		});
+		if (!!justshow && justshow == "true") {
+			$("#btn_editctrl a").hide();
+		}
+	});
+
+
+	function GetQueryValue(queryName) {
+		var query = decodeURI(window.location.search.substring(1));//将url转码，如果不是当前地址链接，可以在这里填写需要的链接
+		var vars = query.split("&");//分割字符串，将url切割成数组形式的对象
+		for (var i = 0; i < vars.length; i++) {
+			var pair = vars[i].split("=");//再次分割成数组
+			if (pair[0] == queryName) { return pair[1]; }//如果匹配输出结果
+
+		}
+		return null;
+
+	}
+	function SetCtlHeight() {
+		//debugger;
+		var ctl = document.getElementById("myWriterControl");
+		BindingDCWriterClientControl(ctl);
+		if (ctl != null) {
+			if (ctl.getAttribute("ismobiledevice") != "true") {
+				// 对于移动设备不设置控件高度
+				//var s1 = document.documentElement.currentStyle;
+				//var s2 = document.body.currentStyle ;
+				var h = document.documentElement.clientHeight - ctl.offsetTop - 20;
+				ctl.style.height = h + "px";
+			}
+			else {
+				if (document.body.clientWidth < 400) {
+					document.getElementById("cboFileName").style.width = "100%";
+				}
+			}
+		}
+	}
+	window.setTimeout(SetCtlHeight, 300);
+	window.setInterval(SetCtlHeight, 1000);
+
+</script>
+
+<script language=javascript>
+	var ctl = document.getElementById("myWriterControl");
+	ctl.Options.isTransformLandscape = false;
+	function Build() {
+		if (ctl) {
+			//BindingDCWriterClientControl(ctl);
+			//ctl.Options.CustomCSSString = "@@font-face {font-family: 宋体;src: local('宋体');}";
+			//ctl.BuildFrame(function () {
+			//    saveString && ctl.LoadDocumentFromString(saveString, "xml");
+			//    ctl.DocumentLoad = function () {
+			//        var doc = ctl.GetContentDocument();
+			//    }
+			//});
+			ctl.Options.isTransformLandscape = false;
+			ctl.EventAfterPrintPreview = function (PrintPreviewDoc) {
+				debugger;
+				console.log("打印字体处理");
+				var styleDom = document.createElement("style");
+				// 解决宋体打印问题
+				var cssStr = "@@font-face {font-family: 宋体;src: local('宋体');}";
+				styleDom.innerHTML = cssStr;
+				var page = PrintPreviewDoc.querySelector("div[pageindex]");
+				if (page) {
+					page.appendChild(styleDom);
+				}
+
+			};
+			ctl.DocumentLoad = function () {
+				console.log("DocumentLoad")
+				var doc = ctl.GetContentDocument();
+				var styleDom = document.createElement("style");
+				// 解决宋体打印问题
+				var cssStr = "@@font-face {font-family: 宋体;src: local('宋体');}";
+				styleDom.innerHTML = cssStr;
+				var page = doc.querySelector("div[pageindex]");
+				if (page) {
+					page.appendChild(styleDom);
+				}
+				ctl.EventBeforePrint = function (doc) {
+					console.log("打印预览后");
+				}
+			};
+			console.log("打印字体处理-1");
+		} else {
+			console.log("打印字体处理-2");
+        }
+
+	}
+	Build();
+
+</script>

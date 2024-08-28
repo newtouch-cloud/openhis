@@ -449,8 +449,17 @@ namespace Newtouch.CIS.Web.Areas.DoctorManage.Controllers
 
         #endregion
 
+        //根据住院号获取LIS/PACS报告完成数量
 
-
+        public ActionResult CountLISztzy(string zyh)
+        {
+            var num = _iDoctorserviceDmnService.CountLISztzy(OrganizeId, zyh);
+            var data = new
+            {
+                num = num
+            };
+            return Content(data.ToJson());
+        }
 
     }
 }
