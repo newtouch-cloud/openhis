@@ -311,9 +311,9 @@ FROM    dbo.zy_brxxk zyxx
         /// <param name="xm"></param>
         /// <param name="zybz">在院标志，多个用逗号分割</param>
         /// <returns></returns>
-        public IList<InPatientPatientSearchVO> GetInPatSearchPaginationList(Pagination pagination, string orgId, string bq, string zyh, string xm, string bqCode, string zybz = null)
+        public IList<InPatientPatientSearchVO> GetInPatSearchPaginationList(Pagination pagination, string orgId, string bq, string zyh, string xm,string ch, string bqCode, string zybz = null)
         {
-            var sql = @"select blh, zyh, xm, sex, WardCode, bq.bqmc WardName, birth
+            var sql = @"select blh, zyh,BedCode bedCode, xm, sex, WardCode, bq.bqmc WardName, birth
 , ryrq, rqrq
 from zy_brxxk(nolock) zyxx
 left join [NewtouchHIS_Base]..V_S_xt_bq bq
@@ -330,6 +330,11 @@ where zyxx.OrganizeId = @orgId";
             {
                 sql += " and zyxx.zyh like @searchZyh";
                 pars.Add(new SqlParameter("@searchZyh", "%" + zyh + "%"));
+            }
+            if (!string.IsNullOrWhiteSpace(ch))
+            {
+                sql += " and zyxx.BedCode like @searchCh";
+                pars.Add(new SqlParameter("@searchCh", "%" + ch + "%"));
             }
             if (!string.IsNullOrWhiteSpace(xm))
             {
@@ -441,6 +446,7 @@ where zyxx.OrganizeId = @orgId";
         {
             var sql = @"select blh, zyxx.zyh, xm, sex, WardCode, bq.bqmc WardName, birth
                         , ryrq, rqrq,tz.*
+                        ,convert(varchar(50),isnull(xysz,''))+'/'+convert(varchar(50),isnull(xyxz,'')) xysxz
                         from zy_brxxk(nolock) zyxx
                         left join [NewtouchHIS_Base]..V_S_xt_bq bq
                         on bq.bqCode = zyxx.WardCode and bq.OrganizeId = zyxx.OrganizeId
@@ -482,10 +488,11 @@ where zyxx.OrganizeId = @orgId";
         /// <returns></returns>
         public IList<InpWardPatTreeVO> GetPatTree(string orgId, string zyzt, string keyword)
         {
-            string sql = @"select  distinct b.zyh,b.xm hzxm,b.wardCode bqCode,c.bqmc,b.sex,b.zybz,
+            string sql = @"select  distinct b.zyh,b.xm hzxm,b.wardCode bqCode,c.bqmc,b.sex,b.zybz,b.ryrq,b.birth,cw.BedNo,CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, b.ryrq,GETDATE()) WHEN 0 THEN 1 else  DATEDIFF(DAY, b.ryrq,GETDATE())END ) inHosDays,
 CAST(FLOOR(DATEDIFF(DY, b.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl,convert(varchar(50),isnull(b.rqrq,getdate()),120) rqrq,convert(varchar(50),isnull(b.cqrq,getdate()),120) cqrq
 from zy_brxxk b with(nolock)  
 left join [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock) on c.bqcode=b.wardCode and c.OrganizeId=b.OrganizeId and c.zt='1'
+left join zy_cwsyjlk cw with(nolock) on cw.zyh=b.zyh and cw.organizeid=b.OrganizeId and cw.zt='1'
                 where 1=1 and b.OrganizeId=@orgId  and b.zt='1' ";
             var par = new List<SqlParameter>();
             par.Add(new SqlParameter("@orgId", orgId));
@@ -516,7 +523,7 @@ left join [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock) on c.bqcode=b.ward
         }
         public InpWardPatTreeVO GetPatList(string orgId, string zyh)
         {
-            string sql = @"select  distinct b.zyh,b.xm hzxm,b.wardCode bqCode,c.bqmc,b.sex,b.zybz,
+            string sql = @"select  distinct b.zyh,b.xm hzxm,b.wardCode bqCode,c.bqmc,b.sex,b.zybz,b.ryrq,b.birth,
 CAST(FLOOR(DATEDIFF(DY, b.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl,convert(varchar(50),isnull(b.rqrq,getdate()),120) rqrq,convert(varchar(50),isnull(b.cqrq,getdate()),120) cqrq
 from [Newtouch_CIS]..zy_brxxk b with(nolock)  
 left join [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock) on c.bqcode=b.wardCode and c.OrganizeId=@orgId and c.zt='1'

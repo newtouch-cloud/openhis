@@ -469,7 +469,7 @@ namespace Newtouch.CIS.Web.Controllers
         /// <returns></returns>
         [HttpGet]
         [HandlerAjaxOnly]
-        public ActionResult InPatSearchInfo(Pagination pagination, string bq, string zyh, string xm, string zybz = null)
+        public ActionResult InPatSearchInfo(Pagination pagination, string bq, string zyh, string xm,string ch, string zybz = null)
         {
 			var StaffId = this.UserIdentity.StaffId;
 			//根据StaffId获取病区
@@ -481,7 +481,7 @@ namespace Newtouch.CIS.Web.Controllers
 			bqCode = bqCode.Substring(0, bqCode.Length - 1);
 			var data = new
             {
-                rows = _inpatientPatientDmnService.GetInPatSearchPaginationList(pagination, this.OrganizeId, bq, zyh, xm, bqCode,zybz),
+                rows = _inpatientPatientDmnService.GetInPatSearchPaginationList(pagination, this.OrganizeId, bq, zyh, xm, ch, bqCode,zybz),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records

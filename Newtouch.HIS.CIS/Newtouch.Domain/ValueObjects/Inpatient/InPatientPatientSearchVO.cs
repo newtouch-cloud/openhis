@@ -53,6 +53,8 @@ namespace Newtouch.Domain.ValueObjects
         /// </summary>
         public DateTime? rqrq { get; set; }
 
+        public string bedCode { get; set; }
+
     }
 
     public class InPatientNursingInputVO
@@ -330,5 +332,10 @@ namespace Newtouch.Domain.ValueObjects
         /// 疼痛评分
         /// </summary>
         public string ttpf { get; set; }
+
+        /// <summary>
+        /// 血压上下值合并显示
+        /// </summary>
+        public string xysxz { get; set; }
     }
 }

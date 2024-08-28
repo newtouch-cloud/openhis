@@ -333,7 +333,32 @@
                         YZZDCorrespond();
                     },
                 })
-        $("#gridzycfPager_right").append("<div style=\"margin-top:2px;\"><label id=\"zdmc\" style=\"margin-right:300px;\"></label><a type=\"button\" class=\"btn btn-primary\" onclick=\"YZZDCorrespond()\">医嘱诊断</a></div>");
+        $("#gridzycfPager_right").append('<div class=\"ckbox\" style=\"margin-top:2px;\"><span style="color:red;">药房：</span><select id="tip_zyyfly"></select></div>');
+        $("#gridzycfPager_right").append("<div style=\"margin-top:2px;\"><label id=\"zdmc\" style=\"margin-right:20px;\"></label><a type=\"button\" class=\"btn btn-primary\" onclick=\"YZZDCorrespond()\">医嘱诊断</a></div>");
+        $("#tip_zyyfly").empty();
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/Prescription/GetYfData",
+            data: { },
+            async: false,
+            success: function (ret) {
+                var res=false;
+                var currYfdm = sessionStorage.getItem('currzyyf');
+                $.each(ret, function () {
+                    if((this.mzzybz=="2" && res==false && !currYfdm)||(currYfdm==this.yfbmCode && res==false)){
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "' selected>" + this.yfbmmc + "</option>";
+                        res=true;
+                    }
+                    else
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "'>" + this.yfbmmc + "</option>";
+                    $("#tip_zyyfly").append(option);
+                });
+            }
+        });
+        $("#tip_zyyfly").change(function(){
+            sessionStorage.setItem("currzyyf", $("#tip_zyyfly").val().split('|')[0]);
+        });
     }
         function YZZDCorrespond() {
                 $.modalOpen({
@@ -549,7 +574,10 @@
             djDecimalPlaces: 4,
             searchType: "yp.kc", //药品是否显示库存
             ajaxparameters: function ($thisinput) {
-                return "mzzybz=2&dllb=1&sfdllx=TCM&keyword=" + $.trim($thisinput.val());
+                var mzzybz=$('#tip_zyyfly option:selected').val().split('|')[1];
+                if(mzzybz=="3")
+                    mzzybz="2";
+                return "mzzybz="+mzzybz+"&dllb=1&sfdllx=TCM&keyword=" + $.trim($thisinput.val())+"&ypyfbmCode="+$('#tip_zyyfly option:selected').val().split('|')[0];
             },
 			itemdbclickhandler: function ($this) {
 

@@ -88,6 +88,8 @@ namespace Newtouch.CIS.Web.Controllers
             ViewBag.ControlzsyfCode = _sysConfigRepo.GetValueByCode("zsyfpz", OrganizeId);
             //雾化用法控制
             ViewBag.ControlwhyfCode = _sysConfigRepo.GetValueByCode("whyfpz", OrganizeId);
+
+
             //影像配置
             ViewBag.PACSCode = _sysConfigRepo.GetValueByCode("PACSCode", OrganizeId);
             ViewBag.yysz_hyfqURL = Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("yysz_hyfqURL");

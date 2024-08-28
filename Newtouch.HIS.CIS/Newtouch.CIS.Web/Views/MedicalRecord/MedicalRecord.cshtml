@@ -1,7 +1,7 @@
 ﻿@using Newtouch.Infrastructure;
 
 @{
-    ViewBag.Title = "病历";
+    ViewBag.Title = "病历";//门诊病历
     Layout = null;
 
     var pacsHost = SiteUrl.GetUrl("OuterPacsServiceHost", "");
@@ -40,11 +40,10 @@
     var sfxmztbs = SysConfigReader.String("sfxmztbs");//组套项目是否合并显示
     var SkipPatientList = SysConfigReader.String("SkipPatientList");//保存、结束就诊是否返回病人列表
     var openblbookprint = SysConfigReader.String("blbookprint");//是否启用病历本打印
-
-    //住院证打印
+    var ControlsyyfCode = SysConfigReader.String("sydyfpz");//输液用法配置
+                                                            //住院证打印
     var regReportUrl = SysConfigReader.OrgReportLink("HospitalizationCertificate");
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
     var dzcfUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("DzcfUrl");
 }
@@ -125,7 +124,7 @@
                 </div>
             </div>
         </div>
-        <div class="Report-body" style="position: absolute;top: 400px;width: 170px;border: 1px solid #ddd;border: solid 1px rgba(128, 128, 128, 0.36);border-radius: 5px;">
+        <div class="Report-body" style="position: absolute;top: 650px;width: 170px;border: 1px solid #ddd;border: solid 1px rgba(128, 128, 128, 0.36);border-radius: 5px;">
             <div class="panel-group" id="accordion">
                 <div class="panel panel-default" hidden>
                     <div class="panel-heading">
@@ -437,7 +436,7 @@
                     </table>
                     <table class="form">
                         <tr>
-                            <th class="formTitle">主诉：</th>
+                            <th class="formTitle"><span class="required">*</span>主诉：</th>
                             <td class="formValue" colspan="2">
                                 <input type="text" id="zs" name="zs" class="form-control activeValue focusInput" />
                                 <i class="fa fa-times" aria-hidden="true" hidden></i>
@@ -506,7 +505,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <th class="formTitle">西医诊断：</th>
+                            <th class="formTitle"><span class="required">*</span>西医诊断：</th>
                             <td class="formValue" colspan="4">
                                 <table id="tablexyzd">
                                     <tr>
@@ -545,8 +544,8 @@
                                 </table>
                             </td>
                         </tr>
-                        <tr style="display:none">
-                            <th class="formTitle">中医诊断：</th>
+                        <tr>
+                            <th class="formTitle"><span class="required">*</span>中医诊断：</th>
                             <td class="formValue" colspan="4">
                                 <table id="tablezyzd">
                                     <tr>
@@ -619,7 +618,8 @@
                                                 <th style="width:11%;">开立日期</th>
                                                 <th style="width:8%;">同步状态</th>
                                                 <th style="width:8%;">收费状态</th>
-                                                <th style="width:30%;">处方最后打印时间</th>
+                                                <th style="width:10%;">处方最后打印时间</th>
+                                                <th style="width:8%;">金额/元</th>
                                                 <th></th>
                                             </tr>
                                             <tbody id="tableCgxmMx"></tbody>
@@ -638,7 +638,8 @@
                                             <th style="width:11%;">开立日期</th>
                                             <th style="width:8%;">同步状态</th>
                                             <th style="width:8%;">收费状态</th>
-                                            <th style="width:30%;">处方最后打印时间</th>
+                                            <th style="width:10%;">处方最后打印时间</th>
+                                            <th style="width:8%;">金额/元</th>
                                             <th></th>
                                         </tr>
                                         <tbody id="tableXyMx"></tbody>
@@ -656,7 +657,8 @@
                                             <th style="width:11%;">开立日期</th>
                                             <th style="width:8%;">同步状态</th>
                                             <th style="width:8%;">收费状态</th>
-                                            <th style="width:30%;">处方最后打印时间</th>
+                                            <th style="width:10%;">处方最后打印时间</th>
+                                            <th style="width:8%;">金额/元</th>
                                             <th></th>
                                         </tr>
                                         <tbody id="tableZyMx"></tbody>
@@ -675,7 +677,8 @@
                                                 <th style="width:16%;">申请单号</th>
                                                 <th style="width:11%;">申请日期</th>
                                                 <th style="width:8%;">同步状态</th>
-                                                <th style="width:38%;">收费状态</th>
+                                                <th style="width:18%;">收费状态</th>
+                                                <th style="width:8%;">金额/元</th>
                                                 <th></th>
                                             </tr>
                                             <tbody id="tableJyMx"></tbody>
@@ -692,7 +695,8 @@
                                                 <th style="width:16%;">申请单号</th>
                                                 <th style="width:11%;">申请日期</th>
                                                 <th style="width:8%;">同步状态</th>
-                                                <th style="width:38%;">收费状态</th>
+                                                <th style="width:18%;">收费状态</th>
+                                                <th style="width:8%;">金额/元</th>
                                                 <th></th>
                                             </tr>
                                             <tbody id="tableJcMx"></tbody>
@@ -701,24 +705,24 @@
                                 </td>
                             </tr>
                         }
-                        <tr>
-                            <th class="formTitle">电子处方：</th>
-                            <td class="formValue" colspan="4">
-                                <div style="border: 1px solid #ddd; border-radius:4px;height:auto;" data-href="linkdzcf" class="activeValue">
-                                    <table class="form" style="width: 97%; margin: 5px 0px 5px 20px;">
-                                        <tr>
-                                            <th style="width:16%;">处方号</th>
-                                            <th style="width:11%;">开立日期</th>
-                                            <th style="width:8%;">同步状态</th>
-                                            <th style="width:8%;">收费状态</th>
-                                            <th style="width:30%;">处方最后打印时间</th>
-                                            <th></th>
-                                        </tr>
-                                        <tbody id="tableDzcfMx"></tbody>
-                                    </table>
-                                </div>
-                            </td>
-                        </tr>
+                        @*<tr>
+                                <th class="formTitle">电子处方：</th>
+                                <td class="formValue" colspan="4">
+                                    <div style="border: 1px solid #ddd; border-radius:4px;height:auto;" data-href="linkdzcf" class="activeValue">
+                                        <table class="form" style="width: 97%; margin: 5px 0px 5px 20px;">
+                                            <tr>
+                                                <th style="width:16%;">处方号</th>
+                                                <th style="width:11%;">开立日期</th>
+                                                <th style="width:8%;">同步状态</th>
+                                                <th style="width:8%;">收费状态</th>
+                                                <th style="width:30%;">处方最后打印时间</th>
+                                                <th></th>
+                                            </tr>
+                                            <tbody id="tableDzcfMx"></tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>*@
                     </table>
                 </form>
             </div>
@@ -730,15 +734,14 @@
            //F3Text = "另存为模板",
            ShowKeyList = new int[] { 4, 6, 7, 8, 9 },
            //F2Text="打印接诊单",
-           F6Text = "作废病历",
-           F8Text = "结束就诊",
-           F7Text = "就诊保存",
-           F9Text = "打印病历",
+           F6Text = "就诊保存",
+           F7Text = "结束就诊",
+           F8Text = "打印病历",
+           F9Text = "作废病历",
            //F10Text = "打印所有处方"
        })
         </div>
-        <div id="dispDiv" class="panel panel-default" style="height: auto; display:none;margin-top:50px;padding: 0 20px 0 0;
-    border: 0;">
+        <div id="dispDiv" class="panel panel-default" style="height: auto; display:none;margin-top:50px;padding: 0 20px 0 0; border: 0;">
             <div class="panel-heading">
                 历史病历&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i id="hideDispDiv" class="fa fa-eye-slash" style="font-size:larger;"></i>
             </div>
@@ -1238,6 +1241,7 @@
     //});
     //加载树
     function reloadTreeView(){
+        EnabledControls();
         var blh = window.currPatientInfo.blh;
         var queryDate = $('#queryDate').val();
         if(!blh || !queryDate){
@@ -2466,7 +2470,7 @@
 @********************业务逻辑***********************@
 <script>
     //作废病历
-    function newtouch_event_f6() {
+    function newtouch_event_f9() {
         var jzObject = window.currPatientInfo;
         if (!!!jzObject || JSON.stringify(jzObject) == '{}') {
             $.modalAlert("患者信息异常，当前病人已结束就诊。", 'warning');
@@ -2496,12 +2500,12 @@
     }
 
     //就诊暂存
-    function newtouch_event_f7() {
+    function newtouch_event_f6() {
         SaveData(false);
     }
 
     //结束就诊
-    function newtouch_event_f8() {
+    function newtouch_event_f7() {
         SaveData(true);
         //yczlEndOpetration();//远程诊疗
     }
@@ -3481,6 +3485,23 @@
                             continue;
                         }
                         else {
+                            let JeArray = {};
+                            itemsMxArr.forEach(items => { if (!JeArray[item.je]) JeArray[item.je] = []; JeArray[item.je].push(item); });
+                            var JeArrays = new Array();
+
+                            for (const groupKey in JeArray) {
+                                if (JeArray.hasOwnProperty(groupKey)) {
+                                    const itemArray = JeArray[groupKey];
+                                    for (const items in itemArray) {
+                                        const itemsDetails = itemArray[items];
+                                        if (itemsMxArr[i].cfId == itemsDetails.cfId)
+                                            JeArrays = itemArray; break;
+                                    }
+                                    if (JeArrays.length > 0) break;
+                                }
+                            }
+                            let toJe = "";
+                            if (JeArrays.length > 0) toJe = JeArrays.reduce((prev, items) => { return prev += items.je }, 0).toFixed(2);
                             //3.3.2 若不存在，则push
                             typeClassificationArr.push({ cfId: itemsMxArr[i].cfId
                                 ,cfh: itemsMxArr[i].cfh
@@ -3490,6 +3511,7 @@
                                 ,cfzhdysj: itemsMxArr[i].cfzhdysj
                                 , zldzhdysj: itemsMxArr[i].zldzhdysj
                                 , tbz: itemsMxArr[i].tbz
+                                , je: toJe
                             });
                         }
                     }
@@ -3532,6 +3554,7 @@
                             if('@(isPrintRehabTreatment)' == 'True'){
                                 thisHtml += '<td>' + $.getTime({date:typeClassificationArr[i].zldzhdysj,ute:true}) + '</td>';
                             }
+                            thisHtml += '<td>' + (typeClassificationArr[i].je) + '</td>';
                         }
                         thisHtml +=  '<td>' + lasttdContent + '</td></tr>'
                         $newtableKfmx.append(thisHtml);
@@ -3552,6 +3575,24 @@
                             continue;
                         }
                         else {
+                            let JeArray = {};
+                            itemsMxArr.forEach(JeItems => { if (!JeArray[JeItems.cfId]) JeArray[JeItems.cfId] = []; JeArray[JeItems.cfId].push(JeItems); });
+                            var JeArrays = new Array();
+
+                            for (const groupKey in JeArray) {
+                                if (JeArray.hasOwnProperty(groupKey)) {
+                                    const itemArray = JeArray[groupKey];
+                                    for (const items in itemArray) {
+                                        const itemsDetails = itemArray[items];
+                                        if (itemsMxArr[i].cfId == itemsDetails.cfId)
+                                            JeArrays = itemArray; break;
+                                    }
+                                    if (JeArrays.length > 0) break;
+                                }
+                            }
+
+                            let toJe = "";
+                            if (JeArrays.length > 0) toJe = JeArrays.reduce((prev, items) => { return prev += items.je }, 0).toFixed(2);
                             //3.3.2 若不存在，则push
                             typeClassificationArr.push({ cfId: itemsMxArr[i].cfId
                                 ,cfh: itemsMxArr[i].cfh
@@ -3561,6 +3602,7 @@
                                 ,cfzhdysj: itemsMxArr[i].cfzhdysj
                                 , zldzhdysj: itemsMxArr[i].zldzhdysj
                                 , tbz: itemsMxArr[i].tbz
+                                , je: toJe
                             });
                         }
                     }
@@ -3592,7 +3634,8 @@
                             thisHtml += '<td>' + $.getDate({date: typeClassificationArr[i].klrq, ute:true}) + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sendtohisResult == '1' ? '已同步' : '未同步') + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sfbz == false ? '未收费' : (typeClassificationArr[i].tbz ? '已退费' : '已收费')) + '</td>';
-                            thisHtml += '<td>' + $.getTime({date:typeClassificationArr[i].cfzhdysj,ute:true}) + '</td>';
+                            thisHtml += '<td>' + $.getTime({ date: typeClassificationArr[i].cfzhdysj, ute: true }) + '</td>';
+                            thisHtml += '<td>' + (typeClassificationArr[i].je) + '</td>';
                         }
                         thisHtml +=  '<td>' + lasttdContent + '</td></tr>'
                         $newtableCgxmmx.append(thisHtml);
@@ -3604,8 +3647,9 @@
                     $newtableXymx.html('');   //先清空html
                     var typeClassificationArr = new Array();
                     for (var i = 0; i < itemsMxArr.length; i++) {
-                        var Iscontainwh = false;
-                        var Iscontainzs = false;
+                        var Iscontainwh = false;//雾化单
+                        var Iscontainzs = false;//注射单
+                        var Iscontainsy=false;//输液单
                         var cfh = itemsMxArr[i].cfh;
                         if (itemsMxArr[i].yfCode) {
                             if ('@ViewBag.ControlwhyfCode' != "" && '@ViewBag.ControlwhyfCode'.indexOf(","+itemsMxArr[i].yfCode+",") > -1) {
@@ -3613,6 +3657,9 @@
                             }
                             if ('@ViewBag.ControlzsyfCode' != "" && '@ViewBag.ControlzsyfCode'.indexOf(","+itemsMxArr[i].yfCode+",") > -1) {
                                 Iscontainzs = true;
+                            }
+                            if ("@ControlsyyfCode" != "" && "@ControlsyyfCode".indexOf(","+itemsMxArr[i].yfCode+",") > -1) {
+                                Iscontainsy = true;
                             }
                         }
 
@@ -3624,6 +3671,9 @@
                             if (v && v.cfh == cfh && !v.Iscontainzs && Iscontainzs) {
                                 v.Iscontainzs = Iscontainzs;
                             }
+                            if (v && v.cfh == cfh && !v.Iscontainsy && Iscontainsy) {
+                                v.Iscontainsy = Iscontainsy;
+                            }
                             return v && v.cfh == cfh;
                         });
                         //3.3.1 若存在，则push该处方号下面的处方明细
@@ -3631,6 +3681,24 @@
                             continue;
                         }
                         else {
+                            let JeArray = {};
+                            itemsMxArr.forEach(JeItems => { if (!JeArray[JeItems.cfId]) JeArray[JeItems.cfId] = []; JeArray[JeItems.cfId].push(JeItems); });
+                            var JeArrays = new Array();
+
+                            for (const groupKey in JeArray) {
+                                if (JeArray.hasOwnProperty(groupKey)) {
+                                    const itemArray = JeArray[groupKey];
+                                    for (const items in itemArray) {
+                                        const itemsDetails = itemArray[items];
+                                        if (itemsMxArr[i].cfId == itemsDetails.cfId)
+                                            JeArrays = itemArray;break;
+                                    }
+                                    if (JeArrays.length>0) break;
+                                }
+                            }
+
+                            let toJe = "";
+                            if (JeArrays.length > 0) toJe = JeArrays.reduce((prev, items) => { return prev += items.je }, 0).toFixed(2);
                             //3.3.2 若不存在，则push
                             typeClassificationArr.push({ cfId: itemsMxArr[i].cfId
                                   ,cfh: itemsMxArr[i].cfh
@@ -3641,7 +3709,9 @@
                                 , yfCode: itemsMxArr[i].yfCode
                                 , Iscontainwh: Iscontainwh
                                 , Iscontainzs: Iscontainzs
+                                , Iscontainsy:Iscontainsy
                                 , tbz: itemsMxArr[i].tbz
+                                , je: toJe
                             });
                         }
                     }
@@ -3670,7 +3740,9 @@
                             if (typeClassificationArr[i].Iscontainzs) {
                                     lasttdContent += '&nbsp;&nbsp;<a class="btn btn-default btn-md iconPrintSingleCf" title="打印注射单" ><i class="fa fa-print"></i></a>';
                                 }
-
+                            if (typeClassificationArr[i].Iscontainsy) {
+                                lasttdContent += '&nbsp;&nbsp;<a class="btn btn-default btn-md iconPrintSingleCf" title="打印输液单" ><i class="fa fa-print"></i></a>';
+                            }
                             if (typeClassificationArr[i].Iscontainwh) {
                                     lasttdContent += '&nbsp;&nbsp;<a class="btn btn-default btn-md iconPrintSingleCf" title="打印雾化单" ><i class="fa fa-print"></i></a>';
                                 }
@@ -3682,7 +3754,8 @@
                             thisHtml += '<td>' + $.getDate({date: typeClassificationArr[i].klrq, ute:true}) + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sendtohisResult == '1' ? '已同步' : '未同步') + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sfbz == false ? '未收费' : (typeClassificationArr[i].tbz ? '已退费':'已收费')) + '</td>';
-                            thisHtml += '<td>' + $.getTime({date:typeClassificationArr[i].cfzhdysj,ute:true}) + '</td>';
+                            thisHtml += '<td>' + $.getTime({ date: typeClassificationArr[i].cfzhdysj, ute: true }) + '</td>';
+                            thisHtml += '<td>' + (typeClassificationArr[i].je) + '</td>';
                         }
                         thisHtml +=  '<td>' + lasttdContent + '</td></tr>'
                         $newtableXymx.append(thisHtml);
@@ -3722,6 +3795,24 @@
                             continue;
                         }
                         else {
+                            let JeArray = {};
+                            itemsMxArr.forEach(JeItems => { if (!JeArray[JeItems.cfId]) JeArray[JeItems.cfId] = []; JeArray[JeItems.cfId].push(JeItems); });
+                            var JeArrays = new Array();
+
+                            for (const groupKey in JeArray) {
+                                if (JeArray.hasOwnProperty(groupKey)) {
+                                    const itemArray = JeArray[groupKey];
+                                    for (const items in itemArray) {
+                                        const itemsDetails = itemArray[items];
+                                        if (itemsMxArr[i].cfId == itemsDetails.cfId)
+                                            JeArrays = itemArray; break;
+                                    }
+                                    if (JeArrays.length > 0) break;
+                                }
+                            }
+
+                            let toJe = "";
+                            if (JeArrays.length > 0) toJe = JeArrays.reduce((prev, items) => { return prev += items.je }, 0).toFixed(2);
                             //3.3.2 若不存在，则push
                             typeClassificationArr.push({ cfId: itemsMxArr[i].cfId
                                    ,cfh: itemsMxArr[i].cfh
@@ -3733,6 +3824,7 @@
                                 , Iscontainwh: Iscontainwh
                                 , Iscontainzs: Iscontainzs
                                 , tbz: itemsMxArr[i].tbz
+                                , je: toJe
                             });
                         }
                     }
@@ -3770,7 +3862,8 @@
                             thisHtml += '<td>' + $.getDate({date: typeClassificationArr[i].klrq, ute:true}) + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sendtohisResult == '1' ? '已同步' : '未同步') + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sfbz == false ? '未收费' : (typeClassificationArr[i].tbz ? '已退费' : '已收费')) + '</td>';
-                            thisHtml += '<td>' + $.getTime({date:typeClassificationArr[i].cfzhdysj,ute:true}) + '</td>';
+                            thisHtml += '<td>' + $.getTime({ date: typeClassificationArr[i].cfzhdysj, ute: true }) + '</td>';
+                            thisHtml += '<td>' + (typeClassificationArr[i].je) + '</td>';
                         }
                         thisHtml +=  '<td>' + lasttdContent + '</td></tr>'
                         $newtableZymx.append(thisHtml);
@@ -3792,6 +3885,24 @@
                             continue;
                         }
                         else {
+                            let JeArray = {};
+                            itemsMxArr.forEach(JeItems => { if (!JeArray[JeItems.cfId]) JeArray[JeItems.cfId] = []; JeArray[JeItems.cfId].push(JeItems); });
+                            var JeArrays = new Array();
+
+                            for (const groupKey in JeArray) {
+                                if (JeArray.hasOwnProperty(groupKey)) {
+                                    const itemArray = JeArray[groupKey];
+                                    for (const items in itemArray) {
+                                        const itemsDetails = itemArray[items];
+                                        if (itemsMxArr[i].cfId == itemsDetails.cfId)
+                                            JeArrays = itemArray; break;
+                                    }
+                                    if (JeArrays.length > 0) break;
+                                }
+                            }
+
+                            let toJe = "";
+                            if (JeArrays.length > 0) toJe = JeArrays.reduce((prev, items) => { return prev += items.dj }, 0).toFixed(2);
                             //3.3.2 若不存在，则push
                             typeClassificationArr.push({ cfId: itemsMxArr[i].cfId
                                          ,cfh: itemsMxArr[i].cfh
@@ -3799,6 +3910,7 @@
                                 ,sfbz: itemsMxArr[i].sfbz
                                 , sendtohisResult: itemsMxArr[i].sendtohisResult
                                 , tbz: itemsMxArr[i].tbz
+                                , je: toJe
                             });
                         }
                     }
@@ -3828,6 +3940,7 @@
                             thisHtml += '<td>' + $.getDate({date: typeClassificationArr[i].klrq, ute:true}) + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sendtohisResult == '1' ? '已同步' : '未同步') + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sfbz == false ? '未收费' : (typeClassificationArr[i].tbz ? '已退费' : '已收费')) + '</td>';
+                            thisHtml += '<td>' + (typeClassificationArr[i].je) + '</td>';
                         }
                         thisHtml +=  '<td>' + lasttdContent + '</td></tr>'
                         $newtableJymx.append(thisHtml);
@@ -3849,13 +3962,32 @@
                             continue;
                         }
                         else {
+                            let JeArray = {};
+                            itemsMxArr.forEach(JeItems => { if (!JeArray[JeItems.cfId]) JeArray[JeItems.cfId] = []; JeArray[JeItems.cfId].push(JeItems); });
+                            var JeArrays = new Array();
+
+                            for (const groupKey in JeArray) {
+                                if (JeArray.hasOwnProperty(groupKey)) {
+                                    const itemArray = JeArray[groupKey];
+                                    for (const items in itemArray) {
+                                        const itemsDetails = itemArray[items];
+                                        if (itemsMxArr[i].cfId == itemsDetails.cfId)
+                                            JeArrays = itemArray; break;
+                                    }
+                                    if (JeArrays.length > 0) break;
+                                }
+                            }
+
+                            let toJe = "";
+                            if (JeArrays.length > 0) toJe = JeArrays.reduce((prev, items) => { return prev += items.dj }, 0).toFixed(2);
                             //3.3.2 若不存在，则push
                             typeClassificationArr.push({ cfId: itemsMxArr[i].cfId
-                                     ,cfh: itemsMxArr[i].cfh
+                                ,cfh: itemsMxArr[i].cfh
                                 ,klrq: itemsMxArr[i].klrq
                                 ,sfbz: itemsMxArr[i].sfbz
                                 , sendtohisResult: itemsMxArr[i].sendtohisResult
                                 , tbz: itemsMxArr[i].tbz
+                                , je: toJe
                             });
                         }
                     }
@@ -3884,6 +4016,7 @@
                             thisHtml += '<td>' + $.getDate({date: typeClassificationArr[i].klrq, ute:true}) + '</td>';
                             thisHtml += '<td>' + (typeClassificationArr[i].sendtohisResult == '1' ? '已同步' : '未同步') + '</td>';
                             thisHtml += '<td>' + ((typeClassificationArr[i].sfbz == false) ? '未收费' : (typeClassificationArr[i].tbz ? '已退费' : '已收费')) + '</td>';
+                            thisHtml += '<td>' + (typeClassificationArr[i].je) + '</td>';
                         }
                         thisHtml +=  '<td>' + lasttdContent + '</td></tr>'
                         $newtableJcmx.append(thisHtml);
@@ -3891,7 +4024,7 @@
                     //对整个类型的处方操作    暂无
 				}
 				// 3.1.2找到key是否为电子处方
-                if (itemsKey == "dzcf") {
+                @*if (itemsKey == "dzcf") {
 					$newtableDzCfMx.html('');   //先清空html
 					var typeClassificationArr = new Array();
 					//console.log("电子处方数据：", itemsMxArr);
@@ -3974,7 +4107,7 @@
 						$newtableDzCfMx.append(thisHtml);
                     }
                     //对整个类型的处方操作    暂无
-                }
+                }*@
             })
         }
     }
@@ -4383,11 +4516,17 @@
         var rpturl = "";
 
         var title = $(this).attr('title');
+        if (title==="打印输液单") {
+            //rpturl = '@Html.Raw(mzzszPrinturl)';
+            rpturl = '@Html.Raw(reportUrl)'+"?tempCode=1294&orgId="+'@curOpr.OrganizeId';
+        }
         if (title==="打印注射单") {
-             rpturl = '@Html.Raw(mzzszPrinturl)';
+            //rpturl = '@Html.Raw(mzzszPrinturl)';
+            rpturl = '@Html.Raw(reportUrl)'+"?tempCode=1308&orgId="+'@curOpr.OrganizeId';
         }
         if (title==="打印雾化单") {
-            rpturl = '@Html.Raw(mzwhdPrinturl)';
+            //rpturl = '@Html.Raw(mzwhdPrinturl)';
+            rpturl = '@Html.Raw(reportUrl)'+"?tempCode=1309&orgId="+'@curOpr.OrganizeId';
         }
 
         if (title == "打印检查单" || title === "打印检验单")
@@ -4398,7 +4537,7 @@
                 data: { cfh: cfh },
                 success: function (resp) {
                     var aaa = resp.replace(/\+/g, '%2B');
-                    rpturl = rpturl+ "&systemCode=" + '@reportSystemCode' + "&barcode=" + aaa + "&mzh=" + mzh + "&cfId=" + cfId;
+                    rpturl = rpturl + "&barcode=" + aaa + "&mzh=" + mzh + "&cfId=" + cfId;
                     window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
                 }
             });
@@ -4406,18 +4545,18 @@
         if (title === "打印处方"||title === "打印检验处方"||title === "打印检查处方") {
             if (type == "zycf") {
 
-                rpturl = '@Html.Raw(reportUrl)'+"?tempCode=22&orgId="+'@curOpr.OrganizeId'+ "&systemCode=" + '@reportSystemCode';
+                rpturl = '@Html.Raw(reportUrl)'+"?tempCode=22&orgId="+'@curOpr.OrganizeId';
             }
             else if (type == "cgxmcf")
             {
-                rpturl = '@Html.Raw(reportUrl)'+"?tempCode=20&orgId="+'@curOpr.OrganizeId'+ "&systemCode=" + '@reportSystemCode';
+                rpturl = '@Html.Raw(reportUrl)'+"?tempCode=20&orgId="+'@curOpr.OrganizeId';
             }
             else {
-                rpturl = '@Html.Raw(reportUrl)'+"?tempCode=14&orgId="+'@curOpr.OrganizeId'+ "&systemCode=" + '@reportSystemCode';
+                 rpturl = '@Html.Raw(reportUrl)'+"?tempCode=14&orgId="+'@curOpr.OrganizeId';
             }
 		}
 		if (title === "打印电子处方") {
-		    rpturl = '@Html.Raw(reportUrl)'+"?tempCode=1220&orgId="+'@curOpr.OrganizeId'+ "&systemCode=" + '@reportSystemCode';
+			 rpturl = '@Html.Raw(reportUrl)'+"?tempCode=1220&orgId="+'@curOpr.OrganizeId';
 		}
         if (title !== "打印检验单" && title !== "打印检查单") {
             window.open(rpturl + "&mzh=" + mzh + "&cfId=" + cfId, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
@@ -4982,7 +5121,7 @@
             }
     }
     //打印病历
-    function newtouch_event_f9() {
+    function newtouch_event_f8() {
         var mzh = $('#mzh').text();
         if("@openblbookprint"=="true"){
             $.modalOpen({
@@ -4999,7 +5138,7 @@
             });
         }else{
 
-            window.open('@Html.Raw(reportUrl)' + "?tempCode=13&mzh=" + mzh + "&orgId=" + '@curOpr.OrganizeId'+ "&systemCode=" + '@reportSystemCode', "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+            window.open('@Html.Raw(reportUrl)' + "?tempCode=13&mzh=" + mzh + "&orgId=" + '@curOpr.OrganizeId', "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
         }
 
     }
@@ -5291,16 +5430,43 @@
         });
     });
     $('#btn_pacs').click(function () {
+        //var str = "http://40.21.114.251:8888/ReportList.aspx?hoscode=&patientid=&hispatientid=" + window.currPatientInfo.mzh + "&hissheetid=&name=" + window.currPatientInfo.xm + "&startdate=" + $.getDate() + "%00:00:00" + "&enddate=" + $.getTime() + "&sex=";
+        //    window.open(str, "_blank");
+        @*var exelink_pacs = "@exelink_pacs";
+        var obj = new ActiveXObject("wscript.shell");
+        obj.exec(exelink_pacs + " G_Hisapply.MenZhenNO="+$('#mzh').text());
+        obj = null;*@
+
+        //var str = "pacsInterFace://" + "G_Hisapply.MenZhenNO=" + $('#mzh').text();
+        //window.open(str, "_blank");
         //$.ajax({
         //    url: "http://127.0.0.1:12345/api/WQPACS/?mzh=" + "G_Hisapply.MenZhenNO=" + $('#mzh').text(),
         //    cache: false,
         //    });
 
         //金风易通 PACS 2024-4-28 chl
-        window.open("@pacsHost/doctor-api/api/viewer?type=2&pid=" + window.currPatientInfo.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+          $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/MedicalRecord/CountLISztmz",
+            data: { "jzId": currPatientInfo.jzId },
+            async: false,
+            success: function (data) {
+                var num = data.num;
+                if (num < 1) {
+                    $.modalAlert("当前没有已完成报告,不能查看", 'warning');
+                    return;
+                }
+                else {
+                    window.open("@pacsHost/doctor-api/api/viewer?type=2&pid=" + window.currPatientInfo.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+
+                }
+            }
+        });
+
+        @*window.open("@pacsHost/doctor-api/api/viewer?type=2&pid=" + window.currPatientInfo.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");*@
         //测试链接
         //window.open("@pacsHost/doctor-api/api/viewer?pid=1034097&areaCode=6d5752a7-234a-403e-aa1c-df8b45d3469f", "_blank");
-
 
     });
     //金风易通接口 直接根据患者信息查询报告 因此无需pacs报告列表
@@ -5315,9 +5481,27 @@
     //        btnclass: ['', 'btn btn-danger'],
     //    });
     //});
-    $('#btn_lis_report').click(function () {
+    $('#btn_lis_report').click(function(){
         //金风易通 LIS 2024-4-28 chl
-        window.open("@pacsHost/doctor-api/api/viewer?type=1&pid=" + window.currPatientInfo.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+              url: "/MedicalRecord/CountLISztmz",
+              data: { "jzId": currPatientInfo.jzId },
+            async: false,
+            success: function (data) {
+                var num = data.num;
+                if (num < 1) {
+                    $.modalAlert("当前没有已完成报告,不能查看", 'warning');
+                    return;
+                }
+                else {
+                    window.open("@pacsHost/doctor-api/api/viewer?type=1&pid=" + window.currPatientInfo.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+
+                }
+            }
+        });
+        @*window.open("@pacsHost/doctor-api/api/viewer?type=1&pid=" + window.currPatientInfo.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");*@
         //测试链接
         //window.open("@pacsHost/doctor-api/api/viewer?type=1&pid=JF566&areaCode=6d5752a7-234a-403e-aa1c-df8b45d3469f", "_blank");
 
@@ -5331,7 +5515,7 @@
                 height: "600px",
                 btn:['', '关闭'],
                 btnclass: ['', 'btn btn-danger'],
-            });            
+            });
         }
         else{
             //调阅打印LIS报告
@@ -5402,7 +5586,7 @@
     }
     //打印疾病证明
     function printzdzm() {
-        url =  '@Html.Raw(reportUrl)'+"?tempCode=26&orgId="+'@curOpr.OrganizeId'+ "&systemCode=" + '@reportSystemCode';
+        url =  '@Html.Raw(reportUrl)'+"?tempCode=26&orgId="+'@curOpr.OrganizeId';
         var uri;
         uri = url + "&mzh=" + $('#mzh').text()
         if (uri) {
@@ -6124,7 +6308,7 @@
                 window.currPatientInfo = null;
                 window.mrflag = 0;    //认为是第一次加载病历页，这样每次诊断，都会根据病人的jzId查出历史病历
                 window.currPatientInfo = ajaxresp;
-                ;
+                debugger;
                 //显示患者信息
                 showPatientBasicInfo();
                 //跳转到病历页

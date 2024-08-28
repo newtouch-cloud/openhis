@@ -67,7 +67,7 @@ left join [NewtouchHIS_Base].dbo.xt_zs  zs on ghzs.zsCode=zs.zsCode and ghzs.Org
 where 
 gh.zt=1 and gh.organizeId=@orgId and gh.ghzt<>'2'
 and jzbz=1  --待就诊
---and mjzbz=1  --专家门诊  < DELETE BY by haijiang.mo 这个参数限制了普通门诊才有叫号，急诊和专家门诊不显示了 >
+and mjzbz=1  --专家门诊
 and ghrq >=@ghrq+' 00:00:00' and ghrq<=@ghrq+' 23:59:59'
 --and ghrq >='2023-01-01 00:00:00' and ghrq<='2023-06-15 23:59:59'
 

@@ -83,6 +83,10 @@ namespace Newtouch.Domain.ValueObjects
         /// 药品开立库存来源 1:科室备药库存 2：药房库存
         /// </summary>
         public int? yply { get; set; }
+        public decimal? dj { get; set; }
+        public decimal? je { get; set; }
+        public int? sl { get; set; }
+        public int? Px { get; set; }
     }
 
     public class yzinfoVo
