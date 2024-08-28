@@ -48,6 +48,12 @@ namespace Newtouch.HIS.Domain.IRepository
         /// <param name="keyValue"></param>
         void SubmitForm(SysDepartmentEntity SysDepartmentEntity, string keyValue);
         /// <summary>
+        /// 更新科室医保上传状态
+        /// </summary>
+        /// <param name="uploadYB"></param>
+        /// <param name="id"></param>
+        void UpdateYbUpload(int uploadYB, string id);
+        /// <summary>
         /// 根据查询条件获取有效科室列表
         /// </summary>
         /// <param name="orgId"></param>

@@ -2457,11 +2457,22 @@ namespace NeiMengGuYiBaoApp.Controllers
             DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
 
             input3401.deptinfo = new Deptinfo3401();
-            input3401.deptinfo = Function.ToList<Deptinfo3401>(dtDiseinfo)[0];
+            List<Deptinfo3401> list = Function.ToList<Deptinfo3401>(dtDiseinfo);
+            input3401.deptinfo = list[0];
+            if (string.IsNullOrEmpty(input3401.deptinfo.dept_resper_name)) {
+                return YiBaoHelper.BuildReturnJson("-99", "该科室没有主任（系统人员选择该科室并且有联系方式）");
+            }
+            input3401.deptinfo.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"];;
+            input3401.deptinfo.dr_psncnt = 5;
+            input3401.deptinfo.phar_psncnt = 2;
+            input3401.deptinfo.nurs_psncnt = 4;
+            input3401.deptinfo.tecn_psncnt = 2;
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input3401, out output, post, out code);
-            
+            if (code == "0") {
+                ClassSqlHelper.Update3401(1, ks_codes);
+            }
             return json;
         }
         /// <summary>
@@ -2486,13 +2497,26 @@ namespace NeiMengGuYiBaoApp.Controllers
 
             List<Deptinfo3401> deptinfo3401List = new List<Deptinfo3401>{ };
             for (int i = 0; i < post3401A.ksCodes.LongCount(); i++) {
-                deptinfo3401List.Add(Function.ToList<Deptinfo3401>(dtDiseinfo)[i]);
+                Deptinfo3401 deptinfo3401 = Function.ToList<Deptinfo3401>(dtDiseinfo)[i];
+                if (string.IsNullOrEmpty(deptinfo3401.dept_resper_name))
+                {
+                    return YiBaoHelper.BuildReturnJson("-99", deptinfo3401.hosp_dept_codg + "科室没有主任（系统人员选择该科室并且有联系方式）");
+                }
+                deptinfo3401.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"]; ;
+                deptinfo3401.dr_psncnt = 5;
+                deptinfo3401.phar_psncnt = 2;
+                deptinfo3401.nurs_psncnt = 4;
+                deptinfo3401.tecn_psncnt = 2;
+                deptinfo3401List.Add(deptinfo3401);
             }
             input3401A.deptinfo = deptinfo3401List;
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input3401A, out output, post, out code);
-
+            if (code == "0")
+            {
+                ClassSqlHelper.Update3401(1, ks_codes);
+            }
             return json;
         }
         /// <summary>
@@ -2518,6 +2542,17 @@ namespace NeiMengGuYiBaoApp.Controllers
 
             input3402.deptinfo = new Deptinfo3402();
             input3402.deptinfo = Function.ToList<Deptinfo3402>(dtDiseinfo)[0];
+            if (string.IsNullOrEmpty(input3402.deptinfo.dept_resper_name))
+            {
+                return YiBaoHelper.BuildReturnJson("-99", "该科室没有主任（系统人员选择该科室并且有联系方式）");
+            }
+            input3402.deptinfo.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"]; ;
+            input3402.deptinfo.dr_psncnt = 5;
+            input3402.deptinfo.phar_psncnt = 2;
+            input3402.deptinfo.nurs_psncnt = 4;
+            input3402.deptinfo.tecn_psncnt = 2;
+
+
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input3402, out output, post, out code);
@@ -2550,7 +2585,10 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input3403, out output, post, out code);
-
+            if (code == "0")
+            {
+                ClassSqlHelper.Update3401(0, ks_codes);
+            }
             return json;
         }
         #endregion
