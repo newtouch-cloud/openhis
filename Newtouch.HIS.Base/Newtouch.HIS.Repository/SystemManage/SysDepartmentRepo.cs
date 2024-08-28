@@ -6,6 +6,7 @@ using Newtouch.Infrastructure;
 using System.Data.SqlClient;
 using Newtouch.Core.Common.Exceptions;
 using Newtouch.Common;
+using System.Security.Cryptography;
 
 namespace Newtouch.HIS.Repository
 {
@@ -122,6 +123,21 @@ namespace Newtouch.HIS.Repository
                 SysDepartmentEntity.Create(true);
                 this.Insert(SysDepartmentEntity);
             }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="uploadYB"></param>
+        /// <param name="id"></param>
+        public void UpdateYbUpload(int uploadYB, string id)
+        {
+            var sql = "select Code from Sys_Department with(nolock) where Id = @Id";
+            string code = this.FirstOrDefault<string>(sql, new[] { new SqlParameter("@Id", id)});
+            if (string.IsNullOrEmpty(code)) {
+                throw new FailedException("科室不存在");
+            }
+            var updateSql = "update Sys_Department set UploadYB = @uploadYB where Id = @Id";
+            this.ExecuteSqlCommand(updateSql, new[] { new SqlParameter("@Id", id), new SqlParameter("@uploadYB", uploadYB) });
         }
 
 
