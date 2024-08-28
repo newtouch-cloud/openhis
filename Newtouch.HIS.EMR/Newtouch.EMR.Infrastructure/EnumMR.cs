@@ -268,7 +268,7 @@ namespace Newtouch.EMR.Infrastructure.EnumMR
 	/// <summary>
 	/// 入院途径
 	/// </summary>
-	public enum EnumMrRYTJ
+	public enum EnumRYTJ
 	{
 		/// <summary>
 		/// 门诊

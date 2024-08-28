@@ -1087,8 +1087,8 @@ order by SSOrder ";
             }
             if (!string.IsNullOrWhiteSpace(vo.RYTJ))
             {
-                Dictionary<string, string> rytjdic = EFDBBaseFuncHelper.GetEnumDescription<EnumMrRYTJ>();
-                EnumMrRYTJ enumRytj = (EnumMrRYTJ)Enum.Parse(typeof(EnumMrRYTJ), vo.RYTJ.ToString());
+                Dictionary<string, string> rytjdic = EFDBBaseFuncHelper.GetEnumDescription<EnumRYTJ>();
+                EnumRYTJ enumRytj = (EnumRYTJ)Enum.Parse(typeof(EnumRYTJ), vo.RYTJ.ToString());
                 relEty.RYTJ = rytjdic[enumRytj.ToString()];
             }
             if (!string.IsNullOrWhiteSpace(vo.XB))
@@ -1439,7 +1439,7 @@ where a.organizeid=@orgId and a.zyh=@zyh";
         {
             try
             {
-                var sql = "select Value,CreateTime,LastModifyTime from [Newtouch_EMR].[dbo].[Sys_Config] nolock where Code=@Code and OrganizeId=@orgId";
+                var sql = "select Value,CreateTime,LastModifyTime from [Newtouch_EMR].[dbo].[Sys_Config] nolock where Code=@Code and OrganizeId=@orgId ";
                 return this.FindList<ButtonEnableVO>(sql, new SqlParameter[] {
                 new SqlParameter("@Code",Code),
                 new SqlParameter("@orgId", orgId)});

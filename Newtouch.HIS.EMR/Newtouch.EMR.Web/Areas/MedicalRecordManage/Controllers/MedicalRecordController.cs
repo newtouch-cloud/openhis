@@ -820,7 +820,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 				ViewBag.zyh = zyh;
 				ViewBag.mzh = mzh;
 				ViewBag.blxtmc_yj = blxtmc_yj;
-				ViewBag.ContentRenderMode = eng.Options.ContentRenderMode;
+                ViewBag.ContentRenderMode = eng.Options.ContentRenderMode;
 			}
 			else
 			{
@@ -835,8 +835,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 				ViewBag.mbqx = (int)EnummbqxFp.non;
 
 
-
-				string currentFileName = Server.MapPath(BlTemplatePath + "newFile.xml");
+                string currentFileName = Server.MapPath(BlTemplatePath + "newFile.xml");
 				string bllj = "";
 				blxtmc_yj = "";
 				// 加载文件
@@ -2504,6 +2503,138 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             //{
                 //return Error("修改锁定状态失败");只针对护理记录单
             //}
+        }
+
+
+        public ActionResult PrintView(string jzbl, string blid, string bllx, string blid2, string bllx2, string blxtmc_yj, string zyh, string message, string mzh = null)
+        {
+            WebWriterControlEngine eng;
+            if (jzbl != "" && jzbl != null)
+            {
+                if (engine == null)
+                {
+                    eng = GetControlEngine();
+                }
+                else
+                {
+                    eng = engine;
+                }
+                ViewBag.mbqx = (int)EnummbqxFp.edit;
+                string Getaddress = Server.MapPath("~/File/BackupsBL/" + zyh + "/" + blid + ".xml");
+                eng.LoadDocument(Getaddress, null);
+                eng.Options.ContentRenderMode = WebWriterControlRenderMode.PagePreviewHtml;
+                ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                eng.Dispose();
+                ViewBag.message = message;
+                ViewBag.blid = blid2;
+                ViewBag.bllx = bllx2;
+                ViewBag.zyh = zyh;
+                ViewBag.mzh = mzh;
+                ViewBag.blxtmc_yj = blxtmc_yj;
+                ViewBag.ContentRenderMode = eng.Options.ContentRenderMode;
+            }
+            else
+            {
+
+
+
+                //如果找不到加载的xml就默认为空白的xml
+                ViewBag.blid = blid;
+                ViewBag.bllx = bllx;
+                ViewBag.zyh = zyh;
+                ViewBag.mzh = mzh;
+                ViewBag.mbqx = (int)EnummbqxFp.non;
+
+
+                string currentFileName = Server.MapPath(BlTemplatePath + "newFile.xml");
+                string bllj = "";
+                blxtmc_yj = "";
+                // 加载文件
+                //WebWriterControlEngine eng ;
+                if (engine == null)
+                {
+                    eng = GetControlEngine();
+                }
+                else
+                {
+                    eng = engine;
+                }
+                medicalRecordVO mr = new medicalRecordVO();
+                if (!string.IsNullOrWhiteSpace(mzh))
+                {
+                    mr = _medicalRecordDmnService.GetMedicalRecordbyId(blid, bllx);
+                }
+                else
+                {
+                    mr = _medicalRecordDmnService.GetMedicalRecord(blid, bllx);
+                }
+                bllj = mr.blxtml;
+                blxtmc_yj = mr.blxtmc_yj;
+
+                ViewBag.mbqx = (int)EnummbqxFp.non;
+                var qx = _blmblbDmnService.Getqxkz(this.UserIdentity.StaffId, mr.mbbh, bllx);
+                if (qx != null && qx.Count > 0)
+                {
+                    ViewBag.mbqx = qx.FirstOrDefault().ctrlLevel;
+                }
+                if (string.IsNullOrWhiteSpace(mr.blxtmc_yj) && !string.IsNullOrWhiteSpace(mzh))
+                {
+                    blxtmc_yj = _mzmeddocsrelationRepo.FindEntity(p => p.blId == blid).blmc;
+                }
+                else if (string.IsNullOrWhiteSpace(mr.blxtmc_yj))
+                {
+                    blxtmc_yj = _ZymeddocsrelationRepo.FindEntity(p => p.blId == blid).blmc;
+                }
+
+                int isLock = Convert.ToInt32(mr.IsLock);
+                ViewBag.isLocker = "";
+                if (isLock == 1)
+                {
+                    if (mr.LastModifierCode != this.UserIdentity.UserCode)
+                    {
+                        ViewBag.isLocker = mr.LastModifierCode + "正在编辑中";
+                    }
+                    else
+                    {
+                        LockRecord(blid, bllx, 2);
+                    }
+                }
+                currentFileName = Server.MapPath(bllj + blxtmc_yj.Trim() + ".xml");
+                if (System.IO.File.Exists(currentFileName) == false)//如果不存在就打开默认模板
+                {
+                    currentFileName = Server.MapPath(BlTemplatePath + "newFile.xml");
+                }
+                // 加载模板
+                eng.LoadDocument(currentFileName, null);
+                eng.Options.ContentRenderMode = WebWriterControlRenderMode.PagePreviewHtml;
+
+                //string oldstr = "span style=&quot;color:black;font-size:9pt;background-color:white";
+                //string tip = "style=\"position:relative;left:4px;top:1px";
+                eng.Options.LogUserEditTrack = true;
+                eng.Options.CurrentUserID = this.UserIdentity.UserCode;
+                eng.Options.CurrentUserName = this.UserIdentity.UserName;
+                eng.Options.CurrentUserPermissionLevel = 0;
+                eng.Options.ClientMachineName = "123";
+                eng.Options.ExcludeLogicDeleted = true;
+                eng.DocumentOptions.SecurityOptions.EnablePermission = true;
+                eng.DocumentOptions.SecurityOptions.EnableLogicDelete = true;
+                eng.DocumentOptions.SecurityOptions.ShowLogicDeletedContent = false;
+                eng.DocumentOptions.SecurityOptions.ShowPermissionMark = false;
+                eng.DocumentOptions.SecurityOptions.ShowPermissionTip = false;
+                eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.DeleteLineNum = 2;
+                eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.DeleteLineColorString = "Black";
+                eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorString = "Yellow";
+                eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorNum = 2;
+                eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.BackgroundColorString = "LightGrey";
+                ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+
+                eng.Dispose();
+                ViewBag.isLock = isLock;
+                ViewBag.message = message;
+                ViewBag.blxtmc_yj = blxtmc_yj;
+                ViewBag.ContentRenderMode = eng.Options.ContentRenderMode;
+            }
+            return View();
         }
     }
 }

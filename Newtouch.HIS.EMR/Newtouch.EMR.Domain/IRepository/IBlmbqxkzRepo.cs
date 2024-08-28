@@ -25,13 +25,5 @@ namespace Newtouch.EMR.Domain.IRepository
         /// <param name="keyValue">主键值</param>
         void DeleteForm(string keyValue);
 
-
-        /// <summary>
-        /// 根据模板id 批量修改数据权限
-        /// </summary>
-        /// <param name="mbId">模板ID</param>
-        /// <param name="entity">数据权限包装实体</param>
-        void UpdateCtrlLevelByMbId(string mbId, BlmbqxkzEntity entity);
-
     }
 }

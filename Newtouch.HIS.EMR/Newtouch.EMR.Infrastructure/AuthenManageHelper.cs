@@ -16,8 +16,8 @@ namespace Newtouch.EMR.Infrastructure
 {
     public class AuthenManageHelper
     {
-        public readonly static string SiteTokenAPIHost = ConfigurationManager.AppSettings["SiteAuthCenterHost"];//token站点
-        public readonly static string SiteConmonAPIHost = ConfigurationManager.AppSettings["SiteApiManageHost"]; //api中心站点
+        public readonly static string SiteTokenAPIHost = ConfigurationManager.AppSettings["SiteTokenAPIHost"];//token站点
+        public readonly static string SiteConmonAPIHost = ConfigurationManager.AppSettings["SiteConmonAPIHost"]; //api中心站点
         public readonly static string appId = ConfigurationManager.AppSettings["AppId"];//api中心站点访问appid
         public readonly static string accessAppId = ConfigurationManager.AppSettings["Token_ApiManage"];//api中心站点访问appid
         //用户登陆缓存token
