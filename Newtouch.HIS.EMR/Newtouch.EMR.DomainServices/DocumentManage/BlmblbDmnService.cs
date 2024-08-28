@@ -137,11 +137,6 @@ namespace Newtouch.EMR.DomainServices
         public void TempCtrlAssigned(string list, string mbId, OperatorModel user)
         {
             var res = JsonConvert.DeserializeObject<IList<TemplateCtrlRequestDto>>(list);
-
-            BlmbqxkzEntity noPermissionEnt = new BlmbqxkzEntity();
-            noPermissionEnt.ctrlLevel = 0;
-            noPermissionEnt.ctrlLevelDesc = "未分配";
-            _BlmbqxkzRepo.UpdateCtrlLevelByMbId(mbId, noPermissionEnt);
             foreach (TemplateCtrlRequestDto item in res)
             {
                 BlmbqxkzEntity ety = new BlmbqxkzEntity();
@@ -163,8 +158,6 @@ namespace Newtouch.EMR.DomainServices
                 _BlmbqxkzRepo.SubmitForm(ety, item.gxId);
 
             }
-            // 其他角色没有分配权限，（取消权限情况下也未传入），同一修改权限为未分配
-            
         }
 
         public IList<BlmbListVO> GetBlmbList(Pagination pagination, string OrganizeId, string keyword)
