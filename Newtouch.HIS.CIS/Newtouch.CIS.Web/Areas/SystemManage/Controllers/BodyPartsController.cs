@@ -169,7 +169,7 @@ namespace Newtouch.CIS.Web.Areas.SystemManage.Controllers
             var data = _baseDataDmnService.GetYxBodyParts(this.OrganizeId);
             bwfl = bwfl ?? "";
             bwmc = bwmc ?? "";
-            if (!string.IsNullOrWhiteSpace(bwfl)) 
+            if (!string.IsNullOrWhiteSpace(bwfl))
                 data = data.Where(a => a.bwflmc.Contains(bwfl)).ToList();
 
             if (!string.IsNullOrWhiteSpace(bwmc))

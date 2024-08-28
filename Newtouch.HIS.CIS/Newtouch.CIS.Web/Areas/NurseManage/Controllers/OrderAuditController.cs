@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
+using System.Web.UI;
 using FrameworkBase.MultiOrg.Domain.IDomainServices;
 using FrameworkBase.MultiOrg.Domain.IRepository;
 using FrameworkBase.MultiOrg.Web;
@@ -18,141 +19,141 @@ using Newtouch.Tools;
 
 namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
 {
-	/// <summary>
-	/// 
-	/// </summary>
-	public class OrderAuditController : OrgControllerBase
-	{
-		private readonly IOrderAuditDmnService _OrderAuditDmnService;
-		private readonly ISysConfigRepo _sysConfigRepo;
-		private readonly ISysUserDmnService _sysUserDmnService;
-		private readonly IAllergyManageDmnService _allergyManageDmnService;
+    /// <summary>
+    /// 
+    /// </summary>
+    public class OrderAuditController : OrgControllerBase
+    {
+        private readonly IOrderAuditDmnService _OrderAuditDmnService;
+        private readonly ISysConfigRepo _sysConfigRepo;
+        private readonly ISysUserDmnService _sysUserDmnService;
+        private readonly IAllergyManageDmnService _allergyManageDmnService;
         private readonly ISysDepartmentRepo _sysDepartmentRepo;
         private string IsRehabAuthtoNurse;
-		private bool isNurse;
-		private bool isRehabDoctor;
+        private bool isNurse;
+        private bool isRehabDoctor;
 
-		public OrderAuditController(IOrderAuditDmnService OrderAuditDmnService)
-		{
-			this._OrderAuditDmnService = OrderAuditDmnService;
-			//IsRehabAuthtoNurse= _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
-			//isNurse = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "Nurse");
-			//isRehabDoctor = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "RehabDoctor");
-		}
-
-
-		// GET: NurseManage/OrderAudit
-		//public ActionResult Index()
-		//{
-		//    return View();
-		//}
-		public ActionResult GetGridJson(Pagination pagination, string patList, string organizeId)
-		{
-			IsRehabAuthtoNurse = _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
-			isNurse = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "Nurse");
-			isRehabDoctor = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "RehabDoctor");
-			IList<OrderAuditVO> list = new List<OrderAuditVO>();
-			if (!string.IsNullOrWhiteSpace(IsRehabAuthtoNurse) && IsRehabAuthtoNurse == "0")
-			{
-				if (isNurse && isRehabDoctor)
-				{
-					list = _OrderAuditDmnService.GetOrderAuditYZList(pagination, patList, OrganizeId);
-				}
-				else if (isRehabDoctor) //康复医嘱仅康复治疗师审核
-				{
-					list = _OrderAuditDmnService.GetOrderAuditYZList_KF(pagination, patList, OrganizeId, this.UserIdentity.DepartmentCode);
-				}
-				else if (isNurse)  //护士无授权则无法审核康复医嘱
-				{
-					list = _OrderAuditDmnService.GetOrderAuditYZList(pagination, patList, OrganizeId, IsRehabAuthtoNurse);
-				}
-			}
-			else
-			{
-				list = _OrderAuditDmnService.GetOrderAuditYZList(pagination, patList, OrganizeId);
-			}
-			var data = new
-			{
-				rows = list,
-				total = pagination.total,
-				page = pagination.page,
-				records = pagination.records,
-			};
-			return Content(data.ToJson());
-		}
+        public OrderAuditController(IOrderAuditDmnService OrderAuditDmnService)
+        {
+            this._OrderAuditDmnService = OrderAuditDmnService;
+            //IsRehabAuthtoNurse= _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
+            //isNurse = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "Nurse");
+            //isRehabDoctor = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "RehabDoctor");
+        }
 
 
-		public ActionResult submitOrderList(IList<OrderAuditVO> orderList)
-		{
-			//entity.zt = entity.zt == "true" ? "1" : "0";
-			OperatorModel user = this.UserIdentity;
-			string data = _OrderAuditDmnService.OrderAuditSubmit(user, orderList);
+        // GET: NurseManage/OrderAudit
+        //public ActionResult Index()
+        //{
+        //    return View();
+        //}
+        public ActionResult GetGridJson(Pagination pagination, string patList, string organizeId)
+        {
+            IsRehabAuthtoNurse = _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
+            isNurse = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "Nurse");
+            isRehabDoctor = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "RehabDoctor");
+            IList<OrderAuditVO> list = new List<OrderAuditVO>();
+            if (!string.IsNullOrWhiteSpace(IsRehabAuthtoNurse) && IsRehabAuthtoNurse == "0")
+            {
+                if (isNurse && isRehabDoctor)
+                {
+                    list = _OrderAuditDmnService.GetOrderAuditYZList(pagination, patList, OrganizeId);
+                }
+                else if (isRehabDoctor) //康复医嘱仅康复治疗师审核
+                {
+                    list = _OrderAuditDmnService.GetOrderAuditYZList_KF(pagination, patList, OrganizeId, this.UserIdentity.DepartmentCode);
+                }
+                else if (isNurse)  //护士无授权则无法审核康复医嘱
+                {
+                    list = _OrderAuditDmnService.GetOrderAuditYZList(pagination, patList, OrganizeId, IsRehabAuthtoNurse);
+                }
+            }
+            else
+            {
+                list = _OrderAuditDmnService.GetOrderAuditYZList(pagination, patList, OrganizeId);
+            }
+            var data = new
+            {
+                rows = list,
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records,
+            };
+            return Content(data.ToJson());
+        }
 
-			if (data == "")
-			{
-				return Success("审核成功");
-			}
-			else
-			{
-				return Success("", data);
-			}
 
-		}
+        public ActionResult submitOrderList(IList<OrderAuditVO> orderList)
+        {
+            //entity.zt = entity.zt == "true" ? "1" : "0";
+            OperatorModel user = this.UserIdentity;
+            string data = _OrderAuditDmnService.OrderAuditSubmit(user, orderList);
 
-		public ActionResult submitOrderListbyPat(string patList, int yzxz, IList<OrderAuditVO> orderList)
-		{
-			IsRehabAuthtoNurse = _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
-			isNurse = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "Nurse");
-			isRehabDoctor = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "RehabDoctor");
-			OperatorModel user = this.UserIdentity;
-			if (IsRehabAuthtoNurse != null && IsRehabAuthtoNurse == "0")
-			{
-				if (isNurse && isRehabDoctor)
-				{
-					_OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList);
-				}
-				else if (isRehabDoctor)
-				{
-					_OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList, IsRehabAuthtoNurse, true, this.UserIdentity.DepartmentCode);
-				}
-				else if (isNurse)
-				{
-					_OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList, IsRehabAuthtoNurse);
-				}
-			}
-			else
-			{
-				var data = _OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList);
-				if (data == "")
-				{
-					return Success("审核成功");
-				}
-				else
-				{
-					//data = data.Remove(data.Length - 1, 1);
-					return Success("", data);
-				}
-			}
-			return Success("审核成功");
-		}
+            if (data == "")
+            {
+                return Success("审核成功");
+            }
+            else
+            {
+                return Success("", data);
+            }
 
-		/// <summary>
-		/// 获取病区患者待审核医嘱树
-		/// </summary>
-		/// <param name="aa"></param>
-		/// <returns></returns>
-		[HandlerAjaxOnly]
-		public ActionResult GetPatWardTree(string aa)
-		{
-			IsRehabAuthtoNurse = _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
-			var medicalInsurance = _sysConfigRepo.GetValueByCode("medicalInsurance", this.OrganizeId);
-			string staffId = this.UserIdentity.StaffId;
-			var wardTree = _OrderAuditDmnService.GetWardTree(staffId);
-			IList<InpWardPatTreeVO> patTree = new List<InpWardPatTreeVO>();
-			if (medicalInsurance != "qinhuangdao")
-				patTree = _OrderAuditDmnService.GetPatTree(staffId);
-			else
-				patTree = _OrderAuditDmnService.GetPatTree(staffId, IsRehabAuthtoNurse);
+        }
+
+        public ActionResult submitOrderListbyPat(string patList, int yzxz, IList<OrderAuditVO> orderList)
+        {
+            IsRehabAuthtoNurse = _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
+            isNurse = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "Nurse");
+            isRehabDoctor = _sysUserDmnService.CheckStaffIsBelongDuty(UserIdentity.StaffId, "RehabDoctor");
+            OperatorModel user = this.UserIdentity;
+            if (IsRehabAuthtoNurse != null && IsRehabAuthtoNurse == "0")
+            {
+                if (isNurse && isRehabDoctor)
+                {
+                    _OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList);
+                }
+                else if (isRehabDoctor)
+                {
+                    _OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList, IsRehabAuthtoNurse, true, this.UserIdentity.DepartmentCode);
+                }
+                else if (isNurse)
+                {
+                    _OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList, IsRehabAuthtoNurse);
+                }
+            }
+            else
+            {
+                var data = _OrderAuditDmnService.OrderAuditSubmitbyPat(user, patList, yzxz, orderList);
+                if (data == "")
+                {
+                    return Success("审核成功");
+                }
+                else
+                {
+                    //data = data.Remove(data.Length - 1, 1);
+                    return Success("", data);
+                }
+            }
+            return Success("审核成功");
+        }
+
+        /// <summary>
+        /// 获取病区患者待审核医嘱树
+        /// </summary>
+        /// <param name="aa"></param>
+        /// <returns></returns>
+        [HandlerAjaxOnly]
+        public ActionResult GetPatWardTree(string aa)
+        {
+            IsRehabAuthtoNurse = _sysConfigRepo.GetValueByCode("IsRehabAuthtoNurse", this.OrganizeId);
+            var medicalInsurance = _sysConfigRepo.GetValueByCode("medicalInsurance", this.OrganizeId);
+            string staffId = this.UserIdentity.StaffId;
+            var wardTree = _OrderAuditDmnService.GetWardTree(staffId);
+            IList<InpWardPatTreeVO> patTree = new List<InpWardPatTreeVO>();
+            if (medicalInsurance != "qinhuangdao")
+                patTree = _OrderAuditDmnService.GetPatTree(staffId);
+            else
+                patTree = _OrderAuditDmnService.GetPatTree(staffId, IsRehabAuthtoNurse);
 
             string[] aasz = new string[200];
             if (aa != "")
@@ -161,185 +162,186 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             }
 
             var treeList = new List<TreeViewModel>();
-			foreach (InpWardPatTreeVO item in wardTree)
-			{
-				if (IsRehabAuthtoNurse == "0" && isNurse)
-				{
+            foreach (InpWardPatTreeVO item in wardTree)
+            {
+                if (IsRehabAuthtoNurse == "0" && isNurse)
+                {
 
-				}
-				var patInfo = patTree.Where(p => p.bqCode == item.bqCode).ToList();
-
-				foreach (InpWardPatTreeVO itempat in patInfo)
-				{
-					TreeViewModel treepat = new TreeViewModel();
-					treepat.id = itempat.zyh;
-					treepat.text = itempat.zyh + "-" + itempat.BedNo + "-" + itempat.hzxm;
-					treepat.value = itempat.zyh;
-					treepat.parentId = item.bqCode;
-					treepat.isexpand = false;
-					treepat.complete = true;
-					treepat.showcheck = true;
-					treepat.checkstate = 0;
-					treepat.hasChildren = false;
-					treepat.Ex1 = "c";
-					treeList.Add(treepat);
+                }
+                var patInfo = patTree.Where(p => p.bqCode == item.bqCode).ToList();
+                var NewPatInfo = patInfo.OrderBy(p => p.BedNo);
+                foreach (InpWardPatTreeVO itempat in NewPatInfo)
+                {  
+                    string gender = itempat.sex == "1" ? "男" : "女";
+                    TreeViewModel treepat = new TreeViewModel();
+                    treepat.id = itempat.zyh;
+                    //床号 + 姓名(住院天数)+住院号 + 年龄 +性别
+                    treepat.text = itempat.BedNo + "-" + itempat.hzxm + "(" + itempat.inHosDays + "天)" + "-" + itempat.zyh + "-" + itempat.nl + "岁-" + gender;
+                    treepat.value = itempat.zyh;
+                    treepat.parentId = item.bqCode;
+                    treepat.isexpand = false;
+                    treepat.complete = true;
+                    treepat.showcheck = true;
+                    treepat.checkstate = 0;
+                    treepat.hasChildren = false;
+                    treepat.Ex1 = "c";
+                    treeList.Add(treepat);
                     if (((IList)aasz).Contains(itempat.zyh))
                     {
                         treepat.checkstate = 1;
                     }
                 }
-                
+
 
                 TreeViewModel tree = new TreeViewModel();
-				bool hasChildren = patInfo.Count == 0 ? false : true;
-				tree.id = item.bqCode;
-				tree.text = item.bqmc;
-				tree.value = item.bqCode;
-				tree.parentId = null;
-				tree.isexpand = true;
-				tree.complete = true;
-				tree.showcheck = true;
-				tree.checkstate = 0;
-				tree.hasChildren = hasChildren;
-				tree.Ex1 = "p";
-				treeList.Add(tree);
-			}
-			return Content(treeList.TreeViewJson(null));
-		}
+                bool hasChildren = patInfo.Count == 0 ? false : true;
+                tree.id = item.bqCode;
+                tree.text = item.bqmc;
+                tree.value = item.bqCode;
+                tree.parentId = null;
+                tree.isexpand = true;
+                tree.complete = true;
+                tree.showcheck = true;
+                tree.checkstate = 0;
+                tree.hasChildren = hasChildren;
+                tree.Ex1 = "p";
+                treeList.Add(tree);
+            } 
+            return Content(treeList.TreeViewJson(null));
+        } 
+         
+        /// <summary>
+        /// 录入皮试结果
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult InputresultsSkintest()
+        {
+            return View();
+        }
+
+        //皮试页面树控件
+        public ActionResult SkintestTree(string keyword, string selectkey)
+        {
+            //IList<SkintestVO> patTree = new List<SkintestVO>();
+            //patTree = _OrderAuditDmnService.SkintestVO(this.OrganizeId);
+            var wardTree = _OrderAuditDmnService.SkintestVO(this.OrganizeId, keyword, selectkey);
+            var wardonly = wardTree.GroupBy(p => new { p.WardCode, p.bqmc }).Select(p => new { p.Key.WardCode, p.Key.bqmc });
 
 
-		/// <summary>
-		/// 录入皮试结果
-		/// </summary>
-		/// <returns></returns>
-		public ActionResult InputresultsSkintest()
-		{
-			return View();
-		}
+            var treeList = new List<TreeViewModel>();
+            foreach (var item in wardonly)
+            {
+                var patInfo = wardTree.Where(p => p.WardCode == item.WardCode).Where(p => p.zyh != "").Where(p => p.zyh != null).ToList();
 
-		//皮试页面树控件
-		public ActionResult SkintestTree(string keyword, string selectkey)
-		{
-			//IList<SkintestVO> patTree = new List<SkintestVO>();
-			//patTree = _OrderAuditDmnService.SkintestVO(this.OrganizeId);
-			var wardTree = _OrderAuditDmnService.SkintestVO(this.OrganizeId, keyword, selectkey);
-			var wardonly = wardTree.GroupBy(p => new { p.WardCode, p.bqmc }).Select(p => new { p.Key.WardCode, p.Key.bqmc });
+                foreach (SkintestVO itempat in patInfo)
+                {
+                    TreeViewModel treepat = new TreeViewModel();
+                    treepat.id = itempat.zyh;
+                    treepat.text = itempat.zyh + "-" + itempat.hzxm;
+                    treepat.value = itempat.zyh;
+                    treepat.parentId = item.WardCode;
+                    treepat.isexpand = false;
+                    treepat.complete = true;
+                    treepat.showcheck = true;
+                    treepat.checkstate = 0;
+                    treepat.hasChildren = false;
+                    treepat.Ex1 = "c";
+                    treeList.Add(treepat);
+                }
 
-
-			var treeList = new List<TreeViewModel>();
-			foreach (var item in wardonly)
-			{
-				var patInfo = wardTree.Where(p => p.WardCode == item.WardCode).Where(p => p.zyh != "").Where(p => p.zyh != null).ToList();
-
-				foreach (SkintestVO itempat in patInfo)
-				{
-					TreeViewModel treepat = new TreeViewModel();
-					treepat.id = itempat.zyh;
-					treepat.text = itempat.zyh + "-" + itempat.hzxm;
-					treepat.value = itempat.zyh;
-					treepat.parentId = item.WardCode;
-					treepat.isexpand = false;
-					treepat.complete = true;
-					treepat.showcheck = true;
-					treepat.checkstate = 0;
-					treepat.hasChildren = false;
-					treepat.Ex1 = "c";
-					treeList.Add(treepat);
-				}
-
-				TreeViewModel tree = new TreeViewModel();
-				bool hasChildren = patInfo.Count == 0 ? false : true;
-				tree.id = item.WardCode;
-				tree.text = item.bqmc;
-				tree.value = item.WardCode;
-				tree.parentId = null;
-				tree.isexpand = true;
-				tree.complete = true;
-				tree.showcheck = true;
-				tree.checkstate = 0;
-				tree.hasChildren = hasChildren;
-				tree.Ex1 = "p";
-				treeList.Add(tree);
-			}
-			var a = treeList.TreeViewJson(null);
-			return Content(treeList.TreeViewJson(null));
-		}
+                TreeViewModel tree = new TreeViewModel();
+                bool hasChildren = patInfo.Count == 0 ? false : true;
+                tree.id = item.WardCode;
+                tree.text = item.bqmc;
+                tree.value = item.WardCode;
+                tree.parentId = null;
+                tree.isexpand = true;
+                tree.complete = true;
+                tree.showcheck = true;
+                tree.checkstate = 0;
+                tree.hasChildren = hasChildren;
+                tree.Ex1 = "p";
+                treeList.Add(tree);
+            }
+            var a = treeList.TreeViewJson(null);
+            return Content(treeList.TreeViewJson(null));
+        }
 
 
 
-		public ActionResult Inputinformation(Pagination pagination, string patList, string organizeId, string selectkey)
-		{
+        public ActionResult Inputinformation(Pagination pagination, string patList, string organizeId, string selectkey)
+        {
 
-			IList<SkintestqueryVO> list = new List<SkintestqueryVO>();
+            IList<SkintestqueryVO> list = new List<SkintestqueryVO>();
 
-			list = _OrderAuditDmnService.Skintestquery(pagination, patList, OrganizeId, selectkey);
+            list = _OrderAuditDmnService.Skintestquery(pagination, patList, OrganizeId, selectkey);
 
-			var data = new
-			{
-				rows = list,
-				total = pagination.total,
-				page = pagination.page,
-				records = pagination.records,
-			};
-			return Content(data.ToJson());
-		}
+            var data = new
+            {
+                rows = list,
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records,
+            };
+            return Content(data.ToJson());
+        }
 
 
-		public ActionResult Inputskintestresults(IList<SkintestqueryVO> orderList)
-		{
-			//entity.zt = entity.zt == "true" ? "1" : "0";
-			OperatorModel user = this.UserIdentity;
-			_OrderAuditDmnService.Inputskintestresults(user, orderList);
-			return Success("皮试录入成功");
-		}
+        public ActionResult Inputskintestresults(IList<SkintestqueryVO> orderList)
+        {
+            //entity.zt = entity.zt == "true" ? "1" : "0";
+            OperatorModel user = this.UserIdentity;
+            _OrderAuditDmnService.Inputskintestresults(user, orderList);
+            return Success("皮试录入成功");
+        }
 
-		public ActionResult AuditTips()
-		{
+        public ActionResult AuditTips()
+        {
 
-			return View();
-		}
+            return View();
+        }
 
-		public ActionResult Displayinformation(string patList)
-		{
-			var data = _OrderAuditDmnService.Displayinformation(patList, this.OrganizeId);
-			return Content(data.ToJson());
-		}
+        public ActionResult Displayinformation(string patList)
+        {
+            var data = _OrderAuditDmnService.Displayinformation(patList, this.OrganizeId);
+            return Content(data.ToJson());
+        }
 
-		public ActionResult Inputresults()
-		{
+        public ActionResult Inputresults()
+        {
 
-			return View();
-		}
+            return View();
+        }
 
-		public ActionResult Enteragain(string zyh, string yzid, string lrjg, string yzlb)
-		{
-			OperatorModel user = this.UserIdentity;
-			var data = _OrderAuditDmnService.Enteragain(user, zyh, yzid, lrjg, yzlb);
-			return Success(data);
+        public ActionResult Enteragain(string zyh, string yzid, string lrjg, string yzlb)
+        {
+            OperatorModel user = this.UserIdentity;
+            var data = _OrderAuditDmnService.Enteragain(user, zyh, yzid, lrjg, yzlb);
+            return Success(data);
 
-		}
-		public ActionResult EnteragainMuti(string yzids, string lrjg)
-		{
-			OperatorModel user = this.UserIdentity;
-			string msg = _OrderAuditDmnService.Enteragain(user, yzids, lrjg);
-			if (!string.IsNullOrWhiteSpace(msg))
-			{
-				return Error(msg);
-			}
-			else
-			{
-				return Success("保存成功");
-			}
+        }
+        public ActionResult EnteragainMuti(string yzids, string lrjg)
+        {
+            OperatorModel user = this.UserIdentity;
+            string msg = _OrderAuditDmnService.Enteragain(user, yzids, lrjg);
+            if (!string.IsNullOrWhiteSpace(msg))
+            {
+                return Error(msg);
+            }
+            else
+            {
+                return Success("保存成功");
+            }
 
-		}
-		public ActionResult Drug_Inquiry()
-		{
-			return View();
-		}
+        }
+        public ActionResult Drug_Inquiry()
+        {
+            return View();
+        }
         public ActionResult Ward_Application()
         {
-			return View();
-		}
+            return View();
+        }
         /// <summary>
         /// 住院医嘱发药查询
         /// </summary>
@@ -368,9 +370,9 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
 
             return View();
         }
-        public ActionResult GetSkinTestInfoGridJson(Pagination pagination,  string zyh)
+        public ActionResult GetSkinTestInfoGridJson(Pagination pagination, string zyh)
         {
-            var tt = _OrderAuditDmnService.GetSkinTestInfoGridJson(pagination,zyh, OrganizeId);
+            var tt = _OrderAuditDmnService.GetSkinTestInfoGridJson(pagination, zyh, OrganizeId);
             var data = new
             {
                 rows = tt,
@@ -517,14 +519,15 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         /// </summary>
         /// <param name="djId"></param>
         /// <returns></returns>
-        public ActionResult BydjQueryKykc(string ypbm, string pc, string ph,string yfbm)
+        public ActionResult BydjQueryKykc(string ypbm, string pc, string ph, string yfbm)
         {
-            var result = new{
-               kysl=_OrderAuditDmnService.BydjQueryKykc(ypbm, pc,ph,yfbm, this.OrganizeId)
+            var result = new
+            {
+                kysl = _OrderAuditDmnService.BydjQueryKykc(ypbm, pc, ph, yfbm, this.OrganizeId)
             };
             return Content(result.ToJson());
         }
-        
+
         /// <summary>
         /// 主单据内容
         /// </summary>

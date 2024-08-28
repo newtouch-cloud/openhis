@@ -477,8 +477,8 @@ FROM(
                     var outParameter = new SqlParameter("@errmsg", System.Data.SqlDbType.VarChar, 300);
                     outParameter.Direction = System.Data.ParameterDirection.Output;
                     inParameters.Add(outParameter);
-
                     _databaseFactory.Get().Database.ExecuteSqlCommand("exec usp_zy_OrderExecution @yzxhlist,@lyxh,@zxrq,@czyh,@errmsg out ", inParameters.ToArray());
+                    
                     return outParameter.Value.ToString();
                 }
                 return "T|执行药品成功";
@@ -674,6 +674,7 @@ FROM(
                 string zyhs = "";
                 if (orderExeList.Count <= 0) return "T|执行项目成功";
                 var yzxhlist = string.Empty;
+                var yzxhlistbindfee = string.Empty;
                 var zyhArr = orderExeList.Select(p => p.zyh).Distinct().ToArray();
                 zyhs = string.Join(",", zyhArr);
                 if (yzxz != null)
@@ -733,7 +734,10 @@ FROM(
                         {
                             yzxhlist += item.yzid + ",";
                         }
-
+                        if (item.yzid!=null)
+                        {
+                            yzxhlistbindfee += item.yzid + ",";
+                        }
                     }
                     yzxhlist = yzxhlist.Trim(',');
                 }                
@@ -1331,5 +1335,9 @@ where zxjl.zt=1 and zxjl.zxzt='1' and zxjl.OrganizeId=@orgId and zxjl.zxrq>=@kss
             return QueryWithPage<JyjcExecVo>(sqlstr.ToString(), pagination, parm.ToArray());
         }
         #endregion
+        public void insertypjfb()
+        {
+
+        }
     }
 }

@@ -22,7 +22,7 @@
 </div>
 <script>
     var deldata = [];//删除对象
-
+    
     var ypyzflag = 0;
     var medicinelocaldata = new Array();
 
@@ -94,24 +94,41 @@
                                 fn: function (e) {
                                     var row = $(e.target).closest('tr.jqgrow');
                                     var rowid = row.attr('id');
+                                    debugger;
                                     MatchMZuhaoInfo(rowid, false);   //同一组号需匹配用法、频次、天数、截止日期
-
+                                    calMsl(rowid);
                                     var Id = $("#gridmedicine").getRowData(rowid).Id;
                                     var zh = $('#' + $($("#gridmedicine").getRowData(rowid).zh).attr('id')).val();
                                     var zhColor = getZhColor(zh);
-                                    $('#gridmedicine tr[id="' + rowid + '"]').css('border-left-color', zhColor);
-                                    $('#gridmedicine tr[id="' + rowid + '"]').css('border-left-style', 'solid');
-                                    $('#gridmedicine tr[id="' + rowid + '"]').css('border-left-width', '5px');
+                                    $("#" + rowid + "_zh").css('color', zhColor);
+                                }
+                            },{
+                                type: 'keydown',
+                                fn: function (e) {
+                                    if (e.keyCode == 13) {
+                                        var rowid = $(e.target).closest('tr.jqgrow').attr('id');
+                                        $("#" + rowid + "_xmmc").focus();
+                                    }
                                 }
                             }
                         ]
                     }, editable: true
                 },
                 {
-                    label: '<span class="required">*</span>名称', name: 'xmmc', width: 150, editwidth: '100%', align: 'center', editable: true
+                    label: '<span class="required">*</span>名称', name: 'xmmc', width: 150, editwidth: '100%', align: 'center', editable: true, editoptions: {
+                        dataEvents: [{
+                            type: 'keydown',
+                            fn: function (e) {
+                                if (e.keyCode == 13) {
+                                    var rowid = $(e.target).closest('tr.jqgrow').attr('id');
+                                    $("#" + rowid + "_ypjl").focus();
+                                }
+                            }
+                        }]
+                    }
                 },
                 {
-                    label: '<span class="required">*</span>开始时间', name: 'kssj', width: 140, editwidth: '100%',
+                    label: '<span class="required">*</span>开始时间', name: 'kssj', width: 160, editwidth: '100%',
                     align: 'center',
                     editable: true, unformat: pickDate, formatter: "date",
                     formatoptions: { srcformat: 'Y-m-d h:m:s', newformat: 'Y-m-d h:m:s' },
@@ -229,7 +246,16 @@
                 { label: 'yfmcval', name: 'yfmcval', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
                 { label: 'ypyfdm', name: 'ypyfdm', width: 75, editwidth: '100%', align: 'center', editable: true, hidden: true },
                 { label: '<span class="required">*</span>频次', name: 'pcmc', width: 55, editwidth: '100%', align: 'center', editable: true },
-                { label: '滴速<br>滴/分钟', name: 'ds', width: 55, editwidth: '100%', align: 'center', editable: true },
+                {
+                    label: '滴速<br>滴/分钟', name: 'ds', width: 55, editwidth: '100%', align: 'center',editable: true, edittype: "select", editoptions: {
+                        dataEvents: [
+                            {
+                                type: 'change',
+                                fn: function (e) { }
+                            }
+                        ]
+                    }
+                },
                 { label: 'pcCode', name: 'pcCode', editwidth: '100%', align: 'center', editable: true, hidden: true },
                 { label: '天数', name: 'ts', width: 45, editwidth: '100%', align: 'center', editable: true },
                 { label: '总量', name: 'sl', width: 45, editwidth: '100%', align: 'center', editable: true},
@@ -375,7 +401,7 @@
                     }
                 },
                { label: 'yply', name: 'yply', editwidth: '', align: 'center', editable: true, hidden: true },
-
+               { name: 'Px', hidden: true },
             ],
             editinputwidthborder: false,    //是否需要边框 默认为true
             editinputborderradius: false,   //是否需要边框圆角 默认true（有圆角）
@@ -425,9 +451,34 @@
                     onClickButton: function() {
                         newMPresData(null);
                     }
-            });
+                });
+        $("#gridmedicinePager_right").append('<div class=\"ckbox\" style=\"margin-top:2px;\"><span style="color:red;">药房：</span><select id="tip_yfly"></select></div>');
         $("#gridmedicinePager_right").append("<div class=\"ckbox\" style=\"margin-top:2px;\"><input id=\"chklsyz\" name=\"chklsyz\" type=\"checkbox\" ><label for=\"chklsyz\">临时医嘱</label></div>");
         $("#gridmedicinePager_right").append("<div class=\"ckbox\" style=\"margin-top:2px;\"><input id=\"chkkskc\" name=\"chkkskc\" type=\"checkbox\" ><label for=\"chkkskc\">科室库存</label></div>");
+        $("#tip_yfly").empty();
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/Prescription/GetYfData",
+            data: { },
+            async: false,
+            success: function (ret) {
+                var res=false;
+                var currYfdm = sessionStorage.getItem('currzyyf');
+                $.each(ret, function () {
+                    if((this.mzzybz=="2" && res==false && !currYfdm)||(currYfdm==this.yfbmCode && res==false)){
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "' selected>" + this.yfbmmc + "</option>";
+                        res=true;
+                    }
+                    else
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "'>" + this.yfbmmc + "</option>";
+                    $("#tip_yfly").append(option);
+                });
+            }
+        });
+        $("#tip_yfly").change(function(){
+            sessionStorage.setItem("currzyyf", $("#tip_yfly").val().split('|')[0]);
+        });
     }
 
     //启用行内编辑
@@ -640,6 +691,11 @@
         $("#" + rowid + "_dw").css('background-color', '#f6f7fb').attr('readonly', 'true');
         $("#" + rowid + "_yzzdmc").css('background-color', '#f6f7fb').attr('readonly', 'true');
         $("#" + rowid + "_pcmc").attr('readonly', 'true');
+
+        $("#" + rowid + "_pcmc").parent().next().children('select').html('');//控制滴速下拉列表
+        $("#" + rowid + "_pcmc").parent().next().children('select').append('<option value=""></option><option value="25">25</option><option value="30">30</option><option value="35">35</option><option value="40">40</option><option value="45">45</option><option value="50">50</option><option value="55">55</option><option value="60">60</option>');
+        $("#" + rowid + "_pcmc").parent().next().children('select').val("").trigger("change");//设置默认值为空
+
         $("#" + rowid + "_zxzqdw").parent().next().children('select').html('');
         $("#" + rowid + "_zxzqdw").parent().next().children('select').append('<option value="1">是</option><option value="0">否</option>');
         $("#" + rowid + "_kssReason").parent().next().children('select').html('');
@@ -712,10 +768,17 @@
                 showgg: true,
                 searchType:"yp.kc",
                 ajaxparameters: function ($thisinput) {
-                    var mzzybz= $("#chkkskc").is(":checked")==true?3:2;
-                    if(mzzybz==3)
-                        mzzybz=mzzybz+"|"+currentobj.zyh;
-                    return "mzzybz="+mzzybz+"&dllb=1&keyword=" + $.trim($thisinput.val()) + "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb ;
+                    var kszcbz=$("#chkkskc").is(":checked");
+                    var mzzybz=$('#tip_yfly option:selected').val().split('|')[1];
+                    if(kszcbz==true)
+                    {
+                        mzzybz="3"+"|"+currentobj.zyh;
+                    }
+                    else if($('#tip_yfly option:selected').val().split('|')[1]=="3")
+                    {
+                        mzzybz="2";
+                    }
+                    return "mzzybz="+mzzybz+"&dllb=1&keyword=" + $.trim($thisinput.val()) + "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb +"&ypyfbmCode="+$('#tip_yfly option:selected').val().split('|')[0];
                 },
 				itemdbclickhandler: function ($this) {
 
@@ -801,9 +864,13 @@
                     $("#" + rowid + "_zyzhxs").val($this.attr('data-cls'));
                     $("#" + rowid + "_kcsl").val($this.attr('data-kcsl'));
                     $("#" + rowid + "_zxksdm").val($this.attr('data-yfbmCode'));
-                    $("#" + rowid + "_qzfs").val($this.attr('data-zyqzlx') === "1" ?"day":"times");
-                    //$("#" + rowid + "_pcmc").val($this.attr('data-mrpcmc'));
-                    $("#" + rowid + "_pcCode").val($this.attr('data-mrpc'));
+                    $("#" + rowid + "_qzfs").val($this.attr('data-zyqzlx') === "1" ? "day" : "times");
+                    if ($("#" + rowid + "_pcmc").val() == null || $("#" + rowid + "_pcmc").val() =="") {
+                        $("#" + rowid + "_pcmc").val($this.attr('data-mrpcmc'));
+                    }
+                    if ($("#" + rowid + "_pcCode").val() == null || $("#" + rowid + "_pcCode").val()=="") {
+                        $("#" + rowid + "_pcCode").val($this.attr('data-mrpc'));
+                    }
                     $("#" + rowid + "_ypjl").val($this.attr('data-mrjl'));
                     $("#" + rowid + "_iskss").val($this.attr('data-iskss'));
                     $("#" + rowid + "_jlfwbegin").val($this.attr('data-jlfwbegin'));
@@ -1037,7 +1104,7 @@
         if (patobjValidate()) {
             ///复制上一次开立药品的开始时间
             var flag = false;
-            var kssj = $.getTime();
+            var kssj = $.getTime(); var zh = ""; 
             var rowIds = $gridmedicine.jqGrid('getDataIDs');
             if (rowIds == null || rowIds.length === 0) {
                 flag = true;
@@ -1045,6 +1112,9 @@
                 var lastRowId = rowIds[rowIds.length - 1];
                 if (lastRowId) {
                     kssj = $("#" + lastRowId + "_kssj").val();
+                }
+                if ($("#" + lastRowId + "_zh").val() != null && $("#" + lastRowId + "_zh").val() != undefined) {
+                    zh = $("#" + rowIds[rowIds.length - 1] + "_zh").val(); 
                 }
             }
             ///end zhaoyule
@@ -1055,7 +1125,8 @@
                 yzlx: @Html.Raw(((int)EnumYzlx.Yp).ToString()),//药品医嘱
                 yzzt: @Html.Raw(((int)EnumYzzt.Ds).ToString()),//默认未审
                 zyh: currentobj.zyh,
-                yzlb: $("#chklsyz").is(":checked") ? "临" :"长"
+                yzlb: $("#chklsyz").is(":checked") ? "临" : "长",
+                zh: zh 
             };
             if (flag || currentObj==null) {
                 $gridmedicine.jqGrid("addRowData", undefined, dataRow, "last");
@@ -1354,6 +1425,7 @@
 
     //保存按钮动作
     function SaveDoctorService(savetodb) {
+        debugger;
         if (yjjzhmsg)
         {
             $.modalAlert(yjjzhmsg, 'warning');
@@ -1392,11 +1464,12 @@
 
             var flag = false;
             var gridSimpleData = [];
+            var px=0;
             $.each(gridmedicineData, function () {    //去掉action
                 for (var i = 0; i < $(this).length; i++) {
                     delete $(this)[i].action;
                     $(this)[i].ysgh = '@ViewBag.ysgh';
-
+                    $(this)[i].Px=px+1; px++;
                     if (savetodb == '1') {
                         if (this.xmmc == undefined || this.xmmc == "") {
                             $.modalAlert("缺少项目", "warning");
@@ -1685,6 +1758,6 @@
         $("#" + rowid + "_dwwwwwww").parent().next().children('select').trigger("change");
     }
 
-    
+
 
 </script>

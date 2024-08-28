@@ -12,7 +12,6 @@
     var mzjzdPrinturl = SysConfigReader.OrgReportLink("jzdPrint");//就诊单
     var mzcgcfPrinturl = SysConfigReader.OrgReportLink("mzcgcfPrint");//门诊常规项目处方单
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
@@ -66,7 +65,7 @@
                             <input id="keyword" type="text" class="form-control">
                         </td>
                     </tr>
-                   
+
                 </tbody>
             </table>
         </div>
@@ -84,7 +83,7 @@
                 <td class="formValue" style="width:170px"><label id="sex"></label></td>
                 <td class="formTitle">年龄：</td>
                 <td class="formValue"><label id="nl"></label></td>
-                <td class="formTitle"> <input id="mzh"  hidden /></td>
+                <td class="formTitle"> <input id="mzh" hidden /></td>
                 <td class="formValue"></td>
                 <td class="formTitle"> </td>
                 <td class="formValue"></td>
@@ -135,7 +134,7 @@
                         <i class="fa fa-pencil-square-o"></i>病历打印
                     </a>
                     <a id="ExecutionChecked" class="btn btn-primary" onclick="ExecutionChecked()">
-                        <i class="fa fa-pencil-square-o"></i>打印
+                        <i class="fa fa-pencil-square-o"></i>处方笺打印
                     </a>
 
                 </td>
@@ -147,7 +146,7 @@
         </div>
     </div>
 </div>
-<script  type="text/javascript">
+<script type="text/javascript">
     $(".dv-body").height($(window).height());
     $(".dv-body").width($(window).width());
     var rightWidth = $(".Newtouch_iframe", parent.document).width() - $(".dv-left").width() - 35;
@@ -238,7 +237,8 @@
                 { label: 'blh', name: 'blh', align: 'center', hidden: true },
                 { label: '组号', name: 'zh', align: 'center', width: 50 },
                 { label: '开始时间', name: 'kssj', align: 'center', width: 120, formatter: function (val) { return $.getTime({ date: val }); } },
-                { label: '处方内容', name: 'cfmxnr', align: 'center', width: 230 },
+                { label: '处方内容', name: 'cfmxnr', align: 'left', width: 230 },
+                { label: '金额/元', name: 'je', align: 'right', width: 60 },
                 { label: '用法', name: 'ypyfmc', align: 'center', width: 60 },
                 { label: 'ypcode', name: 'ypcode', align: 'center', hidden: true },
                 { label: '开立医生', name: 'ysmc', align: 'center', width: 60 },
@@ -256,7 +256,11 @@
                     var len = 0;
                     var rowData = $("#gridList").jqGrid('getRowData', rowIndex);
                     var ids = $("#gridList").jqGrid('getRowData_AllLine');
-
+                    if (rowData.cfh == '总计') {
+                        $("#gridList").jqGrid("setSelection", rowIndex, false);
+                        checkTrigger = false;
+                        return;
+                    }
                     liststu = s; //同步状态
                     for (var i = 0; i < ids.length; i++) {
                         if ("xycf" == $('#cfdlb').val()) {
@@ -290,7 +294,6 @@
 			                    }
 		                    }
 	                    }
-                    	
                     }
                     checkTrigger = true;
                 }
@@ -302,13 +305,11 @@
                         {
                             j = j + 1;
                             $("#gridList").jqGrid("setSelection", list[j - 1], true);
-
                         }
                         else { //同组取消选中
                             //j = j + 1;
                             $("#gridList").jqGrid("setSelection", list[j], false);      //取消不触发onselectrow
                         }
-
                     }
                 }
 
@@ -335,40 +336,41 @@
         }
         var listarry = new Array();
         var mzh = "";
-        for (var i = 0; i < selRowIds.length; i++) {
-            var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
-            if (listarry.length==0) {
-                listarry.push(rowData.cfid);
-            } else {
-                //for (var k = 0; k < listarry.length; k++) {
-                    if (listarry.indexOf(rowData.cfid)==-1) {
+        for (var i = 0; i < selRowIds.length; i++) { 
+                var rowData = $("#gridList").jqGrid('getRowData', selRowIds[i]);
+                if (listarry.length == 0)
+                    listarry.push(rowData.cfid);
+                else {
+                    //for (var k = 0; k < listarry.length; k++) {
+                    if (listarry.indexOf(rowData.cfid) == -1 && rowData.cfid != "") {
                         listarry.push(rowData.cfid)
                     }
-               // }
+                    // }
             }
-            mzh = rowData.mzh;
+            if (rowData.cfh!="总计")  
+                mzh = rowData.mzh; 
         }
         //console.log(listarry);
         var rpturl = "";
         if (cfdlb == 'zscf') {
             rpturl = '@Html.Raw(mzzszPrinturl)';
         } else if (cfdlb == 'jycf' || cfdlb == 'jccf') {
-            rpturl = cfdlb == "jycf" ? '@Html.Raw(reportUrl)' + "?tempCode=24&systemCode=CIS&orgId=" + '@curOpr.OrganizeId' : '@Html.Raw(reportUrl)' + " ?tempCode = 23 & orgId=" + '@curOpr.OrganizeId';
+            rpturl = cfdlb == "jycf" ?  + "?tempCode=24&systemCode='CIS'& orgId="+'@curOpr.OrganizeId': '@Html.Raw(reportUrl)'+" ? tempCode = 23 & orgId="+'@curOpr.OrganizeId';
 
         } else if (cfdlb == 'zycf') {
-            rpturl = "?tempCode=22&orgId=" + '@curOpr.OrganizeId' + "&systemCode=" + '@reportSystemCode';
+            rpturl = "?tempCode=22&orgId="+'@curOpr.OrganizeId';
         } else if (cfdlb == 'cgcf') {
-            rpturl = '@Html.Raw(reportUrl)' + "?tempCode=20&orgId=" + '@curOpr.OrganizeId' + "&systemCode=" + '@reportSystemCode';
+            rpturl = '@Html.Raw(reportUrl)'+"?tempCode=20&orgId="+'@curOpr.OrganizeId';
         } else {
-            rpturl = '@Html.Raw(reportUrl)' + "?tempCode=14&orgId=" + '@curOpr.OrganizeId' + "&systemCode=" + '@reportSystemCode';
+            rpturl =  '@Html.Raw(reportUrl)'+"?tempCode=14&orgId="+'@curOpr.OrganizeId';
         }
-        for (var i = 0; i < listarry.length; i++) {
+        for (var i = 0; i < listarry.length; i++) { 
             if (cfdlb == 'jycf' || cfdlb == 'jccf') {
                 var cfid = listarry[i];
                 var aaa = "";
                 rpturl = rpturl + "&barcode=" + aaa + "&mzh=" + mzh + "&cfId=" + cfid;
                 window.open(rpturl, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
-              
+
             } else {
                 window.open(rpturl + "&mzh=" + mzh + "&cfId=" + listarry[i], "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
             }
@@ -381,7 +383,7 @@
             $.modalAlert("请选择病人！", "error");
             return;
         }
-        window.open('@Html.Raw(reportUrl)' + "?tempCode=13&mzh=" + mzh + "&systemCode=" + '@reportSystemCode' + "&orgId=" + '@curOpr.OrganizeId', "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
+        window.open('@Html.Raw(reportUrl)' + "?tempCode=13&mzh=" + mzh + "&orgId=" + '@curOpr.OrganizeId', "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
     }
-   
+
 </script>

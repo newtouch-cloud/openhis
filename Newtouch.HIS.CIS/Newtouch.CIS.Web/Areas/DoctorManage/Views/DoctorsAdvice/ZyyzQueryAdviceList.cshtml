@@ -10,13 +10,12 @@
     //获取打印处方配置
     var zycfdPrinturl = SysConfigReader.OrgReportLink("zycfdPrint");  //处方单
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 <style>
     /*已执行*/
     .orginal {
-        color: brown;
+        color: blue;
     }
     /*已审核*/
     .ysh {
@@ -87,7 +86,7 @@
     <table style="width:420px;height:20px; margin-top:10px;margin-left:10px; float:left; color:#274b6d">
         <tr>
             <td>
-                <label style="height:7px;width:25px;background-color:brown; border:1px solid #ddd"></label>
+                <label style="height:7px;width:25px;background-color:blue; border:1px solid #ddd"></label>
             </td>
             <td>执行长期/临时</td>
             <td>
@@ -134,6 +133,7 @@
             </table>
         </div>
     </div>
+    <input type="button" id="btn_BindingFee" style="position:relative;top:10px;" class="btn btn-primary" value="附属医嘱" onclick="BindingFee()" />
     @Html.Partial("_BottomButtonsYzPrintView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel()
 {
     ShowKeyList = new int[] { 2, 3,6, 8 },
@@ -144,7 +144,12 @@
     F8Text = "打印精麻"
 })
 </div>
-
+<div id="context-menu">
+    <ul class="dropdown-menu" role="menu" style="min-width: 115px;">
+        <li><a href="javascript:;" tabindex="-1" menuitem=1>附属医嘱</a></li>
+    </ul>
+</div>
+<script src="~/Content/js/bootstrap-contextmenu.min.js"></script>
 <script>
     var newlist = new Array();
     var last = "";//上一个组号
@@ -196,6 +201,128 @@
             $('#floadLisReportTree').show();
         }
     })
+    function BindingFee() {
+        var keyValue = $("#gridPatientList").jqGridRowValue().Id;
+        if (!!!keyValue) {
+            let res = confirm('未选择项目/药品，是否继续？');
+            if (res == true) {
+                $.modalOpen({
+                    id: "BindingFeeForm",
+                    title: "附属医嘱",
+                    url: "/NurseManage/OrderExecution/BindingFeeForm?zyh=" + currentobj.zyh + "&yzid=" + "",
+                    width: "1000px",
+                    height: "700px",
+                    btn: ['确认'],
+                    callBack: function (iframeId) {
+                        btn_search();
+                        //var Obj = top.frames[iframeId].submitForm();
+                        $.modalClose("BindingFeeForm");
+                    },
+                    cancelCallBack: function (iframeId) {
+                        btn_search();
+                        $.modalClose("BindingFeeForm");
+                    }
+                });
+            }
+            return;
+        }
+        else {
+            $.modalOpen({
+                id: "BindingFeeForm",
+                title: "附属医嘱",
+                url: "/NurseManage/OrderExecution/BindingFeeForm?zyh=" + currentobj.zyh + "&yzid=" + keyValue,
+                width: "1000px",
+                height: "700px",
+                btn: ['确认'],
+                callBack: function (iframeId) {
+                    btn_search();
+                    //var Obj = top.frames[iframeId].submitForm();
+                    $.modalClose("BindingFeeForm");
+                },
+                cancelCallBack: function (iframeId) {
+                    btn_search();
+                    $.modalClose("BindingFeeForm");
+                }
+            });
+        }
+    }
+    //删除并解绑医嘱
+    function DeleteBind(Id,yzlb) {
+        let res = confirm('是否作废/停止该医嘱？');
+        if (res == true) {
+            var yzxz = "2";
+            if (yzlb=="临") {
+                yzxz = "1";
+            }
+            $.ajax({
+                url: "/NurseManage/OrderExecution/DeleteBind",
+                data: { zyh: currentobj.zyh, yzid: Id, yzxz: yzxz },
+                dataType: "json",
+                type: "POST",
+                async: false,
+                success: function (data) {
+                    if (data != null && data.message != "") {
+                        $.modalAlert("作废/停止失败！" + data.message, 'warning');
+                        return;
+                    }
+                    else {
+                        $.modalAlert("作废/停止成功！", 'success');
+                        btn_search();
+                        return;
+                    }
+                }
+            });
+        }
+    }
+    $('#gridPatientList').contextmenu({
+        target: '#context-menu',
+        before: function (e, context) {
+            $('#gridPatientList').data("contextmenu-rowId", $(e.target).closest('tr').attr('id'));
+        },
+        onItem: function (context, e) {
+            var menuName = $(e.target).text();
+            var tt = $('#gridPatientList').jqGrid('getRowData', $('#gridPatientList').data('contextmenu-rowId'));
+            if (menuName == "附属医嘱") {
+                //if(tt.yzzt!="停止")
+                //{
+                //    $.modalAlert("非停止状态的医嘱不可新建", "warning");
+                //    return;
+                //}
+                @* $.modalConfirm("确认?", function (flag) {
+                    if (flag) {
+                        $.najax({
+                            url: "@Url.Action("RegistTzyz")",
+                            dataType: "json",
+                            data: { zyh: currentobj.zyh, yzId: tt.Id, yzlb: tt.yzlb },
+                            type: "POST",
+                            success: function () {
+                                $.loading(false);
+                                $.modalMsg("新建成功", 'success');
+                                btn_search();
+                            }
+                        });
+                    }
+                });*@
+                $.modalOpen({
+                    id: "BindingFeeForm",
+                    title: "附属医嘱",
+                    url: "/NurseManage/OrderExecution/BindingFeeForm?zyh=" + currentobj.zyh + "&yzid=" + tt.Id,
+                    width: "1000px",
+                    height: "700px",
+                    btn: ['确认'],
+                    callBack: function (iframeId) {
+                        btn_search();
+                        //var Obj = top.frames[iframeId].submitForm();
+                        $.modalClose("BindingFeeForm");
+                    },
+                    cancelCallBack: function (iframeId) {
+                        btn_search();
+                        $.modalClose("BindingFeeForm");
+                    }
+                });
+            }
+        }
+    });
 
     function gridPatientList() {
         $('#gridPatientList').dataGrid({
@@ -204,7 +331,8 @@
             postData: getSearchPostData(),
             unwritten: false,
             pager: '#gridPatPager',
-            sortname: 'zh,yzlb,yzlx,kssj desc',
+            //sortname: 'zh,yzlb,yzlx,kssj desc',
+            sortname: 'yzlx,kssj desc,zh,Px',
             rownumbers: true,
             rowNum: 100, //每页显示记录数
             colModel: [
@@ -217,7 +345,20 @@
                 },
                 { label: '开始时间', name: 'kssj', align: 'center', width: 130, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
                 { label: '医生', name: 'ysmc', align: 'center', width: 40 },
-                { label: '医嘱', name: 'yznr', align: 'center', width: 230},
+                {
+                    label: '附属医嘱', name: 'isfsyz', align: 'center', width: 60, formatter: function (val, option, row) {
+                        if (row.isfsyz != null && row.isfsyz != "") {
+                            return " <label style='color:red'>(附属医嘱)</label>";
+                        }
+                        else {
+                            return "";
+                        }
+                    }
+                },
+                { label: '医嘱', name: 'yzmc', align: 'center', width: 180},
+                { label: '剂量', name: 'yzjl', align: 'center', width: 30 },
+                { label: '用法', name: 'yfmc', align: 'center', width: 30 },
+                { label: '频次', name: 'yzpcmc', align: 'center', width: 30 },
                 {label: '同组', name: 'zh', align: 'center', width: 30},
                 {
                     label: '停止时间', name: 'tzsj', align: 'center', width: 110, formatter: "date",
@@ -230,74 +371,94 @@
                 { label: 'iszt', name: 'iszt', align: 'center', hidden: true },
                 { label: 'yfztbs', name: 'yfztbs', align: 'center', hidden: true },
                 { label: '精麻', name: 'yztagName', align: 'center', width: 30 },
+                {
+                    label: '药品总量', name: 'zycldw', align: 'center', width: 50
+                },
                 { label: '计费', name: 'isjf', align: 'center', width: 30,formatter:function(val){
                     return $.enum.getDescByValue("EnumSF", val);
-                } },
-                {
+                    } 
+                 },
+                 {
+                     label: '皮试', name: 'ispscs', align: 'center', width: 30, formatter: function (val) {
+                         return $.enum.getDescByValue("EnumSF", val);
+                     }
+                 },
+                 { label: '转自费', name: 'zzfbz', align: 'center', width: 40,formatter:function(val){
+                      return $.enum.getDescByValue("EnumSF", val);
+                      }
+                 },
+                 { label: '最后执行时间', name: 'zxsj', align: 'center', width: 110, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+                 {
                     label: '状态', name: 'yzzt', align: 'center', width: 40, formatter: function (val, options, rowObject) {
                         if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.DC).ToString())) {//DC状态
                             //有执行时间，取已执行状态，有审核时间，取已审核状态
                             if (rowObject["zxsj"] !== typeof (undefined) && rowObject["zxsj"] !== "") {
-                            return "执行";
-                        } else {
-                            return "审核";
+                              return "执行";
+                            } else {
+                                return "审核";
+                            }
+                        } else if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.TZ).ToString())) {
+                            if (rowObject["yzlb"] == "长") {
+                                return "停止";
+                            } else {
+                                return "作废";
+                            }
                         }
-                    } else if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.TZ).ToString())) {
-                        if (rowObject["yzlb"] == "长") {
-                            return "停止";
-                        } else {
-                            return "作废";
-                        }
+                        return $.enum.getDescByValue("EnumYzzt", val)
                     }
-        return $.enum.getDescByValue("EnumYzzt", val)
-    }
-    },
-    {
-        label: '操作', name: 'cz', align: 'center', width: 70, title: false
-    }],
+                 },
+                { label: '操作', name: 'cz', align: 'center', width: 70, title: false , formatter: function (val, option, row) {
+                        if (row.isfsyz != null && row.isfsyz != "") {
+                            return "<span style='color:red' onclick='DeleteBind(\"" + row.Id + "\",\"" + row.yzlb +"\")' title='作废停止' >作废停止</span>";
+                        }
+                        else {
+                            return "";
+                        }
+                       }
+                 }],
 
-    gridComplete: function () {
-        var ids = $("#gridPatientList").jqGrid('getDataIDs');
-        for (i = 0; i < ids.length; i++) {
-            var rowData = $("#gridPatientList").jqGrid('getRowData', ids[i]);
-            if (rowData.yzzt == "执行") {
-                $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('orginal');
-            } else
-                if (rowData.yzzt == "待审" || rowData.yzzt == "审核") {
-                    $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('ysh');
-                } else
-                    if (rowData.yzzt == "停止") {
-                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('grey');
-                    } else if (rowData.yzzt == "作废") {
-                        $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('red');
+                gridComplete: function () {
+                    var ids = $("#gridPatientList").jqGrid('getDataIDs');
+                    for (i = 0; i < ids.length; i++) {
+                        var rowData = $("#gridPatientList").jqGrid('getRowData', ids[i]);
+                        if (rowData.yzzt == "执行") {
+                            $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('orginal');
+                        } else
+                            if (rowData.yzzt == "待审" || rowData.yzzt == "审核") {
+                                $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('ysh');
+                            } else
+                                if (rowData.yzzt == "停止") {
+                                    $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('grey');
+                                } else if (rowData.yzzt == "作废") {
+                                    $('#gridPatientList tr[id="' + ids[i] + '"]').addClass('red');
+                                }
+                        //组号生成特殊符号
+                        var returnval = "";
+                        if (rowData.zh != typeof (undefined) && rowData.zh !== "" && rowData.zh !== null) {
+                            if (last == rowData.zh) {
+                                returnval = "中间";
+                                if (i == (ids.length-1)) {//最后一个
+                                    returnval = "结束";
+                                    last = "";
+                                }
+                            } else if (last !== rowData.zh) {
+                                if (last !== "") {
+                                    setlastrowzuhao(ids[i]);
+                                }
+                                returnval = "开始";
+                            }
+                            $("#gridPatientList").setCell(ids[i], "zh", '<img src="../../../../Content/img/'+ returnval+'.png" />');//setCell 设置单元格样式 值 或属性
+                        } else if (last !== rowData.zh && last!=="") {
+                            setlastrowzuhao(ids[i]);
+                        }
+                        last = rowData.zh;
                     }
-            //组号生成特殊符号
-            var returnval = "";
-            if (rowData.zh != typeof (undefined) && rowData.zh !== "" && rowData.zh !== null) {
-                if (last == rowData.zh) {
-                    returnval = "中间";
-                    if (i == (ids.length-1)) {//最后一个
-                        returnval = "结束";
-                        last = "";
-                    }
-                } else if (last !== rowData.zh) {
-                    if (last !== "") {
-                        setlastrowzuhao(ids[i]);
-                    }
-                    returnval = "开始";
+                },
+                onSelectRow: function (rowid) {
+                    var obj = $("#gridPatientList").jqGrid('getRowData', rowid);
+                    onSelectyzobj(obj);
                 }
-                $("#gridPatientList").setCell(ids[i], "zh", '<img src="../../../../Content/img/'+ returnval+'.png" />');//setCell 设置单元格样式 值 或属性
-            } else if (last !== rowData.zh && last!=="") {
-                setlastrowzuhao(ids[i]);
-            }
-            last = rowData.zh;
-        }
-    },
-    onSelectRow: function (rowid) {
-        var obj = $("#gridPatientList").jqGrid('getRowData', rowid);
-        onSelectyzobj(obj);
-    }
-    });
+         });
     }
     //设置上一行组号
     function setlastrowzuhao(rowid) {
@@ -310,6 +471,7 @@
         currentyzobj.yztag = obj.yztag;//精麻医嘱
     }
     function getSearchPostData() {
+        $('#kssj').val($.getDate({ date: currentobj.ryrq }));
         var wsh = false;
         var dryz = false;
         var yzlb = "长临";
@@ -400,8 +562,9 @@
             //yzContinuePrint(zyh,"2",isSign);
         }
         else{
-            var uri = '@reportUrl' + "?tempCode=28" + "&systemCode=" + '@reportSystemCode'+"&zyh="+zyh+ "&orgId=" + '@curOpr.OrganizeId' + "&isSign=" + isSign;
-            window.open(uri);
+            top.top.$.Newtouchtab.addTabWithOutMenu({ name: zyh+"-长期医嘱", enName: "", url: "/SystemManage/YzPreView/YzPreView?zyh=" + zyh+ "&orgId="+'@curOpr.OrganizeId'+"&isSign="+isSign+"&yzlx="+"长期医嘱", AppId: "EMR" });
+            //var uri = '@reportUrl' + "?tempCode=28" +"&zyh="+zyh+ "&orgId=" + '@curOpr.OrganizeId' + "&isSign=" + isSign;
+            //window.open(uri);
             //window.open("/ReportManage/Report/PrintCqyzReport?zyh=" + zyh + "&isShowSign=" + isSign, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
         }
     }
@@ -417,8 +580,9 @@
             yzContinuePrint(zyh,"1",isSign);
         }
         else{
-            var uri = '@reportUrl' + "?tempCode=28" + "&systemCode=" + '@reportSystemCode'+"&zyh="+zyh+ "&orgId=" + '@curOpr.OrganizeId' + "&isSign=" + isSign;
-            window.open(uri);
+            top.top.$.Newtouchtab.addTabWithOutMenu({ name: zyh+"-临时医嘱", enName: "", url: "/SystemManage/YzPreView/YzPreView?zyh=" + zyh+ "&orgId="+'@curOpr.OrganizeId'+"&isSign="+isSign+"&yzlx="+"临时医嘱", AppId: "EMR" });
+            //var uri = '@reportUrl' + "?tempCode=28" +"&zyh="+zyh+ "&orgId=" + '@curOpr.OrganizeId' + "&isSign=" + isSign;
+            //window.open(uri);
             //window.open("/ReportManage/Report/PrintLsyzReport?zyh=" + zyh + "&isShowSign=" + isSign, "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
 
         }
@@ -457,7 +621,7 @@
             }
             var rpturl = '@Html.Raw(zycfdPrinturl)';
             //window.open(rpturl + "&zyh=" + currentobj.zyh + "&Id=" + currentyzobj.Id, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
-            window.open('@reportUrl' + "?tempCode=1280" + "&systemCode=" + '@reportSystemCode'+ "&zyh=" + currentobj.zyh +"&orgId=" + '@curOpr.OrganizeId' +"&Id=" + currentyzobj.Id, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+            window.open('@reportUrl' + "?tempCode=1300" + "&zyh=" + currentobj.zyh +"&orgId=" + '@curOpr.OrganizeId' +"&Id=" + currentyzobj.Id, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
         }
         else{
             $.modalAlert("请选中要打印的精麻医嘱", "warning");
@@ -482,7 +646,7 @@
         //    btnclass: ['', 'btn btn-danger'],
         //});
     })
-    $('#btn_lis_report').click(function () {
+    $('#btn_lis_report').click(function(){
         //金风易通 LIS 2024-4-28 chl
         window.open("@pacsHost/doctor-api/api/viewer?type=1&pid=" + currentobj.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
         //测试链接

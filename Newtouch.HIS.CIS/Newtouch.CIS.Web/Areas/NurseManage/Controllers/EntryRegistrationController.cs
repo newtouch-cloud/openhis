@@ -29,11 +29,12 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             return View();
         }
 
-        public ActionResult EntryAreaFrom(string ysgh,string ysmc,string zyh,string type)
+        public ActionResult EntryAreaFrom(string ysgh,string ysmc,string zyh,string type,string ryrq)
         {
             ViewBag.ysgh = ysgh;
             ViewBag.ysmc = ysmc;
             ViewBag.zyh = zyh;
+            ViewBag.ryrq = ryrq;
             ViewBag.type = type;
             return View();
         }
@@ -203,7 +204,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                         jzObj.xb = item.sexValue;
                         jzObj.blh = item.blh;
                         jzObj.xm = item.xm;
-                        jzObj.ryrq = item.ryrq == null ? "" : item.ryrq.ToString("yyyy-MM-dd").Substring(0, 10);
+                        jzObj.ryrq = item.ryrq == null ? "" : item.ryrq.ToString("yyyy-MM-dd HH:mm:ss");//.Substring(0, 10);
                         jzObj.brxzmc = item.brxzmc;
                         jzObj.nl = item.nl == null ? "" : item.nl;
                         jzObj.nlshow = item.nlshow == "0" ? "" : item.nlshow;

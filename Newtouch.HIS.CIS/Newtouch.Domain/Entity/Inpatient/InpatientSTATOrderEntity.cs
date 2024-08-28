@@ -317,5 +317,11 @@ namespace Newtouch.Domain.Entity
         /// 药品来源 1:科室库存 2：药房
         /// </summary>
         public int? yply { get; set; }
+        /// <summary>
+        /// 附属医嘱
+        /// </summary>
+        public string isfsyz { get; set; }
+
+        public int? Px { get; set; }
     }
 }
