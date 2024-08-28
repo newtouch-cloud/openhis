@@ -437,7 +437,7 @@ function initControl() {
             $.each(top.window.clients.sysDepartList, function (idx, val) {
                 if (((val.py && val.py.toLowerCase().indexOf(keyword) >= 0)
                     || (val.Name && val.Name.indexOf(keyword) >= 0)
-                    || keyword.trim() == "") && val.mzzybz == '2' && val.Code != 'KS17') {
+                    || keyword.trim() == "") && val.mzzybz != '1' && val.Code != 'KS17') {
                     resultObjArr.push(val);
                 }
             });
