@@ -62,11 +62,14 @@ namespace Newtouch.Repository.Inpatient
             pars.Add(new SqlParameter("@staffId", staffId));
 
             string sqlText = "select distinct a.zyh,a.hzxm,bq.bqCode,bq.bqmc " +
+                ", cw.BedNo,e.sex,CAST(FLOOR(DATEDIFF(DY, e.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl"+
+                ",CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, e.ryrq,GETDATE()) WHEN 0 THEN 1 else  DATEDIFF(DAY, e.ryrq,GETDATE())END ) inHosDays " +
                              "from[NewtouchHIS_Base].[dbo].[Sys_StaffWard] sw " +
                               "inner join[NewtouchHIS_Base].[dbo].[xt_bq] bq on sw.OrganizeId=bq.OrganizeId and sw.bqcode=bq.bqcode " +
                               "inner join Newtouch_CIS.dbo.zy_tyjl a on bq.OrganizeId= a.OrganizeId and bq.bqCode= a.WardCode " +
-                              "where " +
-                              "sw.OrganizeId=@orgId and sw.StaffId=@staffId";
+                              "inner join zy_brxxk e on e.zyh=a.zyh and e.organizeid=a.organizeid " +
+                              "left join zy_cwsyjlk cw with(nolock) on cw.zyh=a.zyh and cw.OrganizeId=a.OrganizeId " +
+                              "where sw.OrganizeId=@orgId and sw.StaffId=@staffId";
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 sqlText += " and (a.zyh like @keyword or a.hzxm like @keyword)";

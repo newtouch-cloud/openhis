@@ -34,7 +34,7 @@ namespace Newtouch.Domain.IDomainServices
         /// <param name="xm"></param>
         /// <param name="zybz">在院标志，多个用逗号分割</param>
         /// <returns></returns>
-        IList<InPatientPatientSearchVO> GetInPatSearchPaginationList(Pagination pagination, string orgId, string bq, string zyh, string xm, string bqCode,string zybz = null);
+        IList<InPatientPatientSearchVO> GetInPatSearchPaginationList(Pagination pagination, string orgId, string bq, string zyh, string xm, string ch, string bqCode,string zybz = null);
 
         /// <summary>
         /// 住院号、姓名、卡号获取病人基本信息 姓名，性别，年龄，病人性质、入院日期

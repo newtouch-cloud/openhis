@@ -486,18 +486,54 @@ WHERE cfmx.zt='1' AND cf.zt='1'
                         var jzxx = db.FindList<TreatmentEntity>(sql3, param3);
                         if (jzxx != null && jzxx.Count > 0)
                         {
-                            throw new FailedException("一个门诊号仅对应一个就诊记录");
-                        }
+                            //throw new FailedException("一个门诊号仅对应一个就诊记录");
+                            var dbJzEntity = jzxx.First();
+                            dbJzEntity.tizhong = jzObject.tizhong;
+                            dbJzEntity.tiwen = jzObject.tiwen;
+                            dbJzEntity.maibo = jzObject.maibo;
+                            //dbJzEntity.xueya = jzObject.xueya;
+                            dbJzEntity.shengao = jzObject.shengao;
+                            dbJzEntity.shousuoya = jzObject.shousuoya;
+                            dbJzEntity.shuzhangya = jzObject.shuzhangya;
+                            dbJzEntity.xuetangclfs = jzObject.xuetangclfs; //zhaoyule 增加血糖测量方式
+                            dbJzEntity.xuetang = jzObject.xuetang;
+                            dbJzEntity.zljssj = jzObject.zljssj;
+                            dbJzEntity.jzks = jzObject.jzks;
+                            dbJzEntity.jzys = jzObject.jzys;
+                            dbJzEntity.jzzt = jzObject.jzzt;
+                            dbJzEntity.jzysmc = jzObject.jzysmc;
+                            dbJzEntity.kh = jzObject.kh;
+                            dbJzEntity.ContactNum = jzObject.ContactNum;
+                            dbJzEntity.nlshow = jzObject.nlshow;
+                            dbJzEntity.huxi = jzObject.huxi;
+                            dbJzEntity.hy = jzObject.hy;
+                            dbJzEntity.cfzbz = jzObject.cfzbz;
+                            //1.2 修改就诊表
+                            dbJzEntity.Modify();
+                            db.Update(dbJzEntity);
+                            jzObject.jzId = dbJzEntity.jzId;
+                            //删除西医诊断
+                            db.Delete<WMDiagnosisEntity>(a => a.jzId == jzObject.jzId);
+                            //删除中医诊断
+                            db.Delete<TCMDiagnosisEntity>(a => a.jzId == jzObject.jzId);
 
-                        //1.1 新增就诊表
-                        jzObject.jzId = Guid.NewGuid().ToString();
-                        if (jzObject.zlkssj < new DateTime(1970, 01, 01))
+                            //查出来 就诊病历
+                            const string sql2 = @"SELECT TOP 1 * FROM dbo.xt_bl(NOLOCK) WHERE jzId=@jzId";
+                            blEntity = db.FirstOrDefault<MedicalRecordEntity>(sql2, new DbParameter[] { new SqlParameter("@jzId", jzObject.jzId) });
+
+                        }
+                        else
                         {
-                            jzObject.zlkssj = DateTime.Now; //诊疗开始时间    //防止页面上没传过来
-                        }
+                            //1.1 新增就诊表
+                            jzObject.jzId = Guid.NewGuid().ToString();
+                            if (jzObject.zlkssj < new DateTime(1970, 01, 01))
+                            {
+                                jzObject.zlkssj = DateTime.Now; //诊疗开始时间    //防止页面上没传过来
+                            }
 
-                        jzObject.Create();
-                        db.Insert(jzObject);
+                            jzObject.Create();
+                            db.Insert(jzObject);
+                        }
                     }
 
                     //insert 诊断
@@ -1050,7 +1086,7 @@ where zyzd.zdlx = 1 and jzId = @jzId and zyzd.zt = '1'", new[] { new SqlParamete
                             };
 
                             var cfmxList = _prescriptionDetailRepo.IQueryable(p => p.cfId == cf.cfId && p.zt == "1").ToList();
-                            var list = cfmxList.Select(cfmx => new TreamentItemVO { sfxm = cfmx.xmCode,sl=cfmx.sl, dczll = cfmx.mczll, zxcs = Convert.ToInt32(cfmx.sl), dw = cfmx.dw, zzfbz = cfmx.zzfbz, ztId = cfmx.ztId, ztmc = cfmx.ztmc, ztsl = cfmx.ztsl }).Where(p => p.sl > 0).ToList();
+                            var list = cfmxList.Select(cfmx => new TreamentItemVO { sfxm = cfmx.xmCode, dczll = cfmx.mczll, zxcs = Convert.ToInt32(cfmx.sl), dw = cfmx.dw, zzfbz = cfmx.zzfbz, ztId = cfmx.ztId, ztmc = cfmx.ztmc, ztsl = cfmx.ztsl }).Where(p => p.sl > 0).ToList();
                             dto.AddTreamentItems = list;
                             dtoList.Add(dto);
                             break;
@@ -1315,6 +1351,7 @@ where zyzd.zdlx = 1 and jzId = @jzId and zyzd.zt = '1'", new[] { new SqlParamete
                     UsageName = ypyfList.Where(a => a.yfCode == p.yfCode).Select(a => a.yfmc).FirstOrDefault(),   //用法名称
                     CardNo = jzObject.kh,
                     xm = jzObject.xm,
+                    xb = jzObject.xb,
                     nl = jzObject.csny.HasValue ? (int?)((DateTime.Now - jzObject.csny.Value).TotalDays / 365.25) : null,
                     brxzmc = jzObject.brxzmc,
                     ysmc = jzObject.jzysmc,
@@ -2692,10 +2729,10 @@ where  b.cflx='4' and a.mzh=@zymzh  and a.OrganizeId=@orgId and a.zt=1";
 stuff((select distinct ','+b.ztmc from zy_lsyz b
 where b.yzh=c.lissqdh and b.OrganizeId=c.OrganizeId
 for xml path('')),1,1,'') as ztmc,
-syncstatus,max(sqsj) sqsj  FROM (select distinct OrganizeId,hzxm xm,yzh lissqdh,sqdh,ztId,ztmc,
+syncstatus,max(sqsj) sqsj ,blh FROM (select distinct a.OrganizeId,hzxm xm,yzh lissqdh,sqdh,ztId,ztmc,
 case syncStatus when '0' then '已申请' when '1' then '已接收' when '2' then '已完成' else '待申请' end syncStatus
-,CONVERT(varchar(100), a.CreateTime, 20) sqsj,row_number() over(partition by a.ztmc order by a.CreateTime desc) rn  from zy_lsyz a
-where  yzlx='6' and a.zyh=@zymzh  and a.OrganizeId=@orgId and a.zt=1";
+,CONVERT(varchar(100), a.CreateTime, 20) sqsj,b.blh,row_number() over(partition by a.ztmc order by a.CreateTime desc) rn  from zy_lsyz a 
+left join  zy_brxxk b on a.zyh=b.zyh and a.organizeId=b.organizeId and a.zt=b.zt where  yzlx='6' and a.zyh=@zymzh  and a.OrganizeId=@orgId and a.zt=1";
                 if (!string.IsNullOrEmpty(ztmc))
                 {
                     sql += " and ztmc like @ztmc ";
@@ -2703,15 +2740,15 @@ where  yzlx='6' and a.zyh=@zymzh  and a.OrganizeId=@orgId and a.zt=1";
                 }
                 if (!string.IsNullOrEmpty(kssj))
                 {
-                    sql += " and CreateTime>=@kssj ";
+                    sql += " and a.CreateTime>=@kssj ";
                     par.Add(new SqlParameter("@kssj", kssj));
                 }
                 if (!string.IsNullOrEmpty(jssj))
                 {
-                    sql += " and CreateTime<=@jssj ";
+                    sql += " and a.CreateTime<=@jssj ";
                     par.Add(new SqlParameter("@jssj", jssj));
                 }
-                sql += ") c WHERE rn = 1 group by OrganizeId ,xm,lissqdh,sqdh,syncstatus order by sqsj desc";
+                sql += ") c WHERE rn = 1 group by OrganizeId ,xm,lissqdh,sqdh,syncstatus,blh order by sqsj desc";
             }
 
             par.Add(new SqlParameter("@zymzh", zymzh));
@@ -2969,12 +3006,15 @@ where  yzlx='7' and a.zyh=@zymzh  and a.OrganizeId=@orgId and a.zt=1";
         /// <returns></returns>
         public List<PrescriptionDetailVO> Getsfmbxm(string orgId, string sfmb, string sfmbmc)
         {
-            var sql = string.Format(@"select c.sfxmCode xmCode,c.sfxmmc xmmc,b.zll mczll,b.sl,c.dw,b.dj, 
-convert(decimal(18,2),b.sl*b.dj) je,b.bw,b.zxks,a.sfmbbh ztId,a.sfmbmc ztmc from [NewtouchHIS_Sett].[dbo].[xt_sfmb] a with(nolock) 
+            var sql = string.Format(@"select b.sfxm xmCode,isnull(c.sfxmmc,d.ypmc) xmmc,b.zll mczll,b.sl,c.dw,b.dj, 
+convert(decimal(18,2),b.sl*b.dj) je,b.bw,b.zxks,a.sfmbbh ztId,a.sfmbmc ztmc 
+from [NewtouchHIS_Sett].[dbo].[xt_sfmb] a with(nolock) 
 left join [NewtouchHIS_Sett].[dbo].[xt_sfmbxm] b with(nolock) 
-on a.sfmbbh=b.sfmbbh and b.zt='1' and a.OrganizeId=b.OrganizeId 
+	on a.sfmbbh=b.sfmbbh and b.zt='1' and a.OrganizeId=b.OrganizeId 
 left join NewtouchHIS_Base.[dbo].[xt_sfxm] c with(nolock) 
-on b.sfxm=c.sfxmCode and a.OrganizeId=c.OrganizeId and c.zt='1' 
+	on b.sfxm=c.sfxmCode and b.OrganizeId=c.OrganizeId and c.zt='1' 
+left join NewtouchHIS_Base.[dbo].[xt_yp] d with(nolock) 
+	on b.sfxm=d.ypCode and b.OrganizeId=d.OrganizeId and d.zt='1' 
 where a.sfmb=@sfmb and sfmbmc=@sfmbmc and a.OrganizeId=@orgId ");
 
             var par = new List<SqlParameter>();
@@ -3238,6 +3278,27 @@ WHERE zt = '1' and organizeId = @orgId and sfxmCode = @sfxmCode";
         }
 
 
+        /// <summary>
+        /// 根据挂号内码获取LIS/PACS报告完成数量
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="yzh"></param>
+        /// <returns></returns>
+        public int CountLISztmz(string orgId, string jzId)
+        {
+            string sql = @" 
+ select count(*)  from  [NewtouchHIS_Sett].dbo.mz_cf mzcf
+ left join [Newtouch_CIS].dbo.xt_cf xtcf
+ on mzcf.cfh=xtcf.cfh and mzcf.organizeId=xtcf.organizeId and mzcf.zt=xtcf.zt
+ where  jzId=@jzId
+ and mzcf.zt=1
+ and sqdzt=2";
+
+            var sqlpar = new List<SqlParameter>();
+            sqlpar.Add(new SqlParameter("@jzId", jzId));
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            return this.FirstOrDefault<int>(sql, sqlpar.ToArray());
+        }
 
     }
 }

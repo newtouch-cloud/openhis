@@ -30,6 +30,9 @@ namespace Newtouch.Domain.ValueObjects
         public string BedNo { get; set; }
         public string rqrq { get; set; }
         public string cqrq { get; set; }
-
+        public DateTime ryrq { get; set; }
+        public DateTime birth { get; set; }
+        public string inHosDays  { get; set; }
+        
     }
 }

@@ -239,5 +239,6 @@ namespace Newtouch.Domain.IDomainServices
 
         IList<MedicineInfoVO2> GetMedicineInfoList(Pagination pagination, string xmbm, string xmmc, string ck_kc, string orgId);
 
+        int CountLISztmz(string orgId, string jzId);
     }
 }

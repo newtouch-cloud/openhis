@@ -170,7 +170,7 @@ namespace Newtouch.Domain.DTO.InputDto.Inpatient
         /// 药品来源 1:科室库存 2药房
         /// </summary>
         public int? yply { get; set; }
-
+        public int? Px { get; set; }
     }
 
     public class DoctorServiceUIRequestDto : DoctorServiceRequestDto
@@ -306,5 +306,12 @@ namespace Newtouch.Domain.DTO.InputDto.Inpatient
     {
         public string sfmb { get; set; }
         public string sfmbmc { get; set; }
+    }
+
+    public class ypyfdataDto
+    {
+        public string yfbmCode { get; set; }
+        public string yfbmmc { get; set; }
+        public string mzzybz { get; set; }
     }
 }

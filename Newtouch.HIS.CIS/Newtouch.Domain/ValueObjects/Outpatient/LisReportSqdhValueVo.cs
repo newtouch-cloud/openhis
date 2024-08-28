@@ -23,6 +23,7 @@ namespace Newtouch.Domain.ValueObjects.Outpatient
         /// 申请状态 0:已申请 1:已接收 2:已完成
         /// </summary>
         public string syncStatus { get; set; }
+        public string blh { get; set; }
     }
 
     public class LisReportSqdyczValueVo

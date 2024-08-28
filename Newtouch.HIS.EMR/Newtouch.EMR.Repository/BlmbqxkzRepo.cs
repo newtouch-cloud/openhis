@@ -7,7 +7,6 @@ using System.Data.SqlClient;
 using System.Text;
 using FrameworkBase.MultiOrg.Infrastructure;
 using FrameworkBase.MultiOrg.Repository;
-using System.Linq;
 
 namespace Newtouch.EMR.Repository
 {
@@ -25,7 +24,7 @@ namespace Newtouch.EMR.Repository
         public BlmbqxkzRepo(IDefaultDatabaseFactory databaseFactory)
             : base(databaseFactory)
         {
-
+            
         }
 
         /// <summary>
@@ -71,26 +70,5 @@ namespace Newtouch.EMR.Repository
             this.Delete(p => p.Id == keyValue);
         }
 
-        public void UpdateCtrlLevelByMbId(string mbId, BlmbqxkzEntity entity)
-        {
-            if (entity == null )
-            {
-                return;
-            }
-
-            var list = this.IQueryable().Where(p => p.mbId == mbId).OrderBy(p => p.CreateTime).ToList();
-
-            foreach(var dbEntity in list)
-            {
-                if(dbEntity.dutyCode == "Doctor" || dbEntity.dutyCode == "Nurse")
-                {
-                    continue;
-                }
-
-                dbEntity.ctrlLevel = entity.ctrlLevel;
-                dbEntity.ctrlLevelDesc = entity.ctrlLevelDesc;
-                 this.Update(dbEntity);
-            }
-        }
     }
 }
