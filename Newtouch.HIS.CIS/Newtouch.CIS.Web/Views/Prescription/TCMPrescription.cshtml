@@ -353,8 +353,34 @@
                         }
                         newTCMPresData();
                     }
-            });
+                });
+        $("#tip_zyyfly").empty();
+        $("#gridzycfPager_right").append('<span style="color:red;">药房：</span><select id="tip_zyyfly"></select>');
         $("#gridzycfPager_right").append('<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option></select>');
+        
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/Prescription/GetYfData",
+            data: { },
+            async: false,
+            success: function (ret) {
+                var res=false;
+                var currYfdm = sessionStorage.getItem('curremzyf');
+                $.each(ret, function () {
+                    if((this.mzzybz=="1" && res==false && !currYfdm) ||(currYfdm==this.yfbmCode && res==false)){
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "' selected>" + this.yfbmmc + "</option>";
+                        res=true;
+                    }
+                    else
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "'>" + this.yfbmmc + "</option>";
+                    $("#tip_zyyfly").append(option);
+                });
+            }
+        });
+        $("#tip_zyyfly").change(function(){
+            sessionStorage.setItem("curremzyf", $("#tip_zyyfly").val().split('|')[0]);
+        });
     }
     function EnableTCMInlineEditBox(){
         var ids = $("#gridzycf").getDataIDs();
@@ -405,7 +431,10 @@
                 if (window.currPatientInfo.brxzCode != "" &&'@ViewBag.ControlbrxzCode'.indexOf(window.currPatientInfo.brxzCode) > -1) {
                     flag = true;
                 }
-                return "onlyybflag=" + flag + "&mzzybz=1&dllb=1&sfdllx=TCM&keyword=" + $.trim($thisinput.val());
+                var mzzybz=$('#tip_zyyfly option:selected').val().split('|')[1];
+                if(mzzybz=="3")
+                    mzzybz="1";
+                return "onlyybflag=" + flag + "&mzzybz="+mzzybz+"&dllb=1&sfdllx=TCM&keyword=" + $.trim($thisinput.val())+"&ypyfbmCode="+$('#tip_zyyfly option:selected').val().split('|')[0];
 			},
 			
 			itemdbclickhandler: function ($this) {

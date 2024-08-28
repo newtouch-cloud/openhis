@@ -101,29 +101,37 @@ namespace Newtouch.DomainServices
         /// <returns></returns>
         public IList<InpWardPatTreeVO> GetPatTree(string staffId)
         {
-            string sql = @"select a.OrganizeId, b.bqCode,c.bqmc,d.zyh,d.hzxm,cw.BedNo
+            string sql = @"select a.OrganizeId, b.bqCode,c.bqmc,d.zyh,d.hzxm,cw.BedNo,xx.sex,xx.ryrq,xx.birth,
+CAST(FLOOR(DATEDIFF(DY, xx.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl,
+CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, xx.ryrq,GETDATE()) WHEN 0 THEN 1 else  DATEDIFF(DAY, xx.ryrq,GETDATE())END ) inHosDays
                             from [NewtouchHIS_Base].[dbo].[V_C_Sys_UserStaff] a with(nolock),
 	                            [NewtouchHIS_Base].[dbo].[V_S_Sys_StaffWard] b with(nolock),
-	                            [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock),
-	                            [dbo].[zy_cqyz] d with(nolock) ,[dbo].[zy_cwsyjlk] cw with(nolock)
+	                            [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock),  
+	                            [dbo].[zy_cqyz] d with(nolock) ,[dbo].[zy_cwsyjlk] cw with(nolock),
+                                [Newtouch_CIS]..zy_brxxk xx with(nolock) 
                             where a.staffid=@staffId and a.zt=1 and b.zt=1 and c.zt=1 
                             and a.OrganizeId=b.organizeid and a.staffid=b.staffid
                             and b.OrganizeId=c.organizeid and b.bqcode=c.bqcode
                             and c.organizeid=cw.organizeid and d.zyh=cw.zyh and cw.zt='1'
                             and c.organizeid=d.organizeid and d.wardcode=c.bqcode and d.yzzt in(0,3)  and d.zt=1
-                            group by a.organizeid, a.userid,a.staffid,a.account,a.gh,a.name ,b.bqcode,c.bqmc,d.zyh,d.hzxm,cw.BedNo
+                            and xx.organizeid=cw.organizeid and xx.zyh=cw.zyh and xx.zt='1'
+                            group by a.organizeid, a.userid,a.staffid,a.account,a.gh,a.name ,b.bqcode,c.bqmc,d.zyh,d.hzxm,cw.BedNo,xx.sex,xx.ryrq,xx.birth
                             union
-                            select a.organizeid, b.bqcode,c.bqmc,e.zyh,e.hzxm ,cw.BedNo
+                            select a.organizeid, b.bqcode,c.bqmc,e.zyh,e.hzxm ,cw.BedNo,xx.sex,xx.ryrq,xx.birth,
+CAST(FLOOR(DATEDIFF(DY, xx.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl,
+CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, xx.ryrq,GETDATE()) WHEN 0 THEN 1 else  DATEDIFF(DAY, xx.ryrq,GETDATE())END ) inHosDays
                             from [NewtouchHIS_Base].[dbo].[V_C_Sys_UserStaff] a with(nolock),
 	                            [NewtouchHIS_Base].[dbo].[V_S_Sys_StaffWard] b with(nolock),
-	                            [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock),
-	                            [dbo].[zy_lsyz] e with(nolock) ,[dbo].[zy_cwsyjlk] cw with(nolock) 
+	                            [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock), 
+	                            [dbo].[zy_lsyz] e with(nolock) ,[dbo].[zy_cwsyjlk] cw with(nolock),
+                                [Newtouch_CIS]..zy_brxxk xx with(nolock)
                             where a.staffid=@staffId and a.zt=1 and b.zt=1 and c.zt=1 
                             and a.OrganizeId=b.organizeid and a.staffid=b.staffid
                             and b.OrganizeId=c.organizeid and b.bqcode=c.bqcode
                             and cw.organizeid=e.organizeid and e.zyh=cw.zyh and cw.zt='1'
                             and c.organizeid=e.organizeid and e.wardcode=c.bqcode and e.yzzt in(0,3) and e.zt=1
-                            group by a.organizeid, a.userid,a.staffid,a.account,a.gh,a.name ,b.bqcode,c.bqmc,e.zyh,e.hzxm, cw.BedNo";
+                            and xx.organizeid=cw.organizeid and xx.zyh=cw.zyh and xx.zt='1'
+                            group by a.organizeid, a.userid,a.staffid,a.account,a.gh,a.name ,b.bqcode,c.bqmc,e.zyh,e.hzxm, cw.BedNo,xx.sex,xx.ryrq,xx.birth";
             return this.FindList<InpWardPatTreeVO>(sql, new[] { new SqlParameter("@staffId", staffId) });
         }
         /// <summary>
@@ -152,13 +160,17 @@ namespace Newtouch.DomainServices
             {
                 strkfwhere = " and yzlx<>@yzlx ";
             }
-            string sql = @"select ttt.* from (
+            string sql = @"select iszt,zyh,max(yzid) yzid, yzxz,yzxzsm,max(kssj) kssj,xmmc,ypjl,yzmc,yzjl,yfmc,yzpcmc,max(tzsj) tzsj,tzysgh,tzr,Creator,zh,zh1,OrganizeId,yzzt,yzlx,hzxm,yztag,yztagName,isjf,ispscs,yzh
+,psjgms,psjg,yfztbs,yply,sum(dj) dj,sum(je) je,case when zh1 is null then  sum(sl) else 1 end sl,Px
+from (
 select iszt,a.zyh, a.id yzid,2 yzxz,'长期' yzxzsm,a.kssj,case when ztid is not null then ztmc else a.xmmc end xmmc,a.ypjl,
-(case when a.yzzt=3 then '[停]'+a.xmmc else a.xmmc end) as yzmc, CONCAT(CONVERT(float,ypjl),dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
+case when ztid is not null then (case when a.yzzt=3 then '[停]'+a.ztmc else a.ztmc end) else 
+	(case when a.yzzt=3 then '[停]'+a.yznr else a.yznr end) end as yzmc,  CONCAT(CONVERT(float,ypjl),a.dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
 a.tzsj,a.tzysgh,a.tzr ,b.Name Creator,a.zh,
 case when ztid is not null then yzh else '' end zh1,a.OrganizeId,yzzt,a.yzlx,a.hzxm,
 a.yztag,case a.yztag when 'JI' then '精I' when 'JII' then '精II' when 'MZ' then '麻醉' else a.yztag end yztagName,
-isnull(a.isjf,1) isjf,isnull(a.ispscs,'') ispscs,a.yzh,c.Remark psjgms,c.result psjg,yfztbs,yply
+isnull(a.isjf,1) isjf,isnull(a.ispscs,'') ispscs,a.yzh,c.Remark psjgms,c.result psjg,yfztbs,yply,isnull(isnull(yp.lsj,sfxm.dj),0) dj
+,isnull(isnull(yp.lsj*sl,sfxm.dj*sl),0) je,sl,case when ztid is not null then '1' else a.Px end Px
 from  (
 select 'N' iszt,1 num,*
 from [dbo].[zy_cqyz] a with(nolock) 
@@ -174,14 +186,18 @@ left join xt_gmxx c with(nolock) on a.id=c.yzid and c.zt='1'
 left join [NewtouchHIS_Base].[dbo].[Sys_Staff] b with(nolock) on c.CreatorCode=b.gh and c.OrganizeId=b.OrganizeId
 LEFT JOIN [NewtouchHIS_Base].[dbo].[xt_ypyf] ypyf on a.ypyfdm = ypyf.yfCode 
 LEFT JOIN [NewtouchHIS_Base].[dbo].[xt_yzpc] yzpc on a.pcCode = yzpc.yzpcCode and yzpc.OrganizeId=@orgId
-where num=1
+LEFT JOIN [NewtouchHIS_Base].[dbo].[xt_sfxm] sfxm on a.xmdm=sfxm.sfxmCode and a.OrganizeId=sfxm.OrganizeId
+LEFT JOIN  [NewtouchHIS_Base].[dbo].[xt_yp] yp on a.xmdm=yp.ypCode and a.OrganizeId=yp.OrganizeId
+--where num=1
 union all
 select iszt,a.zyh,a.id yzid,1 yzxz,'临时' yzxzsm,a.kssj,case when ztid is not null then ztmc else a.xmmc end xmmc,a.ypjl,
-(case when a.yzzt=3 then '[停]'+a.xmmc else a.xmmc end) as yzmc, CONCAT(CONVERT(float,ypjl),dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
+case when ztid is not null then (case when a.yzzt=3 then '[停]'+a.ztmc else a.ztmc end) else 
+	(case when a.yzzt=3 then '[停]'+a.yznr else a.yznr end) end as yzmc, CONCAT(CONVERT(float,ypjl),a.dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
 a.zfsj,a.zfysgh,a.zfr ,b.Name Creator,a.zh,
 case when ztId is not null then yzh else '' end zh1,a.OrganizeId,yzzt,a.yzlx,a.hzxm,
 a.yztag,case a.yztag when 'JI' then '精I' when 'JII' then '精II' when 'MZ' then '麻醉' else a.yztag end yztagName,
-isnull(a.isjf,1) isjf,a.ispscs,a.yzh,c.Remark psjgms,c.result psjg,yfztbs,yply
+isnull(a.isjf,1) isjf,a.ispscs,a.yzh,c.Remark psjgms,c.result psjg,yfztbs,yply,isnull(isnull(yp.lsj,sfxm.dj),0) dj
+,isnull(isnull(yp.lsj*sl,sfxm.dj*sl),0) je,sl,case when ztId is not null then '1' else a.Px end Px
 from (
 select 'N' iszt,1 num,*
 from [dbo].[zy_lsyz] a with(nolock) 
@@ -197,8 +213,12 @@ left join xt_gmxx c with(nolock) on a.id=c.yzid and c.zt='1'
 left join [NewtouchHIS_Base].[dbo].[Sys_Staff] b with(nolock) on c.CreatorCode=b.gh and c.OrganizeId=b.OrganizeId 
 LEFT JOIN [NewtouchHIS_Base].[dbo].[xt_ypyf] ypyf on a.ypyfdm = ypyf.yfCode 
 LEFT JOIN [NewtouchHIS_Base].[dbo].[xt_yzpc] yzpc on a.pcCode = yzpc.yzpcCode and yzpc.OrganizeId=@orgId
-where num=1
-) ttt where ttt.kssj < getDate()";
+LEFT JOIN [NewtouchHIS_Base].[dbo].[xt_sfxm] sfxm on a.xmdm=sfxm.sfxmCode and a.OrganizeId=sfxm.OrganizeId
+LEFT JOIN  [NewtouchHIS_Base].[dbo].[xt_yp] yp on a.xmdm=yp.ypCode and a.OrganizeId=yp.OrganizeId
+--where num=1
+) ttt where ttt.kssj < getDate()
+group by iszt,zyh, yzxz,yzxzsm,xmmc,ypjl,yzmc,yzjl,yfmc,yzpcmc,tzysgh,tzr,Creator,zh,zh1,OrganizeId,yzzt,yzlx,hzxm,yztag,yztagName,isjf,ispscs,yzh
+,psjgms,psjg,yfztbs,yply,Px";
 
             return this.QueryWithPage<OrderAuditVO>(sql, pagination, new[] {
                 new SqlParameter("@zyh", patList),

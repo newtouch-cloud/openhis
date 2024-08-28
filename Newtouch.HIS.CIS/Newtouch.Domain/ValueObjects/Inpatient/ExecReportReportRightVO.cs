@@ -32,5 +32,9 @@ namespace Newtouch.Domain.ValueObjects.Inpatient
         public string isjf { get; set; }
         public string zyh { get; set; }
 
+        public decimal? dj { get; set; }
+        public decimal? sl { get; set; }
+        public decimal? je { get; set; }
+
     }
 }

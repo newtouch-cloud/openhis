@@ -370,7 +370,32 @@
                         newTPresData(null);
                     }
                 });
+        $("#gridTakePager_right").append('<div class=\"ckbox\" style=\"margin-top:2px;\"><span style="color:red;">药房：</span><select id="tip_cydyyfly"></select></div>');
         $("#gridTakePager_right").append("<div class=\"ckbox\" style=\"margin-top:2px;\"><input id=\"chkTakelsyz\" name=\"chkTakelsyz\" type=\"checkbox\" checked=\"checked\" ><label for=\"chkTakelsyz\">临时医嘱</label></div>");
+        $("#tip_cydyyfly").empty();
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/Prescription/GetYfData",
+            data: { },
+            async: false,
+            success: function (ret) {
+                var res=false;
+                var currYfdm = sessionStorage.getItem('currzyyf');
+                $.each(ret, function () {
+                    if((this.mzzybz=="2" && res==false && !currYfdm)||(currYfdm==this.yfbmCode && res==false)){
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "' selected>" + this.yfbmmc + "</option>";
+                        res=true;
+                    }
+                    else
+                        var option = "<option value='" + this.yfbmCode +"|"+ this.mzzybz + "'>" + this.yfbmmc + "</option>";
+                    $("#tip_cydyyfly").append(option);
+                });
+            }
+        });
+        $("#tip_cydyyfly").change(function(){
+            sessionStorage.setItem("currzyyf", $("#tip_cydyyfly").val().split('|')[0]);
+        });
     }
 
     //启用行内编辑
@@ -493,7 +518,10 @@
                 showgg: true,
                 searchType: "yp.kc",
                 ajaxparameters: function ($thisinput) {
-                    return "mzzybz=2&dllb=1&keyword=" + $.trim($thisinput.val())+ "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb ;
+                    var mzzybz=$('#tip_cydyyfly option:selected').val().split('|')[1];
+                    if(mzzybz=="3")
+                        mzzybz="2";
+                    return "mzzybz="+mzzybz+"&dllb=1&keyword=" + $.trim($thisinput.val())+ "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb+"&ypyfbmCode="+$('#tip_cydyyfly option:selected').val().split('|')[0] ;
                 },
                 itemdbclickhandler: function ($this) {
                     if ($this.attr('data-kcsl') === "") {

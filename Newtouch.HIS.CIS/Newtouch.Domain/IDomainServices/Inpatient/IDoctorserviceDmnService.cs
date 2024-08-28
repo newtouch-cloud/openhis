@@ -201,5 +201,11 @@ namespace Newtouch.Domain.IDomainServices
         #endregion
         string GetmxbzdList(string orgId, string zdcode);
         string GetxzklsList(string orgId, YpxzkldataDTO Ypxzkldata);
+        string addcqyz(string zyh, string yzh, string zh, List<YzbindingfeeVo> ItemFeeVO,string OrganizeId,string usercode);
+        PatientMedicalDTO GetlsorcqyzData(string zyh, string yzid, string orgId);
+        string DeleteBind(string zyh, string yzid, string yzxz, string orgId);
+        int CountLISztzy(string orgId, string zyh);
+
+        List<ypyfdataDto> GetYfData (string orgId);
     }
 }

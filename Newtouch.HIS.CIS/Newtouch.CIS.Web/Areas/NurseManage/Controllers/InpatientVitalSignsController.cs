@@ -18,6 +18,7 @@ using System.Web.Mvc;
 using Newtouch.Common.Web;
 using Newtouch.Domain.ValueObjects;
 using Newtouch.Common;
+using Newtouch.Domain.ValueObjects.Inpatient;
 
 namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
 {
@@ -265,6 +266,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         /// <returns></returns>
         public ActionResult FullScreenTemperatureChartIndex()
         {
+            ViewBag.HospitalName = ConfigurationHelper.GetAppConfigValue("HospitalName");
             return View();
         }
 
@@ -288,12 +290,14 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
             foreach (var item in wardonly)
             {
                 var patInfo = wardTree.Where(p => p.bqCode == item.bqCode).Where(p => p.zyh != "").Where(p => p.zyh != null).ToList();
-
-                foreach (InpWardPatTreeVO itempat in patInfo)
-                {
+                var NewPatInfo = patInfo.OrderBy(p => p.BedNo);
+                foreach (InpWardPatTreeVO itempat in NewPatInfo)
+                { 
+                    string gender = itempat.sex == "1" ? "男" : "女";
                     TreeViewModel treepat = new TreeViewModel();
                     treepat.id = itempat.zyh;
-                    treepat.text = itempat.zyh + "-" + itempat.hzxm;
+                    //床号 + 姓名(住院天数)+住院号 + 年龄 +性别
+                    treepat.text = itempat.BedNo + "-" + itempat.hzxm + "(" + itempat.inHosDays + "天)" + "-" + itempat.zyh + "-" + itempat.nl + "岁-" + gender;
                     treepat.value = itempat.zyh;
                     treepat.parentId = item.bqCode;
                     treepat.isexpand = false;
@@ -323,14 +327,26 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
                 treeList.Add(tree);
             }
             return Content(treeList.TreeViewJson(null));
-        }
+        } 
         public ActionResult GetPatWard(string zyh)
         {
             var wardTree = _inpatientPatientDmnService.GetPatList(OrganizeId, zyh);
             return Content(wardTree.ToJson());
         }
-        public ActionResult submitmutiple(List<InpatientVitalSignsEntity> entityList,int? sjd,DateTime rq,string flag)
+        public ActionResult submitmutiple(List<InpatientVitalSignsEntity> entityList, int? sjd,DateTime rq,string flag,List<string> xysxzList)
         {
+            for (var i = 0; i < entityList.Count; i++) {
+                var xysz = 0;
+                var xyxz = 0;
+                var xyszx = xysxzList[i].Split('/');
+                if (xyszx.Length == 2)
+                {
+                    xysz = xyszx[0].ToInt();
+                    xyxz = xyszx[1].ToInt();
+                }
+                entityList[i].xysz = xysz;
+                entityList[i].xyxz = xyxz;
+            }
             _inpatientPatientDmnService.submitmutiple(entityList,OrganizeId,sjd,rq,flag);
             return Success();
         }

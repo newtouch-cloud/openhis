@@ -59,7 +59,7 @@ namespace Newtouch.CIS.Web.Controllers
         //皮试页面树控件
         public ActionResult SkintestTree(string keyword, DateTime? kssj, DateTime? jssj, string type)
         {
-            var wardTree = _OutpatientNurseDmnService.OutpatientNurseTreeVO(this.OrganizeId, keyword,kssj,jssj,type);
+            var wardTree = _OutpatientNurseDmnService.OutpatientNurseTreeVO(this.OrganizeId, keyword, kssj, jssj, type);
             var wardonly = wardTree.GroupBy(p => new { p.ghksmc }).Select(p => new { p.Key.ghksmc });
 
 
@@ -135,11 +135,11 @@ namespace Newtouch.CIS.Web.Controllers
 
         }
 
-        public ActionResult skintesfrom(Pagination pagination, DateTime? kssj, DateTime? jssj,string keyword)
+        public ActionResult skintesfrom(Pagination pagination, DateTime? kssj, DateTime? jssj, string keyword)
         {
             IList<OutpatientNursequeryVO> list = new List<OutpatientNursequeryVO>();
 
-            list = _OutpatientNurseDmnService.skintesfrom(pagination,keyword,kssj,jssj, OrganizeId);
+            list = _OutpatientNurseDmnService.skintesfrom(pagination, keyword, kssj, jssj, OrganizeId);
             var data = new
             {
                 rows = list,
@@ -154,7 +154,7 @@ namespace Newtouch.CIS.Web.Controllers
         public ActionResult skintescancel(string gmxxid)
         {
             OperatorModel user = this.UserIdentity;
-            string msg= _OutpatientNurseDmnService.skintescancel(gmxxid, user);
+            string msg = _OutpatientNurseDmnService.skintescancel(gmxxid, user);
             if (!string.IsNullOrWhiteSpace(msg))
             {
                 return Error(msg);
@@ -223,18 +223,25 @@ namespace Newtouch.CIS.Web.Controllers
             var cfh = _OutpatientNurseDmnService.getcfh(cfid, OrganizeId);
             return Content(CommmHelper.GenerateBarCode(cfh, 25, 25));
         }
-        public ActionResult prescriptionfrom(Pagination pagination, string jzid, DateTime? klrq,string cfdlb)
+        public ActionResult prescriptionfrom(Pagination pagination, string jzid, DateTime? klrq, string cfdlb)
         {
             IList<OutpatientNursequeryVO> list = new List<OutpatientNursequeryVO>();
 
             list = _OutpatientNurseDmnService.prescriptionfrom(pagination, jzid, klrq, OrganizeId, cfdlb);
-            //foreach (var item in list)
-            //{
-            //    if (item.cflx==5||item.cflx==4)
-            //    {
-            //        item.barcode = CommmHelper.GenerateBarCode(item.cfh, 25, 25);
-            //    }
-            //}
+            if (list.Count > 0)
+            {
+                var Total = list.Sum(t => t.je);
+                OutpatientNursequeryVO zje = new OutpatientNursequeryVO();
+                zje.cfh = "总计"; zje.je = Total; zje.kssj = list[0].kssj;
+                list.Add(zje);
+            }
+            foreach (var item in list)
+            {
+                if (item.cflx == 5 || item.cflx == 4)
+                {
+                    item.barcode = CommmHelper.GenerateBarCode(item.cfh, 25, 25);
+                }
+            }
             var data = new
             {
                 rows = list,

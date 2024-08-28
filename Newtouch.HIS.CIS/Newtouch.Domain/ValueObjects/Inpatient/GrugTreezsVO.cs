@@ -14,6 +14,10 @@ namespace Newtouch.Domain.ValueObjects.Inpatient
         public string hzxm { get; set; }
         public string bqCode { get; set; }
         public string bqmc { get; set; }
+        public string BedNo { get; set; }
+        public string nl { get; set; }
+        public string sex { get; set; }
+        public string inHosDays { get; set; }
 
         //public List<GrugTreezsVO> TREECHILDREN { set; get; }
 
