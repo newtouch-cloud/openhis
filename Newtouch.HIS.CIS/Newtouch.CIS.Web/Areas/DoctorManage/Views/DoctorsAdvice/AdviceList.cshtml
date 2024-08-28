@@ -1,5 +1,6 @@
 ﻿@using Newtouch.Infrastructure;
 @{
+    //医嘱查询
     ViewBag.Title = "AdviceList";
     Layout = null;
     var pacsHost = SiteUrl.GetUrl("OuterPacsServiceHost", "");
@@ -11,13 +12,12 @@
     var zycfdPrinturl = SysConfigReader.OrgReportLink("zycfdPrint");  //处方单
     var isopenPriorReview = (ViewBag.isopenPriorReview);
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 <style>
 	/*已执行*/
 	.orginal {
-		color: brown;
+		color: blue;
 	}
 	/*已审核*/
 	.ysh {
@@ -91,7 +91,7 @@
 	<table style="width:420px;height:20px; margin-top:10px;margin-left:10px; float:left; color:#274b6d">
 		<tr>
             <td>
-                <label style="height:7px;width:25px;background-color:brown; border:1px solid #ddd"></label>
+                <label style="height: 7px; width: 25px; background-color: blue; border: 1px solid #ddd"></label>
             </td>
 			<td>执行长期/临时</td>
             <td>
@@ -253,10 +253,7 @@
         }
     })
 
-    function gridPatientList() {
-
-        console.log("getSearchPostData(): ", getSearchPostData)
-
+	function gridPatientList() {
         $('#gridPatientList').dataGrid({
             url:"@Url.Action("AdviceGridView")",
             height: $(window).height() - 220,
@@ -264,7 +261,7 @@
             unwritten: false,
             pager: '#gridPatPager',
             //sortname: 'zh,yzlb,yzlx,kssj desc',
-			sortname: 'yzlx,kssj desc,zh',
+			sortname: 'yzlx,kssj desc,zh,Px',
             rowNum: 100,
 			rownumbers: true,
 			colModel: [
@@ -277,7 +274,7 @@
 				},
 				{ label: '开始时间', name: 'kssj', align: 'center', width: 109, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
 				{ label: '医生', name: 'ysmc', align: 'center', width: 40 },
-                { label: '医嘱名称', name: 'yzmc', align: 'center', width: 150 },
+                { label: '医嘱名称', name: 'yzmc', align: 'left', width: 150 },
                 { label: '剂量', name: 'yzjl', align: 'center', width: 30 },
                 { label: '用法', name: 'yfmc', align: 'center', width: 30 },
                 { label: '频次', name: 'yzpcmc', align: 'center', width: 30 },
@@ -294,7 +291,7 @@
                 { label: 'yfztbs', name: 'yfztbs', align: 'center', hidden: true },
 				{ label: '精麻', name: 'yztagName', align: 'center', width: 30 },
 				{
-					label: '药品总量', name: 'zycldw', align: 'center', width: 30
+					label: '药品总量', name: 'zycldw', align: 'center', width: 50
 				},
 				{
 					label: '计费', name: 'isjf', align: 'center', width: 30, formatter: function (val) {
@@ -306,14 +303,14 @@
                         return $.enum.getDescByValue("EnumSF", val);
                     }
                 },
-                { label: '转自费', name: 'zzfbz', align: 'center', width: 30,formatter:function(val){
+                { label: '转自费', name: 'zzfbz', align: 'center', width: 40,formatter:function(val){
                     return $.enum.getDescByValue("EnumSF", val);
                 }
                 },
-                { label: '药品来源', name: 'yply', align: 'center', width: 30,formatter:function(val){
+                { label: '药品来源', name: 'yply', align: 'center', width: 50,formatter:function(val){
                     return $.enum.getDescByValue("EnumYply", val);
                 }},
-                { label: '最后<br/>执行时间', name: 'zxsj', align: 'center', width: 70, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
+                { label: '最后<br/>执行时间', name: 'zxsj', align: 'center', width: 110, formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }  },
                 {
                     label: '状态', name: 'yzzt', align: 'center', width: 30, formatter: function (val, options, rowObject) {
                         if (rowObject["yzzt"] ==@Html.Raw(((int)EnumYzzt.DC).ToString())) {//DC状态
@@ -403,6 +400,7 @@
                 onSelectyzobj(obj);
             }
             //onSortCol: function (index, iCol, sortorder) {
+            //    debugger;
             //    if (index=="cz") {
             //        $("#gridPatientList").setColProp(iCol, { sortable: false });
             //    }
@@ -422,8 +420,7 @@
     }
 
     function getSearchPostData() {
-        console.log("currentobj",currentobj)
-       // if (currentobj == null || currentobj == undefined) return null;
+        if (currentobj == null || currentobj == undefined) return null;
         $('#kssj').val($.getDate({ date: currentobj.ryrq }));
         var wsh = false;
         var dryz = false;
@@ -688,16 +685,7 @@
                 break;
         }
     }
-
-
-
-
-
-
-
-
-
-
+      
     //撤DC
     function advicedc(yzId,yzlx,iszt) {
         $.najax({
@@ -884,7 +872,7 @@
                 return;
             }
             //var rpturl = '@Html.Raw(zycfdPrinturl)';
-            window.open('@reportUrl' + "?tempCode=1280" + "&systemCode=" + '@reportSystemCode'+ "&zyh=" + currentobj.zyh +"&orgId=" + '@curOpr.OrganizeId' +"&Id=" + currentyzobj.Id, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+            window.open('@reportUrl' + "?tempCode=1300" + "&zyh=" + currentobj.zyh +"&orgId=" + '@curOpr.OrganizeId' +"&Id=" + currentyzobj.Id, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
 
         }
         else{
@@ -894,8 +882,26 @@
 
     }
     $('#btn_pacs').click(function () {
-        //金风易通 PACS 2024-4-28 chl
-        window.open("@pacsHost/doctor-api/api/viewer?pid=" + currentobj.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+       //金风易通 PACS 2024-4-28 chl
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/DoctorsAdvice/CountLISztzy",
+            data: { "zyh": currentobj.zyh },
+            async: false,
+            success: function (data) {
+                var num = data.num;
+                if (num < 1) {
+                    $.modalAlert("当前没有已完成报告,不能查看", 'warning');
+                    return;
+                }
+                else {
+                    window.open("@pacsHost/doctor-api/api/viewer?type=2&pid=" + currentobj.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+        
+                }
+            }
+        });
+        //window.open("@pacsHost/doctor-api/api/viewer?pid=" + currentobj.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
         //测试链接
         //window.open("@pacsHost/doctor-api/api/viewer?pid=1034097&areaCode=6d5752a7-234a-403e-aa1c-df8b45d3469f", "_blank");
 
@@ -911,16 +917,33 @@
         //});
     })
     $('#btn_lis_report').click(function(){
-        var zyh = currentobj.zyh;
-        $.modalOpen({
-            id: "medicaljyForm",
-            title: "检验申请单列表",
-            url: "/MedicalRecord/LisSqdhQueryForm?mzzyh=" + zyh+"&type="+"zy",
-            width: "900px",
-            height: "600px",
-            btn:['', '关闭'],
-            btnclass: ['', 'btn btn-danger'],
+        $.ajax({
+            type: "POST",
+            dataType: "json", //返回json格式的数据
+            url: "/DoctorsAdvice/CountLISztzy",
+            data: { "zyh": currentobj.zyh },
+            async: false,
+            success: function (data) {
+                var num = data.num;
+                if (num < 1) {
+                    $.modalAlert("当前没有已完成报告,不能查看", 'warning');
+                    return;
+                }
+                else {
+                    window.open("@pacsHost/doctor-api/api/viewer?type=1&pid=" + currentobj.blh + "&areaCode=" + "@curOpr.OrganizeId", "_blank");
+        
+                }
+            }
         });
+        //$.modalOpen({
+        //    id: "medicaljyForm",
+        //    title: "检验申请单列表",
+        //    url: "/MedicalRecord/LisSqdhQueryForm?mzzyh=" + zyh+"&type="+"zy",
+        //    width: "900px",
+        //    height: "600px",
+        //    btn:['', '关闭'],
+        //    btnclass: ['', 'btn btn-danger'],
+        //});
     })
     function cfLeftFloatHide() {
         $('#floadLisReportTree').hide();

@@ -1,4 +1,5 @@
 ﻿using FrameworkBase.MultiOrg.Domain.Entity;
+using Newtouch.Domain.Entity;
 using Newtouch.Infrastructure.EF;
 using System.Collections.Generic;
 
@@ -12,5 +13,12 @@ namespace Newtouch.Domain.IRepository
         /// <param name="keyword"></param>
         /// <returns></returns>
         IList<SysNationalityVEntity> GetgjList();
+
+        IList<SysBrxzVEntity> GetBRXZList(string orgId);
+        /// <summary>
+        /// 现金支付方式
+        /// </summary>
+        /// <returns></returns>
+        IList<SysCashPaymenVEntity>  GetCashPay();
     }
 }

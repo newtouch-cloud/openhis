@@ -51,6 +51,7 @@ namespace Newtouch.DomainServices.Inpatient
         private readonly IMedicalRecordDmnService _medicalRecordDmnService;
         private readonly IInpatientPatientDoctorRepo _inpatientpatientdoctorRepo;
         private readonly ITTCataloguesComparisonDmnService _tTCataloguesComparisonDmnService;
+        private readonly IInpatientLongTermOrderRepo _InpatientLongTermOrderRepo;
         private readonly IQhdZnshSqtxRepo _qhdznshsqtxRepo;
         public DoctorserviceDmnService(IDefaultDatabaseFactory databaseFactory) : base(databaseFactory)
         { }
@@ -1132,7 +1133,8 @@ namespace Newtouch.DomainServices.Inpatient
                     {
                         lsyzlist = _inpatientSTATOrderRepo.IQueryable(p => p.zyh == zyh && p.dcztbs == lsyz.dcztbs && p.yzzt == yzzt && p.OrganizeId == OrganizeId && p.zt == "1").ToList();
                     }
-                    else {
+                    else
+                    {
                         lsyzlist.Add(lsyz);
                     }
                     foreach (var item in lsyzlist)
@@ -1167,7 +1169,8 @@ namespace Newtouch.DomainServices.Inpatient
                     {
                         cqyzlist = _inpatientLongTermOrderRepo.IQueryable(p => p.zyh == zyh && p.dcztbs == cqyz.dcztbs && p.yzzt == yzzt && p.OrganizeId == OrganizeId && p.zt == "1").ToList();
                     }
-                    else {
+                    else
+                    {
                         cqyzlist.Add(cqyz);
                     }
                     foreach (var item in cqyzlist)
@@ -1579,7 +1582,8 @@ namespace Newtouch.DomainServices.Inpatient
                                         yzlx ,
                                         kssj ,
                                         s.Name ysmc ,
-                                        xmmc as yzmc, CONCAT(CONVERT(float,ypjl),dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
+                                        case when yzlx in ('6','7') then ztmc else xmmc end as yzmc,
+                                        CONCAT(CONVERT(float,ypjl),dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
                                         yz.zh ,
                                         yz.tzsj ,
                                         tzr.Name tzr ,
@@ -1591,8 +1595,8 @@ namespace Newtouch.DomainServices.Inpatient
 										dept.Name deptName ,
                                         yz.yztag,
                                         case yz.yztag when 'JI' then '精I' when 'JII' then '精II' when 'MZ' then '麻醉' else yz.yztag end yztagName,
-										isnull(yz.isjf,1) isjf,ispscs,isnull(zzfbz,0) zzfbz , yz.xmdm,yz.sl, 
-                                        case when yzlx in (2,4,10) then (cast(yz.sl as varchar)+ypxx.zycldw) end zycldw,yfztbs,yply
+										isnull(yz.isjf,1) isjf,ispscs,isnull(zzfbz,0) zzfbz , yz.xmdm,yz.sl,  yz.Px,
+                                        case when yzlx in (2,4,10) then (cast(yz.sl as varchar)+ypxx.zycldw) end zycldw,yfztbs,yply,isfsyz
                               FROM      (
                                               select 'Y' iszt,row_number() over(partition by ztid,yzh order by createtime desc) num ,*
                                                 from zy_cqyz yz with(nolock) where ztid is not null
@@ -1638,7 +1642,8 @@ namespace Newtouch.DomainServices.Inpatient
                                         yzlx ,
                                         kssj ,
                                         s.Name ysmc ,
-                                        xmmc as yzmc, CONCAT(CONVERT(float,ypjl),dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
+                                        case when yzlx in ('6','7') then ztmc else xmmc end as yzmc,
+                                        CONCAT(CONVERT(float,ypjl),dw) as yzjl, ypyf.yfmc, yzpc.yzpcmc,
                                         yz.zh ,
                                         NULL tzsj ,
                                         NULL tzr ,
@@ -1652,8 +1657,8 @@ namespace Newtouch.DomainServices.Inpatient
                                         isnull(yz.isjf,1) isjf,
                                         ispscs ,isnull(zzfbz,0) zzfbz,
                                         xmdm,
-										sl,
-										case when yzlx in (2,4,10) then (cast(sl as varchar)+ypxx.zycldw) end zycldw ,yfztbs,yply
+										sl, yz.Px,
+										case when yzlx in (2,4,10) then (cast(sl as varchar)+ypxx.zycldw) end zycldw ,yfztbs,yply,isfsyz
                                         from (
                                             select 'Y' iszt,row_number() over(partition by ztid,yzh order by createtime desc) num ,*
                                             from zy_lsyz jyjcyz with(nolock) where ztid is not null--yzlx in ('6','7') 
@@ -1707,7 +1712,7 @@ namespace Newtouch.DomainServices.Inpatient
                     if (req.yzlb == "长" || req.yzlb == "临")
                     {
                         sqlstr.Append(" AND tttt.yzlb = @yzlb");
-                        par.Add(new SqlParameter("@yzlb", req.yzlb));                
+                        par.Add(new SqlParameter("@yzlb", req.yzlb));
                     }
                     //sqlstr.Append(" AND tttt.yzzt <> @yzzt");
                     par.Add(new SqlParameter("@yzzt", Convert.ToInt32(EnumYzzt.Ds)));
@@ -2463,10 +2468,11 @@ namespace Newtouch.DomainServices.Inpatient
         #region 收费组合查询
         public List<SfxmztDto> GetSfxmItem(string sfmbbh, string orgId)
         {
-            string sql = @" select  b.sfxm ,sfxm.sfxmmc sfxmmc,a.sfmbbh ztId,sfmbmc ztmc,
+            string sql = @" select  b.sfxm ,isnull(sfxm.sfxmmc,yp.ypmc) sfxmmc,a.sfmbbh ztId,sfmbmc ztmc,
 sfxm.dw dw, b.dj dj,sl,a.ks zxks,c.Name zxksmc from NewtouchHIS_Sett..[xt_sfmb] a
 join NewtouchHIS_Sett..[xt_sfmbxm] b on a.sfmbbh=b.sfmbbh and a.organizeid=b.organizeid and b.zt=1
 LEFT JOIN NewtouchHIS_Base..V_S_xt_sfxm sfxm  ON sfxm.sfxmCode=b.sfxm and sfxm.OrganizeId=b.OrganizeId
+LEFT JOIN NewtouchHIS_Base..V_S_xt_yp yp  ON yp.ypCode=b.sfxm and yp.OrganizeId=b.OrganizeId
 LEFT JOIN NewtouchHIS_Base..V_S_Sys_Department c  ON c.Code=a.ks  AND c.OrganizeId= a.OrganizeId
 where a.zt=1 and a.sfmb=@sfmb and a.OrganizeId=@orgId ";
             var sqlpar = new List<SqlParameter>();
@@ -2495,7 +2501,8 @@ join NewtouchHIS_Sett..[xt_sfmbxm] b on a.sfmbbh=b.sfmbbh and a.organizeid=b.org
                 sql += " and yfdm=@yfcode";
                 sqlpar.Add(new SqlParameter("@yfcode", yfcode));
             }
-            else {
+            else
+            {
                 sql += " and 1=2";
             }
             if (keyword != null)
@@ -2522,7 +2529,7 @@ join NewtouchHIS_Sett..[xt_sfmbxm] b on a.sfmbbh=b.sfmbbh and a.organizeid=b.org
             return FindList<SelectUpdataOpertionVO>(sql, sqlpar.ToArray());
         }
         #endregion
-        
+
         public PatientInformationDTO patinfo(string zyh, string orgId)
         {
             var sqlstr = new StringBuilder();
@@ -2638,7 +2645,7 @@ and idl.name=@ypyfmc
         /// <param name="HospitalCode"></param>
         /// <param name="HospitalName"></param>
         /// <returns></returns>
-        public string GetPriorReviewData(string orgId, List<DoctorServiceRequestDto> reqdoctorservices, InpatientInfo brxx, string rygh, string username, string HospitalCode, string HospitalName,string yzcfh, string GetMAC)
+        public string GetPriorReviewData(string orgId, List<DoctorServiceRequestDto> reqdoctorservices, InpatientInfo brxx, string rygh, string username, string HospitalCode, string HospitalName, string yzcfh, string GetMAC)
         {
             try
             {
@@ -2670,7 +2677,8 @@ and idl.name=@ypyfmc
                     {
                         ITEM_TYPE = "1";
                     }
-                    else {
+                    else
+                    {
                         ITEM_TYPE = "2";
                     }
                     ROW rOW = new ROW();
@@ -2700,7 +2708,8 @@ and idl.name=@ypyfmc
                     {
                         GIVE_MEDI_WAY = "";
                     }
-                    else {
+                    else
+                    {
                         GIVE_MEDI_WAY = jytj(item.yfmc);
                         if (GIVE_MEDI_WAY != null && GIVE_MEDI_WAY != "")
                         {
@@ -2711,7 +2720,7 @@ and idl.name=@ypyfmc
                     }
                     rOW.GIVE_MEDI_WAY = GIVE_MEDI_WAY;
                     rOW.IM_MONEY = sbzje;
-                    rOW.REAL_NUMBER =item.sl.ToString("F3");
+                    rOW.REAL_NUMBER = item.sl.ToString("F3");
                     rOW.REAL_MONEY = sbzje.ToString("F3");
                     rOW.DOCTOR_LEVEL_CODE = "1";
                     rOW.DOCTOR_DUTY_CODE = "234";
@@ -2725,7 +2734,7 @@ and idl.name=@ypyfmc
                 bEAN.CURRENT_STATUS = "1";//出入院状态:1=在院，2=出院，3=门诊
                 bEAN.IS_ADD = "0"; //是否增量。住院单据 第一次是非增量，以后是增量。门诊单据都是非增量。 0表示非增量，1表示增量
                 bEAN.BILL_TYPE = "2"; //单据类型。1表示门诊，2表示住院
-                bEAN.HIS_BILL_ID =yzh; //医嘱（处方）单ID
+                bEAN.HIS_BILL_ID = yzh; //医嘱（处方）单ID
                 bEAN.END_TIME = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");                  //结算时间，住院期间为调用接口服务的系统当前时间。
                 bEAN.HOSPITAL_CODE = HospitalCode;   //医院编码（使用医保中心端给医院分配的医院编码）
                 bEAN.HOSPITAL_NAME = HospitalName;             //医院名称
@@ -2733,13 +2742,13 @@ and idl.name=@ypyfmc
                 bEAN.PATIENT_NAME = patientobj.xm;              //参保人姓名
                 bEAN.PATIENT_SEX_CODE = patientobj.sex;          //性别编码
                 string csrq = DateTime.Now.ToString("yyyy-MM-dd");
-                if (patientobj.birth!=null)
+                if (patientobj.birth != null)
                 {
                     csrq = DateTime.Parse(Convert.ToString(patientobj.birth)).ToString("yyyy-MM-dd");
                 }
                 bEAN.PATIENT_BIRTH = csrq;             //出生日期
                 bEAN.PERSON_TYPE_CODE = "-1";          //人员类别编码
-                bEAN.BENEFIT_TYPE_CODE = brxxdata.xzlx??"310";         //险种类型编码
+                bEAN.BENEFIT_TYPE_CODE = brxxdata.xzlx ?? "310";         //险种类型编码
                 bEAN.SEE_DOCTOR_TYPE_CODE = brxxdata.yllb;      //医疗类别编码
                 bEAN.IS_WITHOUT_PLACE = brxxdata.ydjy;          //是否异地就医，0：否；1：是
                 bEAN.WITHOUT_PLACE_PERSON_TYPE = ""; //异地人员类别编码
@@ -2815,7 +2824,7 @@ and idl.name=@ypyfmc
                 pre.DATA = dATA;
                 string responsexml = pre.XmlSerialize().Replace("<?xml version=\"1.0\"?>", "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
                 var param = "serviceId{=}AUDIT00001{,}userName{=}admin{,}password{=}adm@123{,}clientMAC{=}";
-                var logstr = AuditInterface(responsexml, orgId, zyh, zlysobj.ysgh, zlysobj.ysmc, param, yzh,"医嘱审核",GetMAC);//接口
+                var logstr = AuditInterface(responsexml, orgId, zyh, zlysobj.ysgh, zlysobj.ysmc, param, yzh, "医嘱审核", GetMAC);//接口
                 return logstr;
             }
             catch (Exception e)
@@ -2836,7 +2845,7 @@ and idl.name=@ypyfmc
         /// <param name="HospitalCode"></param>
         /// <param name="HospitalName"></param>
         /// <returns></returns>
-        public string GetBashData(string orgId, string zyh, string rygh, string username,string GetMAC)
+        public string GetBashData(string orgId, string zyh, string rygh, string username, string GetMAC)
         {
             try
             {
@@ -2849,8 +2858,8 @@ and idl.name=@ypyfmc
                 sqlpar.Add(new SqlParameter("@cryzt", "1"));
                 sqlpar.Add(new SqlParameter("@yljgdm", HospitalCode));
                 sqlpar.Add(new SqlParameter("@yljgmc", HospitalName));
-                MedicalBEAN me =FirstOrDefault<MedicalBEAN>(sql.ToString(), sqlpar.ToArray());
-                if (me==null)
+                MedicalBEAN me = FirstOrDefault<MedicalBEAN>(sql.ToString(), sqlpar.ToArray());
+                if (me == null)
                 {
                     return "";
                 }
@@ -2865,7 +2874,7 @@ and idl.name=@ypyfmc
                 var ysgh = "000000";
                 var ysmc = "管理员";
                 var param = "serviceId{=}MR00001{,}userName{=}admin{,}password{=}adm@123{,}clientMAC{=}";
-                var logstr = AuditInterface(responsexml, orgId, zyh, ysgh, ysmc, param,"","病案审核",GetMAC);//接口
+                var logstr = AuditInterface(responsexml, orgId, zyh, ysgh, ysmc, param, "", "病案审核", GetMAC);//接口
                 return logstr;
             }
             catch (Exception e)
@@ -2884,7 +2893,7 @@ and idl.name=@ypyfmc
         /// <param name="HospitalCode"></param>
         /// <param name="HospitalName"></param>
         /// <returns></returns>
-        public string GetDrgData(string orgId,string zyh, string rygh, string username, string GetMAC)
+        public string GetDrgData(string orgId, string zyh, string rygh, string username, string GetMAC)
         {
             try
             {
@@ -2897,7 +2906,7 @@ and idl.name=@ypyfmc
                 jbxxsqlpar.Add(new SqlParameter("@zyh", zyh));
                 jbxxsqlpar.Add(new SqlParameter("@yljgdm", HospitalCode));
                 jbxxsqlpar.Add(new SqlParameter("@yljgmc", HospitalName));
-                DRGDIPJBXX dRGDIPJBXX=FirstOrDefault<DRGDIPJBXX>(JBXXsql.ToString(), jbxxsqlpar.ToArray());
+                DRGDIPJBXX dRGDIPJBXX = FirstOrDefault<DRGDIPJBXX>(JBXXsql.ToString(), jbxxsqlpar.ToArray());
                 //DIP接口住院信息
                 var zyxxsqlpar = new List<SqlParameter>();
                 var zyxxsql = @"exec usp_zy_QueryDrg_ZYXX @orgId,@zyh";
@@ -2913,7 +2922,7 @@ and idl.name=@ypyfmc
                 sfxxsqlpar.Add(new SqlParameter("@yljgmc", HospitalName));
                 DRGDIPSFXX dRGDIPSFXX = FirstOrDefault<DRGDIPSFXX>(sfxxsql.ToString(), sfxxsqlpar.ToArray());
                 //DIP接口其他信息
-                DRGDIPQTXX dRGDIPQTXX =new DRGDIPQTXX();
+                DRGDIPQTXX dRGDIPQTXX = new DRGDIPQTXX();
                 dRGDIPQTXX.DDYLJG_TBBM_BM = dRGDIPZyxx.CYKB_BM;
                 dRGDIPQTXX.DDYLJG_TBBM_MC = dRGDIPZyxx.CYKB_MC;
                 dRGDIPQTXX.DDYLJG_TBR_BM = rygh;
@@ -2938,7 +2947,7 @@ and idl.name=@ypyfmc
                 var ysgh = "000000";
                 var ysmc = "管理员";
                 var param = "serviceId{=}AUDIT00101{,}userName{=}admin{,}password{=}adm@123{,}clientMAC{=}";
-                var logstr = AuditInterface(responsexml, orgId, zyh, ysgh, ysmc, param,"","DIP接口",GetMAC);//接口
+                var logstr = AuditInterface(responsexml, orgId, zyh, ysgh, ysmc, param, "", "DIP接口", GetMAC);//接口
                 return logstr;
             }
             catch (Exception e)
@@ -2950,7 +2959,7 @@ and idl.name=@ypyfmc
         /// 审核单据删除
         /// </summary>
         /// <returns></returns>
-        public string DeletePriorReview(string zyh, string yzid, string yzlx,string OrganizeId, string GetMAC)
+        public string DeletePriorReview(string zyh, string yzid, string yzlx, string OrganizeId, string GetMAC)
         {
             try
             {
@@ -2966,7 +2975,7 @@ where id=@yzid");
                 par.Add(new SqlParameter("@yzid", yzid));
                 par.Add(new SqlParameter("@orgId", OrganizeId));
                 var delrc = this.FirstOrDefault<DelReviewDTO>(sqlstr.ToString(), par.ToArray());
-                if (delrc==null)
+                if (delrc == null)
                 {
                     return "";
                 }
@@ -2984,7 +2993,7 @@ where id=@yzid");
                 var ysgh = "000000";
                 var ysmc = "管理员";
                 var param = "serviceId{=}AUDIT00002{,}userName{=}admin{,}password{=}adm@123{,}clientMAC{=}";
-                var logstr = AuditInterface(responsexml, OrganizeId, zyh, ysgh, ysmc, param,"","单据删除",GetMAC);//接口
+                var logstr = AuditInterface(responsexml, OrganizeId, zyh, ysgh, ysmc, param, "", "单据删除", GetMAC);//接口
                 return logstr;
             }
             catch (Exception e)
@@ -3002,7 +3011,7 @@ where id=@yzid");
                 medicalDTO.MESSAGE = mESSAGE;
                 DiagnoseDATA dATA = new DiagnoseDATA();
                 DiagnoseBEAN me = new DiagnoseBEAN();
-                me.ICD_CODE = ""; 
+                me.ICD_CODE = "";
                 me.ICD_NAME = "流行性感冒";
                 dATA.BEAN = me;
                 medicalDTO.DATA = dATA;
@@ -3012,7 +3021,7 @@ where id=@yzid");
                 var ysgh = "000000";
                 var ysmc = "管理员";
                 var param = "serviceId{=}ICD00001{,}userName{=}admin{,}password{=}adm@123{,}clientMAC{=}";
-                var logstr = AuditInterface(responsexml, orgId, zyh, ysgh, ysmc, param, "","诊断查询","");//接口
+                var logstr = AuditInterface(responsexml, orgId, zyh, ysgh, ysmc, param, "", "诊断查询", "");//接口
                 return logstr;
             }
             catch (Exception e)
@@ -3020,7 +3029,7 @@ where id=@yzid");
                 return e.Message;
             }
         }
-        public string AuditInterface(string responsexml, string OrganizeId, string zyh, string yhgh,string ysmc, string param,string yzh,string jkType,string GetMAC)
+        public string AuditInterface(string responsexml, string OrganizeId, string zyh, string yhgh, string ysmc, string param, string yzh, string jkType, string GetMAC)
         {
             using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
             {
@@ -3040,17 +3049,17 @@ where id=@yzid");
                     }
                     catch (Exception ex)
                     {
-                        return "MAC地址获取失败！请启用医保小程序！"+ex.Message+"";
+                        return "MAC地址获取失败！请启用医保小程序！" + ex.Message + "";
                     }
                     param += macAddresses;
                     var responseXML = new WebServiceClient().service(param, responsexml);
                     var jsonout = responseXML.XmlDeSerialize<OutXMLDTO>();
                     var outlsh = "";
-                    if (yzh!=null&& yzh!="")
+                    if (yzh != null && yzh != "")
                     {
-                      outlsh = jsonout.DATA.BEAN.BILL_ID;
+                        outlsh = jsonout.DATA.BEAN.BILL_ID;
                     }
-                    
+
                     var shjkldrzEntity = new shjkldrzEntity
                     {
                         OrganizeId = OrganizeId,
@@ -3059,7 +3068,7 @@ where id=@yzid");
                         Type = "2",
                         jkType = jkType,
                         yzh = yzh,
-                        outlsh= outlsh,
+                        outlsh = outlsh,
                         param = param,
                         XmlRequest = responsexml,
                         XmlResponse = responseXML,
@@ -3080,7 +3089,7 @@ where id=@yzid");
 
 
         #region 医技科室执行
-        public void jyjcExec(List<jyjcExecReq> jyjclist,string orgId,string zxr)
+        public void jyjcExec(List<jyjcExecReq> jyjclist, string orgId, string zxr)
         {
             List<XtjyjcExecEntity> entityList = new List<XtjyjcExecEntity>();
             try
@@ -3138,8 +3147,8 @@ where id=@yzid");
             {
                 string sql = @"  update xt_jyjcexec set zxzt=@zxzt,LastModifierCode=@czr,LastModifyTime=getdate()
                                  where zt=1 and OrganizeId=@orgId 
-                                       and sqdh IN ( SELECT  col FROM dbo.f_split(@str, ',') ) ";   
-                int i= ExecuteSqlCommand(sql, new[] { new SqlParameter("@orgId", orgId),
+                                       and sqdh IN ( SELECT  col FROM dbo.f_split(@str, ',') ) ";
+                int i = ExecuteSqlCommand(sql, new[] { new SqlParameter("@orgId", orgId),
                      new SqlParameter("@czr",czr),
                     new SqlParameter("@zxzt",((int)Enumzxzt.yqx).ToString()),
                     new SqlParameter("@str", string.Join(",", jyjclist))});
@@ -3204,7 +3213,283 @@ where id=@yzid");
             }
             return message;
         }
+        public string addcqyz(string zyh, string yzh, string zh, List<YzbindingfeeVo> ItemFeeVO, string OrganizeId, string usercode)
+        {
+            using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+            {
+                InpatientPatientInfoEntity patInfo = db.IQueryable<InpatientPatientInfoEntity>().Where(a => a.zyh == zyh && a.zt == "1" && a.OrganizeId == OrganizeId).FirstOrDefault();
+
+                int cqpx = 1;
+                int lspx = 1;
+                foreach (var item in ItemFeeVO)
+                {
+                    if (item.yzxz == "2")
+                    {
+                        InpatientLongTermOrderEntity newcqyz = new InpatientLongTermOrderEntity();
+                        newcqyz.Id = Guid.NewGuid().ToString();
+                        newcqyz.OrganizeId = OrganizeId;
+                        newcqyz.zyh = zyh;
+                        if (item.yzlx == "1"&& zh!=null& zh!="")
+                        {
+                            newcqyz.zh = int.Parse(zh);
+                        }
+                        newcqyz.WardCode = patInfo.WardCode;
+                        newcqyz.DeptCode = patInfo.DeptCode;
+                        newcqyz.ysgh = patInfo.ysgh;
+                        newcqyz.pcCode = item.pcCode;
+                        newcqyz.zxcs = item.zxcs;
+                        newcqyz.zxzq = item.zxzq;
+                        newcqyz.zxzqdw = item.zxzqdw;
+                        newcqyz.zdm = null;
+                        newcqyz.xmdm = item.sfxm;
+                        newcqyz.xmmc = item.sfxmmc;
+                        newcqyz.yzzt = 1;
+                        newcqyz.dw = item.dw;
+                        newcqyz.zbbz = 0;
+                        newcqyz.sl = int.Parse(item.sl.ToString());
+                        newcqyz.dwlb = 4;
+                        int yzlx = 1;//通过浮层传过来的是1,2 1是药品 2是项目
+                        if (item.yzlx == "1")
+                        {
+                            yzlx = 2;
+                        }
+                        else
+                        {
+                            yzlx = 5;
+                        }
+                        newcqyz.yzlx = yzlx;
+                        newcqyz.tzysgh = null;
+                        newcqyz.tzsj = null;
+                        newcqyz.tzr = null;
+                        newcqyz.tzyy = null;
+                        newcqyz.shsj = DateTime.Now;
+                        newcqyz.shr = usercode;
+                        newcqyz.kssj = DateTime.Now;
+                        newcqyz.zxsj = null;
+                        newcqyz.zxr = null;
+                        newcqyz.dcr = null;
+                        newcqyz.ypjl = item.sl;
+                        newcqyz.ypgg = item.gg;
+                        newcqyz.ztnr = null;
+                        newcqyz.yznr = item.sfxmmc + " " + item.sl.ToString() + item.dw + " " + item.dlmc + " " + item.pcmc;
+                        newcqyz.ypyfdm = null;
+                        newcqyz.zxksdm = item.yfdm;
+                        newcqyz.printyznr = null;
+                        newcqyz.CreateTime = DateTime.Now;
+                        newcqyz.CreatorCode = usercode;
+                        newcqyz.LastModifyTime = null;
+                        newcqyz.LastModifierCode = null;
+                        newcqyz.zt = "1";
+                        newcqyz.hzxm = patInfo.xm;
+                        newcqyz.bw = null;
+                        newcqyz.zxsjd = null;
+                        newcqyz.nlmddm = null;
+                        newcqyz.kssReason = null;
+                        newcqyz.ds = null;
+                        if (yzh != null && yzh != "")
+                        {
+                            newcqyz.Px = (getmaxpx(yzh, item.yzxz, OrganizeId) + 1);
+                            newcqyz.yzh = yzh;
+                        }
+                        else
+                        {
+                            var yzhPart1 = DateTime.Now.ToString("yyyyMMddHHmmss");
+                            var yzhPart2 = EFDBBaseFuncHelper.Instance.GetNewFieldUniqueValue("zy_cqyz.yzh", OrganizeId);
+                            newcqyz.yzh = string.Format("{0}{1}", yzhPart1, yzhPart2);
+                        }
+                        newcqyz.zzfbz = 0;
+                        newcqyz.yztag = null;
+                        newcqyz.isjf = 1;
+                        newcqyz.zxing = null;
+                        newcqyz.ispscs = "0";
+                        newcqyz.ztmc = null;
+                        newcqyz.yfztbs = null;
+                        newcqyz.ztsl = null;
+                        newcqyz.dcztbs = null;
+                        newcqyz.isfsyz = "1";
+                        if (item.yzlx == "1"&& (yzh == null && yzh == ""))
+                        {
+                            newcqyz.Px = cqpx;
+                            cqpx += 1;
+                        }
+                         _InpatientLongTermOrderRepo.SubmitForm(newcqyz, null);
+                    }
+                    else
+                    {
+                        InpatientSTATOrderEntity newlsyz = new InpatientSTATOrderEntity();
+                        newlsyz.Id = Guid.NewGuid().ToString();
+                        newlsyz.OrganizeId = OrganizeId;
+                        newlsyz.zyh = zyh;
+                        if (item.yzlx == "1" && zh != null & zh != "")
+                        {
+                            newlsyz.zh = int.Parse(zh);
+                        }
+                        newlsyz.WardCode = patInfo.WardCode;
+                        newlsyz.DeptCode = patInfo.DeptCode;
+                        newlsyz.ysgh = patInfo.ysgh;
+                        newlsyz.pcCode = item.pcCode;
+                        newlsyz.zxcs = item.zxcs;
+                        newlsyz.zxzq = item.zxzq;
+                        newlsyz.zxzqdw = item.zxzqdw;
+                        newlsyz.zdm = null;
+                        newlsyz.xmdm = item.sfxm;
+                        newlsyz.xmmc = item.sfxmmc;
+                        newlsyz.yzzt = 1;
+                        newlsyz.dw = item.dw;
+                        newlsyz.zbbz = 0;
+                        newlsyz.sl = int.Parse(item.sl.ToString());
+                        newlsyz.dwlb = 4;
+                        int yzlx = 1;//通过浮层传过来的是1,2 1是药品 2是项目
+                        if (item.yzlx == "1")
+                        {
+                            yzlx = 2;
+                        }
+                        else
+                        {
+                            yzlx = 5;
+                        }
+                        newlsyz.yzlx = yzlx;
+                        newlsyz.shsj = DateTime.Now;
+                        newlsyz.shr = usercode;
+                        newlsyz.kssj = DateTime.Now;
+                        newlsyz.zxsj = null;
+                        newlsyz.zxr = null;
+                        newlsyz.ypjl = item.sl;
+                        newlsyz.ypgg = item.gg;
+                        newlsyz.ztnr = null;
+                        newlsyz.yznr = item.sfxmmc + " " + item.sl.ToString() + item.dw + " " + item.dlmc + " " + item.pcmc;
+                        newlsyz.ypyfdm = null;
+                        newlsyz.zxksdm = item.yfdm;
+                        newlsyz.printyznr = null;
+                        newlsyz.CreateTime = DateTime.Now;
+                        newlsyz.CreatorCode = usercode;
+                        newlsyz.LastModifyTime = null;
+                        newlsyz.LastModifierCode = null;
+                        newlsyz.zt = "1";
+                        newlsyz.hzxm = patInfo.xm;
+                        newlsyz.bw = null;
+                        newlsyz.zxsjd = null;
+                        newlsyz.nlmddm = null;
+                        newlsyz.kssReason = null;
+                        newlsyz.ds = null;
+                        if (yzh != null && yzh != "")
+                        {
+                            newlsyz.Px = (getmaxpx(yzh, item.yzxz, OrganizeId) + 1);
+                            newlsyz.yzh = yzh;
+                        }
+                        else
+                        {
+
+                            var yzhPart1 = DateTime.Now.ToString("yyyyMMddHHmmss");
+                            var yzhPart2 = EFDBBaseFuncHelper.Instance.GetNewFieldUniqueValue("zy_lsyz.yzh", OrganizeId);
+                            newlsyz.yzh = string.Format("{0}{1}", yzhPart1, yzhPart2);
+                        }
+                        newlsyz.zzfbz = 0;
+                        newlsyz.yztag = null;
+                        newlsyz.isjf = 1;
+                        newlsyz.zxing = null;
+                        newlsyz.ispscs = "0";
+                        newlsyz.ztmc = null;
+                        newlsyz.yfztbs = null;
+                        newlsyz.ztsl = null;
+                        newlsyz.dcztbs = null;
+                        newlsyz.isfsyz = "1";
+                        if (item.yzlx == "1"&&( yzh == null || yzh == ""))
+                        {
+                            newlsyz.Px = lspx;
+                            lspx += 1;
+                        }
+                        _inpatientSTATOrderRepo.SubmitForm(newlsyz, null);
+                    }
+                }
+                db.Commit();
+            }
+            return "";
+        }
+        public int getmaxpx(string yzh,string yzxz,string orgId) {
+            string sql = @" select isnull(max(px),0) px from zy_lsyz where yzh=@yzh and zt='1' and OrganizeId=@orgId ";
+            if (yzxz=="2")
+            {
+                sql = @" select isnull(max(px),0) px from zy_cqyz where yzh=@yzh and zt='1' and OrganizeId=@orgId ";
+            }
+            var sqlpar = new List<SqlParameter>();
+            sqlpar.Add(new SqlParameter("@yzh", yzh));
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            return this.FirstOrDefault<int>(sql, sqlpar.ToArray());
+        }
+        public PatientMedicalDTO GetlsorcqyzData(string zyh, string yzid, string orgId)
+        {
+            string sql = @" 		select * from (select xmmc,'2' yzxz,zh,yzh,brxx.xm hzxm,brxx.BedCode bedCode,yz.px from 
+		[Newtouch_CIS].[dbo].zy_brxxk brxx
+	left join [Newtouch_CIS].[dbo].[zy_cqyz] yz on brxx.zyh=yz.zyh and yz.OrganizeId=brxx.OrganizeId
+	 where (yz.id=@yzid or @yzid='')  and yz.OrganizeId=@orgId and brxx.zyh=@zyh
+	union all
+  select xmmc,'1' yzxz,zh,yzh,brxx.xm hzxm,brxx.BedCode bedCode,yz.px from 
+		[Newtouch_CIS].[dbo].zy_brxxk brxx
+	left join [Newtouch_CIS].[dbo].[zy_lsyz] yz on brxx.zyh=yz.zyh and yz.OrganizeId=brxx.OrganizeId
+	 where (yz.id=@yzid or @yzid='')  and yz.OrganizeId=@orgId and brxx.zyh=@zyh
+	 ) a  order by a.px desc";
+            var sqlpar = new List<SqlParameter>();
+            sqlpar.Add(new SqlParameter("@zyh", zyh));
+            sqlpar.Add(new SqlParameter("@yzid", yzid));
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            return this.FirstOrDefault<PatientMedicalDTO>(sql, sqlpar.ToArray());
+        }
+        public string DeleteBind(string zyh, string yzid, string yzxz, string orgId)
+        {
+            try
+            {
+                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+                {
+
+                    if (yzxz == "1")//临时医嘱
+                    {
+                        InpatientSTATOrderEntity lsyzdata = db.IQueryable<InpatientSTATOrderEntity>().Where(a => a.zyh == zyh && a.zt == "1" && a.Id == yzid && a.OrganizeId == orgId&&a.isfsyz != null).FirstOrDefault();
+                        lsyzdata.zt = "0";
+                        _inpatientSTATOrderRepo.SubmitForm(lsyzdata, yzid);
+                    }
+                    else
+                    {
+                        InpatientLongTermOrderEntity cqyzdata = db.IQueryable<InpatientLongTermOrderEntity>().Where(a => a.zyh == zyh && a.zt == "1" && a.Id == yzid && a.OrganizeId == orgId && a.isfsyz != null).FirstOrDefault();
+                        cqyzdata.yzzt = Convert.ToInt32(EnumYzzt.TZ);
+                        _InpatientLongTermOrderRepo.SubmitForm(cqyzdata, yzid);
+                    }
+                    db.Commit();
+                }
+            }
+            catch (Exception ex)
+            {
+                return ex.Message.ToString();
+            }
+            return "";
+        }
+
+
+
+        /// <summary>
+        /// 根据住院号获取LIS/PACS报告完成数量
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="yzh"></param>
+        /// <returns></returns>
+        public int CountLISztzy(string orgId, string zyh)
+        {
+            string sql = @" 
+				select count(*)  from [Newtouch_CIS].[dbo].[zy_lsyz] where zyh =@zyh and syncStatus=2  and organizeId=@orgId and zt='1'";
+            var sqlpar = new List<SqlParameter>();
+            sqlpar.Add(new SqlParameter("@zyh", zyh));
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            return this.FirstOrDefault<int>(sql, sqlpar.ToArray());
+        }
+
+        public List<ypyfdataDto> GetYfData(string orgId)
+        {
+            string sql = @" 
+				select yfbmCode,yfbmmc,mzzybz from NewtouchHIS_Base..xt_yfbm where organizeId=@orgId and zt='1' and fybz='1' ";
+            var sqlpar = new List<SqlParameter>();
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            return FindList<ypyfdataDto>(sql, sqlpar.ToArray());
+        }
     }
-    
 }
 

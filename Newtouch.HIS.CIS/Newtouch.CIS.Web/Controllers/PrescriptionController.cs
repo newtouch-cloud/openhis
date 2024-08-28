@@ -345,5 +345,10 @@ namespace Newtouch.CIS.Web.Controllers
             };
             return Content(data.ToJson());
         }
+        public ActionResult GetYfData()
+        {
+            var mxbstr = _iDoctorserviceDmnService.GetYfData(OrganizeId);
+            return Content(mxbstr.ToJson());
+        }
     }
 }

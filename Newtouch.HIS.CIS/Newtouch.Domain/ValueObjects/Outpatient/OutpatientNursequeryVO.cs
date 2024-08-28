@@ -74,5 +74,6 @@ namespace Newtouch.Domain.ValueObjects
         public string cancel { get; set; }
         public string iscancel { get; set; }
         public string gmxxid { get; set; }
+        public decimal je { get; set; }
     }
 }

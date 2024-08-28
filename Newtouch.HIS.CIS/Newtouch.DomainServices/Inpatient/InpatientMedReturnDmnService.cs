@@ -59,10 +59,12 @@ and b.OrganizeId=c.organizeid and b.bqcode=c.bqcode";
         }
         public IList<InpWardPatTreeVO> GetPatTree(string keyword, string staffId, string orgId, string ReturnZcyMed = null)
         {
-            string sql = @"select b.bqCode,c.bqmc,d.zyh,d.hzxm
+            string sql = @"select b.bqCode,c.bqmc,d.zyh,d.hzxm,e.ryrq,e.sex,e.birth,CAST(FLOOR(DATEDIFF(DY, e.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl,
+CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, e.ryrq,GETDATE()) WHEN 0 THEN 1 else  DATEDIFF(DAY, e.ryrq,GETDATE())END ) inHosDays,cw.BedNo
 from [NewtouchHIS_Base].[dbo].[Sys_StaffWard] b with(nolock)
     inner join [NewtouchHIS_Base].[dbo].[xt_bq] c with(nolock) on b.OrganizeId=c.organizeid and b.bqcode=c.bqcode
     left join zy_fyqqk d with(nolock) on c.bqCode=d.WardCode and c.organizeid=d.organizeid and d.tybz in(" + (int)EnumMedSTflag.Receive + "," + (int)EnumMedSTflag.PartReturn + @")
+    left join zy_cwsyjlk cw with(nolock) on cw.zyh=d.zyh and c.organizeid=d.organizeid and cw.zt='1'
     inner join zy_brxxk e on e.zyh=d.zyh and e.organizeid=d.organizeid
 where b.staffId=@staffId and b.OrganizeId=@orgId and b.zt='1' and e.zt='1'
 and e.zybz not in (" + (int)EnumZYBZ.Ycy + "," + (int)EnumZYBZ.Wry + "," + (int)EnumZYBZ.Djz + @")
@@ -76,7 +78,7 @@ and e.zybz not in (" + (int)EnumZYBZ.Ycy + "," + (int)EnumZYBZ.Wry + "," + (int)
                 sql += " and (e.zyh like @keyword or e.xm like @keyword)";
                 // par.Add(new SqlParameter("@keyword", "%"+keyword+"%"));
             }
-            sql += " group by b.bqCode,c.bqmc,d.zyh,d.hzxm";
+            sql += " group by b.bqCode,c.bqmc,d.zyh,d.hzxm,e.ryrq,e.sex,e.birth,cw.BedNo ";
             return this.FindList<InpWardPatTreeVO>(sql, new SqlParameter[] {
                 new SqlParameter("@staffId", staffId),
                 new SqlParameter("@orgId", orgId),

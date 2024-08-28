@@ -32,11 +32,15 @@ namespace Newtouch.DomainServices.Inpatient
         /// <returns></returns>
         public IList<InpWardPatTreeVO> GetPatTree(string orgId,string zyzt,string keyword)
         {
-            string sql = @"select distinct b.zyh,b.xm hzxm,b.wardCode bqCode,c.bqmc,b.sex,CAST(FLOOR(DATEDIFF(DY, b.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl  from(select distinct zyh from zy_cqyz with(nolock)  where yzzt='2' and OrganizeId=@orgId  
+            string sql = @"select distinct b.zyh,b.xm hzxm,b.wardCode bqCode,c.bqmc,b.sex,b.ryrq, b.birth,cw.BedNo, 
+CONVERT(VARCHAR(25),CASE DATEDIFF(DAY, b.ryrq,GETDATE()) WHEN 0 THEN 1 else  DATEDIFF(DAY, b.ryrq,GETDATE())END ) inHosDays,
+CAST(FLOOR(DATEDIFF(DY, b.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl
+from(select distinct zyh from zy_cqyz with(nolock)  where yzzt='2' and OrganizeId=@orgId  
                 union all
                 select distinct zyh from zy_lsyz with(nolock)  where yzzt='2' and OrganizeId=@orgId ) a 
                 inner join zy_brxxk b with(nolock)  on a.zyh=b.zyh and b.OrganizeId=@orgId and zt='1'
                 left join [NewtouchHIS_Base].[dbo].[V_S_xt_bq] c with(nolock) on c.bqcode=b.wardCode and c.OrganizeId=@orgId
+                left join zy_cwsyjlk cw with(nolock) on cw.zyh=b.zyh and cw.OrganizeId=@orgId and cw.zt='1'
                 where 1=1";
             var par = new List<SqlParameter>();
             par.Add(new SqlParameter("@orgId", orgId));
@@ -65,7 +69,7 @@ namespace Newtouch.DomainServices.Inpatient
         }
 
         public IList<ExecReportReportRightVO> GetExecDetailGridJson(string orgId,string zyh,DateTime zxsj,string zxdlb,string yzxz) {
-            string sqlzxrq = "";
+            string sqlzxrq = ""; 
             if (!(!string.IsNullOrWhiteSpace(zxdlb) && zxdlb == "yzd" && yzxz == "2"))  //长期医嘱全部打印
             {
                 sqlzxrq = " and CONVERT(date, zxrq)=convert(date,@zxsj) ";
@@ -124,6 +128,10 @@ namespace Newtouch.DomainServices.Inpatient
                         sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
                         par.Add(new SqlParameter("@printval", ControlwhyfCode));
                         break;
+                    case "whbq":
+                        sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
+                        par.Add(new SqlParameter("@printval", ControlwhyfCode));
+                        break;
                     case "jyd":
                         sql += " and a.yzlx = @yzlx";
                         par.Add(new SqlParameter("@yzlx", (int)EnumYzlx.jy));
@@ -153,10 +161,6 @@ and  sfxm.sfdlcode in (SELECT * FROM dbo.f_split(@printval, ',')))";
                         sql += " and a.yzlx = @yzlx";
                         par.Add(new SqlParameter("@yzlx", (int)EnumYzlx.jy));
                         break;
-                    //case "jcd":
-                    //    sql += " and a.yzlx = @yzlx";
-                    //    par.Add(new SqlParameter("@yzlx", (int)EnumYzlx.jc));
-                    //    break;
                     case "ypbj":
                         sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
                         par.Add(new SqlParameter("@printval", ControlypbjyfCode));
@@ -173,23 +177,23 @@ where num1=1 ";
 
         public IList<ExecReportReportRightVO> QueryExecDetailGridJson(Pagination pagination, string orgId, string zyh, DateTime zxsj, DateTime zxsjend, string zxdlb,string yzxz)
         {
-            string sql = @" select hzxm,yzxz, clbz,yzId,tb1.yzh,zh,yznr
-            ,zxrq zxsj,shr,yzlx,ypyfdm,lyxh,shz,zxz,convert(varchar(10),isjf)isjf  from(
+            string sql = @" select zyh,hzxm,yzxz, clbz,min(yzId) yzId,tb1.yzh,zh,tb1.yznr
+            ,zxrq zxsj,shr,yzlx,ypyfdm,lyxh,shz,zxz,convert(varchar(10),isjf)isjf,sum(dj) dj,sum(case when num1>1 then 0 else sl end) sl,sum(je) je,px  from(
             select tb.*,case when ztmc='' then '1' else num end num1 from 
             (
-            select a.*,aaa.lyxh,b.Name shz,c.Name zxz ,Row_Number() OVER (partition by yzh,ztmc ORDER BY zxrq desc) num,zxrq from 
-            (select yzxh,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_tyssqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
+            select a.*,aaa.dj,aaa.sl,aaa.je,aaa.lyxh,b.Name shz,c.Name zxz ,Row_Number() OVER (partition by yzh,ztmc ORDER BY zxrq desc) num,zxrq from 
+            (select yzxh,dj,sl,CONVERT(decimal(18,2),dj*sl) je,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_tyssqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
             union all
-            select yzxh,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_fyqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
+            select yzxh,ypdj,ypsl,CONVERT(decimal(18,2),ypdj*ypsl) je,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_fyqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
             union
-            select yzxh,null lyxh,CreatorCode,zxrq from zy_fymxk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'') and isjf=0
+            select yzxh,dj,sl,CONVERT(decimal(18,2),dj*sl) je,null lyxh,CreatorCode,zxrq from zy_fymxk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'') and isjf=0
             )
             aaa  join 
-            (select isjf,'长' clbz,'2' yzxz,hzxm,Id yzId,yzh,zh,case when ztid is not null then ztmc else yznr end yznr,shr,yzlx,ypyfdm,isnull(ztmc,'') ztmc,yfztbs 
+            (select zyh,isjf,px,'长' clbz,'2' yzxz,hzxm,Id yzId,yzh,zh,case when ztid is not null then ztmc else yznr end yznr,shr,yzlx,ypyfdm,xmdm,isnull(ztmc,'') ztmc,yfztbs 
             from zy_cqyz with(nolock) 
             where  zt=1 and OrganizeId=@orgId and zyh in(select col from dbo.f_split(@zyh,',') where col>'') and (yfztbs is null or yzlx<>@yzlxs)
             union all
-            select isjf,'临' clbz,'1' yzxz,hzxm,Id yzId,yzh,zh,case when ztid is not null then ztmc else yznr end yznr,shr,yzlx,ypyfdm,isnull(ztmc,'') ztmc,yfztbs 
+            select zyh,isjf,case when ztId is not null then '1' else px end px,'临' clbz,'1' yzxz,hzxm,Id yzId,yzh,zh,case when ztid is not null then ztmc else yznr end yznr,shr,yzlx,ypyfdm,xmdm,isnull(ztmc,'') ztmc,yfztbs 
             from zy_lsyz with(nolock) 
             where zt=1 and OrganizeId=@orgId and zyh in(select col from dbo.f_split(@zyh,',') where col>'')  and (yfztbs is null or yzlx<>@yzlxs)
             ) a on aaa.yzxh=a.yzId
@@ -204,6 +208,8 @@ where num1=1 ";
             var ControlzsyfCode = _sysConfigRepo.GetValueByCode("zsyfpz", orgId);
             var ControlwhyfCode = _sysConfigRepo.GetValueByCode("whyfpz", orgId);
             var ControlypbjyfCode = _sysConfigRepo.GetValueByCode("ypbjyfpz", orgId);
+            string zxlbCode = _sysConfigRepo.GetValueByCode("zxdlb_" + zxdlb, orgId);
+
             if (!string.IsNullOrWhiteSpace(yzxz) && yzxz != "qb")
             {
                 sql += " and yzxz=@yzxz ";
@@ -225,6 +231,10 @@ where num1=1 ";
                         sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
                         par.Add(new SqlParameter("@printval", ControlwhyfCode));
                         break;
+                    case "whbq":
+                        sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
+                        par.Add(new SqlParameter("@printval", ControlwhyfCode));
+                        break;
                     case "jyd":
                     case "jyztdy":
                         sql += " and a.yzlx = @yzlx";
@@ -234,19 +244,33 @@ where num1=1 ";
                         sql += " and a.yzlx = @yzlx";
                         par.Add(new SqlParameter("@yzlx", (int)EnumYzlx.jc));
                         break;
+                    case "kfyd_yf":
+                    case "zsd_yf":
+                    case "syd_yf":
+                        sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
+                        par.Add(new SqlParameter("@printval", zxlbCode));
+                        break;
+                    case "zld_yzlx":
+                    case "zcy_yzlx":
+                        sql += " and a.yzlx in (SELECT * FROM dbo.f_split(@printval, ','))";
+                        par.Add(new SqlParameter("@printval", zxlbCode));
+                        break;
+                    case "hld_sfdl":
+                        sql += @" and exists(select 1 from NewtouchHIS_Base.dbo.V_S_xt_sfxm sfxm with(nolock) 
+where a.xmdm =sfxm.sfxmCode and sfxm.OrganizeId=@orgId and sfxm.zt='1' 
+and  sfxm.sfdlcode in (SELECT * FROM dbo.f_split(@printval, ',')))";
+                        par.Add(new SqlParameter("@printval", zxlbCode));
+                        break;
                     case "ypbj":
-                        sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@ypbjval, ','))";
-                        par.Add(new SqlParameter("@ypbjval", ControlypbjyfCode));
+                        sql += " and a.ypyfdm in (SELECT * FROM dbo.f_split(@printval, ','))";
+                        par.Add(new SqlParameter("@printval", ControlypbjyfCode));
                         break;
                 }
             }
             sql += @" )tb ) tb1
---left join (
---select yzh,ztmc ,case when CHARINDEX((CAST(count(1) as varchar)+'项'),ztmc)>0 
---then ztmc else ztmc+CAST(count(1) as varchar)+'项' end  yznr from zy_lsyz where  zyh in(select col from dbo.f_split(@zyh,',') where col>'')
---and OrganizeId=@orgId and yzlx in('6','7') and zt='1'
---group by yzh,ztmc) lsyz on tb1.yzh=lsyz.yzh 
-where num1=1 ";
+group by zyh,hzxm,yzxz,clbz,yzh,zh,yznr,zxrq,shr,yzlx,ypyfdm,lyxh,shz,zxz,isjf,px
+--where num1=1 
+";
             
             return QueryWithPage<ExecReportReportRightVO>(sql, pagination, par.ToArray());
         }

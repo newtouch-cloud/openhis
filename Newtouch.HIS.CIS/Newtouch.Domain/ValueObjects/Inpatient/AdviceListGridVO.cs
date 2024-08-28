@@ -41,6 +41,9 @@ namespace Newtouch.Domain.ValueObjects.Inpatient
         public string iszt { get; set; }
         public string yfztbs { get; set; }
         public int? yply { get; set; }
-
+        /// <summary>
+        /// 是否附属医嘱
+        /// </summary>
+        public string isfsyz { get; set; }
     }
 }
