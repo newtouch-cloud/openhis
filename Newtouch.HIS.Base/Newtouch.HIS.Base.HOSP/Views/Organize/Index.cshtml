@@ -2,6 +2,8 @@
 @{
     ViewBag.Title = "Index";
     Layout = "~/Views/Shared/_Index.cshtml";
+
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
 <div class="topPanel">
@@ -14,6 +16,9 @@
         </div>
         <div class="btn-group">
             <a id="NF-edit" authorize="yes" class="btn btn-primary" onclick="btn_edit()"><i class="fa fa-pencil-square-o"></i>修改</a>
+        </div>
+        <div class="btn-group">
+            <a id="NF-YBGetInfo" authorize="yes" class="btn btn-primary" onclick="btn_YBGetInfo()"><i class="fa fa-search"></i>医药机构信息获取</a>
         </div>
     </div>
     <div class="search">
@@ -122,6 +127,28 @@
             height: "620px",
             callBack: function (iframeId) {
                 top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function btn_YBGetInfo() {
+        var ybresp = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId" };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/GetfixmedinsInfo1201",
+            data: ybresp,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var upDataReturn = eval('(' + data + ')');
+                if (upDataReturn.infcode == "0") {
+                    $.modalAlert("医院登记：" + upDataReturn.output.medinsinfo[0].hosp_lv + ";      \n\r 统一社会信用代码：" + upDataReturn.output.medinsinfo[0].uscc, 'success');
+                }
+                else {
+                    $.modalAlert("获取机构信息失败：" + upDataReturn.err_msg, 'error');
+                    return;
+                }
+
             }
         });
     }
