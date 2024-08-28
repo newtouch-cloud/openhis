@@ -36,77 +36,6 @@ namespace Newtouch.HIS.DomainServices.BillManage
         {
         }
 
-
-        public int Cancel(string crkId, string lastModifierCode)
-        {
-            var result = 0;
-            if (string.IsNullOrWhiteSpace(crkId))
-            {
-                return result;
-            }
-
-            using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
-            {
-                var djs = db.IQueryable<SysMedicineStorageIOReceiptEntity>(p => p.crkId == crkId && p.zt == "1");
-                if (djs == null || djs.Count() == 0)
-                {
-                    return 0;
-                }
-
-                var djInfo = djs.First();
-                djInfo.zt = "0";
-                djInfo.LastModifierCode = lastModifierCode;
-                djInfo.LastModifyTime = DateTime.Now;
-                db.Update(djInfo);
-
-                var djMx = db.IQueryable<SysMedicineStorageIOReceiptDetailEntity>(p => p.crkId == crkId && p.zt == "1");
-                foreach (var mx in djMx)
-                {
-                    mx.zt = "0";
-                    mx.LastModifierCode = lastModifierCode;
-                    mx.LastModifyTime = DateTime.Now;
-                    db.Update(mx);
-                }
-
-                if (string.IsNullOrEmpty(djInfo.Pdh))
-                {
-                    return db.Commit();
-                }
-
-                switch ((EnumDanJuLX)djInfo.djlx)
-                {
-                    case EnumDanJuLX.shenqingdiaobo:
-                        CancelApply(djInfo.Pdh, djInfo.OrganizeId, lastModifierCode, db);
-                        break;
-                }
-                return db.Commit();
-            }
-        }
-
-        public void CancelApply(string pdh, string orgId, string lastModifierCode, Infrastructure.EF.EFDbTransaction db)
-        {
-            var slds = db.IQueryable<SysMedicineRequisitionEntity>(p => p.Sldh == pdh && p.OrganizeId == orgId && p.zt == "1");
-            if (slds == null || slds.Count() == 0)
-            {
-                return;
-            }
-
-            var sldInfo = slds.First();
-            sldInfo.zt = "0";
-            sldInfo.LastModifierCode = lastModifierCode;
-            sldInfo.LastModifyTime = DateTime.Now;
-            db.Update(sldInfo);
-
-            var sldMx = db.IQueryable<SysMedicineRequisitionDetailEntity>(p => p.sldId == sldInfo.sldId && p.zt == "1");
-            foreach (var mx in sldMx)
-            {
-                mx.zt = "0";
-                mx.LastModifierCode = lastModifierCode;
-                mx.LastModifyTime = DateTime.Now;
-                db.Update(mx);
-            }
-        }
-
         /// <summary>
         /// 提交内部申领
         /// </summary>
@@ -456,7 +385,7 @@ SELECT crkdjmx.crkmxId,crkdjmx.Yxq yxq,REPLACE(LTRIM(RTRIM(CONVERT(VARCHAR(20),c
 ,CONVERT(NUMERIC(11,2),crkdjmx.Pfj*crkdjmx.Sl) pjze
 ,CONVERT(NUMERIC(11,2),crkdjmx.Lsj*crkdjmx.Sl) ljze
 ,CONCAT(crkdjmx.jj,'元/',yp.bzdw) jjdwdj ");
-            sql.Append(new[] { (int)EnumDanJuLX.yaopinruku }.Contains(djlx)
+            sql.Append(new[] {(int) EnumDanJuLX.yaopinruku}.Contains(djlx)
                 ? @"
 ,dbo.f_getComplexYpSlandDw(crkdjmx.Sl*crkdjmx.Rkzhyz,yp.bzs,yp.bzdw,yp.zxdw) slanddw
 ,CONVERT(NUMERIC(11,2),(yp.Lsj-crkdjmx.jj)*crkdjmx.Sl*crkdjmx.rkzhyz/yp.bzs) jxcj

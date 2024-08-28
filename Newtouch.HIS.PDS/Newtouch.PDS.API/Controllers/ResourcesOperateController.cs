@@ -110,26 +110,7 @@ namespace Newtouch.PDS.API.Controllers
             var result = CommonExecute(ac, request);
             return CreateResponse(result);
         }
-        /// <summary>
-        /// 门诊确认资源（Commit）
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [HttpPost]
-        [Route("OutpatientCommitApi")]
-        [IgnoreTokenDecrypt]
-        public HttpResponseMessage OutpatientCommitforAPI(OutpatientCommitRequestDTO request)
-        {
-            Action<OutpatientCommitRequestDTO, DefaultResponse> ac = (req, resp) =>
-            {
-                resp.data = _resourcesOperateApp.OutpatientCommit(request);
-                resp.code = ResponseResultCode.SUCCESS;
-            };
-            request.Token = null;
-            request.TokenType = null;
-            var result = CommonExecute(ac, request);
-            return CreateResponse(result);
-        }
+
         /// <summary>
         /// (未发药前)部分退药
         /// </summary>

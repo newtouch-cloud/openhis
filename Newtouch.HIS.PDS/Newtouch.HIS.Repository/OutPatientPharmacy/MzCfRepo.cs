@@ -329,7 +329,10 @@ AND cf.zt = @zt
         {
             const string sql = @"
 SELECT * 
-FROM dbo.mz_cf(NOLOCK) cf
+FROM dbo.mz_cf(NOLOCK) cf,vout.mzh
+INNER JOIN dbo.mz_cfmx(NOLOCK) cfmx ON cfmx.cfh=cf.cfh AND cfmx.OrganizeId=cf.OrganizeId AND cfmx.zt='1' 
+INNER JOIN dbo.mz_cfmxph(NOLOCK) mxph ON mxph.fyyf=cf.lyyf AND mxph.cfh=cf.cfh AND mxph.yp=cfmx.ypCode AND mxph.zt='1' AND mxph.gjzt='0' AND mxph.OrganizeId=cf.OrganizeId
+INNER JOIN [NewtouchHIS_Sett].[dbo].[V_invoiceEBillOutpatient] vout on vout.busNo=cf.jsnm
 WHERE cf.CardNo=@CardNo
 AND cf.OrganizeId=@OrganizeId
 AND cf.xm=@xm
@@ -396,6 +399,31 @@ AND lyyf=@yfbmCode
             }
 
             return _dataContext.Database.SqlQuery<MzCfEntity>(sql.ToString(), param).ToList();
+        }
+
+        /// <summary>
+        /// 通过处方号获取组号
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <param name="type">用法名称</param>
+        /// <returns></returns>
+        public List<GetMzCfZt> GetZhInOutpatient(string cfh ,string type)
+        {
+            var sql = new StringBuilder(@"SELECT cfId FROM  [Newtouch_CIS].[dbo].[xt_cf] WHERE cfh in(select col from dbo.f_split(@cfh,','))");
+            var param = new DbParameter[]
+            {
+                new SqlParameter("@cfh", cfh),
+            };
+            var cfid = _dataContext.Database.SqlQuery<string>(sql.ToString(), param).ToList();
+            var sql2 = new StringBuilder(@"SELECT zh FROM  [Newtouch_CIS].[dbo].[xt_cfmx] mx
+left join NewtouchHIS_Base.dbo.V_S_xt_ypyf d with(nolock) on mx.yfCode=d.yfCode and d.zt='1'
+where cfId in(select col from dbo.f_split(@cfid,',')) and d.yfmc=@type");
+            var param2 = new DbParameter[]
+            {
+                new SqlParameter("@cfid", string.Join(",",cfid)),
+                new SqlParameter("@type", type),
+            };
+            return _dataContext.Database.SqlQuery<GetMzCfZt>(sql2.ToString(), param2).ToList();
         }
 
         /// <summary>

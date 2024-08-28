@@ -568,13 +568,14 @@ END CATCH
         /// 门诊发药处方明细查询
         /// </summary>
         public const string mz_fy_cfmx = @"
-SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,'' slStr
+SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,a.gjybdm
 FROM (
 	SELECT cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, SUM(mxph.sl) zxdwsl, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc
-	,cfmx.bz yszt, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz
+	,cfmx.bz yszt, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 	FROM dbo.mz_cf(NOLOCK) cf 
 	INNER JOIN dbo.mz_cfmx(NOLOCK) cfmx ON cfmx.cfh = cf.cfh AND cfmx.OrganizeId=cf.OrganizeId AND cfmx.zt='1'
 	INNER JOIN dbo.mz_cfmxph(NOLOCK) mxph ON mxph.cfh=cfmx.cfh AND mxph.gjzt='0' AND mxph.yp=cfmx.ypCode AND mxph.OrganizeId=cfmx.OrganizeId AND mxph.fyyf=cf.lyyf AND mxph.zt='1'
+	INNER JOIN [NewtouchHIS_Base].dbo.xt_ypsx(NOLOCK) xtyp ON xtyp.ypcode = cfmx.ypcode AND cfmx.OrganizeId=xtyp.OrganizeId AND xtyp.zt='1'
 	WHERE cf.OrganizeId=@OrganizeId
 	AND cf.zt='1'
 	AND cf.jsnm>0
@@ -583,17 +584,18 @@ FROM (
 	AND ISNULL(cf.cfh,'')=ISNULL(@cfh,'')
 	AND ISNULL(mxph.czh,'')=ISNULL(cfmx.czh,'')
 	AND mxph.cfmxId=cfmx.Id
-	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz
+	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 ) a 
 ";
 		public const string mz_fy_cfmx_new = @"
-SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj
+SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,a.gjybdm
 FROM (
 	SELECT cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, SUM(mxph.sl) zxdwsl, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc
-	,cfmx.bz yszt, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz
+	,cfmx.bz yszt, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 	FROM dbo.mz_cf(NOLOCK) cf 
 	INNER JOIN dbo.mz_cfmx(NOLOCK) cfmx ON cfmx.cfh = cf.cfh AND cfmx.OrganizeId=cf.OrganizeId AND cfmx.zt='1'
 	INNER JOIN dbo.mz_cfmxph(NOLOCK) mxph ON mxph.cfh=cfmx.cfh AND mxph.gjzt='0' AND mxph.yp=cfmx.ypCode AND mxph.OrganizeId=cfmx.OrganizeId AND mxph.fyyf=cf.lyyf AND mxph.zt='1'
+	INNER JOIN [NewtouchHIS_Base].dbo.xt_ypsx(NOLOCK) xtyp ON xtyp.ypcode = cfmx.ypcode AND cfmx.OrganizeId=xtyp.OrganizeId AND xtyp.zt='1'
 	WHERE cf.OrganizeId=@OrganizeId
 	AND cf.zt='1'
 	AND cf.jsnm>0
@@ -601,7 +603,7 @@ FROM (
 	AND cf.cfh in(select col from dbo.f_split(@cfh,',') where col>'')
 	AND ISNULL(mxph.czh,'')=ISNULL(cfmx.czh,'')
 	AND mxph.cfmxId=cfmx.Id
-	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz
+	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 ) a 
 ";
 

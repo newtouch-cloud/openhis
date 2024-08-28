@@ -109,12 +109,11 @@ namespace Newtouch.Infrastructure
         /// </summary>
         [Description("基药出库")] // 根据出库方式统计单据信息
         jiyaochuku = 13,
-
         /// <summary>
-        /// 申请调拨
+        /// 批量出库
         /// </summary>
-        [Description("申请调拨")] // 单据号DBSQD111111111111
-        shenqingdiaobo = 14,
+        [Description("批量出库")] // 根据出库方式统计单据信息
+        piliangchuku = 14,
     }
 
     /// <summary>
@@ -206,21 +205,21 @@ namespace Newtouch.Infrastructure
     public enum EnumSLDDeliveryStatus
     {
         /// <summary>
-        /// 未入库
+        /// 未发
         /// </summary>
-        [Description("未入库")]
+        [Description("未发")]
         None = 0,
 
         /// <summary>
-        /// 部分入库
+        /// 已发部分
         /// </summary>
-        [Description("部分入库")]
+        [Description("已发部分")]
         Part,
 
         /// <summary>
-        /// 已入库
+        /// 已全发
         /// </summary>
-        [Description("已入库")]
+        [Description("已全发")]
         All,
 
         /// <summary>
@@ -419,7 +418,7 @@ namespace Newtouch.Infrastructure
         /// None
         /// </summary>
         None = 0,
-
+        
         /// <summary>
         /// 发药
         /// </summary>
@@ -544,111 +543,50 @@ namespace Newtouch.Infrastructure
     }
 
     /// <summary>
-    /// 申领单类型
+    /// 装箱类型
     /// </summary>
-    public enum EnumSldlx
+    public enum EnumZXLX
     {
-
-        /// <summary>
-        /// 内部申领单
-        /// </summary>
-        [Description("内部申领单")]
-        neibushenlingdan = 0,
-
-        /// <summary>
-        /// 申请调拨单
-        /// </summary>
-        [Description("申请调拨单")]
-        shenqingdiaobodan = 1,
+        [Description("多品规货品拼箱配送")]
+        yxdp = 1,
+        [Description("整箱为同一品规的货品")]
+        yxyp = 2,
+        [Description("同一次配送的同一品规货品分布在多箱内")]
+        ypdx = 3,
     }
-
+    
     /// <summary>
-    /// 远程诊疗状态
+    /// 药品类型
     /// </summary>
-    public enum Emunzlzt
+    public enum EnumYPLX
     {
-        [Description("待确认")]
-        dqr = 1,
-        [Description("就诊中")]
-        jzz = 2,
-        [Description("已结束")]
-        yjs = 3,
-        [Description("已退回")]
-        yth = 4,
-        [Description("已撤销")]
-        ycx = 5,
-        [Description("已发药")]
-        yfy = 6,
+        [Description("生物制剂")]
+        swzj = 1,
+        [Description("中成药")]
+        zcy = 2,
+        [Description("中药饮片")]
+        zyyp = 3,
+        [Description("自制制剂")]
+        zzzj = 4,
+        [Description("免疫用疫苗")]
+        myyym = 5,
+        [Description("实验室检验化验用药品或试剂")]
+        sysjyhyyyphsj = 6,
+        [Description("医学检查用药品或试剂")]
+        yxjcyyphsj = 7,
+        [Description("化学药品")]
+        hxyp = 8,
+        [Description("其他")]
+        qt = 9,
     }
-
     /// <summary>
-    /// 自负性质 v2 
-    /// 重庆再用
+    /// 包装单位性质
     /// </summary>
-    public enum EnumZFXZv2
+    public enum EnumBZDWXZ
     {
-        /// <summary>
-        /// 自费
-        /// </summary>
-        [Description("自费")]
-        ZF = 1,
-        /// <summary>
-        /// 甲类
-        /// </summary>
-        [Description("甲类")]
-        J = 4,
-        /// <summary>
-        /// 乙类
-        /// </summary>
-        [Description("乙类")]
-        Y = 5,
-        /// <summary>
-        /// 丙类
-        /// </summary>
-        [Description("丙类")]
-        B = 6,
+        [Description("商品最小零售单位")]
+        spzxlsdw = 1,
+        [Description("大包装简包装")]
+        dbzjbz = 2,
     }
-
-    /// <summary>
-    /// 病区记账取整类型
-    /// </summary>
-    public enum EnumBQJZQZ
-    {
-        /// <summary>
-        /// 每天取整
-        /// </summary>
-        [Description("每天取整")]
-        Day = 1,
-        /// <summary>
-        /// 每次取整
-        /// </summary>
-        [Description("每次取整")]
-        Times
-    }
-
-    public enum EnumJybz
-    {
-        [Description("国基药")]
-        Gjy = 1,
-        [Description("贵安增补基药")]
-        Gazbjy = 2,
-        [Description("非基药")]
-        Fjy = 3,
-        [Description("非前述几种")]
-        dbs = 4,
-    }
-
-
-    public enum EnumYpsx
-    {
-        [Description("麻醉药品")]
-        Mzyp = 9,
-        [Description("毒性药品")]
-        Dxyp = 4,
-        [Description("精一药品")]
-        Jyyp = 5,
-        [Description("精二药品")]
-        Jeyp = 6,
-    }
-
 }

@@ -39,7 +39,6 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
 			,x.nbdl,x.mzzybz,x.CreateTime,d.pzwh,
             d.yptssx,d.ypflCode,d.zlff,d.jzlx,d.mrbzq,d.sjap,d.zbbz,d.yl,d.yldw,d.zjtzsj
 			,d.ghdw,d.ypcd,d.ypgg,d.ybdm,d.xnhybdm, d.gjybdm,c.dlmc sfdlMc, e.jxmc jxmc, f.ypflmc ypflMc, case when d.ybdm IS NULL then '2' when d.ybdm IS NOT NULL AND d.LastYBUploadTime IS NOT NULL AND d.LastYBUploadTime >= d.LastModifyTime then '1' else '0' end isSynch,d.gjybmc
-            , x.cfl,x.jl,x.bzs, 0.00 as cls
             FROM [NewtouchHIS_Base].dbo.xt_yp as x  
 			left join [NewtouchHIS_Base].dbo.xt_ypsx as d on x.ypId=d.ypId
 			left join [NewtouchHIS_Base].dbo.xt_sfdl c	on x.dlCode = c.dlCode and c.OrganizeId = @organizeId
@@ -98,11 +97,11 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
 			,x.nbdl,x.mzzybz,x.CreateTime,d.pzwh,
             d.yptssx,d.ypflCode,d.zlff,d.jzlx,d.mrbzq,d.sjap,d.zbbz,d.yl,d.yldw,d.zjtzsj
 			,d.ghdw,d.ypcd,d.ypgg,d.ybdm,d.xnhybdm, d.gjybdm,c.dlmc sfdlMc, e.jxmc jxmc, f.ypflmc ypflMc, case when d.ybdm IS NULL then '2' when d.ybdm IS NOT NULL AND d.LastYBUploadTime IS NOT NULL AND d.LastYBUploadTime >= d.LastModifyTime then '1' else '0' end isSynch,d.gjybmc
-            FROM [NewtouchHIS_Base].[dbo].[xt_yp] as x  
-			left join [NewtouchHIS_Base].[dbo].xt_ypsx as d on x.ypId=d.ypId
-			left join [NewtouchHIS_Base].[dbo].xt_sfdl c	on x.dlCode = c.dlCode and c.OrganizeId = @organizeId
-			left join [NewtouchHIS_Base].[dbo].xt_ypjx e	on x.jx = e.jxCode
-			left join [NewtouchHIS_Base].[dbo].xt_ypfl f	on d.ypflCode = f.ypflCode
+            FROM xt_yp as x  
+			left join xt_ypsx as d on x.ypId=d.ypId
+			left join xt_sfdl c	on x.dlCode = c.dlCode and c.OrganizeId = @organizeId
+			left join xt_ypjx e	on x.jx = e.jxCode
+			left join xt_ypfl f	on d.ypflCode = f.ypflCode
 			where x.OrganizeId = @organizeId and d.OrganizeId = @organizeId ";
             DbParameter[] par;
             if (!string.IsNullOrEmpty(keyword))
@@ -666,11 +665,11 @@ x.djdw,x.lsj,x.pfj,x.zfbl,x.zfxz,x.dlCode,x.ycmc,x.zt,0 bgbz,x.ypbzdm,x.nbdl,x.m
 d.yptssx,d.ypflCode,d.zlff,d.jzlx,d.mrbzq,d.sjap,d.zbbz,d.yl,d.yldw,d.zjtzsj,d.ghdw,d.ypcd,d.ypgg,d.ybdm,d.xnhybdm,
 x.jx,x.jl,x.jldw,x.OrganizeId,x.bzs,x.CreatorCode, c.dlmc sfdlMc, e.jxmc jxmc, f.ypflmc ypflMc ,d.mrjl,d.mrpc,
 x.isKss,x.kssId,x.jybz,d.ybbz 
-FROM [NewtouchHIS_Base].[dbo].xt_yp(NOLOCK) x  
-LEFT JOIN [NewtouchHIS_Base].[dbo].xt_ypsx(NOLOCK) d on x.ypId=d.ypId 
-LEFT JOIN [NewtouchHIS_Base].[dbo].xt_sfdl(NOLOCK) c ON x.dlCode = c.dlCode and c.OrganizeId = x.OrganizeId AND c.zt='1'
-LEFT JOIN [NewtouchHIS_Base].[dbo].xt_ypjx(NOLOCK) e ON x.jx = e.jxCode AND e.zt='1' 
-LEFT JOIN [NewtouchHIS_Base].[dbo].xt_ypfl(NOLOCK) f ON d.ypflCode = f.ypflCode AND f.zt='1' 
+FROM xt_yp(NOLOCK) x  
+LEFT JOIN xt_ypsx(NOLOCK) d on x.ypId=d.ypId 
+LEFT JOIN xt_sfdl(NOLOCK) c ON x.dlCode = c.dlCode and c.OrganizeId = x.OrganizeId AND c.zt='1'
+LEFT JOIN xt_ypjx(NOLOCK) e ON x.jx = e.jxCode AND e.zt='1' 
+LEFT JOIN xt_ypfl(NOLOCK) f ON d.ypflCode = f.ypflCode AND f.zt='1' 
 WHERE x.ypCode =@ypCode
 AND x.OrganizeId=@OrganizeId
 ";
@@ -678,7 +677,6 @@ AND x.OrganizeId=@OrganizeId
                 new SqlParameter("@ypCode", ypCode),
                 new SqlParameter("@OrganizeId", organizeId)
             };
-            //var result= FirstOrDefault<SysMedicineVO>(sql, par); 
             return FirstOrDefault<SysMedicineVO>(sql, par);
         }
 
@@ -707,121 +705,128 @@ AND x.OrganizeId=@OrganizeId
                         {
                             new SqlParameter("@ypId", ypId),
                         };
-                        var ypsxEntity = FirstOrDefault<SysMedicinePropertyBaseVO>(ypsxSql, parList2.ToArray());
+                        var ypsxEntity = FirstOrDefault<SysMedicinePropertyBaseVO>(ypsxSql, parList.ToArray());
 
                         model.ypId = ypId.Value;
                         ypEntity.pfj = model.pfj;
                         model.OrganizeId = ypEntity.OrganizeId;//组织 机构 不能变
                         UpdateEnityProperties(ypEntity, ypsxEntity, model);
-
-                        //更新药品
-                        try {
-                            var sqlParList = new List<SqlParameter>();
-                            var sqla = "";
-                            if (!string.IsNullOrWhiteSpace(ypEntity.ypqz)) { sqla += ",ypqz=@ypqz"; sqlParList.Add(new SqlParameter("@ypqz", ypEntity.ypqz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.yphz)) { sqla += ",yphz=@yphz"; sqlParList.Add(new SqlParameter("@yphz", ypEntity.yphz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.spm)) { sqla += ",spm=@spm"; sqlParList.Add(new SqlParameter("@spm", ypEntity.spm)); }
-                            if (ypEntity.cfl!=0) { sqla += ",cfl=@cfl"; sqlParList.Add(new SqlParameter("@cfl", ypEntity.cfl)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.cfdw)) { sqla += ",cfdw=@cfdw"; sqlParList.Add(new SqlParameter("@cfdw", ypEntity.cfdw)); }
-                            if (ypEntity.jl != 0) { sqla += ",jl=@jl"; sqlParList.Add(new SqlParameter("@jl", ypEntity.jl)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.jldw)) { sqla += ",jldw=@jldw"; sqlParList.Add(new SqlParameter("@jldw", ypEntity.jldw)); }
-                            if (ypEntity.mzcls != 0) { sqla += ",mzcls=@mzcls"; sqlParList.Add(new SqlParameter("@mzcls", ypEntity.mzcls)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.mzcldw)) { sqla += ",mzcldw=@mzcldw"; sqlParList.Add(new SqlParameter("@mzcldw", ypEntity.mzcldw)); }
-                            if (ypEntity.zycls != 0) { sqla += ",zycls=@zycls"; sqlParList.Add(new SqlParameter("@zycls", ypEntity.zycls)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.zycldw)) { sqla += ",zycldw=@zycldw"; sqlParList.Add(new SqlParameter("@zycldw", ypEntity.zycldw)); }
-                            if (ypEntity.pfj != 0) { sqla += ",pfj=@pfj"; sqlParList.Add(new SqlParameter("@pfj", ypEntity.pfj)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.jx)) { sqla += ",jx=@jx"; sqlParList.Add(new SqlParameter("@jx", ypEntity.jx)); }
-                            if (ypEntity.medid != 0) { sqla += ",medid=@medid"; sqlParList.Add(new SqlParameter("@medid", ypEntity.medid)); }
-                            if (ypEntity.medextid != 0) { sqla += ",medextid=@medextid"; sqlParList.Add(new SqlParameter("@medextid", ypEntity.medextid)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.ypbzdm)) { sqla += ",ypbzdm=@ypbzdm"; sqlParList.Add(new SqlParameter("@ypbzdm", ypEntity.ypbzdm)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.nbdl)) { sqla += ",nbdl=@nbdl"; sqlParList.Add(new SqlParameter("@nbdl", ypEntity.nbdl)); }
-                            if (ypEntity.px != 0 && ypEntity.px != null) { sqla += ",px=@px"; sqlParList.Add(new SqlParameter("@px", ypEntity.px)); }
-                            if (ypEntity.lsbz != null) { sqla += ",lsbz=@lsbz"; sqlParList.Add(new SqlParameter("@lsbz", ypEntity.lsbz)); }
-                            if (ypEntity.mjzbz != 0 && ypEntity.mjzbz != null) { sqla += ",mjzbz=@mjzbz"; sqlParList.Add(new SqlParameter("@mjzbz", ypEntity.mjzbz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.yfCode)) { sqla += ",yfCode=@yfCode"; sqlParList.Add(new SqlParameter("@yfCode", ypEntity.yfCode)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.isKss)) { sqla += ",isKss=@isKss"; sqlParList.Add(new SqlParameter("@isKss", ypEntity.isKss)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.kssId)) { sqla += ",kssId=@kssId"; sqlParList.Add(new SqlParameter("@kssId", ypEntity.kssId)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.jybz)) { sqla += ",jybz=@jybz"; sqlParList.Add(new SqlParameter("@jybz", ypEntity.jybz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.bz)) { sqla += ",bz=@bz"; sqlParList.Add(new SqlParameter("@bz", ypEntity.bz)); }
-                            if (ypEntity.cxjje != 0 && ypEntity.cxjje != null) { sqla += ",cxjje=@cxjje"; sqlParList.Add(new SqlParameter("@cxjje", ypEntity.cxjje)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.tsypbz)) { sqla += ",tsypbz=@tsypbz"; sqlParList.Add(new SqlParameter("@tsypbz", ypEntity.tsypbz)); }
-
-
-                            var sql = @"update [NewtouchHIS_Base].[dbo].[xt_yp] 
-		set ypCode=@ypCode,ypmc=@ypmc,OrganizeId=@OrganizeId,zxdw=@zxdw,djdw=@djdw,lsj=@lsj,zfbl=@zfbl,zfxz=@zfxz,dlCode=@dlCode,ycmc=@ycmc,LastModifyTime=getdate(),LastModifierCode=@LastModifierCode"
-            + sqla +
-            @" from [NewtouchHIS_Base].[dbo].[xt_yp] a where ypId=@ypId ";
-
-                            sqlParList.Add(new SqlParameter("@ypId", ypEntity.ypId));
-                            sqlParList.Add(new SqlParameter("@ypCode", ypEntity.ypCode));
-                            sqlParList.Add(new SqlParameter("@ypmc", ypEntity.ypmc));
-                            sqlParList.Add(new SqlParameter("@OrganizeId", ypEntity.OrganizeId));
-                            sqlParList.Add(new SqlParameter("@zxdw", ypEntity.zxdw));
-                            sqlParList.Add(new SqlParameter("@djdw", ypEntity.djdw));
-                            sqlParList.Add(new SqlParameter("@lsj", ypEntity.lsj));
-                            sqlParList.Add(new SqlParameter("@zfbl", ypEntity.zfbl));
-                            sqlParList.Add(new SqlParameter("@zfxz", ypEntity.zfxz));
-                            sqlParList.Add(new SqlParameter("@dlCode", ypEntity.dlCode));
-                            sqlParList.Add(new SqlParameter("@ycmc", ypEntity.ycmc));
-                            sqlParList.Add(new SqlParameter("@LastModifierCode", OperatorProvider.GetCurrent().UserCode));
-                            ExecuteSqlCommand(sql, sqlParList.ToArray());
-                        }
-                        catch (Exception ex)
+                        var strSql = new StringBuilder();
+                        strSql.Append(@"  UPDATE [NewtouchHIS_Base].dbo.xt_yp
+SET ypCode=@ypCode,ypmc=@ypmc,OrganizeId=@OrganizeId,ypqz=@ypqz,yphz=@yphz,spm=@spm,py=@py,cfl=@cfl,cfdw=@cfdw,jl=@jl,jldw=@jldw,bzs=@bzs,bzdw=@bzdw,mzcls=@mzcls,mzcldw=@mzcldw,zycls=@zycls,zycldw=@zycldw,zxdw=@zxdw,djdw=@djdw,lsj=@lsj,pfj=@pfj,zfbl=@zfbl,zfxz=@zfxz,dlCode=@dlCode,jx=@jx,ycmc=@ycmc,medid=@medid,medextid=@medextid,ypbzdm=@ypbzdm,nbdl=@nbdl,mzzybz=@mzzybz,CreatorCode=@CreatorCode,CreateTime=@CreateTime,LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode,zt=@zt,px=@px,lsbz=@lsbz,mjzbz=@mjzbz,yfCode=@yfCode,isKss=@isKss,kssId=@kssId,jybz=@jybz,bz=@bz,cxjje=@cxjje,tsypbz=@tsypbz
+where ypId=@ypId");
+                        var paraList = new DbParameter[]
                         {
-                            throw new FailedException("保存失败！" + ex.Message);
-                        }
+                       new SqlParameter("@ypId", ypId),
+                       new SqlParameter("@ypCode", ypEntity.ypCode),
+                       new SqlParameter("@ypmc", ypEntity.ypmc),
+                       new SqlParameter("@OrganizeId", ypEntity.OrganizeId),
+                       new SqlParameter("@ypqz", ypEntity.ypqz),
+                       new SqlParameter("@yphz", ypEntity.yphz),
+                       new SqlParameter("@spm", ypEntity.spm),
+                       new SqlParameter("@py", ypEntity.py),
+                       new SqlParameter("@cfl", ypEntity.cfl),
+                       new SqlParameter("@cfdw", ypEntity.cfdw),
+                       new SqlParameter("@jl", ypEntity.jl),
+                       new SqlParameter("@jldw", ypEntity.jldw),
+                       new SqlParameter("@bzs", ypEntity.bzs),
+                       new SqlParameter("@bzdw", ypEntity.bzdw),
+                       new SqlParameter("@mzcls", ypEntity.mzcls),
+                       new SqlParameter("@mzcldw", ypEntity.mzcldw),
+                       new SqlParameter("@zycls", ypEntity.zycls),
+                       new SqlParameter("@zycldw", ypEntity.zycldw),
+                       new SqlParameter("@zxdw", ypEntity.zxdw),
+                       new SqlParameter("@djdw", ypEntity.djdw),
+                       new SqlParameter("@lsj", ypEntity.lsj),
+                       new SqlParameter("@pfj", ypEntity.pfj),
+                       new SqlParameter("@zfbl", ypEntity.zfbl),
+                       new SqlParameter("@zfxz", ypEntity.zfxz),
+                       new SqlParameter("@dlCode", ypEntity.dlCode),
+                       new SqlParameter("@jx", ypEntity.jx),
+                       new SqlParameter("@ycmc", ypEntity.ycmc),
+                       new SqlParameter("@medid", ypEntity.medid),
+                       new SqlParameter("@medextid", ypEntity.medextid),
+                       new SqlParameter("@ypbzdm", ypEntity.ypbzdm),
+                       new SqlParameter("@nbdl", ypEntity.nbdl),
+                       new SqlParameter("@mzzybz", ypEntity.mzzybz),
+                       new SqlParameter("@CreatorCode",null),
+                       new SqlParameter("@CreateTime", null),
+                       new SqlParameter("@LastModifyTime", DateTime.Now),
+                       new SqlParameter("@LastModifierCode",OperatorProvider.GetCurrent().UserCode),
+                       new SqlParameter("@zt", ypEntity.zt),
+                       new SqlParameter("@px", ypEntity.px),
+                       new SqlParameter("@lsbz", ypEntity.lsbz),
+                       new SqlParameter("@mjzbz", ypEntity.mjzbz),
+                       new SqlParameter("@yfCode", ypEntity.yfCode),
+                       new SqlParameter("@isKss", ypEntity.isKss),
+                       new SqlParameter("@kssId", ypEntity.kssId),
+                       new SqlParameter("@jybz", ypEntity.jybz),
+                       new SqlParameter("@bz", ypEntity.bz),
+                       new SqlParameter("@cxjje", ypEntity.cxjje),
+                       new SqlParameter("@tsypbz", ypEntity.tsypbz),
+                        };
+                        db.ExecuteSqlCommand(strSql.ToString(), paraList);
 
                         //更新药品属性
-                        try
+                        var strSql2 = new StringBuilder();
+                        strSql2.Append(@"  UPDATE [NewtouchHIS_Base].dbo.xt_ypsx
+SET ypId=@ypId,OrganizeId=@OrganizeId,ypCode=@ypCode,shbz=@shbz,tsbz=@tsbz,jsbz=@jsbz,gzy=@gzy,mzy=@mzy,yljsy=@yljsy,zbbz=@zbbz,zlff=@zlff,sjap=@sjap,yl=@yl,yldw=@yldw,ypgg=@ypgg,ybdm=@ybdm,syts=@syts,dczdjl=@dczdjl,dczdsl=@dczdsl,ljzdjl=@ljzdjl,ljzdsl=@ljzdsl,pzwh=@pzwh,yptssx=@yptssx,ypflCode=@ypflCode,jzlx=@jzlx,mrbzq=@mrbzq,zjtzsj=@zjtzsj,xglx=@xglx,ghdw=@ghdw,ypcd=@ypcd,CreatorCode=@CreatorCode,CreateTime=@CreateTime,LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode,zt=@zt,px=@px,xzyy=@xzyy,xzyysm=@xzyysm,LastYBUploadTime=@LastYBUploadTime,mrjl=@mrjl,mrpc=@mrpc,ybbz=@ybbz,xnhybdm=@xnhybdm,gjybdm=@gjybdm,ybmlscrq=@ybmlscrq,gjybmc=@gjybmc,xjbs=@xjbs,dcxl=@dcxl,mbxl=@mbxl,mryf=@mryf,ybgg=@ybgg
+where ypId=@ypId");
+                        var paraList2 = new DbParameter[]
                         {
-                            var sqlParList = new List<SqlParameter>();
-                            var sqla = "";
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.shbz)) { sqla += ",shbz=@shbz"; sqlParList.Add(new SqlParameter("@shbz", ypsxEntity.shbz)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.tsbz)) { sqla += ",tsbz=@tsbz"; sqlParList.Add(new SqlParameter("@tsbz", ypsxEntity.tsbz)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.jsbz)) { sqla += ",jsbz=@jsbz"; sqlParList.Add(new SqlParameter("@jsbz", ypsxEntity.jsbz)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.gzy)) { sqla += ",gzy=@gzy"; sqlParList.Add(new SqlParameter("@gzy", ypsxEntity.gzy)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.mzy)) { sqla += ",mzy=@mzy"; sqlParList.Add(new SqlParameter("@mzy", ypsxEntity.mzy)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.yljsy)) { sqla += ",yljsy=@yljsy"; sqlParList.Add(new SqlParameter("@yljsy", ypsxEntity.yljsy)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.zbbz)) { sqla += ",zbbz=@zbbz"; sqlParList.Add(new SqlParameter("@zbbz", ypsxEntity.zbbz)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.zlff)) { sqla += ",zlff=@zlff"; sqlParList.Add(new SqlParameter("@zlff", ypsxEntity.zlff)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.sjap)) { sqla += ",sjap=@sjap"; sqlParList.Add(new SqlParameter("@sjap", ypsxEntity.sjap)); }
-                            if (ypsxEntity.yl!= 0 && ypsxEntity.yl != null) { sqla += ",yl=@yl"; sqlParList.Add(new SqlParameter("@yl", ypsxEntity.yl)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.yldw)) { sqla += ",yldw=@yldw"; sqlParList.Add(new SqlParameter("@yldw", ypsxEntity.yldw)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.ypgg)) { sqla += ",ypgg=@ypgg"; sqlParList.Add(new SqlParameter("@ypgg", ypsxEntity.ypgg)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.ybdm)) { sqla += ",ybdm=@ybdm"; sqlParList.Add(new SqlParameter("@ybdm", ypsxEntity.ybdm)); }
-                            if (ypsxEntity.syts != 0 && ypsxEntity.syts != null) { sqla += ",syts=@syts"; sqlParList.Add(new SqlParameter("@syts", ypsxEntity.syts)); }
-                            if (ypsxEntity.dczdjl != 0 && ypsxEntity.dczdjl != null) { sqla += ",dczdjl=@dczdjl"; sqlParList.Add(new SqlParameter("@dczdjl", ypsxEntity.dczdjl)); }
-                            if (ypsxEntity.dczdsl != 0 && ypsxEntity.dczdsl != null) { sqla += ",dczdsl=@dczdsl"; sqlParList.Add(new SqlParameter("@dczdsl", ypsxEntity.dczdsl)); }
-                            if (ypsxEntity.ljzdjl != 0 && ypsxEntity.ljzdjl != null) { sqla += ",ljzdjl=@ljzdjl"; sqlParList.Add(new SqlParameter("@ljzdjl", ypsxEntity.ljzdjl)); }
-                            if (ypsxEntity.ljzdsl != 0 && ypsxEntity.ljzdsl != null) { sqla += ",ljzdsl=@ljzdsl"; sqlParList.Add(new SqlParameter("@ljzdsl", ypsxEntity.ljzdsl)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.pzwh)) { sqla += ",pzwh=@pzwh"; sqlParList.Add(new SqlParameter("@pzwh", ypsxEntity.pzwh)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.yptssx)) { sqla += ",yptssx=@yptssx"; sqlParList.Add(new SqlParameter("@yptssx", ypsxEntity.yptssx)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.ypflCode)) { sqla += ",ypflCode=@ypflCode"; sqlParList.Add(new SqlParameter("@ypflCode", ypsxEntity.ypflCode)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.jzlx)) { sqla += ",jzlx=@jzlx"; sqlParList.Add(new SqlParameter("@jzlx", ypsxEntity.jzlx)); }
-                            if (ypsxEntity.mrbzq != 0) { sqla += ",mrbzq=@mrbzq"; sqlParList.Add(new SqlParameter("@mrbzq", ypsxEntity.mrbzq)); }
-                            if (ypsxEntity.zjtzsj != null) { sqla += ",zjtzsj=@zjtzsj"; sqlParList.Add(new SqlParameter("@zjtzsj", ypsxEntity.zjtzsj)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.xglx)) { sqla += ",xglx=@xglx"; sqlParList.Add(new SqlParameter("@xglx", ypsxEntity.xglx)); }
-                            if (!string.IsNullOrWhiteSpace(ypsxEntity.ghdw)) { sqla += ",ghdw=@ghdw"; sqlParList.Add(new SqlParameter("@ghdw", ypsxEntity.ghdw)); }
-                            if (ypsxEntity.ypcd != 0) { sqla += ",ypcd=@ypcd"; sqlParList.Add(new SqlParameter("@ypcd", ypsxEntity.ypcd)); }
-
-
-                            var sql = @"update [NewtouchHIS_Base].[dbo].[xt_ypsx] 
-		set ypId=@ypId,OrganizeId=@OrganizeId,ypCode=@ypCode,ybbz=@ybbz,LastModifyTime=getdate(),LastModifierCode=@LastModifierCode"
-            + sqla +
-            @" from [NewtouchHIS_Base].[dbo].[xt_ypsx] a where ypId=@ypId ";
-
-                            sqlParList.Add(new SqlParameter("@ypId", ypsxEntity.ypId));
-                            sqlParList.Add(new SqlParameter("@OrganizeId", ypsxEntity.OrganizeId));
-                            sqlParList.Add(new SqlParameter("@ypCode", ypsxEntity.ypCode));
-                            sqlParList.Add(new SqlParameter("@ybbz", ypsxEntity.ybbz));
-                            sqlParList.Add(new SqlParameter("@LastModifierCode", OperatorProvider.GetCurrent().UserCode));
-                            ExecuteSqlCommand(sql, sqlParList.ToArray());
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new FailedException("保存失败！" + ex.Message);
-                        }
-
+                        new SqlParameter("@ypId", ypsxEntity.ypId),
+                        new SqlParameter("@OrganizeId", ypsxEntity.OrganizeId),
+                        new SqlParameter("@ypCode", ypsxEntity.ypCode),
+                        new SqlParameter("@shbz", ypsxEntity.shbz),
+                        new SqlParameter("@tsbz", ypsxEntity.tsbz),
+                        new SqlParameter("@jsbz", ypsxEntity.jsbz),
+                        new SqlParameter("@gzy", ypsxEntity.gzy),
+                        new SqlParameter("@mzy", ypsxEntity.mzy),
+                        new SqlParameter("@yljsy", ypsxEntity.yljsy),
+                        new SqlParameter("@zbbz", ypsxEntity.zbbz),
+                        new SqlParameter("@zlff", ypsxEntity.zlff),
+                        new SqlParameter("@sjap", ypsxEntity.sjap),
+                        new SqlParameter("@yl", ypsxEntity.yl),
+                        new SqlParameter("@yldw", ypsxEntity.yldw),
+                        new SqlParameter("@ypgg", ypsxEntity.ypgg),
+                        new SqlParameter("@ybdm", ypsxEntity.ybdm),
+                        new SqlParameter("@syts", ypsxEntity.syts),
+                        new SqlParameter("@dczdjl", ypsxEntity.dczdjl),
+                        new SqlParameter("@dczdsl", ypsxEntity.dczdsl),
+                        new SqlParameter("@ljzdjl", ypsxEntity.ljzdjl),
+                        new SqlParameter("@ljzdsl", ypsxEntity.ljzdsl),
+                        new SqlParameter("@pzwh", ypsxEntity.pzwh),
+                        new SqlParameter("@yptssx", ypsxEntity.yptssx),
+                        new SqlParameter("@ypflCode", ypsxEntity.ypflCode),
+                        new SqlParameter("@jzlx", ypsxEntity.jzlx),
+                        new SqlParameter("@mrbzq", ypsxEntity.mrbzq),
+                        new SqlParameter("@zjtzsj", ypsxEntity.zjtzsj),
+                        new SqlParameter("@xglx", ypsxEntity.xglx),
+                        new SqlParameter("@ghdw", ypsxEntity.ghdw),
+                        new SqlParameter("@ypcd", ypsxEntity.ypcd),
+                        new SqlParameter("@CreatorCode", OperatorProvider.GetCurrent().UserCode),
+                        new SqlParameter("@CreateTime", DateTime.Now),
+                        new SqlParameter("@LastModifyTime", null),
+                        new SqlParameter("@LastModifierCode", null),
+                        new SqlParameter("@zt", ypsxEntity.zt),
+                        new SqlParameter("@px", ypsxEntity.px),
+                        new SqlParameter("@xzyy", null),
+                        new SqlParameter("@xzyysm", null),
+                        new SqlParameter("@LastYBUploadTime", ypsxEntity.LastYBUploadTime),
+                        new SqlParameter("@mrjl", ypsxEntity.mrjl),
+                        new SqlParameter("@mrpc", ypsxEntity.mrpc),
+                        new SqlParameter("@ybbz", ypsxEntity.ybbz),
+                        new SqlParameter("@xnhybdm", ypsxEntity.xnhybdm),
+                        new SqlParameter("@gjybdm", ypsxEntity.gjybdm),
+                        new SqlParameter("@ybmlscrq", null),
+                        new SqlParameter("@gjybmc", ypsxEntity.gjybmc),
+                        new SqlParameter("@xjbs", null),
+                        new SqlParameter("@dcxl", ypsxEntity.dcxl),
+                        new SqlParameter("@mbxl", ypsxEntity.mbxl),
+                        new SqlParameter("@mryf", ypsxEntity.mryf),
+                        new SqlParameter("@ybgg", ypsxEntity.ybgg),
+                        };
+                        db.ExecuteSqlCommand(strSql2.ToString(), paraList2);
                         db.Commit();
                     }
                 }
@@ -839,169 +844,132 @@ AND x.OrganizeId=@OrganizeId
 
                 //插入药品
                 UpdateEnityProperties(ypEntity, ypsxEntity, model);
+                //ypEntity.Create();
+                //_sysMedicineRepository.Insert(ypEntity);
                 //插入药品属性
-                //ypsxEntity.ypId = ypEntity.ypId;
-                //ypsxEntity.ypId = 587;
+                ypsxEntity.ypId = ypEntity.ypId;
+                //ypsxEntity.Create();
+                //_sysMedicinePropertyRepo.Insert(ypsxEntity);
                 try
                 {
                     using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
                     {
-                        try
+                        //插入药品
+                        var strSql = new StringBuilder();
+                        strSql.Append(@"insert into [NewtouchHIS_Base].dbo.xt_yp
+                                  (ypCode,ypmc,OrganizeId,ypqz,yphz,spm,py,cfl,cfdw,jl,jldw,bzs,bzdw,mzcls,mzcldw,zycls,zycldw,zxdw,djdw,lsj,pfj,zfbl,zfxz,dlCode,jx,ycmc,medid,medextid,ypbzdm,nbdl,mzzybz,CreatorCode,CreateTime,LastModifyTime,LastModifierCode,zt,px,lsbz,mjzbz,yfCode,isKss,kssId,jybz,bz,cxjje,tsypbz)
+                                  values (@ypCode,@ypmc,@OrganizeId,@ypqz,@yphz,@spm,@py,@cfl,@cfdw,@jl,@jldw,@bzs,@bzdw,@mzcls,@mzcldw,@zycls,@zycldw,@zxdw,@djdw,@lsj,@pfj,@zfbl,@zfxz,@dlCode,@jx,@ycmc,@medid,@medextid,@ypbzdm,@nbdl,@mzzybz,@CreatorCode,@CreateTime,@LastModifyTime,@LastModifierCode,@zt,@px,@lsbz,@mjzbz,@yfCode,@isKss,@kssId,@jybz,@bz,@cxjje,@tsypbz);");
+                        var paraList = new DbParameter[]
                         {
-                            //插入药品
-                            var sqlParList = new List<SqlParameter>();
-                        var sqla = "";
-                        var sqlb = "";
-                            if (!string.IsNullOrWhiteSpace(ypEntity.ypqz)) { sqla += ",ypqz"; sqlb += ",@ypqz "; sqlParList.Add(new SqlParameter("@ypqz", ypEntity.ypqz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.yphz)) { sqla += ",yphz "; sqlb += ",@yphz "; sqlParList.Add(new SqlParameter("@yphz", ypEntity.yphz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.spm)) { sqla += ",spm "; sqlb += ",@spm "; sqlParList.Add(new SqlParameter("@spm", ypEntity.spm)); }
-                            if (ypEntity.cfl!=0) { sqla += ",cfl "; sqlb += ",@cfl "; sqlParList.Add(new SqlParameter("@cfl", ypEntity.cfl)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.cfdw)) { sqla += ",cfdw "; sqlb += ",@cfdw "; sqlParList.Add(new SqlParameter("@cfdw", ypEntity.cfdw)); }
-                            if (ypEntity.jl != 0) { sqla += ",jl "; sqlb += ",@jl "; sqlParList.Add(new SqlParameter("@jl", ypEntity.jl)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.jldw)) { sqla += ",jldw "; sqlb += ",@jldw "; sqlParList.Add(new SqlParameter("@jldw", ypEntity.jldw)); }
-                            if (ypEntity.mzcls != 0) { sqla += ",mzcls "; sqlb += ",@mzcls "; sqlParList.Add(new SqlParameter("@mzcls", ypEntity.mzcls)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.mzcldw)) { sqla += ",mzcldw "; sqlb += ",@mzcldw "; sqlParList.Add(new SqlParameter("@mzcldw", ypEntity.mzcldw)); }
-                            if (ypEntity.zycls != 0) { sqla += ",zycls "; sqlb += ",@zycls "; sqlParList.Add(new SqlParameter("@zycls", ypEntity.zycls)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.zycldw)) { sqla += ",zycldw "; sqlb += ",@zycldw "; sqlParList.Add(new SqlParameter("@zycldw", ypEntity.zycldw)); }
-                            if (ypEntity.pfj != 0) { sqla += ",pfj "; sqlb += ",@pfj "; sqlParList.Add(new SqlParameter("@pfj", ypEntity.pfj)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.jx)) { sqla += ",jx "; sqlb += ",@jx "; sqlParList.Add(new SqlParameter("@jx", ypEntity.jx)); }
-                            if (ypEntity.medid != 0) { sqla += ",medid "; sqlb += ",@medid "; sqlParList.Add(new SqlParameter("@medid", ypEntity.medid)); }
-                            if (ypEntity.medextid != 0) { sqla += ",medextid "; sqlb += ",@medextid "; sqlParList.Add(new SqlParameter("@medextid", ypEntity.medextid)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.ypbzdm)) { sqla += ",ypbzdm "; sqlb += ",@ypbzdm "; sqlParList.Add(new SqlParameter("@ypbzdm", ypEntity.ypbzdm)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.nbdl)) { sqla += ",nbdl "; sqlb += ",@nbdl "; sqlParList.Add(new SqlParameter("@nbdl", ypEntity.nbdl)); }
-                            if (ypEntity.px != 0 && ypEntity.px !=null) { sqla += ",px "; sqlb += ",@px "; sqlParList.Add(new SqlParameter("@px", ypEntity.px)); }
-                            if (ypEntity.lsbz != null) { sqla += ",lsbz "; sqlb += ",@lsbz "; sqlParList.Add(new SqlParameter("@lsbz", ypEntity.lsbz)); }
-                            if (ypEntity.mjzbz != 0 && ypEntity.mjzbz != null) { sqla += ",mjzbz "; sqlb += ",@mjzbz "; sqlParList.Add(new SqlParameter("@mjzbz", ypEntity.mjzbz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.yfCode)) { sqla += ",yfCode "; sqlb += ",@yfCode "; sqlParList.Add(new SqlParameter("@yfCode", ypEntity.yfCode)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.isKss)) { sqla += ",isKss "; sqlb += ",@isKss "; sqlParList.Add(new SqlParameter("@isKss", ypEntity.isKss)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.kssId)) { sqla += ",kssId "; sqlb += ",@kssId "; sqlParList.Add(new SqlParameter("@kssId", ypEntity.kssId)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.jybz)) { sqla += ",jybz "; sqlb += ",@jybz "; sqlParList.Add(new SqlParameter("@jybz", ypEntity.jybz)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.bz)) { sqla += ",bz "; sqlb += ",@bz "; sqlParList.Add(new SqlParameter("@bz", ypEntity.bz)); }
-                            //if (ypEntity.cxjje!=0) { sqla += ",cxjje "; sqlb += ",@cxjje "; sqlParList.Add(new SqlParameter("@cxjje", ypEntity.cxjje)); }
-                            if (!string.IsNullOrWhiteSpace(ypEntity.tsypbz)) { sqla += ",tsypbz "; sqlb += ",@tsypbz "; sqlParList.Add(new SqlParameter("@tsypbz", ypEntity.tsypbz)); }
-
-
-                            var sql = @"
-insert into NewtouchHIS_Base.dbo.xt_yp
-(ypCode,ypmc,OrganizeId,py,bzs,bzdw,zxdw,djdw,lsj,zfbl,zfxz,dlCode,ycmc,mzzybz,
-CreatorCode,CreateTime,LastModifyTime,LastModifierCode,zt"
-+ sqla + @")
-values ( 
-@ypCode,@ypmc,@OrganizeId,@py,@bzs,@bzdw,@zxdw,@djdw,@lsj,@zfbl,@zfxz,@dlCode,@ycmc,@mzzybz,
-@CreatorCode,getdate(),null,null,'1'"
-+ sqlb+"); ";
-
-                            sqlParList.Add(new SqlParameter("@ypCode", ypEntity.ypCode));
-                            sqlParList.Add(new SqlParameter("@ypmc", ypEntity.ypmc));
-                            sqlParList.Add(new SqlParameter("@OrganizeId", ypEntity.OrganizeId));
-                            sqlParList.Add(new SqlParameter("@py", ypEntity.py));
-                            sqlParList.Add(new SqlParameter("@bzs", ypEntity.bzs));
-                            sqlParList.Add(new SqlParameter("@bzdw", ypEntity.bzdw));
-                            sqlParList.Add(new SqlParameter("@zxdw", ypEntity.zxdw));
-                            sqlParList.Add(new SqlParameter("@djdw", ypEntity.djdw));
-                            sqlParList.Add(new SqlParameter("@lsj", ypEntity.lsj));
-                            sqlParList.Add(new SqlParameter("@zfbl", ypEntity.zfbl));
-                            sqlParList.Add(new SqlParameter("@zfxz", ypEntity.zfxz));
-                            sqlParList.Add(new SqlParameter("@dlCode", ypEntity.dlCode));
-                            sqlParList.Add(new SqlParameter("@ycmc", ypEntity.ycmc));
-                            sqlParList.Add(new SqlParameter("@mzzybz", ypEntity.mzzybz));
-                            sqlParList.Add(new SqlParameter("@CreatorCode", OperatorProvider.GetCurrent().UserCode));
-                            ExecuteSqlCommand(sql, sqlParList.ToArray());
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new FailedException("保存失败！" + ex.Message);
-                        }
-
-                        //获取ypId
-                        try
-                        {
-                            var ypSql = "select * from [NewtouchHIS_Base].dbo.xt_yp where zt=1 and ypCode = @ypCode and organizeId=@organizeId and zt=1";
-                            var parList = new List<SqlParameter>{
-                                new SqlParameter("@ypCode", model.ypCode),
-                                new SqlParameter("@organizeId", model.OrganizeId),
-                            };
-                            var entity = FirstOrDefault<SysMedicineBaseVO>(ypSql, parList.ToArray());
-                            ypsxEntity.ypId = entity.ypId;
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new FailedException("保存失败！" + ex.Message);
-                        }
+                       new SqlParameter("@ypCode", ypEntity.ypCode),
+                       new SqlParameter("@ypmc", ypEntity.ypmc),
+                       new SqlParameter("@OrganizeId", ypEntity.OrganizeId),
+                       new SqlParameter("@ypqz", ypEntity.ypqz),
+                       new SqlParameter("@yphz", ypEntity.yphz),
+                       new SqlParameter("@spm", ypEntity.spm),
+                       new SqlParameter("@py", ypEntity.py),
+                       new SqlParameter("@cfl", ypEntity.cfl),
+                       new SqlParameter("@cfdw", ypEntity.cfdw),
+                       new SqlParameter("@jl", ypEntity.jl),
+                       new SqlParameter("@jldw", ypEntity.jldw),
+                       new SqlParameter("@bzs", ypEntity.bzs),
+                       new SqlParameter("@bzdw", ypEntity.bzdw),
+                       new SqlParameter("@mzcls", ypEntity.mzcls),
+                       new SqlParameter("@mzcldw", ypEntity.mzcldw),
+                       new SqlParameter("@zycls", ypEntity.zycls),
+                       new SqlParameter("@zycldw", ypEntity.zycldw),
+                       new SqlParameter("@zxdw", ypEntity.zxdw),
+                       new SqlParameter("@djdw", ypEntity.djdw),
+                       new SqlParameter("@lsj", ypEntity.lsj),
+                       new SqlParameter("@pfj", ypEntity.pfj),
+                       new SqlParameter("@zfbl", ypEntity.zfbl),
+                       new SqlParameter("@zfxz", ypEntity.zfxz),
+                       new SqlParameter("@dlCode", ypEntity.dlCode),
+                       new SqlParameter("@jx", ypEntity.jx),
+                       new SqlParameter("@ycmc", ypEntity.ycmc),
+                       new SqlParameter("@medid", ypEntity.medid),
+                       new SqlParameter("@medextid", ypEntity.medextid),
+                       new SqlParameter("@ypbzdm", ypEntity.ypbzdm),
+                       new SqlParameter("@nbdl", ypEntity.nbdl),
+                       new SqlParameter("@mzzybz", ypEntity.mzzybz),
+                       new SqlParameter("@CreatorCode", OperatorProvider.GetCurrent().UserCode),
+                       new SqlParameter("@CreateTime", DateTime.Now),
+                       new SqlParameter("@LastModifyTime", null),
+                       new SqlParameter("@LastModifierCode",null),
+                       new SqlParameter("@zt", ypEntity.zt),
+                       new SqlParameter("@px", ypEntity.px),
+                       new SqlParameter("@lsbz", ypEntity.lsbz),
+                       new SqlParameter("@mjzbz", ypEntity.mjzbz),
+                       new SqlParameter("@yfCode", ypEntity.yfCode),
+                       new SqlParameter("@isKss", ypEntity.isKss),
+                       new SqlParameter("@kssId", ypEntity.kssId),
+                       new SqlParameter("@jybz", ypEntity.jybz),
+                       new SqlParameter("@bz", ypEntity.bz),
+                       new SqlParameter("@cxjje", ypEntity.cxjje),
+                       new SqlParameter("@tsypbz", ypEntity.tsypbz),
+                        };
+                        db.ExecuteSqlCommand(strSql.ToString(), paraList);
 
                         //插入药品属性
-                        try
+                        var strSql2 = new StringBuilder();
+                        strSql2.Append(@"insert into [NewtouchHIS_Base].dbo.xt_ypsx
+                                  (ypId,OrganizeId,ypCode,shbz,tsbz,jsbz,gzy,mzy,yljsy,zbbz,zlff,sjap,yl,yldw,ypgg,ybdm,syts,dczdjl,dczdsl,ljzdjl,ljzdsl,pzwh,yptssx,ypflCode,jzlx,mrbzq,zjtzsj,xglx,ghdw,ypcd,CreatorCode,CreateTime,LastModifyTime,LastModifierCode,zt,px,xzyy,xzyysm,LastYBUploadTime,mrjl,mrpc,ybbz,xnhybdm,gjybdm,ybmlscrq,gjybmc,xjbs,dcxl,mbxl,mryf,ybgg)
+                                  values (@ypId,@OrganizeId,@ypCode,@shbz,@tsbz,@jsbz,@gzy,@mzy,@yljsy,@zbbz,@zlff,@sjap,@yl,@yldw,@ypgg,@ybdm,@syts,@dczdjl,@dczdsl,@ljzdjl,@ljzdsl,@pzwh,@yptssx,@ypflCode,@jzlx,@mrbzq,@zjtzsj,@xglx,@ghdw,@ypcd,@CreatorCode,@CreateTime,@LastModifyTime,@LastModifierCode,@zt,@px,@xzyy,@xzyysm,@LastYBUploadTime,@mrjl,@mrpc,@ybbz,@xnhybdm,@gjybdm,@ybmlscrq,@gjybmc,@xjbs,@dcxl,@mbxl,@mryf,@ybgg);");
+                        var paraList2 = new DbParameter[]
                         {
-                            var sqlParList = new List<SqlParameter>();
-                            var sqla = "";
-                            var sqlb = "";
-                            if (ypsxEntity.shbz != null) { sqla += ",[shbz] "; sqlb += ",@shbz "; sqlParList.Add(new SqlParameter("@shbz", ypsxEntity.shbz)); }
-                            if (ypsxEntity.tsbz != null) { sqla += ",[tsbz] "; sqlb += ",@tsbz "; sqlParList.Add(new SqlParameter("@tsbz", ypsxEntity.tsbz)); }
-                            if (ypsxEntity.jsbz != null) { sqla += ",[jsbz] "; sqlb += ",@jsbz "; sqlParList.Add(new SqlParameter("@jsbz", ypsxEntity.jsbz)); }
-                            if (ypsxEntity.gzy != null) { sqla += ",[gzy] "; sqlb += ",@gzy "; sqlParList.Add(new SqlParameter("@gzy", ypsxEntity.gzy)); }
-                            if (ypsxEntity.mzy != null) { sqla += ",[mzy] "; sqlb += ",@mzy "; sqlParList.Add(new SqlParameter("@mzy", ypsxEntity.mzy)); }
-                            if (ypsxEntity.yljsy != null) { sqla += ",[yljsy] "; sqlb += ",@yljsy "; sqlParList.Add(new SqlParameter("@yljsy", ypsxEntity.yljsy)); }
-                            if (ypsxEntity.zbbz != null) { sqla += ",[zbbz] "; sqlb += ",@zbbz "; sqlParList.Add(new SqlParameter("@zbbz", ypsxEntity.zbbz)); }
-                            if (ypsxEntity.zlff != null) { sqla += ",[zlff] "; sqlb += ",@zlff "; sqlParList.Add(new SqlParameter("@zlff", ypsxEntity.zlff)); }
-                            if (ypsxEntity.sjap != null) { sqla += ",[sjap] "; sqlb += ",@sjap "; sqlParList.Add(new SqlParameter("@sjap", ypsxEntity.sjap)); }
-                            if (ypsxEntity.yl != null) { sqla += ",[yl] "; sqlb += ",@yl "; sqlParList.Add(new SqlParameter("@yl", ypsxEntity.yl)); }
-                            if (ypsxEntity.yldw != null) { sqla += ",[yldw] "; sqlb += ",@yldw "; sqlParList.Add(new SqlParameter("@yldw", ypsxEntity.yldw)); }
-                            if (ypsxEntity.ypgg != null) { sqla += ",[ypgg] "; sqlb += ",@ypgg "; sqlParList.Add(new SqlParameter("@ypgg", ypsxEntity.ypgg)); }
-                            if (ypsxEntity.ybdm != null) { sqla += ",[ybdm] "; sqlb += ",@ybdm "; sqlParList.Add(new SqlParameter("@ybdm", ypsxEntity.ybdm)); }
-                            if (ypsxEntity.syts != null) { sqla += ",[syts] "; sqlb += ",@syts "; sqlParList.Add(new SqlParameter("@syts", ypsxEntity.syts)); }
-                            if (ypsxEntity.dczdjl != null) { sqla += ",[dczdjl] "; sqlb += ",@dczdjl "; sqlParList.Add(new SqlParameter("@dczdjl", ypsxEntity.dczdjl)); }
-                            if (ypsxEntity.dczdsl != null) { sqla += ",[dczdsl] "; sqlb += ",@dczdsl "; sqlParList.Add(new SqlParameter("@dczdsl", ypsxEntity.dczdsl)); }
-                            if (ypsxEntity.ljzdjl != null) { sqla += ",[ljzdjl] "; sqlb += ",@ljzdjl "; sqlParList.Add(new SqlParameter("@ljzdjl", ypsxEntity.ljzdjl)); }
-                            if (ypsxEntity.ljzdsl != null) { sqla += ",[ljzdsl] "; sqlb += ",@ljzdsl "; sqlParList.Add(new SqlParameter("@ljzdsl", ypsxEntity.ljzdsl)); }
-                            if (ypsxEntity.pzwh != null) { sqla += ",[pzwh] "; sqlb += ",@pzwh "; sqlParList.Add(new SqlParameter("@pzwh", ypsxEntity.pzwh)); }
-                            if (ypsxEntity.yptssx != null) { sqla += ",[yptssx] "; sqlb += ",@yptssx "; sqlParList.Add(new SqlParameter("@yptssx", ypsxEntity.yptssx)); }
-                            if (ypsxEntity.ypflCode != null) { sqla += ",[ypflCode] "; sqlb += ",@ypflCode "; sqlParList.Add(new SqlParameter("@ypflCode", ypsxEntity.ypflCode)); }
-                            if (ypsxEntity.jzlx != null) { sqla += ",[jzlx] "; sqlb += ",@jzlx "; sqlParList.Add(new SqlParameter("@jzlx", ypsxEntity.jzlx)); }
-                            if (ypsxEntity.mrbzq != null) { sqla += ",[mrbzq] "; sqlb += ",@mrbzq "; sqlParList.Add(new SqlParameter("@mrbzq", ypsxEntity.mrbzq)); }
-                            if (ypsxEntity.zjtzsj != null) { sqla += ",[zjtzsj] "; sqlb += ",@zjtzsj "; sqlParList.Add(new SqlParameter("@zjtzsj", ypsxEntity.zjtzsj)); }
-                            if (ypsxEntity.xglx != null) { sqla += ",[xglx] "; sqlb += ",@xglx "; sqlParList.Add(new SqlParameter("@xglx", ypsxEntity.xglx)); }
-                            if (ypsxEntity.ghdw != null) { sqla += ",[ghdw] "; sqlb += ",@ghdw "; sqlParList.Add(new SqlParameter("@ghdw", ypsxEntity.ghdw)); }
-                            if (ypsxEntity.ypcd != null) { sqla += ",[ypcd] "; sqlb += ",@ypcd "; sqlParList.Add(new SqlParameter("@ypcd", ypsxEntity.ypcd)); }
-                            if (ypsxEntity.px != null) { sqla += ",[px] "; sqlb += ",@px "; sqlParList.Add(new SqlParameter("@px", ypsxEntity.px)); }
-                            //if (ypsxEntity.xzyy != null) { sqla += ",[xzyy] "; sqlb += ",@xzyy "; sqlParList.Add(new SqlParameter("@xzyy", ypsxEntity.xzyy)); }
-                            //if (ypsxEntity.xzyysm != null) { sqla += ",[xzyysm] "; sqlb += ",@xzyysm "; sqlParList.Add(new SqlParameter("@xzyysm", ypsxEntity.xzyysm)); }
-                            if (ypsxEntity.LastYBUploadTime != null) { sqla += ",[LastYBUploadTime] "; sqlb += ",@LastYBUploadTime "; sqlParList.Add(new SqlParameter("@LastYBUploadTime", ypsxEntity.LastYBUploadTime)); }
-                            if (ypsxEntity.mrjl != null) { sqla += ",[mrjl] "; sqlb += ",@mrjl "; sqlParList.Add(new SqlParameter("@mrjl", ypsxEntity.mrjl)); }
-                            if (ypsxEntity.mrpc != null) { sqla += ",[mrpc] "; sqlb += ",@mrpc "; sqlParList.Add(new SqlParameter("@mrpc", ypsxEntity.mrpc)); }
-                            if (ypsxEntity.ybbz != null) { sqla += ",[ybbz] "; sqlb += ",@ybbz "; sqlParList.Add(new SqlParameter("@ybbz", ypsxEntity.ybbz)); }
-                            if (ypsxEntity.xnhybdm != null) { sqla += ",[xnhybdm] "; sqlb += ",@xnhybdm "; sqlParList.Add(new SqlParameter("@xnhybdm", ypsxEntity.xnhybdm)); }
-                            if (ypsxEntity.gjybdm != null) { sqla += ",[gjybdm] "; sqlb += ",@gjybdm "; sqlParList.Add(new SqlParameter("@gjybdm", ypsxEntity.gjybdm)); }
-                            //if (ypsxEntity.ybmlscrq != null) { sqla += ",[ybmlscrq] "; sqlb += ",@ybmlscrq "; sqlParList.Add(new SqlParameter("@ybmlscrq", ypsxEntity.ybmlscrq)); }
-                            if (ypsxEntity.gjybmc != null) { sqla += ",[gjybmc] "; sqlb += ",@gjybmc "; sqlParList.Add(new SqlParameter("@gjybmc", ypsxEntity.gjybmc)); }
-                            //if (ypsxEntity.xjbs != null) { sqla += ",[xjbs] "; sqlb += ",@xjbs "; sqlParList.Add(new SqlParameter("@xjbs", ypsxEntity.xjbs)); }
-                            if (ypsxEntity.dcxl != null) { sqla += ",[dcxl] "; sqlb += ",@dcxl "; sqlParList.Add(new SqlParameter("@dcxl", ypsxEntity.dcxl)); }
-                            if (ypsxEntity.mbxl != null) { sqla += ",[mbxl] "; sqlb += ",@mbxl "; sqlParList.Add(new SqlParameter("@mbxl", ypsxEntity.mbxl)); }
-                            if (ypsxEntity.mryf != null) { sqla += ",[mryf] "; sqlb += ",@mryf "; sqlParList.Add(new SqlParameter("@mryf", ypsxEntity.mryf)); }
-                            if (ypsxEntity.ybgg != null) { sqla += ",[ybgg] "; sqlb += ",@ybgg "; sqlParList.Add(new SqlParameter("@ybgg", ypsxEntity.ybgg)); }
-
-
-                            var sql = @"
-insert into [NewtouchHIS_Base].dbo.xt_ypsx
-([ypId],[OrganizeId],[ypCode],
-[CreatorCode],[CreateTime],[LastModifyTime],[LastModifierCode],[zt]"
-    + sqla + @")
-select 
-@ypId,@OrganizeId,@ypCode,
-@CreatorCode,getdate(),null,null,'1'"
-    + sqlb;
-
-                            sqlParList.Add(new SqlParameter("@ypId", ypsxEntity.ypId));
-                            sqlParList.Add(new SqlParameter("@OrganizeId", ypsxEntity.OrganizeId));
-                            sqlParList.Add(new SqlParameter("@ypCode", ypsxEntity.ypCode));
-                            sqlParList.Add(new SqlParameter("@CreatorCode", OperatorProvider.GetCurrent().UserCode));
-                            ExecuteSqlCommand(sql, sqlParList.ToArray());
-                        }
-                        catch (Exception ex)
-                        {
-                            throw new FailedException("保存失败！" + ex.Message);
-                        }
-
-                        
+                        new SqlParameter("@ypId", ypsxEntity.ypId),
+                        new SqlParameter("@OrganizeId", ypsxEntity.OrganizeId),
+                        new SqlParameter("@ypCode", ypsxEntity.ypCode),
+                        new SqlParameter("@shbz", ypsxEntity.shbz),
+                        new SqlParameter("@tsbz", ypsxEntity.tsbz),
+                        new SqlParameter("@jsbz", ypsxEntity.jsbz),
+                        new SqlParameter("@gzy", ypsxEntity.gzy),
+                        new SqlParameter("@mzy", ypsxEntity.mzy),
+                        new SqlParameter("@yljsy", ypsxEntity.yljsy),
+                        new SqlParameter("@zbbz", ypsxEntity.zbbz),
+                        new SqlParameter("@zlff", ypsxEntity.zlff),
+                        new SqlParameter("@sjap", ypsxEntity.sjap),
+                        new SqlParameter("@yl", ypsxEntity.yl),
+                        new SqlParameter("@yldw", ypsxEntity.yldw),
+                        new SqlParameter("@ypgg", ypsxEntity.ypgg),
+                        new SqlParameter("@ybdm", ypsxEntity.ybdm),
+                        new SqlParameter("@syts", ypsxEntity.syts),
+                        new SqlParameter("@dczdjl", ypsxEntity.dczdjl),
+                        new SqlParameter("@dczdsl", ypsxEntity.dczdsl),
+                        new SqlParameter("@ljzdjl", ypsxEntity.ljzdjl),
+                        new SqlParameter("@ljzdsl", ypsxEntity.ljzdsl),
+                        new SqlParameter("@pzwh", ypsxEntity.pzwh),
+                        new SqlParameter("@yptssx", ypsxEntity.yptssx),
+                        new SqlParameter("@ypflCode", ypsxEntity.ypflCode),
+                        new SqlParameter("@jzlx", ypsxEntity.jzlx),
+                        new SqlParameter("@mrbzq", ypsxEntity.mrbzq),
+                        new SqlParameter("@zjtzsj", ypsxEntity.zjtzsj),
+                        new SqlParameter("@xglx", ypsxEntity.xglx),
+                        new SqlParameter("@ghdw", ypsxEntity.ghdw),
+                        new SqlParameter("@ypcd", ypsxEntity.ypcd),
+                        new SqlParameter("@CreatorCode", OperatorProvider.GetCurrent().UserCode),
+                        new SqlParameter("@CreateTime", DateTime.Now),
+                        new SqlParameter("@LastModifyTime", null),
+                        new SqlParameter("@LastModifierCode", null),
+                        new SqlParameter("@zt", ypsxEntity.zt),
+                        new SqlParameter("@px", ypsxEntity.px),
+                        new SqlParameter("@xzyy", null),
+                        new SqlParameter("@xzyysm", null),
+                        new SqlParameter("@LastYBUploadTime", ypsxEntity.LastYBUploadTime),
+                        new SqlParameter("@mrjl", ypsxEntity.mrjl),
+                        new SqlParameter("@mrpc", ypsxEntity.mrpc),
+                        new SqlParameter("@ybbz", ypsxEntity.ybbz),
+                        new SqlParameter("@xnhybdm", ypsxEntity.xnhybdm),
+                        new SqlParameter("@gjybdm", ypsxEntity.gjybdm),
+                        new SqlParameter("@ybmlscrq", null),
+                        new SqlParameter("@gjybmc", ypsxEntity.gjybmc),
+                        new SqlParameter("@xjbs", null),
+                        new SqlParameter("@dcxl", ypsxEntity.dcxl),
+                        new SqlParameter("@mbxl", ypsxEntity.mbxl),
+                        new SqlParameter("@mryf", ypsxEntity.mryf),
+                        new SqlParameter("@ybgg", ypsxEntity.ybgg),
+                        };
+                        db.ExecuteSqlCommand(strSql2.ToString(), paraList2);
                         db.Commit();
                     }
                 }
@@ -1017,33 +985,32 @@ select
         /// </summary>
         /// <param name="ypId"></param>
         /// <returns></returns>
-        public bool YibaoUpload(int ypId, out string error)
-        {
-            try
-            {
-                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
-                {
-                    var strSql = new StringBuilder();
-                    strSql.Append(@"  UPDATE [NewtouchHIS_Base].dbo.xt_ypsx
-SET LastYBUploadTime=@LastYBUploadTime 
-where Id=@Id");
-                    var paraList = new DbParameter[]
-                    {
-                        new SqlParameter("@Id", ypId),
-                        new SqlParameter("@LastYBUploadTime",  System.DateTime.Now),
-                    };
-                    db.ExecuteSqlCommand(strSql.ToString(), paraList);
-                    db.Commit();
-                }
-                error = "";
-                return true;
-            }
-            catch
-            {
-                error = "HIS更新药品同步医保时间失败";
-                return false;
-            }
-        }
+        //public bool YibaoUpload(int ypId, out string error)
+        //{
+        //    try
+        //    {
+        //        using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+        //        {
+        //            var ypsxEntity = db.IQueryable<SysMedicinePropertyEntity>().Where(p => p.ypId == ypId).FirstOrDefault();
+        //            if (ypsxEntity == null)
+        //            {
+        //                error = "HIS中查无此药";
+        //                return false;
+        //            }
+        //            ypsxEntity.LastYBUploadTime = System.DateTime.Now;
+        //            ypsxEntity.Modify();
+        //            db.Update(ypsxEntity);
+        //            db.Commit();
+        //        }
+        //        error = "";
+        //        return true;
+        //    }
+        //    catch
+        //    {
+        //        error = "HIS更新药品同步医保时间失败";
+        //        return false;
+        //    }
+        //}
 
         #region private methods
 

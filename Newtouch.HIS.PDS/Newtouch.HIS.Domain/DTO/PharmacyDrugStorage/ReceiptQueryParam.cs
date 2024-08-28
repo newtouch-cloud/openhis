@@ -62,9 +62,5 @@ namespace Newtouch.HIS.Domain.DTO
         /// 供应商
         /// </summary>
         public string gys { get; set; }
-        /// <summary>
-        /// 是否单据审核
-        /// </summary>
-        public bool IsApproval { get; set; }
     }
 }

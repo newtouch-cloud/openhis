@@ -103,7 +103,7 @@ EXEC dbo.YP_XT_BBMYPXXK
             }
 
             var strSql = new StringBuilder(@"
-SELECT TOP 1000
+SELECT --TOP 1000
         yp.ypId ,
         yp.ypCode ,
         yp.ypmc ,
@@ -329,7 +329,7 @@ WHERE   dj.OrganizeId=@Organizeid
         public IList<MedicineInfoVO> GetTbMedicineInfoList(Pagination pagination, MedicineInfoParam param, string orgId)
         {
             const string sql = @"
-SELECT DISTINCT TOP 1000
+SELECT DISTINCT --TOP 1000
         RTRIM(LTRIM(dl.dlmc)) AS yplb
         ,yp.ypId 
         ,yp.ypCode 

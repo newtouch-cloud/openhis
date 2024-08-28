@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using FrameworkBase.MultiOrg.Application;
@@ -7,9 +6,7 @@ using Newtouch.Common.Operator;
 using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
-using Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage;
 using Newtouch.HIS.Domain.IRepository;
-using Newtouch.HIS.Domain.ValueObjects.PharmacyDrugStorage;
 using Newtouch.PDS.Requset.PharmacyDepartment;
 using Newtouch.Tools;
 
@@ -122,7 +119,5 @@ namespace Newtouch.HIS.Application.Implementation
             });
             return result.ToString();
         }
-
-
     }
 }

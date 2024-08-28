@@ -92,5 +92,9 @@ namespace Newtouch.HIS.Domain.VO
         /// 药品分组
         /// </summary>
         public string czh { get; set; }
+        /// <summary>
+        /// 国家医保代码
+        /// </summary>
+        public string gjybdm { get; set; }
     }
 }

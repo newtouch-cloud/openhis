@@ -282,7 +282,7 @@ BEGIN TRY
 
 	IF NOT EXISTS(SELECT 1 FROM dbo.xt_yp_kcxx WHERE ypdm=@ypdm AND ypdm=@ypdm AND pc=@pc AND ph=@ph AND OrganizeId=@Organizeid AND yfbmCode=@rkbm AND zt='1')
 	BEGIN
-		SELECT '入库部门不存批次为【'+@pc+'】的药品【'+@ypmc+'】';
+		SELECT '入库部门不存在批次为【'+@pc+'】的药品【'+@ypmc+'】';
 		ROLLBACK TRANSACTION;
 		RETURN ;
 	END

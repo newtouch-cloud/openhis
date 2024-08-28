@@ -1,9 +1,9 @@
-﻿
+﻿@using Newtouch.Common.Operator;
 @{
     ViewBag.Title = "门诊发药";
     Layout = "~/Views/Shared/_Index.cshtml";
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
-    var reportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
+    var opeator = OperatorProvider.GetCurrent();
 }
 <style>
     #dv_cfInfo {
@@ -90,7 +90,6 @@
                     <li>
                         <span class="formTitle">处方号：</span>
                         <label id="lab_cfh" type="text" value=""></label>
-                        <input type="hidden" id="hd_cfs" value="" />
                     </li>
                 </ul>
             </div>
@@ -103,10 +102,12 @@
         </div>
         @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
    {
-       ShowKeyList = new[] { 7, 8, 10 },
-       F8Text = "全部发药",
-       F7Text = "发药",
-       F10Text = "打印处方",
+       ShowKeyList = new[] { 6, 7, 8, 9, 10 },
+       F6Text = "发药",
+       F7Text = "全部发药",
+       F8Text = "雾化卡",
+       F9Text = "输液卡",
+       F10Text = "用法标签"
    })
     </div>
 </form>
@@ -114,9 +115,11 @@
 <script>
     var cfsheight = $(window).height() - 60;
     var cfxxwidth = $(window).width() - $("#dv_left").width() - 10;
-    $(".toolbar").width(300);
+    var isfirst = 1;
+    $(".toolbar").width(420);
     var $gridPatients = $("#gridPatients");
     var $gridCfmx = $("#gridCfmx");
+    var tempMzh = "";
     $(function () {
         initLayout();
         $(window).resize(function () {
@@ -160,7 +163,7 @@
 
     //自适应
     function initLayout() {
-        $("#autoprint").attr("checked", (getCookie("autoprint") === 'false') ? false : true);
+        //$("#autoprint").attr("checked", (getCookie("autoprint") === 'false') ? false : true);
         $("#dv_cfs").height(cfsheight);
         $("#dv_cfmx").height($(window).height() - $("#dv_rightTop").get(0).offsetHeight - 57);
     }
@@ -183,19 +186,20 @@
             },
             pager: "#gridPatientsPager",
             sortname: 'xm asc',
-            onSelectRow_page: function (rowid) {
+            onSelectRow: function (rowid) {
                 doingSomethingAfterSelectRow(rowid);
-            },
-            gridComplete: function () {
-                $gridCfmx.jqGrid("clearGridData");
-                var ids = new Array();
-                //getDataIDs()返回当前grid里所有数据的id
-                ids = $gridPatients.getDataIDs();
-                if (ids == null || ids.length <= 0) return;
-                //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
-                $gridPatients.setSelection(ids[0], true);
-                doingSomethingAfterSelectRow(ids[0]);
             }
+            //,
+            //gridComplete: function () {
+            //    $gridCfmx.jqGrid("clearGridData");
+            //    var ids = new Array();
+            //    //getDataIDs()返回当前grid里所有数据的id
+            //    ids = $gridPatients.getDataIDs();
+            //    if (ids == null || ids.length <= 0) return;
+            //    //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
+            //    $gridPatients.setSelection(ids[0], true);
+            //    doingSomethingAfterSelectRow(ids[0]);
+            //}
         });
         $("#btn_RpSync").click(function () {
             $gridPatients.jqGrid("clearGridData");
@@ -217,6 +221,7 @@
             $("#lab_nl").html("");
             $("#lab_ysmc").html("");
             $("#lab_ksmc").html("");
+            tempMzh = "";
             return false;
         }
         var refcfxx = "";
@@ -230,7 +235,6 @@
 				success: function (res) {
 					if (res != null) {
 						sessionStorage.setItem('CfInfo', JSON.stringify(res));
-
 						//弹出处方选择界面
 						$.modalOpen({
 							id: "Form",
@@ -242,24 +246,16 @@
 								top.frames[iframeId].submitForm(function (cflist) {
 									var listcfh = [];
 									var lisfph = [];
-                                    var zje = 0.00;
-                                    var cfArr = [];
+									var zje = 0.00;
 									for (var i = 0; i < cflist.length; i++) {
 										listcfh.push(cflist[i].cfh);
 										lisfph.push(cflist[i].Fph)
-                                        zje = roundingBy4she6ru5chengshuang(parseFloat(cflist[i].je) + parseFloat(zje), 2);
-                                        cfArr.push({
-                                            cfid: cflist[i].cfId,
-                                            mzh: cflist[i].mzh,
-                                            cfh: cflist[i].cfh,
-                                            cftag: cflist[i].cftag,
-                                            cflx: cflist[i].cflx
-                                        });
-                                    }
+										zje = roundingBy4she6ru5chengshuang(parseFloat(cflist[i].je) + parseFloat(zje), 2);
+									}
 									cfh = listcfh.join(",");
-                                    fph = lisfph.join(",");
-                                    $("#hd_cfs").val(JSON.stringify(cfArr));
-									$("#lab_name").html(res[0].xm);
+									fph = lisfph.join(",");
+                                    $("#lab_name").html(res[0].xm);
+                                    tempMzh = res[0].mzh;
 									$("#lab_cfh").html(cfh);
 									$("#lab_cfh").attr("title", cfh);
 									$("#lab_cardNo").html(res[0].CardNo);
@@ -270,12 +266,13 @@
 									$("#lab_nl").html(res[0].nl);
 									$("#lab_ysmc").html(res[0].ysmc);
                                     $("#lab_ksmc").html(res[0].ksmc);
-                                    getcfmx("1", cfh, "", "");
+									getcfmx("1", cfh, "", "");
 								});
 							}
 						});
 					} else {
-						$("#lab_name").html("");
+                        $("#lab_name").html("");
+                        tempMzh = "";
 						$("#lab_cfh").html("");
 						$("#lab_cfh").attr("title", "");
 						$("#lab_cardNo").html("");
@@ -287,6 +284,7 @@
 						$("#lab_ysmc").html("");
 						$("#lab_ksmc").html("");
 					}
+
 				}
 			});
 
@@ -298,7 +296,8 @@
 				dataType: "json",
 				success: function (res) {
 					if (res != null) {
-						$("#lab_name").html(res.xm);
+                        $("#lab_name").html(res.xm);
+                        tempMzh = res.mzh;
 						$("#lab_cfh").html(res.cfh);
 						$("#lab_cfh").attr("title", res.cfhComplete);
 						$("#lab_cardNo").html(res.CardNo);
@@ -311,7 +310,8 @@
                         $("#lab_ksmc").html(res.ksmc);
 						getcfmx("2","",data.CardNo, data.xm);
 					} else {
-						$("#lab_name").html("");
+                        $("#lab_name").html("");
+                        tempMzh = "";
 						$("#lab_cfh").html("");
 						$("#lab_cfh").attr("title", "");
 						$("#lab_cardNo").html("");
@@ -352,6 +352,7 @@
 				{ label: 'cfnm', name: 'cfnm', hidden: true },
                 { label: '处方号', name: 'cfh', align: 'left', width: 110 },
                 { label: '药品名称', name: 'ypmc', align: 'left', width: 120 },
+                { label: '国家医保码', name: 'gjybdm', align: 'left', width: 100 },
                 { label: '规格', name: 'gg', align: 'left', width: 80 },
                 { label: '数量', name: 'sl', align: 'right', width: 40 },
                 { label: '单位', name: 'dw', align: 'left', width: 50 },
@@ -380,7 +381,7 @@
     }
 
     //发药
-    function newtouch_event_f7() {
+    function newtouch_event_f6() {
         var id = $gridPatients.jqGrid("getGridParam", "selrow");
         if (!id) {
             $.modalAlert("请选中患者信息！", 'warning');
@@ -389,17 +390,20 @@
 
         $.modalConfirm("确定发药吗？", function (flag) {
             if (!flag) return;
+            printInfusionCards(0);
+            printAtomizationCards(0);
+            printDrugUsage(0);
             var patient = new Array();
-			var cfmx = $gridCfmx.getDataIDs();
-			for (var i = 0; i < cfmx.length; i++) {
-				var rowdata = $gridCfmx.jqGrid("getRowData", cfmx[i]);
-				patient.push({
-					"CardNo": $gridPatients.jqGrid('getRowData', id).CardNo,
-					"xm": $gridPatients.jqGrid('getRowData', id).xm,
-					"cfh": rowdata.cfh,
-					"cfnm": rowdata.cfnm
-				});
-			}
+            var cfmx = $gridCfmx.getDataIDs();
+            for (var i = 0; i < cfmx.length; i++) {
+                var rowdata = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+                patient.push({
+                    "CardNo": $gridPatients.jqGrid('getRowData', id).CardNo,
+                    "xm": $gridPatients.jqGrid('getRowData', id).xm,
+                    "cfh": rowdata.cfh,
+                    "cfnm": rowdata.cfnm
+                });
+            }
             if (patient.length <= 0) {
 
                 $.modalAlert("未找到有效的发药信息！", 'warning');
@@ -423,11 +427,11 @@
                     }
                 }
             });
-        });
+        }
+        );
     }
-
     //全部发药
-    function newtouch_event_f8() {
+    function newtouch_event_f7() {
         var pats = new Array();
         var gridPatients = $gridPatients.jqGrid('getRowData_AllLine', null, true);//param2:默认所有行；param3：true返回object
 		var cfmx = $gridCfmx.getDataIDs();
@@ -450,6 +454,9 @@
 
         $.modalConfirm("确定全部发药吗？", function (flag) {
             if (!flag) return;
+            printInfusionCards(0);
+            printAtomizationCards(0);
+            printDrugUsage(0);
             $.najax({
                 type: "POST",
                 url: "/OutPatientPharmacy/ExecAllDeliveryDrug",
@@ -462,9 +469,7 @@
                         $gridPatients.trigger("reloadGrid");
                         $gridCfmx.jqGrid("clearGridData");
                         cleanCfInfo();
-                    } else {
-                        $.modalAlert(res.message, Error);
-                    }
+                    } else  $.modalAlert(res.message, Error);
                 },
                 error: function (res) {
                     $.modalAlert(res.message, Error);
@@ -473,6 +478,75 @@
         });
     }
 
+    function newtouch_event_f8() { printAtomizationCards(1); }
+    //打印雾化卡
+    function printAtomizationCards(type1) {
+        var cfhs = [];
+        var cfmx = $gridCfmx.getDataIDs();
+        //取全部处方号
+        for (var i = 0; i < cfmx.length; i++) {
+            var getCfh = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+            if (getCfh.yfmc == "雾化")
+                cfhs.push(getCfh.cfh);
+        }
+        if (cfhs.length > 0) {
+            var newcfh = $.unique(cfhs);//去重
+            var cfh = newcfh.join(","); //数组转字符串逗号分割
+            var uri = '@reportUrl' + "?tempCode=1311" + "&orgId=" + '@ViewBag.OrganizeId' + "&cfh=" + cfh + "&mzh=" + tempMzh + "&UserCode=" + opeator.UserCode;
+            window.open(uri);
+        }
+        else { if (type1 == 1) $.modalAlert("无雾化处方，不能打印雾化卡！", 'warning'); }
+    }
+
+    function newtouch_event_f9() {
+        printInfusionCards(1);
+     }
+    //打印输液卡
+    function printInfusionCards(type1) {
+        var cfmx = $gridCfmx.getDataIDs();
+        var lscfmx = [];
+        //取全部处方号
+        for (var i = 0; i < cfmx.length; i++) {
+            var getCfh = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+            if (getCfh.yfmc == "静脉滴注")
+                lscfmx.push(getCfh.cfh);
+        }
+        if (lscfmx.length > 0) {
+            var newcfh = $.unique(lscfmx);//去重
+            var cfh = newcfh.join(",");//数组转字符串逗号分割
+            //查询含输液的组号
+            $.najax({
+                type: "POST",
+                url: "/OutPatientPharmacy/GetRecipeGroupNum",
+                data: { cfh: cfh, type: "静脉滴注" },
+                dataType: "text",
+                success: function (res) {
+                    var uri = '@reportUrl' + "?tempCode=1299" + "&orgId=" + '@ViewBag.OrganizeId' + "&cfh=" + cfh + "&zh=" + res + "&mzh=" + tempMzh;
+                    window.open(uri);
+                }
+            });
+        } else {
+            if (type1 == 1) $.modalAlert("无静脉滴注处方，不能打印输液卡！", 'warning');
+        }
+    }
+    function newtouch_event_f10() { printDrugUsage(1); }
+    //用法标签
+    function printDrugUsage(type) {
+        var cfmx = $gridCfmx.getDataIDs();
+        var lscfmx = [];
+        //取全部处方号
+        for (var i = 0; i < cfmx.length; i++) {
+            var getCfh = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+            if (getCfh.yfmc == "口服" || getCfh.yfmc == "外用")
+                lscfmx.push(getCfh.cfh);
+        }
+        if (lscfmx.length>0) {
+            var newcfh = $.unique(lscfmx);//去重
+            var cfhStr = newcfh.join(",");//数组逗号串连
+            var uri = '@reportUrl' + "?tempCode=1306" + "&orgId="+'@ViewBag.OrganizeId' +"&cfh=" + cfhStr;
+            window.open(uri);
+        } else { if (type == 1) $.modalAlert("无口服、外用药处方，不能打印用法标签！", 'warning'); }
+    }
     //打印发药单
     function printRpDetailV2(cfs) {
         if (!$("#autoprint").is(":checked")) return;
@@ -480,7 +554,7 @@
             var arrRp = cfs.split(',');
             if (arrRp.length > 0) {
                 for (var i = 0; i < arrRp.length; i++) {
-                    var uri = '@reportUrl' + "?tempCode=61" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + arrRp[i];
+                    var uri = '@reportUrl' + "?tempCode=61" + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + arrRp[i];
                     window.open(uri);
                     //window.open("/Report/PrintReport?type=MZFY_Bill&param=OrganizeId=@ViewBag.OrganizeId|yfbmCode=@ViewBag.yfbmCode|cfh=" + arrRp[i]);
                 }
@@ -513,7 +587,7 @@
                         var arrRp = res.split(',');
                         if (arrRp.length > 0)
                             for (var i = 0; i < arrRp.length; i++) {
-                                var uri = '@reportUrl' + "?tempCode=61" + "&systemCode=" + '@reportSystemCode' + "&hospitalCode=" + ' @ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + arrRp[i];
+                                var uri = '@reportUrl' + "?tempCode=61" + "&hospitalCode=" +' @ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + arrRp[i];
                                 window.open(uri);
                                 //window.open("/Report/PrintReport?type=MZFY_Bill&param=OrganizeId=@ViewBag.OrganizeId" + "|yfbmCode=@ViewBag.yfbmCode" + "|cfh=" + arrRp[i]);
                             }
@@ -534,7 +608,7 @@
         $("#lab_nl").html("");
         $("#lab_ysmc").html("");
         $("#lab_ksmc").html("");
-        $("#hd_cfs").val("");
+        tempMzh = "";
     }
     //设置cookie
     function setCookie(name, value) {
@@ -551,37 +625,5 @@
             return unescape(arr[2]);
         else
             return null;
-    }
-
-    //打印处方
-    function newtouch_event_f10() {
-        var cfArrStr = $("#hd_cfs").val();
-        var cfArr = JSON.parse(cfArrStr);
-        if (cfArr == null || cfArr.length == 0) {
-            return;
-        }
-        for (var i = 0; i < cfArr.length; i++) {
-            var tempCode = "14";
-            switch (cfArr[i].cflx) {//1-西药处方 2-中药处方 3-康复处方 4-检验处方 5-检查处方 6-输液处方
-                case "1":
-                    tempCode = "14"
-                    break;
-                case "2":
-                    tempCode = "22"
-                    break;
-                case "3":
-                    tempCode = "21"
-                    break;
-                case "4":
-                    tempCode = "24"
-                    break;
-                case "5":
-                    tempCode = "23"
-                    break;
-            }
-            debugger;
-            var jumpUrl = '@reportUrl' + "?tempCode=" + tempCode + "&orgId=" + '@ViewBag.OrganizeId' + "&mzh=" + cfArr[i].mzh + "&cfId=" + cfArr[i].cfid;
-            window.open(jumpUrl, "_blank", "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
-        }
     }
 </script>

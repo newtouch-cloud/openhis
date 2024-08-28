@@ -81,7 +81,7 @@ namespace Newtouch.HIS.DomainServices.PharmacyDrugStorage
                         from [NewtouchHIS_Base].dbo.xt_kssType where zt='1' and OrganizeId=@OrganizeId ";
             if (string.IsNullOrWhiteSpace(parentId))
             {
-                sql += " and (parentId IS NULL or parentId='' ) ";
+                sql += " and parentId IS NULL ";
             }
             else
             {

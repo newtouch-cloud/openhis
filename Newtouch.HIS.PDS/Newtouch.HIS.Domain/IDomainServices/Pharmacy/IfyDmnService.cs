@@ -5,7 +5,6 @@ using Newtouch.HIS.Domain.DTO.Medicine;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.Entity.V;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.HIS.Domain.ValueObjects.Clinic;
 using Newtouch.HIS.Domain.ValueObjects.OutPatientPharmacy;
 using Newtouch.HIS.Domain.ValueObjects.SystemManage;
 using Newtouch.HIS.Domain.VO;
@@ -214,7 +213,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="fybz"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        List<MZCfYpDyDTO> GetRpInfo(string yfbmCode, string cardNo, string xm, EnumFybz fybz = EnumFybz.Yp,
+        List<MzCfEntity> GetRpInfo(string yfbmCode, string cardNo, string xm, EnumFybz fybz = EnumFybz.Yp,
            string organizeId = "");
 
         /// <summary>
@@ -235,23 +234,5 @@ namespace Newtouch.HIS.Domain.IDomainServices
         IList<MzcfcxDetailList> GetMzcfDetailList(Pagination pagination, MzcfcxVo req);
 
         #endregion
-
-        /// <summary>
-        /// 通过处方号获取门诊号
-        /// </summary>
-        /// <param name="cfh"></param>
-        /// <param name="yfbmCode"></param>
-        /// <param name="userCode"></param>
-        /// <param name="organizeId"></param>
-        /// <returns></returns>
-        string getMzhByCfh(string cfh, string organizeId);
-
-        /// <summary>
-        /// 通过门诊号获取诊疗申请信息
-        /// </summary>
-        /// <param name="mzh"></param>
-        /// <param name="organizeId"></param>
-        /// <returns></returns>
-        ClinicApplyInfoVO getApplyInfoByMzh(string mzh, string organizeId);
     }
 }

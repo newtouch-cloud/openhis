@@ -17,9 +17,5 @@ namespace Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage
         IList<SysMedicineFormulationVO> GetypjxValidList(string keyword = null);
         IList<SysMedicineUnitVO> GetypdwValidList(string keyword = null);
         int Insertyfbmyp(SysPharmacyDepartmentOpenMedicineVO entity);
-        IList<PharmacyDepartmentOpenMedicineRepoVO> SelectDepartmentMedicine(string dlCode, string organizeId);
-        string SubmitForm(SysMedicineAntibioticInfoVO entity);
-        IList<ShybBrxzblVo> Getybbxbldata(string keyword, string orgId);
-        void SaveYbblValue(List<Sh_YbfyxzblVO> entity, string xmbm, string xmmc, string orgId, string CreatorCode);
     }
 }
