@@ -1,27 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NeiMengGuYiBaoApp.Models.Post.YiBao
+﻿namespace NeiMengGuYiBaoApp.Models.Post.YiBao
 {
-    public class Post_3509
+    public class Post_3509 : PostBase
     {
-        /// <summary>
-        /// hisId唯一his的唯一标识
-        /// </summary>
-        public string hisId { get; set; }
-
-        /// <summary>
-        /// 操作员代码
-        /// </summary>
-        public string operatorId { get; set; }
-
-        /// <summary>
-        /// 操作员姓名
-        /// </summary>
-        public string operatorName { get; set; }
         /// <summary>
         /// 1|定点医药机构编号|字符型|30|Y|
         /// </summary>

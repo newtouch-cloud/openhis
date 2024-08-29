@@ -221,9 +221,6 @@
             </div>
         </div>
         <div class="panel panel-default" style="margin-bottom: 4px;">
-            <div class="panel-heading navb-bg">
-                信息列表
-            </div>
             <div style="padding-right:20px;">
                 <form id="jg_formPat">
                     <div class="jg_gridPanel" style="margin-top:10px;border-radius:5px;">
@@ -839,9 +836,15 @@
     }
 
     function GetYbJGInfo() {
+        $.loading(true);
         var type = $('#sel_jgcxtype').val();
-        if (type === 1201) {
-            var rcData = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId" };
+        if (type === "1201") {
+            if (!$('#fixmedins_name').val() && !$('#fixmedins_code').val()) {
+                $.loading(false);
+                $.modalAlert("医药机构名称和医药机构编号必须填写一个", 'error');
+                return;
+            }
+            var rcData = { hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId", fixmedins_type: "1", fixmedins_name: $('#fixmedins_name').val(), fixmedins_code: $('#fixmedins_code').val() };
             $.ajax({
                 type: "POST",
                 url: "http://127.0.0.1:33333/api/YiBao/GetfixmedinsInfo1201",
@@ -852,20 +855,22 @@
                     var refReg = eval('(' + data + ')');
                     if (refReg) {
                         if (refReg.infcode == "0" && !!refReg.output.medinsinfo) {
-                            gridListData(refReg.output.medinsinfo, type);
+                            jgGridListData(refReg.output.medinsinfo, type);
+                            $.loading(false);
                         }
                         else {
-                            gridListData("", type);
+                            jgGridListData("", type);
+                            $.loading(false);
                             $.modalAlert(refReg.err_msg, 'error');
                         }
                     }
                 },
                 error: function () {
+                    $.loading(false);
                     $.modalAlert("服务不可访问", 'warning');
                 }
             });
         }
-        $.modalAlert(type, "success")
     }
 
     function jgGridListData(mydata, type) {
@@ -883,7 +888,7 @@
                 ];
                 break;
         }
-        $("#jg_gridList").remove();
+        $("#gbox_gridList").remove();
         $(".jg_gridPanel").append('<table id="jg_gridList"></table>');
         $('#jg_gridList').jqGrid("clearGridData");
         var $gridList = $("#jg_gridList");

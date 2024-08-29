@@ -1,29 +1,27 @@
-﻿using NeiMengGuYiBaoApp.Models.Input.YiBao;
+﻿using AutoMapper;
+using NeiMengGuYiBaoApp.Code;
+using NeiMengGuYiBaoApp.Models.Input.NationECCodeDll;
+using NeiMengGuYiBaoApp.Models.Input.YiBao;
+using NeiMengGuYiBaoApp.Models.Output.HeaSecReadInfo;
+using NeiMengGuYiBaoApp.Models.Output.NationECCodeDll;
 using NeiMengGuYiBaoApp.Models.Output.YiBao;
 using NeiMengGuYiBaoApp.Models.Post;
+using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
 using NeiMengGuYiBaoApp.Models.Post.YiBao;
-using NeiMengGuYiBaoApp.Models.Input.NationECCodeDll;
-using NeiMengGuYiBaoApp.Models.Output.NationECCodeDll;
 using NeiMengGuYiBaoApp.Models.SQL;
+using NeiMengGuYiBaoApp.Service;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Web.Http;
 using System.Web.Http.Results;
-using NeiMengGuYiBaoApp.Code;
-using System.Data;
-using Newtonsoft.Json;
-using System.Configuration;
-using Newtonsoft.Json.Linq;
-using System.IO;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Linq;
 using System.Xml;
-using NeiMengGuYiBaoApp.Service;
-using NeiMengGuYiBaoApp.Models.Output.HeaSecReadInfo;
-using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
-using AutoMapper;
-using System.Globalization;
 
 namespace NeiMengGuYiBaoApp.Controllers
 {
@@ -75,7 +73,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_1101 Output1101 = new Output_1101();
 
             string jsonStr = YiBaoHelper.CallAndSaveLog(input1101, out Output1101, post, out code);
-           AppLogger.Info("1101请求交易出参：" + jsonStr);
+            AppLogger.Info("1101请求交易出参：" + jsonStr);
             return jsonStr;
         }
         public class cardecinfo
@@ -114,7 +112,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
 
             //读取社保卡
-            ReadCardBas readCardBas = new ReadCardBas(); 
+            ReadCardBas readCardBas = new ReadCardBas();
             DllHelper.CallReadCardBasAndSaveLog(out readCardBas, post, out code);
             if (code != 0)
             {
@@ -178,7 +176,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string qrCodeJsonStr = DllHelper.CallNationECCodeAndSaveLog(inputBasePost, out qrCodeOutput, post, out code);
             if (code != 0)
             {
-               return YiBaoHelper.BuildReturnJson("-99", "终端医保电子凭证码解码失败原因"+ qrCodeJsonStr);
+                return YiBaoHelper.BuildReturnJson("-99", "终端医保电子凭证码解码失败原因" + qrCodeJsonStr);
             }
 
             //先进行终端医保电子凭证码解码，后进行电子凭证二维码解码
@@ -237,7 +235,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             input1101.data.certno = qrCodeOutput.idNo;
             input1101.data.psn_name = qrCodeOutput.userName;
 
-            
+
             Output_1101 output1101 = new Output_1101();
             string codeOut = "1";
             string jsonStr = YiBaoHelper.CallAndSaveLog(input1101, out output1101, post, out codeOut);
@@ -249,7 +247,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             cardecinfo.mdtrt_cert_type = input1101.data.mdtrt_cert_type;
             cardecinfo.mdtrt_cert_no = input1101.data.mdtrt_cert_no;
             cardecinfo.ecToken = qrCodeOutput.ecToken;
-            
+
             jsonUP["output"]["cardecinfo"] = JObject.Parse(JsonConvert.SerializeObject(cardecinfo));
             jsonStr = Convert.ToString(jsonUP);
             return jsonStr;
@@ -458,26 +456,38 @@ namespace NeiMengGuYiBaoApp.Controllers
 
         #endregion
 
-        #region 【1201】医药机构信息获取
+        #region 1201医药机构信息获取
         /// <summary>
         /// 【3403】科室信息撤销
         /// </summary>
-        /// <param name="post"></param>
+        /// <param name="post1201"></param>
         /// <returns></returns>
         [HttpPost]
-        public string GetfixmedinsInfo1201(PostBase post)
+        public string GetfixmedinsInfo1201(Post_1201 post1201)
         {
+            PostBase post = new PostBase();
             post.tradiNumber = "1201";
             post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
             post.inModel = 0;
+            post.hisId = post1201.hisId;
+            post.inModel = 0;
+            post.operatorId = post1201.operatorId;
+            post.operatorName = post1201.operatorName;
 
             Input_1201 input1201 = new Input_1201();
-
             input1201.medinsinfo = new medinsinfo1201();
-            input1201.medinsinfo.fixmedins_type = "1";
-            input1201.medinsinfo.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+            if (string.IsNullOrEmpty(post1201.fixmedins_type) && string.IsNullOrEmpty(post1201.fixmedins_code))
+            {
+                input1201.medinsinfo.fixmedins_type = "1";
+                input1201.medinsinfo.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+            }
+            else
+            {
+                input1201.medinsinfo.fixmedins_type = post1201.fixmedins_type;
+                input1201.medinsinfo.fixmedins_code = post1201.fixmedins_code;
+                input1201.medinsinfo.fixmedins_name = post1201.fixmedins_name;
+            }
 
-           
             Output_1201 output = new Output_1201();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input1201, out output, post, out code);
@@ -871,7 +881,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 input1901.data.valiFlag = data19.valiFlag;
                 Output_1901 ouput1901 = new Output_1901();
                 ouput1901.list = new List<list1901>(); ;
-                json =YiBaoHelper.CallAndSaveLog(input1901, out ouput1901, post, out code);
+                json = YiBaoHelper.CallAndSaveLog(input1901, out ouput1901, post, out code);
 
                 return json;
             }
@@ -2484,10 +2494,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             input3401.deptinfo = new Deptinfo3401();
             List<Deptinfo3401> list = Function.ToList<Deptinfo3401>(dtDiseinfo);
             input3401.deptinfo = list[0];
-            if (string.IsNullOrEmpty(input3401.deptinfo.dept_resper_name)) {
+            if (string.IsNullOrEmpty(input3401.deptinfo.dept_resper_name))
+            {
                 return YiBaoHelper.BuildReturnJson("-99", "该科室没有主任（系统人员选择该科室并且有联系方式）");
             }
-            input3401.deptinfo.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"];;
+            input3401.deptinfo.poolarea_no = ConfigurationManager.AppSettings["mdtrtarea_admvs"]; ;
             input3401.deptinfo.dr_psncnt = 5;
             input3401.deptinfo.phar_psncnt = 2;
             input3401.deptinfo.nurs_psncnt = 4;
@@ -2495,7 +2506,8 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input3401, out output, post, out code);
-            if (code == "0") {
+            if (code == "0")
+            {
                 ClassSqlHelper.Update3401(1, ks_codes);
             }
             return json;
@@ -2520,8 +2532,9 @@ namespace NeiMengGuYiBaoApp.Controllers
             string[] ks_codes = post3401A.ksCodes.ToArray();
             DataTable dtDiseinfo = ClassSqlHelper.QueryDepartmentInfo3401(orgId, ks_codes);
 
-            List<Deptinfo3401> deptinfo3401List = new List<Deptinfo3401>{ };
-            for (int i = 0; i < post3401A.ksCodes.LongCount(); i++) {
+            List<Deptinfo3401> deptinfo3401List = new List<Deptinfo3401> { };
+            for (int i = 0; i < post3401A.ksCodes.LongCount(); i++)
+            {
                 Deptinfo3401 deptinfo3401 = Function.ToList<Deptinfo3401>(dtDiseinfo)[i];
                 if (string.IsNullOrEmpty(deptinfo3401.dept_resper_name))
                 {
@@ -2653,7 +2666,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 Output_null output = new Output_null();
                 string code = "1";
                 json = YiBaoHelper.CallAndSaveLog(input3501, out output, post, out code);
-               
+
                 try
                 {
                     ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
@@ -3893,7 +3906,7 @@ namespace NeiMengGuYiBaoApp.Controllers
 
         #region 9001 签到  9002 签退
         ///在YiBaoHelper中
-        
+
         //签退
         [HttpPost]
         public string DoSigin9002(Post_9002 post9002)
@@ -3908,7 +3921,7 @@ namespace NeiMengGuYiBaoApp.Controllers
 
 
             Input_9002 input9002 = new Input_9002();
-            input9002.signOut = new signOut(); 
+            input9002.signOut = new signOut();
             input9002.signOut.sign_no = YiBaoInitHelper.sign_no;// post9002.sign_no;
             input9002.signOut.opter_no = post9002.operatorId;
 
@@ -4076,9 +4089,9 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 inputList.feedetail.Add(inputListAll[i]);
             }
-            AppLogger.Info("查询HospitaFeedetail开始："+ inputList.feedetail.Count);
+            AppLogger.Info("查询HospitaFeedetail开始：" + inputList.feedetail.Count);
             string code = "-1";
-            string jsonOutput =YiBaoHelper.CallAndSaveLog(inputList, out outputList, post, out code);
+            string jsonOutput = YiBaoHelper.CallAndSaveLog(inputList, out outputList, post, out code);
             if (code == "0")//成功后写入本地数据库
             {
                 DateTime date = ClassSqlHelper.GetServerTime();
@@ -4123,21 +4136,21 @@ namespace NeiMengGuYiBaoApp.Controllers
             HospitaFeedetail(inputListAll, post, flag + 1, uploadCount, out json);//递归
 
         }
-  
-        
-
- 
-        
 
 
 
 
 
-        
 
-        
 
-        
+
+
+
+
+
+
+
+
 
 
     }

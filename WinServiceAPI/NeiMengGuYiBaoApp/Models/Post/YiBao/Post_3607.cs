@@ -1,28 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 
 namespace NeiMengGuYiBaoApp.Models.Post.YiBao
 {
-    public class Post_3607
+    public class Post_3607 : PostBase
     {
-        /// <summary>
-        /// hisId唯一his的唯一标识
-        /// </summary>
-        public string hisId { get; set; }
-
-        /// <summary>
-        /// 操作员代码
-        /// </summary>
-        public string operatorId { get; set; }
-
-        /// <summary>
-        /// 操作员姓名
-        /// </summary>
-        public string operatorName { get; set; }
         /// <summary>
         /// 结算年月  以“ yyyymm ”格式
         /// </summary>
@@ -47,7 +28,7 @@ namespace NeiMengGuYiBaoApp.Models.Post.YiBao
         [Description("结算 ID")]
         public string setl_id { get; set; }
 
-   
+
 
 
 
