@@ -221,7 +221,7 @@ namespace Newtouch.HIS.DomainServices
                         on a.zyh = e.zyh and e.OrganizeId=@OrganizeId and e.zhxz = @xtzhxz and e.zt = '1'
                         --系统 卡
                         left join xt_card f
-                        on a.patid = f.patid and f.OrganizeId = @OrganizeId and f.zt = '1'
+                        on a.kh = f.CardNo and a.CardType=f.CardType  and f.OrganizeId = @OrganizeId and f.zt = '1'
                         left join [NewtouchHIS_Base]..V_C_Sys_UserStaff g
 						on g.gh=a.doctor and g.OrganizeId=a.OrganizeId and g.zt='1'
                         --where
