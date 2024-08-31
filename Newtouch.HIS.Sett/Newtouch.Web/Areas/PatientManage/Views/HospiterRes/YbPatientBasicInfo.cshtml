@@ -199,11 +199,11 @@
                         </td>
                     </tr>
                     <tr>
-                        <th class="formTitle 35-show">机构目录编码：</th>
+                        <th class="formTitle 35-show">医药机构目录编码：</th>
                         <td class="formValue 35-show" style="width: 180px">
                             <input type="text" id="medins_list_codg" name="medins_list_codg" class="form-control" style="width:150px"/>
                         </td>
-                        <th class="formTitle 35-show">机构批次流水号：</th>
+                        <th class="formTitle 35-show">定点医药机构批次流水号：</th>
                         <td class="formValue 35-show">
                             <input type="text" id="fixmedins_bchno" name="fixmedins_bchno" class="form-control" style="width:150px"/>
                         </td>
@@ -868,7 +868,51 @@
                     $.modalAlert("服务不可访问", 'warning');
                 }
             });
-        }
+        } else if (type === "3508") {
+            if (!$('#medins_list_codg').val() && !$('#fixmedins_bchno').val()) {
+                $.loading(false);
+                $.modalAlert("医药机构目录编码和定点医药机构批次流水号必须填写一个", 'error');
+                return;
+            }
+            if (!$('#jg_kssj').val()) {
+                $.loading(false);
+                $.modalAlert("请填写开始时间", 'error');
+                return;
+            }
+            if (!$('#jg_jssj').val()) {
+                $.loading(false);
+                $.modalAlert("请填写结算时间", 'error');
+                return;
+            }
+            var rcData = {
+                hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId", fixmedins_type: "1",
+                medins_list_codg: $('#medins_list_codg').val(), fixmedins_bchno: $('#fixmedins_bchno').val(),
+                begndate: $('#jg_kssj').val(), enddate: $('#jg_jssj').val()
+            };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:33333/api/YiBao/GetProductInventoryInfo_3508",
+                dataType: "json",
+                data: rcData,
+                async: false,
+                success: function (data) {
+                    var refReg = eval('(' + data + ')');
+                    if (refReg) {
+                        if (refReg.infcode == "0") {
+                            jgGridListData(refReg.output, type);
+                        }
+                        else {
+                            jgGridListData("", type);
+                            $.loading(false);
+                            $.modalAlert(refReg.err_msg, 'error');
+                        }
+                    }
+                },
+                error: function () {
+                    $.modalAlert("服务不可访问", 'warning');
+                }
+            });
+}
     }
 
     function jgGridListData(mydata, type) {
@@ -883,6 +927,24 @@
                     { label: '统一社会信用代码', name: 'uscc', width: 200, align: 'center' },
                     { label: '定点医疗服务机构类型', name: 'fixmedins_type', width: 120, align: 'center' },
                     { label: '医院等级', name: 'hosp_lv', width: 100, align: 'center' }
+                ];
+                break;
+            case "3508":
+                captionCon = "定点医药机构商品库存信息";
+                colModel = [
+                    { label: '有效期止', name: 'expyEnd', width: 105, align: 'center' },
+                    { label: '医疗目录编码', name: 'medListCodg', width: 105, align: 'center' },
+                    { label: '统筹区编号', name: 'poolareaNo', width: 105, align: 'center' },
+                    { label: '库存数量', name: 'invCnt', width: 100, align: 'center' },
+                    { label: '医药机构目录编码', name: 'medinsListCodg', width: 120, align: 'center' },
+                    { label: '备注', name: 'memo', width: 120, align: 'center' },
+                    { label: '数据更新时间', name: 'updtTime', width: 100, align: 'center' },
+                    { label: '生产日期', name: 'manuDate', width: 100, align: 'center' },s
+                    { label: '库存日期', name: 'invdate', width: 100, align: 'center' },
+                    { label: '处方药标志', name: 'rxFlag', width: 100, align: 'center' },
+                    { label: '定点医药机构批次流水号', name: 'fixmedinsBchno', width: 150, align: 'center' },
+                    { label: '医药机构目录名称', name: 'medinsListName', width: 120, align: 'center' },
+                    { label: '定点医药机构商品库存流水号', name: 'medinsProdInvNo', width: 100, align: 'center' }
                 ];
                 break;
         }
