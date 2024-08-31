@@ -1,14 +1,7 @@
-﻿using NeiMengGuYiBaoApp.Models.Input;
-using NeiMengGuYiBaoApp.Models.Input.NationECCodeDll;
-using NeiMengGuYiBaoApp.Models.Input.YiBao;
-using NeiMengGuYiBaoApp.Models.Output;
-using NeiMengGuYiBaoApp.Models.Output.NationECCodeDll;
-using NeiMengGuYiBaoApp.Models.Output.YiBao;
-using NeiMengGuYiBaoApp.Models.Post;
-using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
-using NeiMengGuYiBaoApp.Models.Post.YiBao;
+﻿using NeiMengGuYiBaoApp.Models.Input.YiBao;
 using NeiMengGuYiBaoApp.Models.Log;
-using Newtonsoft.Json;
+using NeiMengGuYiBaoApp.Models.Output.YiBao;
+using NeiMengGuYiBaoApp.Models.Post.YiBao;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -17,12 +10,8 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using wqsj_PlatForm_DAS;
-using System.Reflection;
-using System.Collections;
 
 namespace NeiMengGuYiBaoApp.Service
 {
@@ -299,7 +288,7 @@ where  jz.zyh = '{hisId}'");
         /// <param name="hisId"></param>
         /// <param name="errorNo"></param>
         /// <returns></returns>
-        public static bool UpSettlement(string hisId, string setl_id, string operatorId,string cxsetl_id, out int errorNo)
+        public static bool UpSettlement(string hisId, string setl_id, string operatorId, string cxsetl_id, out int errorNo)
         {
             List<string> SQLList = new List<string>();
             SQLList.Add(string.Format($"update drjk_mzjs_input set zt=0,zt_rq=GETDATE(),zt_czy='{operatorId}' where mzh='{hisId}' and setl_id='{setl_id}' "));
@@ -393,7 +382,7 @@ where  jz.zyh = '{hisId}'");
             Parameters.Add("@zyh", post2204.hisId);
             Parameters.Add("@yllb", post2204.med_type);
             Parameters.Add("@jssj", post2204.jssj);
-            Parameters.Add("@jfbbh", post2204.jfbbh?? "");
+            Parameters.Add("@jfbbh", post2204.jfbbh ?? "");
             return platFormServer.RunProc_DataTable_WqServer("zy_fymxscV2", Parameters);
         }
 
@@ -447,7 +436,7 @@ where  jz.zyh = '{hisId}'");
         /// <param name="hisId"></param>
         /// <param name="errorNo"></param>
         /// <returns></returns>
-        public static bool UpHospitaSettlement(string hisId, string setl_id, string operatorId,string cxsetl_id, out int errorNo)
+        public static bool UpHospitaSettlement(string hisId, string setl_id, string operatorId, string cxsetl_id, out int errorNo)
         {
             List<string> SQLList = new List<string>();
             SQLList.Add(string.Format($"update Drjk_zyjs_input set zt=0,zt_rq=GETDATE(),zt_czy='{operatorId}' where zyh='{hisId}' and setl_id='{setl_id}' and zt=1 "));
@@ -493,27 +482,27 @@ where  jz.zyh = '{hisId}'");
         }
 
 
-		/// <summary>
-		///  desc :3102 接口回调 存储信息  
-		/// </summary>
-		/// <param name="hisid"></param>
-		/// <returns></returns>
-		public static int Upload3102(string orgId, DateTime ksrq, DateTime jsrq, string clrtype, string insutype, XmlDocument xml)
-		{
-			//Parameters.Clear();
-			//Parameters.Add("@orgId", orgId);
-			//Parameters.Add("@zyh", hisid);
-			//return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_diseinfoV2", Parameters);
-			return platFormServer.ExecuteSql(string.Format($"exec usp_Inp_ybupload_cyjs_3102 @orgId='{orgId}',@ksrq='{ksrq}',@jsrq='{jsrq}',@clrtype='{clrtype}',@insutype='{insutype}',@xml='{xml.InnerXml}' "));
+        /// <summary>
+        ///  desc :3102 接口回调 存储信息  
+        /// </summary>
+        /// <param name="hisid"></param>
+        /// <returns></returns>
+        public static int Upload3102(string orgId, DateTime ksrq, DateTime jsrq, string clrtype, string insutype, XmlDocument xml)
+        {
+            //Parameters.Clear();
+            //Parameters.Add("@orgId", orgId);
+            //Parameters.Add("@zyh", hisid);
+            //return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_diseinfoV2", Parameters);
+            return platFormServer.ExecuteSql(string.Format($"exec usp_Inp_ybupload_cyjs_3102 @orgId='{orgId}',@ksrq='{ksrq}',@jsrq='{jsrq}',@clrtype='{clrtype}',@insutype='{insutype}',@xml='{xml.InnerXml}' "));
 
-		}
-		/// <summary>
-		/// 查询对账信息
-		/// </summary>
-		/// <param name="input3211"></param>
-		/// <param name="mode">--1汇总  0 明细</param>
-		/// <returns></returns>
-		public static DataTable DailyReconciliation(Post_3211 input3211, int mode)
+        }
+        /// <summary>
+        /// 查询对账信息
+        /// </summary>
+        /// <param name="input3211"></param>
+        /// <param name="mode">--1汇总  0 明细</param>
+        /// <returns></returns>
+        public static DataTable DailyReconciliation(Post_3211 input3211, int mode)
         {
             //@insutype varchar(30),--1  insutype 险种  字符型  6  Y Y
             //@clr_type varchar(30),--2  clr_type 清算类别  字符型  6  Y Y
@@ -641,8 +630,8 @@ where  jz.zyh = '{hisId}'");
         /// <returns></returns>
         public static int Update3401(int uploadYB, string[] kdCodes)
         {
-                string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
-                return platFormServer.ExecuteSql(string.Format($"update [NewtouchHIS_Base].[dbo].[Sys_Department] set UploadYB={uploadYB} where Code in ({ks_codes_in_clause}) and zt=1 "));
+            string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
+            return platFormServer.ExecuteSql(string.Format($"update [NewtouchHIS_Base].[dbo].[Sys_Department] set UploadYB={uploadYB} where Code in ({ks_codes_in_clause}) and zt=1 "));
 
         }
 
@@ -684,7 +673,7 @@ where  jz.zyh = '{hisId}'");
         /// </summary>
         /// <param name="hisid"></param>
         /// <returns></returns>
-        public static DataTable QuerySetlinfo4101(string orgId,string hisid)
+        public static DataTable QuerySetlinfo4101(string orgId, string hisid)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -784,7 +773,7 @@ where  jz.zyh = '{hisId}'");
         /// </summary>
         /// <param name="hisid"></param>
         /// <returns></returns>
-        public static DataTable QueryBaseinfo4401(string orgId, string hisid,string orgcode)
+        public static DataTable QueryBaseinfo4401(string orgId, string hisid, string orgcode)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1010,8 +999,8 @@ where  jz.zyh = '{hisId}'");
         /// <returns></returns>
         public static int UpHospitaSettlement4101(string hisId, string jsqd_lsh, string operatorId)
         {
-           return platFormServer.ExecuteSql(string.Format($"update drjk_zyjs_output set jsqd_sclsh='{jsqd_lsh}',jsqd_scrq=GETDATE(),jsqd_scczy='{operatorId}' where zyh='{hisId}' and zt=1 "));
-           
+            return platFormServer.ExecuteSql(string.Format($"update drjk_zyjs_output set jsqd_sclsh='{jsqd_lsh}',jsqd_scrq=GETDATE(),jsqd_scczy='{operatorId}' where zyh='{hisId}' and zt=1 "));
+
         }
 
         /// <summary>
@@ -1023,7 +1012,7 @@ where  jz.zyh = '{hisId}'");
         /// 
 
 
-        public static string Insert9102(string tbname, string path,int columnNum)
+        public static string Insert9102(string tbname, string path, int columnNum)
         {
             string results = "";
             try
@@ -1071,13 +1060,14 @@ where  jz.zyh = '{hisId}'");
                             {
                                 results = platFormServer.ExecuteSql(@"insert into  NewtouchHIS_Base.[dbo]." + tbname.Trim() + " values(" + a + ")").ToString();
                             }
-                            catch (Exception ex) {
+                            catch (Exception ex)
+                            {
                                 AppLogger.Info("目录写入数据库失败:【" + tbname + "】-" + ex);
                                 AppLogger.Info("错误的原数据是:【" + sLine + "】");
                                 AppLogger.Info("错误的修改后的数据是:【" + a + "】");
                                 continue;
                             }
-                            
+
                             a = "";
                         }
                     }
@@ -1088,14 +1078,14 @@ where  jz.zyh = '{hisId}'");
             }
             catch (Exception ex)
             {
-                AppLogger.Info("目录写入数据库失败:【"+ tbname + "】-" + ex);
+                AppLogger.Info("目录写入数据库失败:【" + tbname + "】-" + ex);
                 var errmsg = "目录写入数据库失败:【" + tbname + "】-" + ex;
                 return errmsg;
             }
         }
 
         #region 3101
-        public static DataTable DetailAuditData3101_fsi_order_dtos(string zyh, string orgId,string yzh,string txlx)
+        public static DataTable DetailAuditData3101_fsi_order_dtos(string zyh, string orgId, string yzh, string txlx)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1357,12 +1347,12 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
      VALUES('" + inputPD3101.patn_id + "','" + inputPD3101.patn_name + "','" + inputPD3101.gend + "','" + inputPD3101.brdy + "','" + inputPD3101.poolarea + "','" + inputPD3101.curr_mdtrt_id + "','','','" + ClassSqlHelper.GetServerTime() + "','" + czydm + "','" + zyh + "','1',null,null)";
             return platFormServer.ExecuteSql(sql);
         }
-        public static string InserOutput3101(Outputrs3101 Output3101, string czydm, string zyh,string issqsz)
+        public static string InserOutput3101(Outputrs3101 Output3101, string czydm, string zyh, string issqsz)
         {
             try
             {
 
-            string sql = @"INSERT INTO [dbo].[Drjk_sqsh_Output]
+                string sql = @"INSERT INTO [dbo].[Drjk_sqsh_Output]
            ([jr_id]
            ,[rule_id]
            ,[rule_name]
@@ -1383,35 +1373,35 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
            ,[zt]
            ,[zt_czy]
            ,[zt_rq])
-     VALUES('" + Output3101.jr_id 
-     + "','" + Output3101.rule_id
-     + "','" + Output3101.rule_name
-     + "','" + Output3101.jr_id
-     + "','" + Output3101.rule_id
-     + "','" + Output3101.rule_name
-     + "','" + Output3101.vola_cont
-     + "','" + Output3101.patn_id
-     + "','" + Output3101.mdtrt_id
-     + "','" + ""
-     + "','" + Output3101.vola_amt
-     + "','" + Output3101.vola_amt_stas
-     + "','" + Output3101.sev_deg
-     + "','" + Output3101.vola_evid
-     + "','" + Output3101.vola_bhvr_type
-     + "','" + Output3101.task_id
-     + "','"+ issqsz + "','" + ClassSqlHelper.GetServerTime() 
-     + "','" + czydm 
-     + "','" + zyh 
-     + "','1',null,null)";
-                if (platFormServer.ExecuteSql(sql)<1)
+     VALUES('" + Output3101.jr_id
+         + "','" + Output3101.rule_id
+         + "','" + Output3101.rule_name
+         + "','" + Output3101.jr_id
+         + "','" + Output3101.rule_id
+         + "','" + Output3101.rule_name
+         + "','" + Output3101.vola_cont
+         + "','" + Output3101.patn_id
+         + "','" + Output3101.mdtrt_id
+         + "','" + ""
+         + "','" + Output3101.vola_amt
+         + "','" + Output3101.vola_amt_stas
+         + "','" + Output3101.sev_deg
+         + "','" + Output3101.vola_evid
+         + "','" + Output3101.vola_bhvr_type
+         + "','" + Output3101.task_id
+         + "','" + issqsz + "','" + ClassSqlHelper.GetServerTime()
+         + "','" + czydm
+         + "','" + zyh
+         + "','1',null,null)";
+                if (platFormServer.ExecuteSql(sql) < 1)
                 {
                     return "插入Drjk_sqsh_Output表失败";
                 }
-            if (Output3101.judge_result_detail_dtos!=null)
-            {
-                foreach (var item in Output3101.judge_result_detail_dtos)
+                if (Output3101.judge_result_detail_dtos != null)
                 {
-                    string sqlmx = @"INSERT INTO [dbo].[Drjk_sqsh_OutputMX]
+                    foreach (var item in Output3101.judge_result_detail_dtos)
+                    {
+                        string sqlmx = @"INSERT INTO [dbo].[Drjk_sqsh_OutputMX]
            ([jrd_id]
            ,[patn_id]
            ,[mdtrt_id]
@@ -1424,27 +1414,27 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
            ,[zt]
            ,[zt_czy]
            ,[zt_rq])
-     VALUES('" 
-                        + "','" + item.jrd_id
-                        + "','" + item.patn_id
-                        + "','" + item.mdtrt_id
-                        + "','" + item.rx_id
-                        + "','" + item.vola_item_type
-                        + "','" + item.vola_amt
-                        + "','" + ClassSqlHelper.GetServerTime()
-                        + "','" + czydm
-                        + "','" + zyh
-                        + "','1',null,null)";
+     VALUES('"
+                            + "','" + item.jrd_id
+                            + "','" + item.patn_id
+                            + "','" + item.mdtrt_id
+                            + "','" + item.rx_id
+                            + "','" + item.vola_item_type
+                            + "','" + item.vola_amt
+                            + "','" + ClassSqlHelper.GetServerTime()
+                            + "','" + czydm
+                            + "','" + zyh
+                            + "','1',null,null)";
                         if (platFormServer.ExecuteSql(sqlmx) < 1)
                         {
                             return "插入Drjk_sqsh_OutputMX表失败";
                         }
                     }
-            }
+                }
             }
             catch (Exception ex)
             {
-                AppLogger.Info("目录写入数据库失败:【" + ex.Message + "】" );
+                AppLogger.Info("目录写入数据库失败:【" + ex.Message + "】");
                 return "插入Drjk_sqsh_OutputMX表失败" + ex.Message;
             }
             return "";
@@ -1452,7 +1442,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         #endregion
 
         #region 3102 事前事中提醒
-        public static DataTable DetailAuditData3102_patient_dtos(string zyh, string orgId,string txlx)
+        public static DataTable DetailAuditData3102_patient_dtos(string zyh, string orgId, string txlx)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1462,10 +1452,10 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
                 tabName = "usp_Mz_DetailAudit_patient_dtos";
             else
                 tabName = "usp_Inp_DetailAudit_patient_dtos";
-            DataTable dt= platFormServer.RunProc_DataTable_WqServer(tabName, Parameters);
+            DataTable dt = platFormServer.RunProc_DataTable_WqServer(tabName, Parameters);
             return dt;
         }
-        public static DataTable DetailAuditData3102_fsi_diagnose_dtos(string zyh, string orgId,string txlx)
+        public static DataTable DetailAuditData3102_fsi_diagnose_dtos(string zyh, string orgId, string txlx)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1491,7 +1481,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", zyh);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_DetailAudit_fsi_order_dtos", Parameters);
         }
-        public static DataTable DetailAuditData3102_fsi_encounter_dtos(string zyh, string orgId,string ddyyid, string ddyymc, string insuplc_admdvs,string txlx)
+        public static DataTable DetailAuditData3102_fsi_encounter_dtos(string zyh, string orgId, string ddyyid, string ddyymc, string insuplc_admdvs, string txlx)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1506,7 +1496,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
                 tabName = "usp_Inp_DetailAudit_fsi_encounter_dtos";
             return platFormServer.RunProc_DataTable_WqServer(tabName, Parameters);
         }
-        public static int Inser3102(InputPD3102 inputPD3102,string czydm,string zyh )
+        public static int Inser3102(InputPD3102 inputPD3102, string czydm, string zyh)
         {
             string sql = @"INSERT INTO [dbo].[Drjk_szsh_input]
            ([patn_id]
@@ -1748,7 +1738,8 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         #endregion
 
 
-        public static DataTable QueryDepartmentInfo3401(string orgId, string[] kdCodes) {
+        public static DataTable QueryDepartmentInfo3401(string orgId, string[] kdCodes)
+        {
             {
                 string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
                 string sql = "SELECT d.[Name] AS hosp_dept_name,d.[Code] AS hosp_dept_codg,FORMAT(d.[CreateTime], 'yyyy-MM-dd HH:mm:ss') AS begntime,d.[Name] + '的简介' AS itro,d.[ybksbm] AS caty,s.[Name] AS dept_resper_name,s.[MobilePhone] AS dept_resper_tel,FORMAT(d.[CreateTime], 'yyyy-MM-dd HH:mm:ss') AS dept_estbdat FROM [NewtouchHIS_Base].[dbo].[Sys_Department] d\r\nLEFT JOIN (SELECT TOP 1 WITH TIES s.* FROM [NewtouchHIS_Base].[dbo].[Sys_Staff] s WHERE s.[MobilePhone] IS NOT NULL AND s.[zt] = 1 AND s.[OrganizeId] = '@orgId' ORDER BY ROW_NUMBER() OVER (PARTITION BY s.[DepartmentCode] ORDER BY s.[CreateTime] ASC)) s ON d.[Code] = s.[DepartmentCode] \r\nWHERE d.[Code] IN (@ks_codes) AND d.[zt] = 1 AND d.[OrganizeId] = '@orgId';";
@@ -1759,7 +1750,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         }
 
         #region 【3501】商品盘存上传
-        public static DataTable QueryInventory3501(string pdId,string orgId,string ddyyid,string ddyymc)
+        public static DataTable QueryInventory3501(string pdId, string orgId, string ddyyid, string ddyymc)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1778,11 +1769,11 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         {
             return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id = '{id}' and type = '{type}' "));
         }
-        public static DataTable getdrugtracinfo(string ypdm,string pc,string ph)
+        public static DataTable getdrugtracinfo(string ypdm, string pc, string ph)
         {
             string sql = string.Format($@"select zsm drug_trac_codg from NewtouchHIS_PDS..yb_inventory where ypdm= '{ypdm}' and pc = '{pc}' and  ph='{ph}'");
             return platFormServer.Query(sql).Tables[0];
-           
+
         }
         #endregion
         public static DataTable QueryInventory3502(string crkId, string orgId, string ddyyid, string ddyymc)
@@ -1850,16 +1841,28 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", hisid);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_stastinfo", Parameters);
         }
+
+        /// <summary>
+        ///  更新结算清单信息状态
+        /// <param name="stas_type"></param>
+        /// /// <param name="kdCodes"></param>
+        /// <returns></returns>
+        public static int UpdateStastinfo4102(string stas_type, string[] setlIds)
+        {
+            string setl_id_in_clause = string.Join(",", setlIds.Select(id => $"'{id}'"));
+            return platFormServer.ExecuteSql(string.Format($"update drjk_zyjs_output set jsqd_tjzt = {stas_type} where setl_id in ({setl_id_in_clause});"));
+
+        }
         public static int UpHospitaSettlement3203(string qsny, string qslb, string sfyd, string sqdid, string operatorId)
-		{
-			return platFormServer.ExecuteSql(string.Format($"update ybjsqd_qssq set sqzt=1 ,sqrq=getdate(),sqczr='{operatorId}',sqdid='{sqdid}' where qsny='{qsny}' and qslb='{qslb}' and sfyd='{sfyd}' "));
+        {
+            return platFormServer.ExecuteSql(string.Format($"update ybjsqd_qssq set sqzt=1 ,sqrq=getdate(),sqczr='{operatorId}',sqdid='{sqdid}' where qsny='{qsny}' and qslb='{qslb}' and sfyd='{sfyd}' "));
 
-		}
-		public static int UpHospitaSettlement3204(string sqdid)
-		{
-			return platFormServer.ExecuteSql(string.Format($"update ybjsqd_qssq set sqzt=0,sqczr=null,sqrq=null,sqdid=null where sqdid='{sqdid}' "));
+        }
+        public static int UpHospitaSettlement3204(string sqdid)
+        {
+            return platFormServer.ExecuteSql(string.Format($"update ybjsqd_qssq set sqzt=0,sqczr=null,sqrq=null,sqdid=null where sqdid='{sqdid}' "));
 
-		}
+        }
         /// <summary>
         /// 医疗保障基金结算清单信息查询
         /// </summary>

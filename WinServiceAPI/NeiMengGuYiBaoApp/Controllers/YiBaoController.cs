@@ -458,7 +458,7 @@ namespace NeiMengGuYiBaoApp.Controllers
 
         #region 1201医药机构信息获取
         /// <summary>
-        /// 【3403】科室信息撤销
+        /// 1201医药机构信息获取
         /// </summary>
         /// <param name="post1201"></param>
         /// <returns></returns>
@@ -3166,10 +3166,11 @@ namespace NeiMengGuYiBaoApp.Controllers
 
             Output_4102 output = new Output_4102();
             string json = YiBaoHelper.CallAndSaveLog(input4102, out output, post, out code);
-            if (code != "0")
-                return json;
-
-
+            if (code == "0")
+            {
+                string[] setlIds = list.Select(info => info.setl_id).ToArray();
+                ClassSqlHelper.UpdateStastinfo4102("1", setlIds);
+            }
             //int eeor = ClassSqlHelper.UpHospitaSettlement4101(post.hisId, output.setl_list_id, post.operatorId);
             //if (eeor < 0)
             //{
