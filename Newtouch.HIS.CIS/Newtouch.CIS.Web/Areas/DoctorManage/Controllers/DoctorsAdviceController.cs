@@ -1,4 +1,24 @@
-﻿namespace Newtouch.CIS.Web.Areas.DoctorManage.Controllers
+﻿using FrameworkBase.MultiOrg.Domain.Entity;
+using FrameworkBase.MultiOrg.Domain.IDomainServices;
+using FrameworkBase.MultiOrg.Domain.IRepository;
+using FrameworkBase.MultiOrg.Web;
+using Newtouch.Common;
+using Newtouch.Core.Common;
+using Newtouch.Core.Common.Exceptions;
+using Newtouch.Domain.Entity;
+using Newtouch.Domain.IDomainServices;
+using Newtouch.Domain.IRepository;
+using Newtouch.Domain.ValueObjects.Inpatient;
+using Newtouch.HIS.Web.Core.Attributes;
+using Newtouch.Infrastructure;
+using Newtouch.Tools;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Linq;
+using System.Web.Mvc;
+
+namespace Newtouch.CIS.Web.Areas.DoctorManage.Controllers
 {
     public class DoctorsAdviceController : OrgControllerBase
     {
