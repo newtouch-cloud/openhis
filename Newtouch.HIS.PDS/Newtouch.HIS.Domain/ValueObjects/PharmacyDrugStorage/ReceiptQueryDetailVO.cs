@@ -121,5 +121,15 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 退货原因
         /// </summary>
         public string thyy { get; set; }
+
+        /// <summary>
+        /// 追溯码
+        /// </summary>
+        public string zsm { get; set; }
+
+        /// <summary>
+        /// 是否拆零
+        /// </summary>
+        public string sfcl { get; set; }
     }
 }
