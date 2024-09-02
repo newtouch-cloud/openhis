@@ -3034,7 +3034,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3607.operatorId;
             post.operatorName = post3607.operatorName;
 
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3607, Data3607>());
             var mapper = config.CreateMapper();
             Input_3607 input3607 = new Input_3607();
             input3607.data = mapper.Map<Data3607>(post3607);

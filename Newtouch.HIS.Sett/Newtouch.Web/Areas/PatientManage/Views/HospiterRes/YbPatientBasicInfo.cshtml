@@ -178,42 +178,59 @@
                         </td>
                         <th class="formTitle 1201-show">医药机构名称：</th>
                         <td class="formValue 1201-show" style="width: 180px">
-                            <input type="text" id="fixmedins_name" name="fixmedins_name" class="form-control" style="width:150px"/>
+                            <input type="text" id="fixmedins_name" name="fixmedins_name" class="form-control" style="width:150px" />
                         </td>
                         <th class="formTitle  1201-show">医药机构编号：</th>
                         <td class="formValue  1201-show">
-                            <input type="text" id="fixmedins_code" name="fixmedins_code" class="form-control" style="width:150px"/>
+                            <input type="text" id="fixmedins_code" name="fixmedins_code" class="form-control" style="width:150px" />
                         </td>
                         <th class="formTitle time-show">开始日期：</th>
                         <td class="formValue  time-show">
                             <input id="jg_kssj" type="text" class="form-control input-wdatepicker form-an" style="width:150px"
-                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))"/>
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-01"))" />
                         </td>
                         <th class="formTitle  time-show">结束日期：</th>
                         <td class="formValue  time-show">
                             <input id="jg_jssj" type="text" class="form-control input-wdatepicker form-an" style="width:150px"
-                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))"/>
+                                   onclick="WdatePicker({ dateFmt: 'yyyy-MM-dd'})" value="@(DateTime.Now.ToString("yyyy-MM-dd"))" />
                         </td>
-                        <td class="formTitle" style="width:50px">
-                            <input type="button" class="btn btn-default btn-md btn-default-color" id="jg_btkhsr" value="查询" onclick="GetYbJGInfo()"/>
+                        <td class="formTitle 3607-show">*当前页数:</td>
+                        <td class="formValue 3607-show  style="width:150px"">
+                            <input type="text" id="page_num" class="form-control" style="height:26px;width:90px;display:inline" value="" />
+                            <input type="button" id="btn_mlcx_next" class="btn btn-primary btn-md" value="下一页" />
+                        </td>
+                        <td class="formTitle 3607-show">*本页数据量:</td>
+                        <td class="formTitle 3607-show">
+                            <input type="text" id="page_size" class="form-control" style="height:16px" value="" />
+                        </td>
+                        <td class="formTitle 3607-show" style="width:50px">
+                            <input type="button" class="btn btn-default btn-md btn-default-color" id="jg_btkhsr" value="查询" onclick="GetYbJGInfo()" />
                         </td>
                     </tr>
                     <tr>
                         <th class="formTitle 35-show">医药机构目录编码：</th>
                         <td class="formValue 35-show" style="width: 180px">
-                            <input type="text" id="medins_list_codg" name="medins_list_codg" class="form-control" style="width:150px"/>
+                            <input type="text" id="medins_list_codg" name="medins_list_codg" class="form-control" style="width:150px" />
                         </td>
                         <th class="formTitle 35-show">定点医药机构批次流水号：</th>
                         <td class="formValue 35-show">
-                            <input type="text" id="fixmedins_bchno" name="fixmedins_bchno" class="form-control" style="width:150px"/>
+                            <input type="text" id="fixmedins_bchno" name="fixmedins_bchno" class="form-control" style="width:150px" />
                         </td>
                         <th class="formTitle 35-show">医疗目录编码：</th>
                         <td class="formValue 35-show">
-                            <input type="text" id="med_list_codg" name="med_list_codg" class="form-control" style="width:150px"/>
+                            <input type="text" id="med_list_codg" name="med_list_codg" class="form-control" style="width:150px" />
                         </td>
                         <th class="formTitle 35-show">就诊ID：</th>
                         <td class="formValue 35-show">
-                            <input type="text" id="mdtrt_id" name="mdtrt_id" class="form-control" style="width:150px"/>
+                            <input type="text" id="mdtrt_id" name="mdtrt_id" class="form-control" style="width:150px" />
+                        </td>
+                        <td class="formTitle 3607-show">*结算年月:</td>
+                        <td class="formValue 3607-show">
+                            <input id="setl_ym" type="text" class="form-control input-wdatepicker" style="width:120px; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyyMM")" onfocus="WdatePicker({ dateFmt: 'yyyyMM' })" />
+                        </td>
+                        <th class="formTitle 3607-show">结算ID：</th>
+                        <td class="formValue 3607-show">
+                            <input type="text" id="setl_id" name="setl_id" class="form-control" style="width:150px" />
                         </td>
                     </tr>
                 </table>
@@ -1132,8 +1149,57 @@
                     $.modalAlert("服务不可访问", 'warning');
                 }
             });
+        } else if (type === "3607") {
+            if (!$('#setl_ym').val()) {
+                $.loading(false);
+                $.modalAlert("请填写结算年月", 'error');
+                return;
+            }
+            if (!$('#page_num').val()) {
+                $.loading(false);
+                $.modalAlert("请填写分页页码", 'error');
+                return;
+            }
+            if (!$('#page_size').val()) {
+                $.loading(false);
+                $.modalAlert("请填写分页数量", 'error');
+                return;
+            }
+            var rcData = {
+                hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId",
+                setl_ym: $('#setl_ym').val(), page_num: $('#page_num').val(), page_size: $('#page_size').val(),
+                setl_id: $('#setl_id').val()
+            };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:33333/api/YiBao/GetSettlementQualityControlResults_3607",
+                dataType: "json",
+                data: rcData,
+                async: false,
+                success: function (data) {
+                    var refReg = eval('(' + data + ')');
+                    if (refReg) {
+                        if (refReg.infcode == "0") {
+                            jgGridListData(refReg.output.data, type);
+                        }
+                        else {
+                            jgGridListData("", type);
+                            $.loading(false);
+                            $.modalAlert(refReg.err_msg, 'error');
+                        }
+                    }
+                },
+                error: function () {
+                    $.modalAlert("服务不可访问", 'warning');
+                }
+            });
         }
     }
+
+    $("#btn_mlcx_next").click(function () {
+        $("#page_num").val($("#page_num").val() + 1);
+        GetYbJGInfo();
+    });
 
     function jgGridListData(mydata, type) {
         var colModel;
@@ -1351,6 +1417,25 @@
 
                 ];
                 break;
+            case "3607":
+                captionCon = "结算清单质控结果";
+                colModel = [
+                    { label: "定点医药机构编号", name: "fixmedins_code", width: 100, align: "center" },
+                    { label: "定点医药机构名称", name: "fixmedins_name", width: 120, align: "center" },
+                    { label: "结算年月", name: "setl_ym", width: 100, align: "center" },
+                    { label: "结算 ID", name: "setl_id", width: 100, align: "center" },
+                    { label: "人员编号", name: "psn_no", width: 100, align: "center" },
+                    { label: "人员姓名", name: "psn_name", width: 100, align: "center" },
+                    { label: "人员证件类型", name: "psn_cert_type", width: 80, align: "center" },
+                    { label: "证件号码", name: "cert_no", width: 100, align: "center" },
+                    { label: "质控结果", name: "qltctrl_rslt", width: 50, align: "center" },
+                    { label: "错误等级", name: "err_lv", width: 50, align: "center" },
+                    { label: "回退标志", name: "retn_flag", width: 50, align: "center" },
+                    { label: "质控版本号", name: "qltctrl_ver", width: 80, align: "center" },
+                    { label: "分组状态", name: "grp_stas", width: 50, align: "center" },
+                    { label: "质控结算清单结果详情信息", name: "detl_list", width: 200, align: "center" }
+                ];
+                break;
         }
         $("#gbox_gridList").remove();
         $(".jg_gridPanel").append('<table id="jg_gridList"></table>');
@@ -1375,10 +1460,19 @@
             $('.1201-show').show(); // 显示医药机构信息
             $('.time-show').hide();
             $('.35-show').hide();
+            $('.3607-show').hide();
+        } else if (type === '3607') {
+            $('.3607-show').show();
+            $('.1201-show').hide();
+            $('.time-show').hide();
+            $('.35-show').hide();
+            $("#page_num").val(1);
+            $("#page_size").val(100);
         } else {
             $('.1201-show').hide(); // 隐藏医药机构信息
             $('.time-show').show();
             $('.35-show').show();
+            $('.3607-show').hide();
         }
     }
     //页面加载时执行
