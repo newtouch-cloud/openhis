@@ -96,7 +96,9 @@ namespace Newtouch.HIS.Application.Implementation.Process
 					zt = "1",
 					Fph = p.fph,
 					ckdw = p.ckdw,
-					pfjze = p.pfjze
+					pfjze = p.pfjze,
+					zsm = p.zsm,
+					sfcl = p.sfcl,
 				};
 				item.Create(true, Guid.NewGuid().ToString());
 				djmx.Add(item);
