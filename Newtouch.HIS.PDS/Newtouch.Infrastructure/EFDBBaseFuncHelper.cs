@@ -1,10 +1,9 @@
-﻿using Newtouch.Core.Common;
-using Newtouch.Tools.DB;
+﻿using FrameworkBase.MultiOrg.Infrastructure;
+using Newtouch.Core.Common;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Text.RegularExpressions;
-using FrameworkBase.MultiOrg.Infrastructure;
 
 namespace Newtouch.Infrastructure
 {

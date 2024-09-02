@@ -2899,7 +2899,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3509.operatorId;
             post.operatorName = post3509.operatorName;
 
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3509, Data3509>());
             var mapper = config.CreateMapper();
             Input_3509 input3509 = new Input_3509();
             input3509.data = mapper.Map<Data3509>(post3509);
@@ -2926,7 +2926,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3510.operatorId;
             post.operatorName = post3510.operatorName;
 
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3510, Data3510>());
             var mapper = config.CreateMapper();
             Input_3510 input3510 = new Input_3510();
             input3510.data = mapper.Map<Data3510>(post3510);
@@ -2953,7 +2953,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3511.operatorId;
             post.operatorName = post3511.operatorName;
 
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3511, Data3511>());
             var mapper = config.CreateMapper();
             Input_3511 input3511 = new Input_3511();
             input3511.data = mapper.Map<Data3511>(post3511);
@@ -2980,7 +2980,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3512.operatorId;
             post.operatorName = post3512.operatorName;
 
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3512, Data3512>());
             var mapper = config.CreateMapper();
             Input_3512 input3512 = new Input_3512();
             input3512.data = mapper.Map<Data3512>(post3512);
@@ -3007,7 +3007,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3513.operatorId;
             post.operatorName = post3513.operatorName;
 
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3508, Data3508>());
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_3513, Data3513>());
             var mapper = config.CreateMapper();
             Input_3513 input3513 = new Input_3513();
             input3513.data = mapper.Map<Data3513>(post3513);
