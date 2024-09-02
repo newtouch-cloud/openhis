@@ -101,7 +101,9 @@ namespace Newtouch.HIS.Application.Implementation
 					Kprq = p.kprq,
 					scrq = p.scrq,
 					ckdw = p.ckdw,
-					pfjze = p.pfjze
+					pfjze = p.pfjze,
+					zsm = p.zsm,
+					sfcl = p.sfcl,
 
 				};
 				item.Create(true, Guid.NewGuid().ToString());
