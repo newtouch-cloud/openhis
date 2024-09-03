@@ -46,6 +46,10 @@
     #gridList .ckbox label {
         margin-top: 24px;
     }
+    .scan-input {
+        border: 2px solid #007bff;
+        padding: 5px;
+    }
 </style>
 <form id="form1">
     <div class="panel panel-default" style="margin-bottom:10px;">
@@ -101,9 +105,39 @@
             $("#gridList").jqGrid("addRowData", undefined, { operate: GetOperatehtml() }, "last");
         });
         InitBackspaceKeyForGys();
+
+        $gridList.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity input').val(), 10);
+                }
+
+                
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(inputField.val() + ',');
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1000);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
     });
 
-    //按backspace键清楚所有
+     //按backspace键清楚所有
     function InitBackspaceKeyForGys(id) {
         $("#gysmc").keydown(function (e) {
             e = window.event ? window.event : e;
@@ -147,11 +181,23 @@
                 { label: '<span class="required">*</span>药品名称', name: 'ypmc', width: 105, align: 'center', editable: true, editwidth: "100%" },
                 { label: "国家医保编码", name: "gjybdm", width: 75, align: 'center', editable: true, editwidth: "100%" },
                 { label: "药品类别", name: "dlmc", width: 75, align: 'center', editable: true, editwidth: "100%" },
-                { label: '<span class="required">*</span>数量', name: 'sl', width: 45, align: 'center', editable: true, editwidth: "100%" },
+                { label: '<span class="required">*</span>数量', name: 'sl', width: 45, align: 'center', editable: true, editwidth: "100%", classes:'quantity' },
                 {
                     label: '单位', name: 'dw', width: 50, align: 'center',
                     formatter: function (cellvalue, options) {
                         return "<select name=\"dw\" id=\"sel_dw_" + options.rowId + "\" rowid=" + options.rowId + " class=\"editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ></select>";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<input name=\"zsm\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " onpaste=\"addComma(event)\" class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\">是</option><option value=\"2\">否</option></select>";
                     }
                 },
                 { label: '<span class="required">*</span>进价总额', name: 'jjze', width: 80, align: 'center', editable: true, editwidth: "100%" },
@@ -280,6 +326,10 @@
         var scrq = $("#scrq_" + rowid).val();
         var kprq = $("#kprq_" + rowid).val();
         var pfjze = parseFloat(rowData.pfjze).toFixed(4);
+        //追溯码
+        var zsm = $("#sel_zsm_"+rowid).val()
+        //是否拆零
+        var sfcl = $("#sel_sfcl_"+rowid).val()
         return {
             ypdm: rowData.ypdm,
             pfj: isNaN(pfj) ? 0 : pfj.toFixed(4),
@@ -300,7 +350,10 @@
             ph: rowData.ph,
             rkdw: rkdw,
             ckdw: "",
-            pfjze: pfjze
+            pfjze: pfjze,
+            zsm: zsm,
+            sfcl: sfcl,
+
         };
     }
 
@@ -612,6 +665,22 @@
             $.modalMsg("批号不能为空！", "warning", 1000);
             return false;
         }
+
+        // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+        const zsmLength = $("#sel_zsm_" + rowid).val().split(',').filter(entry => entry.trim() !== '').length
+        var maxZsmLength = 1
+        if (rowData.sfcl === 1) {
+            maxZsmLength = 1
+        } else {
+            maxZsmLength = rowData.sl
+        }
+
+
+        if (zsmLength != maxZsmLength) {
+            $.modalMsg("条目" + rowData.ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+            return false;
+        }
+
         return true;
     }
 
