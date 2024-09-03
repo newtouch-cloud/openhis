@@ -95,7 +95,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="userCode"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId);
+        string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId,string zsm, int sfcl);
 
         /// <summary>
         /// 门诊发药
