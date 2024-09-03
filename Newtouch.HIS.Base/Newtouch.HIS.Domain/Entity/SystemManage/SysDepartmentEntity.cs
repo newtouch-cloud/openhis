@@ -95,5 +95,10 @@ namespace Newtouch.HIS.Domain.Entity
         /// 是否上传医保 上传1 未上传0
         /// </summary>
         public int? UploadYB { get; set; }
-    } 
+        /// <summary>
+        /// 是否上传医保后撤销 撤销1 撤销0
+        /// </summary>
+        public int? RevokeYB { get; set; }
+
+    }
 }
