@@ -628,10 +628,18 @@ where  jz.zyh = '{hisId}'");
         /// <param name="uploadYB"></param>
         /// <param name="kdCodes"></param>
         /// <returns></returns>
-        public static int Update3401(int uploadYB, string[] kdCodes)
+        public static int Update3401(int uploadYB, int RevokeYB, bool revokeFlag, string[] kdCodes)
         {
             string ks_codes_in_clause = string.Join(",", kdCodes.Select(code => $"'{code}'"));
-            return platFormServer.ExecuteSql(string.Format($"update [NewtouchHIS_Base].[dbo].[Sys_Department] set UploadYB={uploadYB} where Code in ({ks_codes_in_clause}) and zt=1 "));
+            if (revokeFlag)
+            {
+                return platFormServer.ExecuteSql(string.Format($"update [NewtouchHIS_Base].[dbo].[Sys_Department] set UploadYB={uploadYB} where Code in ({ks_codes_in_clause}) and zt=1 "));
+            }
+            else
+            {
+                return platFormServer.ExecuteSql(string.Format($"update [NewtouchHIS_Base].[dbo].[Sys_Department] set UploadYB={uploadYB} where Code in ({ks_codes_in_clause}) and zt=1 "));
+
+            }
 
         }
 

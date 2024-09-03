@@ -2508,7 +2508,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input3401, out output, post, out code);
             if (code == "0")
             {
-                ClassSqlHelper.Update3401(1, ks_codes);
+                ClassSqlHelper.Update3401(1, 0, false, ks_codes);
             }
             return json;
         }
@@ -2553,7 +2553,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input3401A, out output, post, out code);
             if (code == "0")
             {
-                ClassSqlHelper.Update3401(1, ks_codes);
+                ClassSqlHelper.Update3401(1, 0, false, ks_codes);
             }
             return json;
         }
@@ -2625,7 +2625,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input3403, out output, post, out code);
             if (code == "0")
             {
-                ClassSqlHelper.Update3401(0, ks_codes);
+                ClassSqlHelper.Update3401(1, 1, true, ks_codes);
             }
             return json;
         }
