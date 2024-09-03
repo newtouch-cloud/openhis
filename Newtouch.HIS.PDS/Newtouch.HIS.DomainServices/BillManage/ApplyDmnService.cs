@@ -395,7 +395,8 @@ SELECT crkdjmx.crkmxId,crkdjmx.Yxq yxq,REPLACE(LTRIM(RTRIM(CONVERT(VARCHAR(20),c
 ,CONVERT(NUMERIC(11,4),(yp.Lsj-isnull(crkdjmx.jj,0.00))*crkdjmx.Sl*crkdjmx.ckzhyz/yp.bzs) jxcj
 ,CONVERT(NUMERIC(11,2),ISNULL(isnull(crkdjmx.jj,0.00)*crkdjmx.Sl*crkdjmx.ckzhyz/yp.bzs,0)) zje ");
             sql.Append(@"
-,crkdjmx.kl,LTRIM(LTRIM(ISNULL(crkdjmx.pc,''))) pc,LTRIM(RTRIM(ISNULL(crkdjmx.Ph,''))) ph,ISNULL(crkdjmx.Thyy,'') thyy
+,crkdjmx.kl,LTRIM(LTRIM(ISNULL(crkdjmx.pc,''))) pc,LTRIM(RTRIM(ISNULL(crkdjmx.Ph,''))) ph,ISNULL(crkdjmx.Thyy,'') thyy,
+crkdjmx.zsm, case crkdjmx.sfcl when 1 then '是' when 2 then '否' else  '' end as sfcl
 FROM dbo.xt_yp_crkdj(NOLOCK) crkdj
 INNER JOIN dbo.xt_yp_crkmx(NOLOCK) crkdjmx ON crkdjmx.crkId=crkdj.crkId AND crkdjmx.zt='1'
 INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yp yp ON yp.ypCode=crkdjmx.Ypdm AND yp.OrganizeId=crkdj.OrganizeId

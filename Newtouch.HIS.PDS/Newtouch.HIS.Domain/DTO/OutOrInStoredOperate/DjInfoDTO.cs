@@ -177,5 +177,17 @@ namespace Newtouch.HIS.Domain.DTO.OutOrInStoredOperate
         /// 药库单位批发价
         /// </summary>
         public decimal pfjze { get; set; }
+
+        /// <summary>
+        /// 追溯码
+        /// </summary>
+        public string zsm {get; set;}
+
+        /// <summary>
+        /// 是否拆零
+        /// 1： 是
+        /// 2： 否
+        /// </summary>
+        public int sfcl { get; set;}
     }
 }
