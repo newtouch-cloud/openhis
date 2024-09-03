@@ -155,5 +155,18 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 组织机构ID
         /// </summary>
         public string organizeId { get; set; }
+
+        /// <summary>
+        /// 追溯码
+        /// </summary>
+        public string zsm { get; set; }
+
+        /// <summary>
+        /// 是否拆零
+        /// 1： 是
+        /// 2： 否
+        /// </summary>
+        public int sfcl { get; set; }
+
     }
 }

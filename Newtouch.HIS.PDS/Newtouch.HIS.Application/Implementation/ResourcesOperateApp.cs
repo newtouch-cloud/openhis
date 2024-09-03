@@ -428,6 +428,7 @@ namespace Newtouch.HIS.Application.Implementation
                     yfbmCode = tyInfo.yfbmCode,
                     organizeId = tyInfo.organizeId,
                     tyDrugDetail = tyInfo.tyDrugDetail.FindAll(p => p.cfh == s)
+                    
                 };
                 var processResult = new OutpatientReturnDrugsProcess(request).Process();
                 if (!processResult.IsSucceed)

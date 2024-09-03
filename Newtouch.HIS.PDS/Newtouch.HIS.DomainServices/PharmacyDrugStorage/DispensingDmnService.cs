@@ -847,7 +847,9 @@ WHERE pc=@pc AND ph=@ph AND ypdm=@ypCode AND OrganizeId=@OrganizeId AND yfbmCode
                         bz = "",
                         LastModifierCode = "",
                         LastModifyTime = null,
-                        zyfyapplyno= fyid
+                        zyfyapplyno= fyid,
+                        zsm = yzxx.zsm,
+
                     };
                     db.Insert(zyczjlEntity);
                     #endregion

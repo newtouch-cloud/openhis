@@ -375,7 +375,7 @@ namespace Newtouch.HIS.DomainServices
         public List<YPFYPatientInfoVO> SelectDispenseDrugDetail(HospitalizationDispenseDrugParam req)
         {
             string sql = @"
-SELECT o.*, dbo.f_getYfbmYpComplexYpSlandDw(o.zxdwsl, @yfbmCode, o.ypCode, @OrganizeId) slStr 
+SELECT o.*, dbo.f_getYfbmYpComplexYpSlandDw(o.zxdwsl, @yfbmCode, o.ypCode, @OrganizeId) slStr , o.zxdwsl as sl
 FROM (
 	SELECT SUM(c.sl) zxdwsl, a.zyh, c.ypCode,a.yzId, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz,
 	CASE when a.yzxz = '1' then '临时' when a.yzxz = '2' then '长期' else '/' end yzxzmc,
@@ -1040,7 +1040,9 @@ WHERE rdb.applyNo=@applyNo
                                     ypCode = yp.ypCode,
                                     yzId = tyParam.yzId,
                                     zxId = zxpc.zxId,
-                                    ypyzxxId = ypyzxxid.FirstOrDefault().Id//yzxx.FirstOrDefault().Id
+                                    ypyzxxId = ypyzxxid.FirstOrDefault().Id,//yzxx.FirstOrDefault().Id
+                                    zsm = yp.zsm,
+                                    sfcl = yp.sfcl
                                 };
                                 db.Insert(czjl);
 

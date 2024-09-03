@@ -255,7 +255,9 @@ SELECT CONVERT(INT,ISNULL(SUM(a.sl),0)) zxdwsl FROM (
                         new SqlParameter("@cfh", tyInfo.cfh),
                         new SqlParameter("@tysl", p.sl * p.zhyz), //最小单位数量
                         new SqlParameter("@userCode", tyInfo.userCode),
-                        new SqlParameter("@returnDrugBillNo", trdbn)
+                        new SqlParameter("@returnDrugBillNo", trdbn),
+                        new SqlParameter("@zsm",p.zsm),
+                        new SqlParameter("@sfcl",p.sfcl),
                     }).Select(param => db.FirstOrDefault<string>(TSqlOutpatient.mz_rp_reture_drug, param)).Where(excResult => !string.IsNullOrWhiteSpace(excResult)))
                     {
                         throw new Exception(excResult);
