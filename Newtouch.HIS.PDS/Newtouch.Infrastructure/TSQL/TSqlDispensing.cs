@@ -716,7 +716,7 @@ BEGIN
 			END 
 		END 
 
-		INSERT INTO dbo.mz_cfypczjl(mzcfmxId, operateType ,ypCode ,cfh ,sl ,bz ,CreateTime ,CreatorCode ,LastModifyTime ,LastModifierCode)
+		INSERT INTO dbo.mz_cfypczjl(mzcfmxId, operateType ,ypCode ,cfh ,sl ,bz ,CreateTime ,CreatorCode ,LastModifyTime ,LastModifierCode,zsm,sfcl)
 		VALUES  ( @cfmxId , -- mzcfmxId - bigint
 				  '1' , -- operateType - char(1)
 				  @ypCode , -- ypCode - varchar(20)
@@ -726,7 +726,9 @@ BEGIN
 				  GETDATE() , -- CreateTime - datetime
 				  @userCode , -- CreatorCode - varchar(50)
 				  NULL , -- LastModifyTime - datetime
-				  ''  -- LastModifierCode - varchar(50)
+				  '',  -- LastModifierCode - varchar(50)
+				 @zsm,
+				 @sfcl
 				)
 		DELETE FROM #mxph WHERE Id=@Id
 	END 	
