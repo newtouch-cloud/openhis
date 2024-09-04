@@ -372,7 +372,7 @@ BEGIN TRY
 		UPDATE dbo.mz_cf SET fybz='3', LastModiFierCode=@userCode, LastModifyTime=GETDATE() 
 		WHERE cfh=@cfh AND zt='1' AND OrganizeId=@OrganizeId AND lyyf=@yfbmCode 
 
-		INSERT INTO dbo.mz_tfmx( returnDrugBillNo, OrganizeId ,ypCode ,cfh ,ph ,pc ,sl ,Remark ,zt ,CreateTime ,CreatorCode ,LastModifyTime ,LastModifierCode)
+		INSERT INTO dbo.mz_tfmx( returnDrugBillNo, OrganizeId ,ypCode ,cfh ,ph ,pc ,sl ,Remark ,zt ,CreateTime ,CreatorCode ,LastModifyTime ,LastModifierCode,zsm,sfcl)
 		VALUES  ( @returnDrugBillNo, -- returnDrugBillNo - varchar(50)
 				  @OrganizeId , -- OrganizeId - varchar(50)
 		          @ypCode , -- ypCode - varchar(50)
@@ -385,11 +385,13 @@ BEGIN TRY
 		          GETDATE() , -- CreateTime - datetime
 		          @userCode , -- CreatorCode - varchar(50)
 		          NULL , -- LastModifyTime - datetime
-		          ''  -- LastModifierCode - varchar(50)
+		          '',  -- LastModifierCode - varchar(50)
+				  @zsm,
+				  @sfcl
 		        )
 
-		INSERT INTO dbo.mz_cfypczjl( mzcfmxId ,operateType ,ypCode ,cfh ,sl ,bz ,CreateTime ,CreatorCode ,LastModifyTime ,LastModifierCode)
-		SELECT TOP 1 Id,'2', ypCode, cfh, @tysl, '', GETDATE(), @userCode, NULL, NULL 
+		INSERT INTO dbo.mz_cfypczjl( mzcfmxId ,operateType ,ypCode ,cfh ,sl ,bz ,CreateTime ,CreatorCode ,LastModifyTime ,LastModifierCode,zsm,sfcl)
+		SELECT TOP 1 Id,'2', ypCode, cfh, @tysl, '', GETDATE(), @userCode, NULL, NULL ,@zsm,@sfcl
 		FROM dbo.mz_cfmx(NOLOCK) 
 		WHERE cfh=@cfh AND ypCode=@ypCode AND zt='1' AND OrganizeId=@OrganizeId
 	END	

@@ -287,6 +287,8 @@ namespace Newtouch.HIS.Application.Implementation
 
                             if (! yzxxLs.Exists(z => z.Id == px.Id))
                             {
+                                px.zsm = item.zsm;
+                                px.sfcl = item.sfcl;
                                 yzxxLs.Add(px);
                             }
 

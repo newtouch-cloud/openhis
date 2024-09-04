@@ -87,6 +87,8 @@ namespace Newtouch.HIS.Application.Implementation.Process
                                         ypCode = o,
                                         ypmc = tmp[0].ypmc,
                                         zhyz = tmp[0].zhyz,
+                                        zsm = tmp[0].zsm,
+                                        sfcl = tmp[0].sfcl,
                                         drugBatch = tmp.Select(b => new DrugBatch { pc = b.pc, ph = b.ph, sl = b.sl }).ToList()
                                     });
                                 });
