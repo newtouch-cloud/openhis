@@ -1776,6 +1776,11 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         {
             return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id = '{id}' and type = '{type}' "));
         }
+        public static int DeleteInventoryA(string[] ids, string type)
+        {
+            string ids_in_clause = string.Join(",", ids.Select(id => $"'{id}'"));
+            return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id in ({ids_in_clause}) and type = '{type}' "));
+        }
         public static DataTable getdrugtracinfo(string ypdm, string pc, string ph)
         {
             string sql = string.Format($@"select zsm drug_trac_codg from NewtouchHIS_PDS..yb_inventory where ypdm= '{ypdm}' and pc = '{pc}' ");
@@ -1860,7 +1865,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", hisid);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_qltctrl", Parameters);
         }
-        
+
         public static DataTable QueryStastinfo4102(string orgId, string hisid)
         {
             Parameters.Clear();
