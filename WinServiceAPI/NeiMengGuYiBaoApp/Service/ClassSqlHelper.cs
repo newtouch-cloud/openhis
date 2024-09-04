@@ -1848,6 +1848,16 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_sale", Parameters);
         }
         #endregion
+
+        #region 【3506】商品销售退货
+        public static DataTable QueryInventory3506(string orgId)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_Salesreturn", Parameters);
+        }
+
+        #endregion
         public static DataTable Queryqltctrlinfo4104(string orgId, string hisid)
         {
             Parameters.Clear();
@@ -2195,11 +2205,6 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             DataTable dt = platFormServer.RunProc_DataTable_WqServer("usp_Inp_DetailAudit_patient_dtos", Parameters);
             return dt;
         }
-        public static DataTable QueryInventory3506(string orgId)
-        {
-            Parameters.Clear();
-            Parameters.Add("@orgId", orgId);
-            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_Salesreturn", Parameters);
-        }
+        
     }
 }

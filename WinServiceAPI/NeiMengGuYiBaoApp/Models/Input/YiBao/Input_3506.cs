@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
@@ -33,6 +29,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         public string sel_retn_opter_name { get; set; }
         public string memo { get; set; }
         public string mdtrt_sn { get; set; }
-        public Drugtracinfo drugtracinfo { get; set; }
+        public List<Drugtracinfo> drugtracinfo { get; set; }
     }
 }
+

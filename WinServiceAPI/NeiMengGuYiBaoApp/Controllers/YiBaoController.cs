@@ -3344,6 +3344,22 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 input3506.selinfo = new purcinfo3506();
                 input3506.selinfo = Function.ToList<purcinfo3506>(dtDiseinfo)[i];
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    string[] sArray = zsms.Split(',');
+                    List<drugtracinfo> drug = new List<drugtracinfo>();
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            drugtracinfo dtinput = new drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    input3506.selinfo.drugtracinfo = drug;
+                }
                 Output_null output = new Output_null();
                 string code = "1";
                 json = YiBaoHelper.CallAndSaveLog(input3506, out output, post, out code);
