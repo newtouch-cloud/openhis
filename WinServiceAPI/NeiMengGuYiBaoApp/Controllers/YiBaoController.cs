@@ -1514,6 +1514,85 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
+
+        /// <summary>
+        /// 分割进行上传信息
+        /// </summary>
+        /// <param name="inputListAll">需要上传的总共条数</param>
+        /// <param name="post">基础类</param>
+        /// <param name="flag">当前第几次上传</param>
+        /// <param name="uploadCount">每次上传的条数</param>
+        /// <param name="json">返回信息</param>
+        private void HospitaFeedetail(List<feedetail2301> inputListAll, PostBase post, int flag, int uploadCount, out string json)
+        {
+
+            json = "";
+            int max = inputListAll.Count;//总共数据条数
+
+            if (max - flag * uploadCount <= 0) return;
+            int curMax = (flag + 1) * uploadCount;
+            if (curMax - max >= 0) curMax = max;
+
+            // string Nums = Convert.ToString(curMax - uploadCount * flag);//当前上传条数
+            //List<Input_2301> inputList = new List<Input_2301>();
+
+            Input_2301 inputList = new Input_2301();
+            inputList.feedetail = new List<feedetail2301>();
+
+            Output_2301 outputList = new Output_2301();
+            outputList.result = new List<result2301>();
+
+            for (int i = uploadCount * flag; i < curMax; i++)
+            {
+                inputList.feedetail.Add(inputListAll[i]);
+            }
+            AppLogger.Info("查询HospitaFeedetail开始：" + inputList.feedetail.Count);
+            string code = "-1";
+            string jsonOutput = YiBaoHelper.CallAndSaveLog(inputList, out outputList, post, out code);
+            if (code == "0")//成功后写入本地数据库
+            {
+                DateTime date = ClassSqlHelper.GetServerTime();
+                List<string> sqlList = new List<string>();
+                foreach (feedetail2301 output in inputList.feedetail)
+                {
+                    Drjk_zyfymxsc_input feed = new Drjk_zyfymxsc_input();
+                    feed = Function.Mapping<Drjk_zyfymxsc_input, feedetail2301>(output);//通过函数根据属性名称 自动给值
+                    feed.zyh = post.hisId;
+                    feed.zt = 1;
+                    feed.czrq = date;
+                    feed.czydm = post.operatorId;
+                    sqlList.Add(feed.ToAddSql());
+                }
+                foreach (result2301 output in outputList.result)
+                {
+                    Drjk_zyfymxsc_output feed = new Drjk_zyfymxsc_output();
+                    feed = Function.Mapping<Drjk_zyfymxsc_output, result2301>(output);
+                    feed.zyh = post.hisId;
+                    feed.zt = 1;
+                    sqlList.Add(feed.ToAddSql());
+                }
+                int eeor = 0;
+                ClassSqlHelper.Merge(sqlList, out eeor);
+                if (eeor < 0)
+                {
+                    JObject jsonUP = JObject.Parse(jsonOutput);
+                    jsonUP["err_msg"] = jsonUP["err_msg"] + "HIS信息提示：写入费用信息表表失败Drjk_zyfymxsc_input,Drjk_zyfymxsc_output-100";
+                    jsonUP["infcode"] = "-100";
+                    json = Convert.ToString(json);
+                    return;//如报错则不再继续
+
+                }
+
+            }
+            else
+            {
+                json = jsonOutput;
+                return;
+            }
+
+            HospitaFeedetail(inputListAll, post, flag + 1, uploadCount, out json);//递归
+
+        }
         #endregion
 
         #region 2302 住院费用明细撤销
@@ -4470,107 +4549,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             return json;
         }
         #endregion
-
-
-
-
-
-
-
-        /// <summary>
-        /// 分割进行上传信息
-        /// </summary>
-        /// <param name="inputListAll">需要上传的总共条数</param>
-        /// <param name="post">基础类</param>
-        /// <param name="flag">当前第几次上传</param>
-        /// <param name="uploadCount">每次上传的条数</param>
-        /// <param name="json">返回信息</param>
-        private void HospitaFeedetail(List<feedetail2301> inputListAll, PostBase post, int flag, int uploadCount, out string json)
-        {
-
-            json = "";
-            int max = inputListAll.Count;//总共数据条数
-
-            if (max - flag * uploadCount <= 0) return;
-            int curMax = (flag + 1) * uploadCount;
-            if (curMax - max >= 0) curMax = max;
-
-            // string Nums = Convert.ToString(curMax - uploadCount * flag);//当前上传条数
-            //List<Input_2301> inputList = new List<Input_2301>();
-
-            Input_2301 inputList = new Input_2301();
-            inputList.feedetail = new List<feedetail2301>();
-
-            Output_2301 outputList = new Output_2301();
-            outputList.result = new List<result2301>();
-
-            for (int i = uploadCount * flag; i < curMax; i++)
-            {
-                inputList.feedetail.Add(inputListAll[i]);
-            }
-            AppLogger.Info("查询HospitaFeedetail开始：" + inputList.feedetail.Count);
-            string code = "-1";
-            string jsonOutput = YiBaoHelper.CallAndSaveLog(inputList, out outputList, post, out code);
-            if (code == "0")//成功后写入本地数据库
-            {
-                DateTime date = ClassSqlHelper.GetServerTime();
-                List<string> sqlList = new List<string>();
-                foreach (feedetail2301 output in inputList.feedetail)
-                {
-                    Drjk_zyfymxsc_input feed = new Drjk_zyfymxsc_input();
-                    feed = Function.Mapping<Drjk_zyfymxsc_input, feedetail2301>(output);//通过函数根据属性名称 自动给值
-                    feed.zyh = post.hisId;
-                    feed.zt = 1;
-                    feed.czrq = date;
-                    feed.czydm = post.operatorId;
-                    sqlList.Add(feed.ToAddSql());
-                }
-                foreach (result2301 output in outputList.result)
-                {
-                    Drjk_zyfymxsc_output feed = new Drjk_zyfymxsc_output();
-                    feed = Function.Mapping<Drjk_zyfymxsc_output, result2301>(output);
-                    feed.zyh = post.hisId;
-                    feed.zt = 1;
-                    sqlList.Add(feed.ToAddSql());
-                }
-                int eeor = 0;
-                ClassSqlHelper.Merge(sqlList, out eeor);
-                if (eeor < 0)
-                {
-                    JObject jsonUP = JObject.Parse(jsonOutput);
-                    jsonUP["err_msg"] = jsonUP["err_msg"] + "HIS信息提示：写入费用信息表表失败Drjk_zyfymxsc_input,Drjk_zyfymxsc_output-100";
-                    jsonUP["infcode"] = "-100";
-                    json = Convert.ToString(json);
-                    return;//如报错则不再继续
-
-                }
-
-            }
-            else
-            {
-                json = jsonOutput;
-                return;
-            }
-
-            HospitaFeedetail(inputListAll, post, flag + 1, uploadCount, out json);//递归
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     }
 }
