@@ -28,6 +28,10 @@
         border-color: #ddd;
         background-color: white;
     }
+    .scan-input {
+        border: 2px solid #007bff;
+        padding: 5px;
+    }
 </style>
 <div style="float:left;width:20%; display: block;">
     <div class="dv-left-title">患者列表</div>
@@ -126,6 +130,35 @@ else
             }
         });
 
+        // 药品追溯码扫码
+        $gridBRXXDrugsList.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(inputField.val() + ',');
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1500);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
     });
 
     // 开启定时任务，时间间隔为3000 ms。
@@ -275,6 +308,19 @@ else
                 { label: '国家医保码', name: 'gjybdm', width: 100, align: 'left' },
                 { label: '规格', name: 'ypgg', width: 100, align: 'left' },
                 { label: '发药数量', name: 'slStr', width: 60, align: 'right' },
+                { label: '数量', name: 'sl', width: 60, align: 'right', hidden: true, classes: "quantity" },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<input name=\"zsm\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " onpaste=\"addComma(event)\" class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\">是</option><option value=\"2\">否</option></select>";
+                    }
+                },
                 { label: '批号', name: 'ph', width: 110, align: 'center' },
                 { label: '批次', name: 'pc', width: 110, align: 'center' },
                 { label: '频次', name: 'pcmc', width: 50, align: 'center' },
@@ -414,12 +460,34 @@ else
                 var medicineList = [];
                 for (var i = 0; i < rowIds.length; i++) {
                     var rowData = $gridBRXXDrugsList.jqGrid('getRowData', rowIds[i]);
+
+                    const rowid = rowIds[i]
+                    //追溯码
+                    var zsm = $("#sel_zsm_" + rowid).val()
+                    //是否拆零
+                    var sfcl = parseInt($("#sel_sfcl_" + rowid).val())
+
+                    // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                    const zsmLength = $("#sel_zsm_" + rowid).val().split(',').filter(entry => entry.trim() !== '').length
+                    var maxZsmLength = 1
+                    if (sfcl === 1) {
+                        maxZsmLength = 1
+                    } else {
+                        maxZsmLength = parseInt(rowData.sl)
+                    }
+                    if (zsmLength != maxZsmLength) {
+                        $.modalMsg("条目" + rowData.ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                        return false;
+                    }
+                    
                     var obj = new Object();
                     obj["yzId"] = rowData.yzId;
                     obj["zxId"] = rowData.zxId;
                     obj["ypCode"] = rowData.ypCode;
                     obj["ph"] = rowData.ph;
                     obj["pc"] = rowData.pc;
+                    obj["zsm"] = zsm;
+                    obj["sfcl"] = sfcl
                     medicineList.push(obj);
                 }
                 $.najax({

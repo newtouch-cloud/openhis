@@ -23,6 +23,10 @@
             display: inline-block;
             margin: 3px 15px;
         }
+        .scan-input {
+            border: 2px solid #007bff;
+            padding: 5px;
+        }
 </style>
 <form id="form1">
     <div id="dv_left" class="panel panel-default" style="float: left; width:29%; margin: 0; border: 0;">
@@ -151,6 +155,37 @@
         $("#autoprint").change(function () {
             var autoprint = $("input[type='checkbox']").is(':checked');
             setCookie("autoprint", autoprint);
+        });
+
+        // 药品追溯码扫码
+        $gridCfmx.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(inputField.val() + ',');
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1500);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
         });
     });
 
@@ -354,8 +389,20 @@
                 { label: '药品名称', name: 'ypmc', align: 'left', width: 120 },
                 { label: '国家医保码', name: 'gjybdm', align: 'left', width: 100 },
                 { label: '规格', name: 'gg', align: 'left', width: 80 },
-                { label: '数量', name: 'sl', align: 'right', width: 40 },
+                { label: '数量', name: 'sl', align: 'right', width: 40, classes: 'quantity' },
                 { label: '单位', name: 'dw', align: 'left', width: 50 },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<input name=\"zsm\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " onpaste=\"addComma(event)\" class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\">是</option><option value=\"2\">否</option></select>";
+                    }
+                },
                 {
                     label: '单价', name: 'dj', align: 'right', width: 50,
                     formatter: function (cellvalue) {
@@ -390,22 +437,40 @@
 
         $.modalConfirm("确定发药吗？", function (flag) {
             if (!flag) return;
-            printInfusionCards(0);
-            printAtomizationCards(0);
-            printDrugUsage(0);
+          
             var patient = new Array();
             var cfmx = $gridCfmx.getDataIDs();
             for (var i = 0; i < cfmx.length; i++) {
                 var rowdata = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+                const rowid = cfmx[i]
+                //追溯码
+                var zsm = $("#sel_zsm_" + rowid).val()
+                //是否拆零
+                var sfcl = parseInt($("#sel_sfcl_" + rowid).val())
+
+                // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                const zsmLength = $("#sel_zsm_" + rowid).val().split(',').filter(entry => entry.trim() !== '').length
+                var maxZsmLength = 1
+                if (sfcl === 1) {
+                    maxZsmLength = 1
+                } else {
+                    maxZsmLength = parseInt(rowdata.sl)
+                }
+                if (zsmLength != maxZsmLength) {
+                    $.modalMsg("条目" + rowdata.ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                    return false;
+                }
+
                 patient.push({
                     "CardNo": $gridPatients.jqGrid('getRowData', id).CardNo,
                     "xm": $gridPatients.jqGrid('getRowData', id).xm,
                     "cfh": rowdata.cfh,
-                    "cfnm": rowdata.cfnm
+                    "cfnm": rowdata.cfnm,
+                    "zsm": zsm,
+                    "sfcl":sfcl,
                 });
             }
             if (patient.length <= 0) {
-
                 $.modalAlert("未找到有效的发药信息！", 'warning');
                 return;
             }
@@ -427,6 +492,9 @@
                     }
                 }
             });
+            printInfusionCards(0);
+            printAtomizationCards(0);
+            printDrugUsage(0);
         }
         );
     }
@@ -434,24 +502,43 @@
     function newtouch_event_f7() {
         var pats = new Array();
         var gridPatients = $gridPatients.jqGrid('getRowData_AllLine', null, true);//param2:默认所有行；param3：true返回object
-		var cfmx = $gridCfmx.getDataIDs();
+        var cfmx = $gridCfmx.getDataIDs();
         $(gridPatients).each(function () {
 			for (var i = 0; i < cfmx.length; i++) {
-				var rowdata = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+                var rowdata = $gridCfmx.jqGrid("getRowData", cfmx[i]);
+                const rowid = cfmx[i]
+                //追溯码
+                var zsm = $("#sel_zsm_" + rowid).val()
+                //是否拆零
+                var sfcl = parseInt($("#sel_sfcl_" + rowid).val())
+
+                // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                const zsmLength = $("#sel_zsm_" + rowid).val().split(',').filter(entry => entry.trim() !== '').length
+                var maxZsmLength = 1
+                if (sfcl === 1) {
+                    maxZsmLength = 1
+                } else {
+                    maxZsmLength = parseInt(rowdata.sl)
+                }
+                if (zsmLength != maxZsmLength) {
+                    $.modalMsg("条目" + rowdata.ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                    return false;
+                }
 				pats.push({
 					"CardNo": this.CardNo,
 					"xm": this.xm,
 					"ShowSfsj": this.ShowSfsj,
 					"cfh": rowdata.cfh,
-					"cfnm": rowdata.cfnm
-				});
+                    "cfnm": rowdata.cfnm,
+                    "zsm": rowdata.zsm,
+                    "sfcl": rowdata.sfcl,
+                });
 			}
         });
         if (pats.length <= 0) {
             $.modalAlert("未找到有效的发药信息！", 'warning');
             return;
         }
-
         $.modalConfirm("确定全部发药吗？", function (flag) {
             if (!flag) return;
             printInfusionCards(0);

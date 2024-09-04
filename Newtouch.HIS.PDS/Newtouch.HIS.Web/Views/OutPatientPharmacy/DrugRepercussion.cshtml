@@ -8,6 +8,10 @@
     .form-control {
         padding: 0 3px;
     }
+    .scan-input {
+        border: 2px solid #007bff;
+        padding: 5px;
+    }
 </style>
 <form id="form1">
     <div class="panel panel-default" style="margin-top:10px;">
@@ -64,6 +68,36 @@
     $(function () {
         gridTYCF();
         gridTYCFDetail();
+
+        // 药品追溯码扫码
+        $gridCfDetail.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(inputField.val() + ',');
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1500);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
     });
 
     //回车事件绑定
@@ -134,8 +168,20 @@
                 { label: '药品名称', name: 'ypmc', width: 110, align: 'left' },
                 { label: '可退', name: 'slstr', width: 40, align: 'left' },
                 @*{ label: '数量', name: 'sl', width: 50, align: 'center', editable:@partReturnSwitch,editwidth:'85%' },*@
-                   { label: '数量', name: 'sl', width: 50, align: 'center' },
+                { label: '数量', name: 'sl', width: 50, align: 'center', classes: 'quantity' },
                 { label: '单位', name: 'dw', width: 50, align: "left" },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<input name=\"zsm\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " onpaste=\"addComma(event)\" class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\">是</option><option value=\"2\">否</option></select>";
+                    }
+                },
                 { label: '规格', name: 'gg', width: 50, align: 'center' },
                 { label: '批号', name: 'ph', width: 90, align: 'center' },
                 { label: '批次', name: 'pc', width: 100, align: 'left' },
@@ -217,6 +263,24 @@
                 EnableInlineEditBox(); //启用行内编辑框
                 return false;
             }
+            const rowid = rowIds[i]
+            //追溯码
+            var zsm = $("#sel_zsm_" + rowid).val()
+            //是否拆零
+            var sfcl = parseInt($("#sel_sfcl_" + rowid).val())
+
+            // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+            const zsmLength = $("#sel_zsm_" + rowid).val().split(',').filter(entry => entry.trim() !== '').length
+            var maxZsmLength = 1
+            if (sfcl === 1) {
+                maxZsmLength = 1
+            } else {
+                maxZsmLength = parseInt(rowData.sl)
+            }
+            if (zsmLength != maxZsmLength) {
+                $.modalMsg("条目" + rowData.ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                return false;
+            }
             if (parseInt(rowData.sl) > 0) {
                 tymx.push({
                     "ypCode": rowData.ypCode,
@@ -225,7 +289,9 @@
                     "cfh": rowData.cfh,
                     "ph": rowData.ph,
                     "czh": rowData.czh,
-                    "pc": rowData.pc
+                    "pc": rowData.pc,
+                    "zsm": zsm,
+                    "sfcl": sfcl,
                 });
             }
         }
