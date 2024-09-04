@@ -25,6 +25,6 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         public string inv_chg_opter_name { get; set; }
         public string memo { get; set; }
         public string trdn_flag { get; set; }
-        public drugtracinfo drugtracinfo { get; set; }
+        public Drugtracinfo drugtracinfo { get; set; }
     }
 }

@@ -33,6 +33,6 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         public string sel_retn_opter_name { get; set; }
         public string memo { get; set; }
         public string mdtrt_sn { get; set; }
-        public drugtracinfo drugtracinfo { get; set; }
+        public Drugtracinfo drugtracinfo { get; set; }
     }
 }
