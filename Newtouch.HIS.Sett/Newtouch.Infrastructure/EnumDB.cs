@@ -228,7 +228,7 @@ namespace Newtouch.Infrastructure
     /// 卡类型/卡身份标识
     /// </summary>
     [Description("卡类型")]
-    public enum EnumCardType 
+    public enum EnumCardType
     {
         /// <summary>
         /// 医保磁条卡
@@ -287,9 +287,9 @@ namespace Newtouch.Infrastructure
         /// </summary>
         [Description("专家门诊")]
         expertOutpat = 3,
-            /// <summary>
-            /// 特病门诊
-            /// </summary>
+        /// <summary>
+        /// 特病门诊
+        /// </summary>
         [Description("特病门诊")]
         SpecialOutpat = 4,
         /// <summary>
@@ -628,12 +628,12 @@ namespace Newtouch.Infrastructure
         /// 急诊
         /// </summary>
         [Description("急诊转住院")]
-        jz=24,
+        jz = 24,
         /// <summary>
         /// 其他医疗机构转入
         /// </summary>
         [Description("转入住院")]
-        qtyljg=9925,
+        qtyljg = 9925,
         /// <summary>
         /// 转外诊治住院
         /// </summary>
@@ -643,7 +643,7 @@ namespace Newtouch.Infrastructure
         /// 重大疾病住院
         /// </summary>
         [Description("重大疾病住院")]
-        dbry= 9902,
+        dbry = 9902,
         /// <summary>
         /// 生育住院
         /// </summary>
@@ -653,12 +653,12 @@ namespace Newtouch.Infrastructure
         /// 儿童两病住院
         /// </summary>
         [Description("儿童两病住院")]
-        etlb= 9904,
+        etlb = 9904,
         /// <summary>
         /// 耐多药结核住院
         /// </summary>
         [Description("耐多药结核住院")]
-        ndyzy= 9907,
+        ndyzy = 9907,
         /// <summary>
         /// 新生儿随母住院
         /// </summary>
@@ -790,7 +790,7 @@ namespace Newtouch.Infrastructure
     /// <summary>
     /// 记账计划执行状态
     /// </summary>
-    public enum EnumJzjhZXZT 
+    public enum EnumJzjhZXZT
     {
         /// <summary>
         /// 未执行
@@ -969,7 +969,8 @@ namespace Newtouch.Infrastructure
         Bedying = 3
     }
 
-    public enum EnumOrgshzt {
+    public enum EnumOrgshzt
+    {
         /// <summary>
         /// 审核通过
         /// </summary>
@@ -1000,9 +1001,9 @@ namespace Newtouch.Infrastructure
     public enum EnumPayStatus
     {
         [Description("支付成功")]
-        Success =1,
+        Success = 1,
         [Description("支付失败")]
-        Failed =2
+        Failed = 2
     }
 
     public enum EnumRefundStatus
@@ -1046,15 +1047,15 @@ namespace Newtouch.Infrastructure
     public enum EnumMzyyzt
     {
         [Description("已约")]
-        book =1,
+        book = 1,
         [Description("已挂号")]
-        reg =2,
+        reg = 2,
         [Description("预约已取消")]
-        cancel =3,
+        cancel = 3,
         [Description("当日挂号")]
         bookreg = 4,
         [Description("取消挂号")]
-        regcancel =5
+        regcancel = 5
     }
     /// <summary>
     /// 门诊排班类型
@@ -1081,7 +1082,8 @@ namespace Newtouch.Infrastructure
     /// <summary>
     /// 处方状态
     /// </summary>
-    public enum EnumZfzt {
+    public enum EnumZfzt
+    {
 
         [Description("正常处方")]
         zc = 0,
@@ -1255,7 +1257,8 @@ namespace Newtouch.Infrastructure
         yljgspxszsxx = 3513,
         [Description("【3607】结算清单质控结果查询")]
         jsqdzkjg = 3607,
-
+        [Description("【5101】科室信息查询")]
+        ksxxcx = 5101,
     }
     /// <summary>
     /// 待遇检查类型
