@@ -3583,7 +3583,24 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 5102 医执人员信息查询
+        #region 5101 科室信息查询 5102 医执人员信息查询
+        /// <summary>
+        /// 5101 科室信息查询
+        /// </summary>
+        [HttpPost]
+        public string GetDepartmentInfo_5101(PostBase post)
+        {
+            post.tradiNumber = "5101";
+
+            Input_5101 input5101 = new Input_5101();
+            input5101.data = new Data5101();
+
+            Output_5101 output5101 = new Output_5101();
+            output5101.feedetail = new List<Output5101>();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input5101, out output5101, post, out code);
+            return json;
+        }
         /// <summary>
         /// 5102 医执人员信息查询
         /// </summary>
