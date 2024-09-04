@@ -152,14 +152,16 @@ namespace Newtouch.HIS.DomainServices
         /// <param name="userCode"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        public string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId)
+        public string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string zsm, int sfcl)
         {
             var param = new DbParameter[]
             {
                 new SqlParameter("@cfh",cfh ),
                 new SqlParameter("@OrganizeId", organizeId),
                 new SqlParameter("@yfbmCode", yfbmCode),
-                new SqlParameter("@userCode",userCode )
+                new SqlParameter("@userCode",userCode ),
+                new SqlParameter("@zsm",zsm),
+                new SqlParameter("@sfcl",sfcl),
             };
             return FirstOrDefault<string>(TSqlDispensing.mz_yp_delivery, param);
         }

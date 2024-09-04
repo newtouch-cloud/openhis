@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using Newtouch.Common;
+using Newtouch.Core.Common.Exceptions;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.Infrastructure;
+using System.Collections.Generic;
 using System.Data.SqlClient;
-using Newtouch.Core.Common.Exceptions;
-using Newtouch.Common;
-using System.Security.Cryptography;
+using System.Linq;
 
 namespace Newtouch.HIS.Repository
 {
@@ -90,7 +89,8 @@ namespace Newtouch.HIS.Repository
 
                 /*停用科室的判断*/
                 var zt = SysDepartmentEntity.zt;
-                if (zt == "0") {
+                if (zt == "0")
+                {
                     var orgId = SysDepartmentEntity.OrganizeId;
                     var sql = "select count(1) from Sys_DepartmentWardRelation(nolock)ksbqxxb where DepartmentId = @DepartmentId and OrganizeId = @orgId and zt = '1'";
                     var kssyqk = this.FirstOrDefault<int>(sql, new[] { new SqlParameter("@orgId", orgId)
@@ -101,7 +101,7 @@ namespace Newtouch.HIS.Repository
                         throw new FailedException("该科室有病区正在使用，无法停止！");
                     }
                 }
-                
+
                 SysDepartmentEntity oldEntity = null;   //变更前Entity
                 oldEntity = this.FindEntity(keyValue);
                 this.DetacheEntity(oldEntity);
@@ -125,15 +125,16 @@ namespace Newtouch.HIS.Repository
             }
         }
         /// <summary>
-        /// 
+        /// 废弃，状态修改改到了医保程序
         /// </summary>
         /// <param name="uploadYB"></param>
         /// <param name="id"></param>
         public void UpdateYbUpload(int uploadYB, string id)
         {
             var sql = "select Code from Sys_Department with(nolock) where Id = @Id";
-            string code = this.FirstOrDefault<string>(sql, new[] { new SqlParameter("@Id", id)});
-            if (string.IsNullOrEmpty(code)) {
+            string code = this.FirstOrDefault<string>(sql, new[] { new SqlParameter("@Id", id) });
+            if (string.IsNullOrEmpty(code))
+            {
                 throw new FailedException("科室不存在");
             }
             var updateSql = "update Sys_Department set UploadYB = @uploadYB where Id = @Id";
@@ -147,10 +148,11 @@ namespace Newtouch.HIS.Repository
         /// <param name="code"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public IList<SysDepartmentEntity> GetDeptListByKeyValue( string orgId,string keyValue)
+        public IList<SysDepartmentEntity> GetDeptListByKeyValue(string orgId, string keyValue)
         {
             var sql = "select * from Sys_Department with(nolock) where zt=1 and OrganizeId = @orgId";
-            if (!string.IsNullOrWhiteSpace(keyValue)) {
+            if (!string.IsNullOrWhiteSpace(keyValue))
+            {
                 sql += " and (@keyValue='%%' or Name like @keyValue or Code like @keyValue)";
             }
             return this.FindList<SysDepartmentEntity>(sql, new[] { new SqlParameter("@orgId", orgId)

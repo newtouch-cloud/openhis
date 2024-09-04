@@ -2508,7 +2508,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input3401, out output, post, out code);
             if (code == "0")
             {
-                ClassSqlHelper.Update3401(1, ks_codes);
+                ClassSqlHelper.Update3401(1, 0, false, ks_codes);
             }
             return json;
         }
@@ -2553,7 +2553,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input3401A, out output, post, out code);
             if (code == "0")
             {
-                ClassSqlHelper.Update3401(1, ks_codes);
+                ClassSqlHelper.Update3401(1, 0, false, ks_codes);
             }
             return json;
         }
@@ -2625,7 +2625,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input3403, out output, post, out code);
             if (code == "0")
             {
-                ClassSqlHelper.Update3401(0, ks_codes);
+                ClassSqlHelper.Update3401(1, 1, true, ks_codes);
             }
             return json;
         }
@@ -3984,7 +3984,24 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 5102 医执人员信息查询
+        #region 5101 科室信息查询 5102 医执人员信息查询
+        /// <summary>
+        /// 5101 科室信息查询
+        /// </summary>
+        [HttpPost]
+        public string GetDepartmentInfo_5101(PostBase post)
+        {
+            post.tradiNumber = "5101";
+
+            Input_5101 input5101 = new Input_5101();
+            input5101.data = new Data5101();
+
+            Output_5101 output5101 = new Output_5101();
+            output5101.feedetail = new List<Output5101>();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input5101, out output5101, post, out code);
+            return json;
+        }
         /// <summary>
         /// 5102 医执人员信息查询
         /// </summary>
