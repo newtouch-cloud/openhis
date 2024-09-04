@@ -1755,14 +1755,13 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@pdId", pdId);
-            Parameters.Add("@ddyyid", ddyyid);
-            Parameters.Add("@ddyymc", ddyymc);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_invinfo", Parameters);
         }
         public static DataTable QueryInventory3501A(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
+            Parameters.Add("@pdId", "");
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_invinfo", Parameters);
         }
         public static int DeleteInventory(string id, string type)
@@ -1771,62 +1770,71 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         }
         public static DataTable getdrugtracinfo(string ypdm, string pc, string ph)
         {
-            string sql = string.Format($@"select zsm drug_trac_codg from NewtouchHIS_PDS..yb_inventory where ypdm= '{ypdm}' and pc = '{pc}' and  ph='{ph}'");
+            string sql = string.Format($@"select zsm drug_trac_codg from NewtouchHIS_PDS..yb_inventory where ypdm= '{ypdm}' and pc = '{pc}' ");
             return platFormServer.Query(sql).Tables[0];
 
         }
         #endregion
-        public static DataTable QueryInventory3502(string crkId, string orgId, string ddyyid, string ddyymc)
+
+        #region 【3502】商品库存变更
+        public static DataTable QueryInventory3502(string crkId, string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@crkId", crkId);
-            Parameters.Add("@ddyyid", ddyyid);
-            Parameters.Add("@ddyymc", ddyymc);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpdate_invinfo", Parameters);
         }
-        public static DataTable QueryInventory3502(string orgId)
+        public static DataTable QueryInventory3502A(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
+            Parameters.Add("@crkId", "");
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpdate_invinfo", Parameters);
         }
+        #endregion
+
+        #region 【3503】商品采购
         public static DataTable QueryInventory3503(string crkId, string orgId, string ddyyid, string ddyymc)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@crkId", crkId);
-            Parameters.Add("@ddyyid", ddyyid);
-            Parameters.Add("@ddyymc", ddyymc);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpdate_purchase", Parameters);
         }
-        public static DataTable QueryInventory3503(string orgId)
+        public static DataTable QueryInventory3503A(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
+            Parameters.Add("@crkId", "");
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpdate_purchase", Parameters);
         }
+        #endregion
+
+        #region 【3504】商品采购退货
         public static DataTable QueryInventory3504(string crkId, string orgId, string ddyyid, string ddyymc)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@crkId", crkId);
-            Parameters.Add("@ddyyid", ddyyid);
-            Parameters.Add("@ddyymc", ddyymc);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryRetreat_purchase", Parameters);
         }
         public static DataTable QueryInventory3504(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
+            Parameters.Add("@crkId", "");
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryRetreat_purchase", Parameters);
         }
+        #endregion
+
+        #region 【3505】商品销售
         public static DataTable QueryInventory3505(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_sale", Parameters);
         }
+        #endregion
         public static DataTable Queryqltctrlinfo4104(string orgId, string hisid)
         {
             Parameters.Clear();
@@ -1834,6 +1842,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", hisid);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_cyjs_qltctrl", Parameters);
         }
+        
         public static DataTable QueryStastinfo4102(string orgId, string hisid)
         {
             Parameters.Clear();

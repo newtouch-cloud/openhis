@@ -51,6 +51,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         public string memo { get; set; }
 
         public string MDTRT_SETL_TYPE { get; set; }
-        public drugtracinfo drugtracinfo { get; set; }
+
+        public List<drugtracinfo> drugtracinfo { get; set; }
     }
 }
