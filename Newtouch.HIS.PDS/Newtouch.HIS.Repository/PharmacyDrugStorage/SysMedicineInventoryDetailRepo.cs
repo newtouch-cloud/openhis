@@ -33,6 +33,8 @@ namespace Newtouch.HIS.Repository
                 {
                     var entity = db.FindEntity<SysMedicineInventoryDetailEntity>(item.pdmxId);
                     entity.Sjsl = item.sjsl;
+                    entity.zsm = item.zsm;
+                    entity.sfcl = item.sfcl;
                     entity.Modify();
                     db.Update(entity);
                 }

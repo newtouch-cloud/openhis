@@ -52,6 +52,10 @@
     input[name=minSjsl] {
         padding: 2px;
     }
+    .scan-input {
+        border: 2px solid #007bff;
+        padding: 5px;
+    }
 </style>
 <form id="form1">
     <div class="panel panel-default dv-navigation">
@@ -147,6 +151,65 @@
         });
         StartInventory();
         InitialPd();
+
+        $gridKCInfo.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(inputField.val() + ',');
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1000);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
+        $gridKCInfoMinUnit.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(inputField.val() + ',');
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1000);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
     });
 
     //初始化盘点
@@ -213,8 +276,27 @@
                 { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
                 { label: '规格', name: 'ypgg', width: 80, align: 'left' },
                 { label: '理论数', name: 'llsl', width: 80, align: 'left' },
-                { label: '(实)部门数', name: 'deptSjsl', width: 70, align: 'center', editable: true, editwidth: "90%" },
+                { label: '(实)部门数', name: 'deptSjsl', width: 70, align: 'center', editable: true, editwidth: "90%", classes: 'quantity' },
                 { label: '单位', name: 'deptdw', width: 40, align: 'left' },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        if (!cellvalue) {
+                            cellvalue = ""
+                        }
+                        return "<input name=\"zsm\" type=\"text\" value=\"" + cellvalue + "" + "\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        if (!cellvalue) {
+                            cellvalue = 1
+                        }
+                        let html = `<select name="sfcl" id="sel_sfcl_${options.rowId}" rowid="${options.rowId} " class="sfcl editable inline-edit-cell form-control" style="padding:0; border-radius: 0px; border: 0px;" ><option value="1" ${cellvalue === 1 ? "selected" : ""}>是</option><option value="2" ${cellvalue !== 1 ? "selected" : ""}>否</option></select>`
+                        return html
+                    }
+                },
                 { label: '系数', name: 'zhyz', width: 40, align: 'left' },
                 { label: '批号', name: 'ph', width: 100, align: 'center' },
                 { label: '批次', name: 'pc', width: 100, align: 'left' },
@@ -262,8 +344,28 @@
                 { label: '药品名称', name: 'ypmc', width: 120, align: 'left' },
                 { label: '规格', name: 'ypgg', width: 80, align: 'left' },
                 { label: '理论数', name: 'llsl', width: 80, align: 'left' },
-                { label: '(实)最小数', name: 'minSjsl', width: 70, align: 'center', editable: true, editwidth: "90%" },
+                { label: '(实)最小数', name: 'minSjsl', width: 70, align: 'center', editable: true, editwidth: "90%", classes: 'quantity' },
                 { label: '单位', name: 'zxdw', width: 40, align: 'left' },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        if (!cellvalue) {
+                            cellvalue = ""
+                        }
+                        return "<input name=\"zsm\" type=\"text\" value=\"" + cellvalue + "" + "\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        if (!cellvalue) {
+                            cellvalue = 1
+                        }
+                        let html = "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\" " + cellvalue === 1 ? "selected" : "" + " >是</option><option value=\"2\" " + cellvalue === 2 ? "selected" : "" + ">否</option></select>";
+                        console.log(html)
+                        return html
+                    }
+                },
                 { label: '系数', name: 'zhyz', width: 40, align: 'left' },
                 { label: '批号', name: 'ph', width: 100, align: 'center' },
                 { label: '批次', name: 'pc', width: 100, align: 'left' },
@@ -340,6 +442,7 @@
             ObjArr_Load.push($gridKCInfo.jqGrid('getRowData', rowIds[i]));
             $gridKCInfo.jqGrid('editRow', rowIds[i], true, null, null, null, null, function (callbackRowId) {     //true: when set to true we can use [Enter] key to save the row and [Esc] to cancel editing.
             });
+
         }
         $.loading(false);
     }
@@ -390,13 +493,33 @@
         var kcInfoJsonSave = $targetJqg.jqGrid('getRowData_AllLine');
         var objArrSave = new Array();
         $.each(kcInfoJsonSave, function () {//保存时将Grid的数据行放在新的数组中
+            //追溯码
+            var zsm = $("#sel_zsm_" + this.jqRowId).val();
+            //是否拆零
+            var sfcl = parseInt($("#sel_sfcl_" + this.jqRowId).val(), 10);
+            this.zsm = zsm
+            this.sfcl = sfcl
             objArrSave.push(this);
         });
         var resultObjArr = new Array();
         //与页面加载的数组进行比对，将修改过的数据行放在resultObjArr中，传给后台
         for (var i = 0; i < objArrSave.length; i++) {
             if (objArrSave[i].deptSjsl !== ObjArr_Load[i].deptSjsl || objArrSave[i].minSjsl !== ObjArr_Load[i].minSjsl) {
-                resultObjArr.push({ pdmxId: objArrSave[i].pdmxId, sjsl: CalculationMinUnitNum(objArrSave[i].deptSjsl, objArrSave[i].minSjsl, objArrSave[i].zhyz) });
+                // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                const zsmLength = objArrSave[i].zsm.split(',').filter(entry => entry.trim() !== '').length
+                var maxZsmLength = 1
+                if (objArrSave[i].sfcl === 1) {
+                    maxZsmLength = 1
+                } else {
+                    maxZsmLength = CalculationMinUnitNum(objArrSave[i].deptSjsl, objArrSave[i].minSjsl, objArrSave[i].zhyz)
+                }
+
+                if (zsmLength != maxZsmLength) {
+                    $.modalMsg("条目" + objArrSave[i].ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                    return false;
+                }
+
+                resultObjArr.push({ pdmxId: objArrSave[i].pdmxId, sjsl: CalculationMinUnitNum(objArrSave[i].deptSjsl, objArrSave[i].minSjsl, objArrSave[i].zhyz), zsm: objArrSave[i].zsm, sfcl: objArrSave[i].sfcl });
             }
         }
         if (resultObjArr.length === 0) {
@@ -453,13 +576,35 @@
         var kcInfoJsonSave = $targetJqg.jqGrid('getRowData_AllLine');
         var objArrSave = new Array();
         $.each(kcInfoJsonSave, function () {//保存时将Grid的数据行放在新的数组中
+            //追溯码
+            var zsm = $("#sel_zsm_" + this.jqRowId).val();
+            //是否拆零
+            var sfcl = parseInt($("#sel_sfcl_" + this.jqRowId).val(), 10);
+            this.zsm = zsm
+            this.sfcl = sfcl
             objArrSave.push(this);
         });
         var resultObjArr = new Array();
         //与页面加载的数组进行比对，将修改过的数据行放在resultObjArr中，传给后台
         for (var i = 0; i < objArrSave.length; i++) {
             if (objArrSave[i].deptSjsl !== ObjArr_Load[i].deptSjsl || objArrSave[i].minSjsl !== ObjArr_Load[i].minSjsl) {
-                resultObjArr.push({ pdmxId: objArrSave[i].pdmxId, sjsl: CalculationMinUnitNum(objArrSave[i].deptSjsl, objArrSave[i].minSjsl, objArrSave[i].zhyz) });
+
+                // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                const zsmLength = objArrSave[i].zsm.split(',').filter(entry => entry.trim() !== '').length
+                var maxZsmLength = 1
+                if (objArrSave[i].sfcl === 1) {
+                    maxZsmLength = 1
+                } else {
+                    maxZsmLength = CalculationMinUnitNum(objArrSave[i].deptSjsl, objArrSave[i].minSjsl, objArrSave[i].zhyz)
+                }
+
+                if (zsmLength != maxZsmLength) {
+                    $.modalMsg("条目" + objArrSave[i].ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                    return false;
+                }
+
+                resultObjArr.push({ pdmxId: objArrSave[i].pdmxId, sjsl: CalculationMinUnitNum(objArrSave[i].deptSjsl, objArrSave[i].minSjsl, objArrSave[i].zhyz), zsm: objArrSave[i].zsm, sfcl: objArrSave[i].sfcl });
+
             }
         }
         if (resultObjArr.length === 0) {
