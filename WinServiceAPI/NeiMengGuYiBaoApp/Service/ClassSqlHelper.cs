@@ -1758,7 +1758,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         }
 
         #region 【3501】商品盘存上传
-        public static DataTable QueryInventory3501(string pdId, string orgId, string ddyyid, string ddyymc)
+        public static DataTable QueryInventory3501(string pdId, string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);

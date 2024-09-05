@@ -2731,7 +2731,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
             Input_3501 input3501 = new Input_3501();
 
-            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3501(post3501.pdId, orgId, ddyyid, ddyymc);
+            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3501(post3501.pdId, orgId);
             //input3501.invinfo = new List<invinfo3501>();
             //input3501.invinfo = Function.ToList<invinfo3501>(dtDiseinfo);
             string json = "";
