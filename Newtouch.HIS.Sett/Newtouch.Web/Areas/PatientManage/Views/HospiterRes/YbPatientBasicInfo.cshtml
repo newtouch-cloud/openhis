@@ -1193,6 +1193,34 @@
                     $.modalAlert("服务不可访问", 'warning');
                 }
             });
+        } else if (type === "5101") {
+            
+            var rcData = {
+                hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId"               
+            };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:33333/api/YiBao/GetDepartmentInfo_5101",
+                dataType: "json",
+                data: rcData,
+                async: false,
+                success: function (data) {
+                    var refReg = eval('(' + data + ')');
+                    if (refReg) {
+                        if (refReg.infcode == "0") {
+                            jgGridListData(refReg.output.feedetail, type);
+                        }
+                        else {
+                            jgGridListData("", type);
+                            $.loading(false);
+                            $.modalAlert(refReg.err_msg, 'error');
+                        }
+                    }
+                },
+                error: function () {
+                    $.modalAlert("服务不可访问", 'warning');
+                }
+            });
         }
     }
 
@@ -1436,6 +1464,29 @@
                     { label: "质控结算清单结果详情信息", name: "detl_list", width: 200, align: "center" }
                 ];
                 break;
+            case "5101":
+                captionCon = "科室信息";
+                colModel = [
+                    { label: "医院科室编码", name: "hosp_dept_codg", width: 80, align: "center" },
+                    { label: "医院科室名称", name: "hosp_dept_name", width: 80, align: "center" },
+                    { label: "开始时间", name: "begntime", width: 110, align: "center" },
+                    { label: "结束时间", name: "endtime", width: 100, align: "center" },
+                    { label: "简介", name: "itro", width: 80, align: "center" },
+                    { label: "科室负责人姓名", name: "dept_resper_name", width: 100, align: "center" },
+                    { label: "科室负责人电话", name: "dept_resper_tel", width: 100, align: "center" },
+                    { label: "科室医疗服务范围", name: "dept_med_serv_scp", width: 150, align: "center" },
+                    { label: "科别", name: "caty", width: 100, align: "center" },
+                    { label: "科室成立日期", name: "dept_estbdat", width: 100, align: "center", formatter: "date", formatoptions: { newformat: "Y-m-d" } },
+                    { label: "批准床位数量", name: "aprv_bed_cnt", width: 80, align: "center" },
+                    { label: "医保认可床位数", name: "hi_crtf_bed_cnt", width: 80, align: "center" },
+                    { label: "统筹区编号", name: "poolarea_no", width: 80, align: "center" },
+                    { label: "医师人数", name: "dr_psncnt", width: 80, align: "center" },
+                    { label: "药师人数", name: "phar_psncnt", width: 80, align: "center" },
+                    { label: "护士人数", name: "nurs_psncnt", width: 80, align: "center" },
+                    { label: "技师人数", name: "tecn_psncnt", width: 80, align: "center" },
+                    { label: "备注", name: "memo", width: 80, align: "center" }
+                ];
+                break;
         }
         $("#gbox_gridList").remove();
         $(".jg_gridPanel").append('<table id="jg_gridList"></table>');
@@ -1468,11 +1519,18 @@
             $('.35-show').hide();
             $("#page_num").val(1);
             $("#page_size").val(100);
-        } else {
+        } else if (type.startsWith("35")) {
             $('.1201-show').hide(); // 隐藏医药机构信息
             $('.time-show').show();
             $('.35-show').show();
             $('.3607-show').hide();
+        } else if (type === "5101") {
+            $('.3607-show').hide();
+            $('.1201-show').hide();
+            $('.time-show').hide();
+            $('.35-show').hide();
+        } else {
+            $.modalAlert("不能识别的类型", 'error');
         }
     }
     //页面加载时执行
