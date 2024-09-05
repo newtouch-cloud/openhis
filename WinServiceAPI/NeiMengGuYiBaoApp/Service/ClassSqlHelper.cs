@@ -1831,7 +1831,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@crkId", crkId);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryRetreat_purchase", Parameters);
         }
-        public static DataTable QueryInventory3504(string orgId)
+        public static DataTable QueryInventory3504A(string orgId)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -2205,6 +2205,6 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             DataTable dt = platFormServer.RunProc_DataTable_WqServer("usp_Inp_DetailAudit_patient_dtos", Parameters);
             return dt;
         }
-        
+
     }
 }

@@ -4,6 +4,6 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
     public class Input_3507A : InputBase
     {
-        public List<data3507> data { get; set; }
+        public List<Data3507> goodDetail { get; set; }
     }
 }
