@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace NeiMengGuYiBaoApp.Models.Input.YiBao
+﻿namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
-    public class Input_3507: InputBase
+    public class Input_3507 : InputBase
     {
-        public data3507 data { get; set; }
+        public Data3507 data { get; set; }
     }
-    public class data3507
+    public class Data3507
     {
         /// <summary>
         /// 定点医药机构批次流水号

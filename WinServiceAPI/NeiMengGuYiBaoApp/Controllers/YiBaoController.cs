@@ -21,6 +21,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Web.Http;
 using System.Web.Http.Results;
+using System.Windows.Forms;
 using System.Xml;
 
 namespace NeiMengGuYiBaoApp.Controllers
@@ -2822,7 +2823,6 @@ namespace NeiMengGuYiBaoApp.Controllers
         [HttpPost]
         public string InventoryUpload_3501A(PostBase post)
         {
-
             post.hisId = "0";
             post.tradiNumber = "3501A";
             post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
@@ -3017,6 +3017,112 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
+
+        /// <summary>
+        /// 【3502A】商品库存变更
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string InventoryUpload_3502A(PostBase post)
+        {
+            post.hisId = "0";
+            post.tradiNumber = "3502A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
+            Input_3502A input3502A = new Input_3502A();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3502A(orgId);
+
+            string json = "";
+            input3502A.invinfoDetail = new List<Invinfo3502>();
+            List<Invinfo3502> invinfoDetail = new List<Invinfo3502>();
+            List<string> mlbm_ids = new List<string>();
+            List<Drjk_jxcsc_output> jxcsc_list = new List<Drjk_jxcsc_output>();
+            DateTime date = ClassSqlHelper.GetServerTime();
+
+            for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
+            {
+
+                Invinfo3502 invinfo3502 = new Invinfo3502();
+                invinfo3502 = Function.ToList<Invinfo3502>(dtDiseinfo)[i];
+                DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(invinfo3502.fixmedins_hilist_id, invinfo3502.fixmedins_bchno, invinfo3502.fixmedins_bchno);
+                invinfo3502.drugtracinfo = new Drugtracinfo();
+                invinfo3502.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
+                string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
+
+                mlbm_ids.Add(mlbm_id);
+                invinfoDetail.Add(invinfo3502);
+
+                Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                jxcsc.mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();//出入库明细id
+                jxcsc.xm_id = invinfo3502.fixmedins_hilist_id;//项目编码
+                jxcsc.OrganizeId = orgId;
+                jxcsc.OrganizeName = ddyymc;
+                jxcsc.type = "3502";//接口交易编号
+                jxcsc.issuccess = "True";//成功
+                jxcsc.log = json;//接口出参内容
+                jxcsc.czydm = post.operatorId;
+                jxcsc.czrq = date;
+                jxcsc.zt = 1;
+
+                jxcsc_list.Add(jxcsc);
+            }
+
+            input3502A.invinfoDetail = invinfoDetail;
+
+            Output_3502A output = new Output_3502A();
+            string code = "1";
+            json = YiBaoHelper.CallAndSaveLog(input3502A, out output, post, out code);
+
+            try
+            {
+                ClassSqlHelper.DeleteInventoryA(mlbm_ids.ToArray(), "3502");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
+                return YiBaoHelper.BuildReturnJson("-99", "商品盘存上传成功，HIS删除数据异常：" + ex.Message);
+
+            }
+
+            int errorNo = 0;
+            List<string> sqlList = new List<string>();
+            if (code == "0") //如果成功则更新本地信息表 
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口3502A商品库存变更上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口3502A商品库存变更上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            else //上传失败内容日志记录，可以重新根据id查询数据进行补传
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.issuccess = "false"; // 设置 issuccess 为 false
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口3502A商品库存变更上传失败，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口3502A商品库存变更上传失败，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            return json;
+        }
         /// <summary>
         /// 3503 商品采购
         /// </summary>
@@ -3107,6 +3213,109 @@ namespace NeiMengGuYiBaoApp.Controllers
                         AppLogger.Info("进销存接口【3503】商品采购上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503】商品采购上传失败，HIS上传数据失败：" + ex.Message);
                     }
+                }
+            }
+            return json;
+        }
+        /// <summary>
+        /// 【3503A】商品采购 A
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string InventoryUpload_3503A(PostBase post)
+        {
+            post.hisId = "0";
+            post.tradiNumber = "3503A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
+            Input_3503A input3503A = new Input_3503A();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3503A(orgId);
+
+            string json = "";
+            input3503A.purcinfoDetail = new List<Purcinfo3503>();
+            List<Purcinfo3503> purcinfoDetail = new List<Purcinfo3503>();
+            List<string> mlbm_ids = new List<string>();
+            List<Drjk_jxcsc_output> jxcsc_list = new List<Drjk_jxcsc_output>();
+            DateTime date = ClassSqlHelper.GetServerTime();
+
+            for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
+            {
+                Purcinfo3503 purcinfo3503 = new Purcinfo3503();
+                purcinfo3503 = Function.ToList<Purcinfo3503>(dtDiseinfo)[i];
+
+                string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
+
+                mlbm_ids.Add(mlbm_id);
+                purcinfoDetail.Add(purcinfo3503);
+
+                Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                jxcsc.mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();//盘点明细id
+                jxcsc.xm_id = purcinfo3503.fixmedins_hilist_id;//项目编码
+                jxcsc.OrganizeId = orgId;
+                jxcsc.OrganizeName = ddyymc;
+                jxcsc.type = "3503";//接口交易编号
+                jxcsc.issuccess = "True";//成功
+                jxcsc.log = json;//接口出参内容
+                jxcsc.czydm = post.operatorId;
+
+                jxcsc.czrq = date;
+                jxcsc.zt = 1;
+
+                jxcsc_list.Add(jxcsc);
+            }
+
+            input3503A.purcinfoDetail = purcinfoDetail;
+
+            Output_3503 output = new Output_3503();
+            string code = "1";
+            json = YiBaoHelper.CallAndSaveLog(input3503A, out output, post, out code);
+
+            try
+            {
+                ClassSqlHelper.DeleteInventoryA(mlbm_ids.ToArray(), "3503");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Info("商商品采购上传成功，HIS删除数据异常：" + ex.Message);
+                return YiBaoHelper.BuildReturnJson("-99", "商品采购上传成功，HIS删除数据异常：" + ex.Message);
+
+            }
+
+            int errorNo = 0;
+            List<string> sqlList = new List<string>();
+            if (code == "0") //如果成功则更新本地信息表 
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3503A】商品采购上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503A】商品采购上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            else //上传失败内容日志记录，可以重新根据id查询数据进行补传
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.issuccess = "false"; // 设置 issuccess 为 false
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3503A】商品采购上传失败，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503A】商品采购上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
             return json;
@@ -3206,7 +3415,110 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
+        /// <summary>
+        /// 【3504A】商品采购退货
+        /// </summary> 
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string InventoryUpload_3504A(PostBase post)
+        {
+            post.hisId = "0";
+            post.tradiNumber = "3504A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
+            Input_3504A input3504A = new Input_3504A();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3504A(orgId);
 
+            string json = "";
+            input3504A.purcinfoDetail = new List<Purcinfo3504>();
+            List<Purcinfo3504> purcinfoDetail = new List<Purcinfo3504>();
+            List<string> mlbm_ids = new List<string>();
+            List<Drjk_jxcsc_output> jxcsc_list = new List<Drjk_jxcsc_output>();
+            DateTime date = ClassSqlHelper.GetServerTime();
+
+            for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
+            {
+                Purcinfo3504 purcinfo3504 = new Purcinfo3504();
+                purcinfo3504 = Function.ToList<Purcinfo3504>(dtDiseinfo)[i];
+
+                string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
+
+                mlbm_ids.Add(mlbm_id);
+                purcinfoDetail.Add(purcinfo3504);
+
+                Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                jxcsc.mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();//盘点明细id
+                jxcsc.xm_id = purcinfo3504.fixmedins_hilist_id;//项目编码
+                jxcsc.OrganizeId = orgId;
+                jxcsc.OrganizeName = ddyymc;
+                jxcsc.type = "3504";//接口交易编号
+                jxcsc.issuccess = "True";//成功
+                jxcsc.log = json;//接口出参内容
+                jxcsc.czydm = post.operatorId;
+
+                jxcsc.czrq = date;
+                jxcsc.zt = 1;
+
+                jxcsc_list.Add(jxcsc);
+            }
+
+            input3504A.purcinfoDetail = purcinfoDetail;
+
+            Output_3504A output = new Output_3504A();
+            string code = "1";
+            json = YiBaoHelper.CallAndSaveLog(input3504A, out output, post, out code);
+
+            try
+            {
+                AppLogger.Info("HIS删除商品采购退货数据：" + mlbm_ids.ToArray() + " 类型：" + "3504");
+                ClassSqlHelper.DeleteInventoryA(mlbm_ids.ToArray(), "3504");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+
+            }
+
+            int errorNo = 0;
+            List<string> sqlList = new List<string>();
+            if (code == "0") //如果成功则更新本地信息表 
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3504A】商品采购退货上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3504A】商品采购退货上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            else //上传失败内容日志记录，可以重新根据id查询数据进行补传
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.issuccess = "false"; // 设置 issuccess 为 false
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3504A】商品采购退货上传失败，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3504A】商品采购上传失败，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            return json;
+        }
         /// <summary>
         /// 【3505】商品销售
         /// </summary> 
@@ -3314,6 +3626,126 @@ namespace NeiMengGuYiBaoApp.Controllers
                         AppLogger.Info("进销存接口【3505】商品销售上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505】商品销售上传失败，HIS上传数据失败：" + ex.Message);
                     }
+                }
+            }
+            return json;
+        }
+        /// <summary>
+        /// 【3505A】商品销售 A
+        /// </summary> 
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string InventoryUpload_3505A(PostBase post)
+        {
+
+            post.hisId = "0";
+            post.tradiNumber = "3505A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
+            Input_3505A input3505A = new Input_3505A();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3505(orgId);
+
+            string json = "";
+            input3505A.selinfoDetail = new List<Selinfo3505>();
+            List<Selinfo3505> selinfoDetail = new List<Selinfo3505>();
+            List<string> mlbm_ids = new List<string>();
+            List<Drjk_jxcsc_output> jxcsc_list = new List<Drjk_jxcsc_output>();
+            DateTime date = ClassSqlHelper.GetServerTime();
+
+            for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
+            {
+                Selinfo3505 selinfo3505 = new Selinfo3505();
+                selinfo3505 = Function.ToList<Selinfo3505>(dtDiseinfo)[i];
+
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
+                    string[] sArray = zsms.Split(',');
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            Drugtracinfo dtinput = new Drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    selinfo3505.drugtracinfo = drug;
+                }
+
+                string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
+
+                mlbm_ids.Add(mlbm_id);
+                selinfoDetail.Add(selinfo3505);
+
+                Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                jxcsc.mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();//盘点明细id
+                jxcsc.xm_id = selinfo3505.fixmedins_hilist_id;//项目编码
+                jxcsc.OrganizeId = orgId;
+                jxcsc.OrganizeName = ddyymc;
+                jxcsc.type = "3505";//接口交易编号
+                jxcsc.issuccess = "True";//成功
+                jxcsc.log = json;//接口出参内容
+                jxcsc.czydm = post.operatorId;
+
+                jxcsc.czrq = date;
+                jxcsc.zt = 1;
+
+                jxcsc_list.Add(jxcsc);
+            }
+
+            Output_3505A output = new Output_3505A();
+            string code = "1";
+            json = YiBaoHelper.CallAndSaveLog(input3505A, out output, post, out code);
+
+            try
+            {
+                ClassSqlHelper.DeleteInventoryA(mlbm_ids.ToArray(), "3505");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+
+            }
+
+            int errorNo = 0;
+            List<string> sqlList = new List<string>();
+            if (code == "0") //如果成功则更新本地信息表 
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3505A】商品销售上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505A】商品销售上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            else //上传失败内容日志记录，可以重新根据id查询数据进行补传
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.issuccess = "false"; // 设置 issuccess 为 false
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3505A】商品销售上传失败，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505A】商品销售上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
             return json;
@@ -3429,7 +3861,125 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
+        /// <summary>
+        /// 【【3506A】商品销售退货 A
+        /// </summary> 
+        /// <param name="post"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string InventoryUpload_3506A(PostBase post)
+        {
+            post.hisId = "0";
+            post.tradiNumber = "3506A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
+            Input_3506A input3506A = new Input_3506A();
+            DataTable dtDiseinfo = ClassSqlHelper.QueryInventory3506(orgId);
 
+            string json = "";
+            input3506A.selinfoDetail = new List<Selinfo3506>();
+            List<Selinfo3506> selinfoDetail = new List<Selinfo3506>();
+            List<string> mlbm_ids = new List<string>();
+            List<Drjk_jxcsc_output> jxcsc_list = new List<Drjk_jxcsc_output>();
+            DateTime date = ClassSqlHelper.GetServerTime();
+
+            for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
+            {
+                Selinfo3506 selinfo3506 = new Selinfo3506();
+                selinfo3506 = Function.ToList<Selinfo3506>(dtDiseinfo)[i];
+
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
+                    string[] sArray = zsms.Split(',');
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            Drugtracinfo dtinput = new Drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    selinfo3506.drugtracinfo = drug;
+                }
+
+                string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
+
+                mlbm_ids.Add(mlbm_id);
+                selinfoDetail.Add(selinfo3506);
+
+                Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                jxcsc.mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();//盘点明细id
+                jxcsc.xm_id = selinfo3506.fixmedins_hilist_id;//项目编码
+                jxcsc.OrganizeId = orgId;
+                jxcsc.OrganizeName = ddyymc;
+                jxcsc.type = "3506";//接口交易编号
+                jxcsc.issuccess = "True";//成功
+                jxcsc.log = json;//接口出参内容
+                jxcsc.czydm = post.operatorId;
+
+                jxcsc.czrq = date;
+                jxcsc.zt = 1;
+
+                jxcsc_list.Add(jxcsc);
+            }
+
+            Output_3506A output = new Output_3506A();
+            string code = "1";
+            json = YiBaoHelper.CallAndSaveLog(input3506A, out output, post, out code);
+
+            try
+            {
+                ClassSqlHelper.DeleteInventoryA(mlbm_ids.ToArray(), "3506");
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+
+            }
+
+            int errorNo = 0;
+            List<string> sqlList = new List<string>();
+            if (code == "0") //如果成功则更新本地信息表 
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3506A】商品销售退货上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3506A】商品销售退货上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            else //上传失败内容日志记录，可以重新根据id查询数据进行补传
+            {
+                try
+                {
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.issuccess = "false"; // 设置 issuccess 为 false
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
+                    sqlList.AddRange(jxcscAddSql);
+                    ClassSqlHelper.Merge(sqlList, out errorNo);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("进销存接口【3506A】商品销售退货上传失败，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3506A】商品销售退货上传失败，HIS上传数据失败：" + ex.Message);
+                }
+            }
+            return json;
+        }
         /// <summary>
         /// 【3507】商品信息删除
         /// a) 1-盘存信息：对应删除【3501】交易数据；
@@ -3437,7 +3987,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// c) 3-采购信息：对应删除【3503】、【3504】交易数据；
         /// d) 4-销售信息：对应删除【3505】、【3506】交易数据
         /// </summary>
-        /// <param name="post3507"></param>
+        /// <param name="post3507A"></param>
         /// <returns></returns>
         [HttpPost]
         public string InventoryUpload_3507(Post_3507 post3507)
@@ -3447,15 +3997,43 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.tradiNumber = "3507";
             post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
             post.inModel = 0;
-            post.operatorId = post3507.operatorId;
-            post.operatorName = post3507.operatorName;
             Input_3507 input3507 = new Input_3507();
-            input3507.data = new data3507();
+            input3507.data = new Data3507();
             input3507.data.fixmedins_bchno = post3507.fixmedins_bchno;
             input3507.data.inv_data_type = post3507.inv_data_type;
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input3507, out output, post, out code);
+            return json;
+
+        }
+        /// <summary>
+        /// 【3507】商品信息删除
+        /// a) 1-盘存信息：对应删除【3501】、【3501A】交易数据；
+        /// b) 2-库存变更信息：对应删除【3502】、【3502A】交易数据；
+        /// c) 3-采购信息：对应删除【3503】、【3504】、【3503A】、【3504A】交易数据；
+        /// d) 4-销售信息：：对应删除【3505】、【3506】、【3505A】、【3506A】交易数据。
+        /// </summary>
+        /// <param name="post3507"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string InventoryUpload_3507A(Post_3507A post3507A)
+        {
+
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "3507A";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post3507A.operatorId;
+            post.operatorName = post3507A.operatorName;
+
+            Input_3507A input3507A = new Input_3507A();
+            input3507A.goodDetail = new List<Data3507>();
+            input3507A.goodDetail = post3507A.goodDetail;
+            Output_3507A output = new Output_3507A();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input3507A, out output, post, out code);
             return json;
         }
         #endregion
@@ -3866,6 +4444,27 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input4105, out output, post, out code);
             if (code != "0")
                 return json;
+            return json;
+        }
+        #endregion
+
+        #region 4201 自费病人就医信息
+        /// <summary>
+        /// 4201 自费病人费用明细信息上传 
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        public string PostSelfPayPatientFee_4201(Post_4201 post4201)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4201";
+            Input_4201 input4201 = new Input_4201();
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string orgcode = ConfigurationManager.AppSettings["fixmedins_code"];
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
             return json;
         }
         #endregion
