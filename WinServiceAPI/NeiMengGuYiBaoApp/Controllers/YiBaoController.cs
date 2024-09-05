@@ -21,6 +21,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Web.Http;
 using System.Web.Http.Results;
+using System.Windows.Forms;
 using System.Xml;
 
 namespace NeiMengGuYiBaoApp.Controllers
@@ -3262,6 +3263,27 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = YiBaoHelper.CallAndSaveLog(input4105, out output, post, out code);
             if (code != "0")
                 return json;
+            return json;
+        }
+        #endregion
+
+        #region 4201 自费病人就医信息
+        /// <summary>
+        /// 4201 自费病人费用明细信息上传 
+        /// </summary>
+        /// <param name="post"></param>
+        /// <returns></returns>
+        public string PostSelfPayPatientFee_4201(Post_4201 post4201)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4201";
+            Input_4201 input4201 = new Input_4201();
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string orgcode = ConfigurationManager.AppSettings["fixmedins_code"];
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
             return json;
         }
         #endregion
