@@ -710,7 +710,9 @@ SELECT  pdxxmx.pdmxId ,
         , CONVERT(NUMERIC(12,2),pdxxmx.Lsj*pdxxmx.Llsl/pdxxmx.Zhyz) lllsje
         , CONVERT(NUMERIC(12,2),pdxxmx.Pfj*pdxxmx.Sjsl/pdxxmx.Zhyz) sjpfje
         , CONVERT(NUMERIC(12,2),pdxxmx.Lsj*pdxxmx.Sjsl/pdxxmx.Zhyz) sjlsje
-		,@pdsj pdsj
+		,@pdsj pdsj,
+        pdxxmx.zsm,
+        pdxxmx.sfcl
 FROM xt_yp_pdxxmx(NOLOCK) pdxxmx 
 INNER JOIN dbo.xt_yp_pdxx(NOLOCK) pdxx ON pdxx.pdId=pdxxmx.pdId
 INNER JOIN NewtouchHIS_Base.dbo.xt_yp(NOLOCK) yp ON pdxxmx.Ypdm=yp.ypCode AND yp.OrganizeId=pdxx.OrganizeId
