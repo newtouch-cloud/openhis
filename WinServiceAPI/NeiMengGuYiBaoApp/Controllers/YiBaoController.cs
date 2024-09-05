@@ -21,7 +21,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Web.Http;
 using System.Web.Http.Results;
-using System.Windows.Forms;
 using System.Xml;
 
 namespace NeiMengGuYiBaoApp.Controllers
@@ -2927,7 +2926,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.log = json;
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
                     sqlList.AddRange(jxcscAddSql);
                     ClassSqlHelper.Merge(sqlList, out errorNo);
                 }
@@ -2943,6 +2946,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     List<string> jxcscAddSql = jxcsc_list.Select(item =>
                     {
+                        item.log = json;
                         item.issuccess = "false"; // 设置 issuccess 为 false
                         return item.ToAddSql();  // 执行 ToAddSql() 方法
                     }).ToList();
@@ -3006,7 +3010,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3502, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, "", "");
                 }
                 catch (Exception ex)
                 {
@@ -3168,7 +3172,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.log = json;
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
                     sqlList.AddRange(jxcscAddSql);
                     ClassSqlHelper.Merge(sqlList, out errorNo);
                 }
@@ -3184,6 +3192,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     List<string> jxcscAddSql = jxcsc_list.Select(item =>
                     {
+                        item.log = json;
                         item.issuccess = "false"; // 设置 issuccess 为 false
                         return item.ToAddSql();  // 执行 ToAddSql() 方法
                     }).ToList();
@@ -3228,7 +3237,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3503, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, "", "");
                 }
                 catch (Exception ex)
                 {
@@ -3365,7 +3374,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.log = json;
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
                     sqlList.AddRange(jxcscAddSql);
                     ClassSqlHelper.Merge(sqlList, out errorNo);
                 }
@@ -3381,6 +3394,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     List<string> jxcscAddSql = jxcsc_list.Select(item =>
                     {
+                        item.log = json;
                         item.issuccess = "false"; // 设置 issuccess 为 false
                         return item.ToAddSql();  // 执行 ToAddSql() 方法
                     }).ToList();
@@ -3426,7 +3440,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 try
                 {
                     AppLogger.Info("HIS删除商品采购退货数据：" + dtDiseinfo.Rows[i]["mlbm_id"].ToString() + " 类型：" + post.tradiNumber);
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, "", "");
                 }
                 catch (Exception ex)
                 {
@@ -3564,7 +3578,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.log = json;
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
                     sqlList.AddRange(jxcscAddSql);
                     ClassSqlHelper.Merge(sqlList, out errorNo);
                 }
@@ -3580,6 +3598,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     List<string> jxcscAddSql = jxcsc_list.Select(item =>
                     {
+                        item.log = json;
                         item.issuccess = "false"; // 设置 issuccess 为 false
                         return item.ToAddSql();  // 执行 ToAddSql() 方法
                     }).ToList();
@@ -3641,7 +3660,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3505, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, "", "");
                 }
                 catch (Exception ex)
                 {
@@ -3795,7 +3814,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.log = json;
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
                     sqlList.AddRange(jxcscAddSql);
                     ClassSqlHelper.Merge(sqlList, out errorNo);
                 }
@@ -3811,6 +3834,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     List<string> jxcscAddSql = jxcsc_list.Select(item =>
                     {
+                        item.log = json;
                         item.issuccess = "false"; // 设置 issuccess 为 false
                         return item.ToAddSql();  // 执行 ToAddSql() 方法
                     }).ToList();
@@ -3872,7 +3896,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3506, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, "", "");
                 }
                 catch (Exception ex)
                 {
@@ -4025,7 +4049,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    List<string> jxcscAddSql = jxcsc_list.Select(item => item.ToAddSql()).ToList();
+                    List<string> jxcscAddSql = jxcsc_list.Select(item =>
+                    {
+                        item.log = json;
+                        return item.ToAddSql();  // 执行 ToAddSql() 方法
+                    }).ToList();
                     sqlList.AddRange(jxcscAddSql);
                     ClassSqlHelper.Merge(sqlList, out errorNo);
                 }
@@ -4041,6 +4069,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     List<string> jxcscAddSql = jxcsc_list.Select(item =>
                     {
+                        item.log = json;
                         item.issuccess = "false"; // 设置 issuccess 为 false
                         return item.ToAddSql();  // 执行 ToAddSql() 方法
                     }).ToList();
