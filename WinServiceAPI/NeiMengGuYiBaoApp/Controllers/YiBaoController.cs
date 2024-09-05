@@ -2943,8 +2943,8 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = "";
             for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
             {
-                input3502.invinfo = new invinfo3502();
-                input3502.invinfo = Function.ToList<invinfo3502>(dtDiseinfo)[i];
+                input3502.invinfo = new Invinfo3502();
+                input3502.invinfo = Function.ToList<Invinfo3502>(dtDiseinfo)[i];
                 DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(input3502.invinfo.fixmedins_hilist_id, input3502.invinfo.fixmedins_bchno, input3502.invinfo.fixmedins_bchno);
                 input3502.invinfo.drugtracinfo = new Drugtracinfo();
                 input3502.invinfo.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
@@ -3040,8 +3040,8 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = "";
             for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
             {
-                input3503.purcinfo = new purcinfo3503();
-                input3503.purcinfo = Function.ToList<purcinfo3503>(dtDiseinfo)[i];
+                input3503.purcinfo = new Purcinfo3503();
+                input3503.purcinfo = Function.ToList<Purcinfo3503>(dtDiseinfo)[i];
                 Output_null output = new Output_null();
                 string code = "1";
                 json = YiBaoHelper.CallAndSaveLog(input3503, out output, post, out code);
@@ -3134,8 +3134,8 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = "";
             for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
             {
-                input3504.purcinfo = new purcinfo3504();
-                input3504.purcinfo = Function.ToList<purcinfo3504>(dtDiseinfo)[i];
+                input3504.purcinfo = new Purcinfo3504();
+                input3504.purcinfo = Function.ToList<Purcinfo3504>(dtDiseinfo)[i];
                 Output_null output = new Output_null();
                 string code = "1";
                 json = YiBaoHelper.CallAndSaveLog(input3504, out output, post, out code);
@@ -3230,8 +3230,8 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = "";
             for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
             {
-                input3505.selinfo = new purcinfo3505();
-                input3505.selinfo = Function.ToList<purcinfo3505>(dtDiseinfo)[i];
+                input3505.selinfo = new Selinfo3505();
+                input3505.selinfo = Function.ToList<Selinfo3505>(dtDiseinfo)[i];
                 string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
                 if (!string.IsNullOrWhiteSpace(zsms))
                 {
@@ -3342,18 +3342,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             string json = "";
             for (int i = 0; i < dtDiseinfo.Rows.Count; i++)
             {
-                input3506.selinfo = new purcinfo3506();
-                input3506.selinfo = Function.ToList<purcinfo3506>(dtDiseinfo)[i];
+                input3506.selinfo = new Selinfo3506();
+                input3506.selinfo = Function.ToList<Selinfo3506>(dtDiseinfo)[i];
                 string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
                 if (!string.IsNullOrWhiteSpace(zsms))
                 {
                     string[] sArray = zsms.Split(',');
-                    List<drugtracinfo> drug = new List<drugtracinfo>();
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
                     foreach (string zsm in sArray)
                     {
                         if (zsm != null && zsm != "")
                         {
-                            drugtracinfo dtinput = new drugtracinfo();
+                            Drugtracinfo dtinput = new Drugtracinfo();
                             dtinput.drug_trac_codg = zsm;
                             drug.Add(dtinput);
                         }
