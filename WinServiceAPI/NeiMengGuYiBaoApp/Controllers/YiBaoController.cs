@@ -3450,6 +3450,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post3507.operatorId;
             post.operatorName = post3507.operatorName;
             Input_3507 input3507 = new Input_3507();
+            input3507.data = new data3507();
             input3507.data.fixmedins_bchno = post3507.fixmedins_bchno;
             input3507.data.inv_data_type = post3507.inv_data_type;
             Output_null output = new Output_null();
