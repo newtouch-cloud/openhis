@@ -2740,9 +2740,26 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 input3501.invinfo = new Invinfo3501();
                 input3501.invinfo = Function.ToList<Invinfo3501>(dtDiseinfo)[i];
-                DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(input3501.invinfo.fixmedins_hilist_id, input3501.invinfo.fixmedins_bchno, input3501.invinfo.manu_lotnum);
-                input3501.invinfo.drugtracinfo = new Drugtracinfo();
-                input3501.invinfo.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    string[] sArray = zsms.Split(',');
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            Drugtracinfo dtinput = new Drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    input3501.invinfo.drugtracinfo = drug;
+                }
+
+                //DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(input3501.invinfo.fixmedins_hilist_id, input3501.invinfo.fixmedins_bchno, input3501.invinfo.manu_lotnum);
+                //input3501.invinfo.drugtracinfo = new Drugtracinfo();
+                //input3501.invinfo.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
                 // input3501.invinfo.drugtracinfo=Function.Mapping<data2206, Post_2206>(input);
                 Output_null output = new Output_null();
                 string code = "1";
@@ -2750,7 +2767,7 @@ namespace NeiMengGuYiBaoApp.Controllers
 
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, input3501.invinfo.manu_lotnum, input3501.invinfo.fixmedins_bchno);
                 }
                 catch (Exception ex)
                 {
@@ -2775,6 +2792,8 @@ namespace NeiMengGuYiBaoApp.Controllers
                         jxcsc.log = json;//接口出参内容
                         jxcsc.czydm = post.operatorId;
                         jxcsc.czrq = date;
+                        jxcsc.ph = input3501.invinfo.manu_lotnum;//批号
+                        jxcsc.pch = input3501.invinfo.fixmedins_bchno;//批次
                         jxcsc.zt = 1;
                         sqlList.Add(jxcsc.ToAddSql());
                         ClassSqlHelper.Merge(sqlList, out eeor);
@@ -2802,6 +2821,8 @@ namespace NeiMengGuYiBaoApp.Controllers
                         jxcsc.log = json;//接口出参内容
                         jxcsc.czydm = post.operatorId;
                         jxcsc.czrq = date;
+                        jxcsc.pch = input3501.invinfo.manu_lotnum;
+                        jxcsc.ph = input3501.invinfo.fixmedins_bchno;
                         jxcsc.zt = 1;
                         sqlList.Add(jxcsc.ToAddSql());
                         ClassSqlHelper.Merge(sqlList, out eeor);
@@ -2843,9 +2864,25 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 Invinfo3501 invinfo3501 = new Invinfo3501();
                 invinfo3501 = Function.ToList<Invinfo3501>(dtDiseinfo)[i];
-                DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(invinfo3501.fixmedins_hilist_id, invinfo3501.fixmedins_bchno, invinfo3501.manu_lotnum);
-                invinfo3501.drugtracinfo = new Drugtracinfo();
-                invinfo3501.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
+                //DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(invinfo3501.fixmedins_hilist_id, invinfo3501.fixmedins_bchno, invinfo3501.manu_lotnum);
+                //invinfo3501.drugtracinfo = new Drugtracinfo();
+                //invinfo3501.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    string[] sArray = zsms.Split(',');
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            Drugtracinfo dtinput = new Drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    invinfo3501.drugtracinfo = drug;
+                }
                 string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
 
                 mlbm_ids.Add(mlbm_id);
@@ -2945,15 +2982,31 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 input3502.invinfo = new Invinfo3502();
                 input3502.invinfo = Function.ToList<Invinfo3502>(dtDiseinfo)[i];
-                DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(input3502.invinfo.fixmedins_hilist_id, input3502.invinfo.fixmedins_bchno, input3502.invinfo.fixmedins_bchno);
-                input3502.invinfo.drugtracinfo = new Drugtracinfo();
-                input3502.invinfo.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    string[] sArray = zsms.Split(',');
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            Drugtracinfo dtinput = new Drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    input3502.invinfo.drugtracinfo = drug;
+                }
+                //DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(input3502.invinfo.fixmedins_hilist_id, input3502.invinfo.fixmedins_bchno, input3502.invinfo.fixmedins_bchno);
+                //input3502.invinfo.drugtracinfo = new Drugtracinfo();
+                //input3502.invinfo.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
                 Output_null output = new Output_null();
                 string code = "1";
                 json = YiBaoHelper.CallAndSaveLog(input3502, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
                 }
                 catch (Exception ex)
                 {
@@ -2977,6 +3030,8 @@ namespace NeiMengGuYiBaoApp.Controllers
                         jxcsc.log = json;//接口出参内容
                         jxcsc.czydm = post.operatorId;
                         jxcsc.czrq = date;
+                        jxcsc.ph = "";
+                        jxcsc.pch = input3502.invinfo.fixmedins_bchno;
                         jxcsc.zt = 1;
                         sqlList.Add(jxcsc.ToAddSql());
                         ClassSqlHelper.Merge(sqlList, out eeor);
@@ -3004,6 +3059,8 @@ namespace NeiMengGuYiBaoApp.Controllers
                         jxcsc.log = json;//接口出参内容
                         jxcsc.czydm = post.operatorId;
                         jxcsc.czrq = date;
+                        jxcsc.ph = "";
+                        jxcsc.pch = input3502.invinfo.fixmedins_bchno;
                         jxcsc.zt = 1;
                         sqlList.Add(jxcsc.ToAddSql());
                         ClassSqlHelper.Merge(sqlList, out eeor);
@@ -3047,9 +3104,27 @@ namespace NeiMengGuYiBaoApp.Controllers
 
                 Invinfo3502 invinfo3502 = new Invinfo3502();
                 invinfo3502 = Function.ToList<Invinfo3502>(dtDiseinfo)[i];
-                DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(invinfo3502.fixmedins_hilist_id, invinfo3502.fixmedins_bchno, invinfo3502.fixmedins_bchno);
-                invinfo3502.drugtracinfo = new Drugtracinfo();
-                invinfo3502.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
+
+                string zsms = dtDiseinfo.Rows[i]["drugtracinfos"].ToString();
+                if (!string.IsNullOrWhiteSpace(zsms))
+                {
+                    string[] sArray = zsms.Split(',');
+                    List<Drugtracinfo> drug = new List<Drugtracinfo>();
+                    foreach (string zsm in sArray)
+                    {
+                        if (zsm != null && zsm != "")
+                        {
+                            Drugtracinfo dtinput = new Drugtracinfo();
+                            dtinput.drug_trac_codg = zsm;
+                            drug.Add(dtinput);
+                        }
+                    }
+                    invinfo3502.drugtracinfo = drug;
+                }
+
+                //DataTable drugtracinfo = ClassSqlHelper.getdrugtracinfo(invinfo3502.fixmedins_hilist_id, invinfo3502.fixmedins_bchno, invinfo3502.fixmedins_bchno);
+                //invinfo3502.drugtracinfo = new Drugtracinfo();
+                //invinfo3502.drugtracinfo.drug_trac_codg = drugtracinfo.Rows[0]["drug_trac_codg"].ToString();
                 string mlbm_id = dtDiseinfo.Rows[i]["mlbm_id"].ToString();
 
                 mlbm_ids.Add(mlbm_id);
@@ -3153,7 +3228,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3503, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
                 }
                 catch (Exception ex)
                 {
@@ -3351,7 +3426,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 try
                 {
                     AppLogger.Info("HIS删除商品采购退货数据：" + dtDiseinfo.Rows[i]["mlbm_id"].ToString() + " 类型：" + post.tradiNumber);
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
                 }
                 catch (Exception ex)
                 {
@@ -3566,7 +3641,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3505, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
                 }
                 catch (Exception ex)
                 {
@@ -3797,7 +3872,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3506, out output, post, out code);
                 try
                 {
-                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber);
+                    ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber,"","");
                 }
                 catch (Exception ex)
                 {

@@ -1,4 +1,6 @@
-﻿namespace NeiMengGuYiBaoApp.Models.Input.YiBao
+﻿using System.Collections.Generic;
+
+namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
     public class Input_3501 : InputBase
     {
@@ -66,7 +68,7 @@
         /// <summary>
         /// 12|溯源码节点信息|嵌套对象|
         /// </summary>
-        public Drugtracinfo drugtracinfo { get; set; }
+        public List<Drugtracinfo> drugtracinfo { get; set; }
     }
 
     public class Drugtracinfo

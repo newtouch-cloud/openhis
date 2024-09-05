@@ -20,5 +20,7 @@ namespace NeiMengGuYiBaoApp.Models.SQL
         public int? zt { get; set; }
         public string zt_czy { get; set; }
         public DateTime? zt_rq { get; set; }
+        public string ph { get; set; }
+        public string pch { get; set; }
     }
 }

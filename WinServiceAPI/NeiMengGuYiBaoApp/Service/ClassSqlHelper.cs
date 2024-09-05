@@ -1772,9 +1772,12 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@pdId", "");
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_InventoryUpload_invinfo", Parameters);
         }
-        public static int DeleteInventory(string id, string type)
+        public static int DeleteInventory(string id, string type,string ph,string pc)
         {
-            return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id = '{id}' and type = '{type}' "));
+            if(!string.IsNullOrWhiteSpace(ph)  && !string.IsNullOrWhiteSpace(pc))
+                return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id = '{id}' and type = '{type}' and pch='{pc}' and ph='{ph}' "));
+            else
+                return platFormServer.ExecuteSql(string.Format($"delete Drjk_jxcsc_output where mlbm_id = '{id}' and type = '{type}' "));
         }
         public static int DeleteInventoryA(string[] ids, string type)
         {
