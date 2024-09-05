@@ -79,5 +79,21 @@ exec sp_addextendedproperty 'MS_Description', N'是否拆零', 'SCHEMA', 'dbo', 
 go
 
 
+-- 库存盘点增加追溯码字段
+alter table dbo.xt_yp_pdxxmx
+    add zsm varchar(1000)
+go
+
+exec sp_addextendedproperty 'MS_Description', N'追溯码', 'SCHEMA', 'dbo', 'TABLE', 'xt_yp_pdxxmx', 'COLUMN', 'zsm'
+go
+
+alter table dbo.xt_yp_pdxxmx
+    add sfcl int
+go
+
+exec sp_addextendedproperty 'MS_Description', N'是否拆零，1：是，2：否', 'SCHEMA', 'dbo', 'TABLE', 'xt_yp_pdxxmx', 'COLUMN',
+     'sfcl'
+go
+
 
 -- pds 库结束
