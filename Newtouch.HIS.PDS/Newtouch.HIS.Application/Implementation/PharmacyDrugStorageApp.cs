@@ -151,6 +151,11 @@ namespace Newtouch.HIS.Application.Implementation
             _sysMedicineInventoryDetailRepo.UpdateSlBySaveInventoryInfo(inventoryInfoList);
         }
 
+        public void SaveInventoryZsmInfo(List<SaveInventoryInfoVO> inventoryInfoList)
+        {
+            _sysMedicineInventoryDetailRepo.UpdateZsmBySaveInventoryInfo(inventoryInfoList);
+        }
+
         /// <summary>
         /// 结束盘点
         /// </summary>

@@ -578,7 +578,7 @@ ORDER BY sfdl.px,sfdl.dlCode
             var strSql = new StringBuilder(@"
 select  pdmxId,CreateTime,ypCode , ypmc , py ,a.ph ,a.pc ,yxq,bzdw,zxdw,llsl_zxbz ,llsl ,sjslstr ,pdscy,
  sjsl,deptSjsl,deptdw ,minSjsl,yksl ,pfj ,lsj ,ykpfj ,yklsj ,zhyz,CONVERT(NUMERIC(11,2),a.lsl*jj)llpfje,CONVERT(NUMERIC(11,2),a.lsl*Lsj)lllsje,CONVERT(NUMERIC(11,2),a.sjs*jj)sjpfje,CONVERT(NUMERIC(11,2),a.sjs*Lsj)sjlsje,pdlsjcy,pdpfjcy,pdsj,jj,ycmc,ypgg
-,CONVERT(NUMERIC(11,2),sjs * lsj) spje,CONVERT(NUMERIC(11,2),lsl * lsj) pqje,CONVERT(NUMERIC(11,2),sjs * lsj-lsl * lsj) ykje
+,CONVERT(NUMERIC(11,2),sjs * lsj) spje,CONVERT(NUMERIC(11,2),lsl * lsj) pqje,CONVERT(NUMERIC(11,2),sjs * lsj-lsl * lsj) ykje,a.zsm, a.sfcl
 from  (
 SELECT  pdxxmx.pdmxId ,
 		pdxxmx.CreateTime,
@@ -612,7 +612,7 @@ SELECT  pdxxmx.pdmxId ,
         , CONVERT(NUMERIC(12,2),pdxxmx.Lsj*pdxxmx.Sjsl/pdxxmx.Zhyz) sjlsje
 		, CONVERT(NUMERIC(12,2),pdxxmx.Lsj*(pdxxmx.Sjsl-pdxxmx.Llsl)/pdxxmx.Zhyz) pdlsjcy --盘点零售价差异
 		, CONVERT(NUMERIC(12,2),pdxxmx.Pfj*(pdxxmx.Sjsl-pdxxmx.Llsl)/pdxxmx.Zhyz) pdpfjcy --盘点进价差异
-		,@pdsj pdsj,pdxxmx.Llsl lsl,pdxxmx.Sjsl sjs
+		,@pdsj pdsj,pdxxmx.Llsl lsl,pdxxmx.Sjsl sjs,pdxxmx.zsm, pdxxmx.sfcl
 FROM xt_yp_pdxxmx(NOLOCK) pdxxmx
 INNER JOIN xt_yp_pdxx(NOLOCK) pdxx ON pdxx.pdId=pdxxmx.pdId
 INNER JOIN NewtouchHIS_Base.dbo.xt_yp(NOLOCK) yp ON yp.ypCode=pdxxmx.Ypdm AND yp.OrganizeId=pdxx.OrganizeId
