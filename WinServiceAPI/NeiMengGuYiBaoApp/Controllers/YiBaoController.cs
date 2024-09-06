@@ -4027,7 +4027,7 @@ namespace NeiMengGuYiBaoApp.Controllers
 
                 jxcsc_list.Add(jxcsc);
             }
-
+            input3506A.selinfoDetail = selinfoDetail;
             Output_3506A output = new Output_3506A();
             string code = "1";
             json = YiBaoHelper.CallAndSaveLog(input3506A, out output, post, out code);
