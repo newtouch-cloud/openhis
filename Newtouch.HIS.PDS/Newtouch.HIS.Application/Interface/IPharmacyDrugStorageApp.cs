@@ -75,6 +75,13 @@ namespace Newtouch.HIS.Application.Interface
         /// <param name="pdId"></param>
         void SaveInventoryInfo(List<SaveInventoryInfoVO> inventoryInfoList, string pdId);
 
+
+        /// <summary>
+        /// 保存库存追溯码信息
+        /// </summary>
+        /// <param name="SaveInventoryZsmInfo"></param>
+        void SaveInventoryZsmInfo(List<SaveInventoryInfoVO> inventoryInfoList);
+
         /// <summary>
         /// 结束盘点
         /// </summary>

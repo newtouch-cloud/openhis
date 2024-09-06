@@ -25,6 +25,10 @@
     #btn_backIndex {
         float: left;
     }
+    .scan-input {
+        border: 2px solid #007bff;
+        padding: 5px;
+    }
 </style>
 <form id="form1">
     <div class="panel panel-default" style="margin-bottom:5px;">
@@ -78,10 +82,11 @@
     <input hidden id="OrganizeId" value="@ViewBag.OrganizeId">
     @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
     {
-        ShowKeyList = new[] { 10, 6, 9, },
+        ShowKeyList = new[] { 10, 6, 9, 8 },
         F10Text = "大类明细",
         F6Text = "剂型明细",
-        F9Text = "盘点明细"
+        F9Text = "盘点明细",
+        F8Text = "保存追溯码"
     })
 </form>
 <script language="javascript">
@@ -92,14 +97,50 @@
             window.location.href = "StockInventoryV3";
         });
         InitialPd();
+        $gridKCInfoHistory.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                var inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                    inputField.val(removeDuplicates(inputField.val()));
+                }
+
+                const entries = removeDuplicates(inputField.val()).split(',').filter(entry => entry.trim() !== '').length;
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1000);
+                    inputField.val(removeDuplicates(inputField.val()).split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
     });
+
+    function removeDuplicates(str){
+        const arr = str.split(',')
+        const uniqueArr = [...new Set(arr)]
+        return uniqueArr.join(',')+','
+    }
 
     //回车事件绑定
     $(document).keyup(function (event) {
-        if (event.keyCode === 13) {
-            $("#btn_search").trigger("click");
-        }
+//         if (event.keyCode === 13) {
+//             $("#btn_search").trigger("click");
+//         }
     });
+
+
 
     //初始化盘点
     function InitialPd() {
@@ -122,6 +163,25 @@
                 { label: '理论数', name: 'llsl', width: 70, align: 'left' },
                 { label: '实际数', name: 'sjslstr', width: 70, align: 'left' },
                 { label: '数量盈亏', name: 'pdscy', width: 70, align: 'left' },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        if (!cellvalue) {
+                            cellvalue = ""
+                        }
+                        return "<input name=\"zsm\" type=\"text\" value=\"" + cellvalue + "" + "\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        if (!cellvalue) {
+                            cellvalue = 1
+                        }
+                        let html = `<select name="sfcl" id="sel_sfcl_${options.rowId}" rowid="${options.rowId} " class="sfcl editable inline-edit-cell form-control" style="padding:0; border-radius: 0px; border: 0px;" ><option value="1" ${cellvalue === 1 ? "selected" : ""}>是</option><option value="2" ${cellvalue !== 1 ? "selected" : ""}>否</option></select>`
+                        return html
+                    }
+                },
                 { label: '实盘金额', name: 'spje', width: 70, align: 'left' },
                 { label: '盘前金额', name: 'pqje', width: 70, align: 'left' },
                 { label: '盈亏金额', name: 'ykje', width: 70, align: 'left' },
@@ -139,7 +199,7 @@
                 { label: '单位', name: 'deptdw', width: 50, align: 'left' },
                 { label: '产地', name: 'ycmc', width: 120, align: 'left' },
                 { label: '拼音', name: 'py', width: 100, align: 'left' },
-                { label: '数量', name: 'deptSjsl', hidden: true },
+                { label: '数量', name: 'deptSjsl', hidden: true, classes: 'quantity' },
                 { label: '理论数', name: 'llsl_zxbz', hidden: true },
                 { label: 'pdmxId', name: 'pdmxId', hidden: true },
                 { label: 'zhyz', name: 'zhyz', hidden: true },
@@ -152,6 +212,9 @@
                 window.initLayout("MyTabGrid");
             },
             multiselect: false,
+            onPaging: function () {
+                savePdsPage();
+            },
             pager: "#gridPagerHistory",
             sortname: 'CreateTime desc',
             viewrecords: true,
@@ -245,5 +308,67 @@
         window.open(uri);
         //window.open("/Report/PrintReport?type=StockInventoryV2&param=srm=" + srm + "|ypzt=" + ypzt + "|kcxs=" + kcxs + "|pdId=" + pdId + "|yfbm=" + yfbm + "|OrganizeId=" + OrganizeId, "height=500, width=1195, top=100, left=50, toolbar=no, menubar=no, scrollbar=yes, resizeble=no, location=no, status=no");
     }
+
+    function newtouch_event_f8() {
+        console.log("F8")
+        savePdsPage()
+    }
+
+    // 保存追朔码
+    function savePdsPage() {
+   
+        var rowIds = $gridKCInfoHistory.jqGrid('getDataIDs');//获取所有行Id，遍历使编辑框处于保存状态
+
+        var kcInfoJsonSave = $gridKCInfoHistory.jqGrid('getRowData_AllLine');
+        var objArrSave = new Array();
+        $.each(kcInfoJsonSave, function () {//保存时将Grid的数据行放在新的数组中
+            //追溯码
+            var zsm = $("#sel_zsm_" + this.jqRowId).val();
+            //是否拆零
+            var sfcl = parseInt($("#sel_sfcl_" + this.jqRowId).val(), 10);
+            this.zsm = zsm
+            this.sfcl = sfcl
+            if (zsm != "") {
+                objArrSave.push(this);
+            }
+        });
+        var resultObjArr = new Array();
+        //与页面加载的数组进行比对，将修改过的数据行放在resultObjArr中，传给后台
+        for (var i = 0; i < objArrSave.length; i++) {
+                // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                const zsmLength = objArrSave[i].zsm.split(',').filter(entry => entry.trim() !== '').length
+                var maxZsmLength = 1
+                if (objArrSave[i].sfcl === 1) {
+                    maxZsmLength = 1
+                } else {
+                    maxZsmLength = objArrSave[i].deptSjsl
+                }
+
+                if (zsmLength != maxZsmLength) {
+                    $.modalMsg("条目" + objArrSave[i].ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                    return false;
+                }
+
+                resultObjArr.push({ pdmxId: objArrSave[i].pdmxId, zsm: objArrSave[i].zsm, sfcl: objArrSave[i].sfcl });
+        }
+        console.log(resultObjArr)
+        if (resultObjArr.length === 0) {
+        }
+        else {
+            $.najax({
+               type: "POST",
+               url: "/PharmacyDrugStorage/SaveInventoryZsmInfo",
+               dataType: "json",
+               data: { resultObjArr: JSON.stringify(resultObjArr), pdId: $("#ddlRQ option:selected").attr('data-pdId') },
+               success: function (ajaxresp) {
+                   //$("#btn_search").trigger("click");
+                   $.modalAlert("保存成功", 'success');
+               },
+               error: function (ajaxresp) {
+                   $.modalAlert(ajaxresp.message, Error);
+               }
+            });
+        }
+    };
 
 </script>

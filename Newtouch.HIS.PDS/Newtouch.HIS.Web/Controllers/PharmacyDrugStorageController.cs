@@ -447,6 +447,16 @@ namespace Newtouch.HIS.Web.Controllers
         }
 
         /// <summary>
+        /// 保存库存追溯码信息
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult SaveInventoryZsmInfo(string resultObjArr, string pdId)
+        {
+            _pharmacyDrugStorageApp.SaveInventoryZsmInfo(resultObjArr.ToList<SaveInventoryInfoVO>());
+            return Success();
+        }
+
+        /// <summary>
         /// 结束盘点
         /// </summary>
         /// <param name="pdId">盘点单ID</param>
