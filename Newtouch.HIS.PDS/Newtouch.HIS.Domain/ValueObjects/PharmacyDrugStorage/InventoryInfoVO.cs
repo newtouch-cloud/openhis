@@ -189,10 +189,10 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// </summary>
         public string pdscy { get; set; }
 
-		/// <summary>
-		/// 进价
-		/// </summary>
-		public decimal jj { get; set; }
+        /// <summary>
+        /// 进价
+        /// </summary>
+        public decimal? jj { get; set; }
 
         /// <summary>
         /// 数量盈亏 = 实际数 - 理论数
