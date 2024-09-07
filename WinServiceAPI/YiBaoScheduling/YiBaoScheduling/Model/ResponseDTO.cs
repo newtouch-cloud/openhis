@@ -1,15 +1,12 @@
-﻿using CQYiBaoInterface.Models.SQL;
+﻿using NeiMengGuYiBaoApp.Models.SQL;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace YiBaoScheduling.Model
 {
     public class ResponseDTO
     {
-       
+
         /// <summary>
         /// 交易状态 0:成功
         /// </summary>
@@ -237,7 +234,7 @@ namespace YiBaoScheduling.Model
 
     }
 
-    public class setldetail 
+    public class setldetail
     {
         /// <summary>
         /// 基金支付类型 字符型 6 Y Y
@@ -270,7 +267,7 @@ namespace YiBaoScheduling.Model
         public string setl_proc_info { get; set; }
     }
 
-    public class Log_CqYbScheduling:SqlBase
+    public class Log_CqYbScheduling : SqlBase
     {
         /// <summary>
         /// 交易状态 0:成功

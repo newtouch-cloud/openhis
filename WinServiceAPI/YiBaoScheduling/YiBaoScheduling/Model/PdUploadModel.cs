@@ -1,9 +1,5 @@
-﻿using CQYiBaoInterface.Models.SQL;
+﻿using NeiMengGuYiBaoApp.Models.SQL;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace YiBaoScheduling.Model
 {
@@ -185,7 +181,7 @@ namespace YiBaoScheduling.Model
     #endregion
 
     #region 医院的科室字典表
-    public class TB_DIC_Department: SqlBase
+    public class TB_DIC_Department : SqlBase
     {
         public string YYKSDM { get; set; }
         public string YYKSMC { get; set; }
@@ -200,7 +196,7 @@ namespace YiBaoScheduling.Model
     #endregion
 
     #region 医护人员字典表
-    public class TB_DIC_Practitioner:SqlBase
+    public class TB_DIC_Practitioner : SqlBase
     {
         public string GH { get; set; }
         public string WSJGDM { get; set; }
@@ -230,7 +226,7 @@ namespace YiBaoScheduling.Model
     #endregion
 
     #region 药品目录字典表
-    public class TB_DIC_MEDICINES:SqlBase
+    public class TB_DIC_MEDICINES : SqlBase
     {
         public string YYZBDM { get; set; }
         public string WSJGDM { get; set; }
