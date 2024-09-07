@@ -42,5 +42,27 @@ namespace Newtouch.HIS.Repository
             }
         }
 
+
+        // <summary>
+        /// 保存库存追溯码信息
+        /// </summary>
+        /// <param name="inventoryInfoList"></param>
+        public void UpdateZsmBySaveInventoryInfo(List<SaveInventoryInfoVO> inventoryInfoList)
+        {
+            using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
+            {
+                foreach (var item in inventoryInfoList)
+                {
+                    var entity = db.FindEntity<SysMedicineInventoryDetailEntity>(item.pdmxId);
+                    entity.zsm = item.zsm;
+                    entity.sfcl = item.sfcl;
+                    entity.Modify();
+                    db.Update(entity);
+                }
+                db.Commit();
+            }
+        }
+
     }
+   
 }

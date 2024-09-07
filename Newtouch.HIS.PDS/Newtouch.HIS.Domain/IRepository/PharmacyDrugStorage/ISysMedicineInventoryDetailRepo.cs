@@ -14,5 +14,11 @@ namespace Newtouch.HIS.Domain.IRepository
         /// </summary>
         /// <param name="inventoryInfoList"></param>
         void UpdateSlBySaveInventoryInfo(List<SaveInventoryInfoVO> inventoryInfoList);
+
+        /// <summary>
+        /// 变更库存追溯码信息
+        /// </summary>
+        /// <param name="inventoryInfoList"></param>
+        void UpdateZsmBySaveInventoryInfo(List<SaveInventoryInfoVO> inventoryInfoList);
     }
 }
