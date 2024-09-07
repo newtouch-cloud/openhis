@@ -67,10 +67,13 @@ namespace YiBaoScheduling.Proxy
                 return ermsgobj;
             }
         }
-        public ResponseDTO InventoryUpload3501(Inventory3501 request)
+        public ResponseDTO InventoryUpload3501()
         {
             try
             {
+                Inventory3501 request = new Inventory3501();
+                request.operatorId = ConfigurationManager.AppSettings["operatorId"];
+                request.operatorName = ConfigurationManager.AppSettings["operatorName"];
                 if (string.IsNullOrWhiteSpace(apiUrl) || request == null) return null;
                 var uri = apiUrl + "api/YiBao/InventoryUpload_3501";
                 var responseResult = HttpClientHelper.HttpPostString(uri, request.ToJson(), contentType: HttpClientHelper.EnumContentType.json);
@@ -78,7 +81,7 @@ namespace YiBaoScheduling.Proxy
             }
             catch (Exception er)
             {
-                AppLogger.Info("盘点ID：" + request.pdId + "盘点信息上传异常：" + er.Message);
+                AppLogger.Info("盘点信息上传异常：" + er.Message);
                 var ermsgobj = new ResponseDTO
                 {
                     infcode = "1",
@@ -87,10 +90,13 @@ namespace YiBaoScheduling.Proxy
                 return ermsgobj;
             }
         }
-        public ResponseDTO InventoryUpload3502(Inventory3502 request)
+        public ResponseDTO InventoryUpload3502()
         {
             try
             {
+                Inventory3502 request = new Inventory3502();
+                request.operatorId = ConfigurationManager.AppSettings["operatorId"];
+                request.operatorName = ConfigurationManager.AppSettings["operatorName"];
                 if (string.IsNullOrWhiteSpace(apiUrl) || request == null) return null;
                 var uri = apiUrl + "api/YiBao/InventoryUpload_3502";
                 var responseResult = HttpClientHelper.HttpPostString(uri, request.ToJson(), contentType: HttpClientHelper.EnumContentType.json);
@@ -98,7 +104,7 @@ namespace YiBaoScheduling.Proxy
             }
             catch (Exception er)
             {
-                AppLogger.Info("出入库ID：" + request.crkId + "库存变更信息上传异常：" + er.Message);
+                AppLogger.Info("库存变更信息上传异常：" + er.Message);
                 var ermsgobj = new ResponseDTO
                 {
                     infcode = "1",
@@ -107,10 +113,13 @@ namespace YiBaoScheduling.Proxy
                 return ermsgobj;
             }
         }
-        public ResponseDTO InventoryUpload3503(Inventory3502 request)
+        public ResponseDTO InventoryUpload3503()
         {
             try
             {
+                Inventory3502 request = new Inventory3502();
+                request.operatorId = ConfigurationManager.AppSettings["operatorId"];
+                request.operatorName = ConfigurationManager.AppSettings["operatorName"];
                 if (string.IsNullOrWhiteSpace(apiUrl) || request == null) return null;
                 var uri = apiUrl + "api/YiBao/InventoryUpload_3503";
                 var responseResult = HttpClientHelper.HttpPostString(uri, request.ToJson(), contentType: HttpClientHelper.EnumContentType.json);
@@ -118,7 +127,7 @@ namespace YiBaoScheduling.Proxy
             }
             catch (Exception er)
             {
-                AppLogger.Info("出入库ID：" + request.crkId + "商品采购信息上传异常：" + er.Message);
+                AppLogger.Info("商品采购信息上传异常：" + er.Message);
                 var ermsgobj = new ResponseDTO
                 {
                     infcode = "1",
@@ -127,10 +136,13 @@ namespace YiBaoScheduling.Proxy
                 return ermsgobj;
             }
         }
-        public ResponseDTO InventoryUpload3504(Inventory3502 request)
+        public ResponseDTO InventoryUpload3504()
         {
             try
             {
+                Inventory3502 request = new Inventory3502();
+                request.operatorId = ConfigurationManager.AppSettings["operatorId"];
+                request.operatorName = ConfigurationManager.AppSettings["operatorName"];
                 if (string.IsNullOrWhiteSpace(apiUrl) || request == null) return null;
                 var uri = apiUrl + "api/YiBao/InventoryUpload_3504";
                 var responseResult = HttpClientHelper.HttpPostString(uri, request.ToJson(), contentType: HttpClientHelper.EnumContentType.json);
@@ -138,7 +150,53 @@ namespace YiBaoScheduling.Proxy
             }
             catch (Exception er)
             {
-                AppLogger.Info("出入库ID：" + request.crkId + "商品采购退货信息上传异常：" + er.Message);
+                AppLogger.Info("商品采购退货信息上传异常：" + er.Message);
+                var ermsgobj = new ResponseDTO
+                {
+                    infcode = "1",
+                    err_msg = er.Message
+                };
+                return ermsgobj;
+            }
+        }
+        public ResponseDTO InventoryUpload3505()
+        {
+            try
+            {
+                Inventory3505 request = new Inventory3505();
+                request.operatorId = ConfigurationManager.AppSettings["operatorId"];
+                request.operatorName = ConfigurationManager.AppSettings["operatorName"];
+                if (string.IsNullOrWhiteSpace(apiUrl) || request == null) return null;
+                var uri = apiUrl + "api/YiBao/InventoryUpload_3505";
+                var responseResult = HttpClientHelper.HttpPostString(uri, request.ToJson(), contentType: HttpClientHelper.EnumContentType.json);
+                return responseResult.Trim('"').Replace("\\", "").ToObject<ResponseDTO>();
+            }
+            catch (Exception er)
+            {
+                AppLogger.Info("商品销售信息上传异常：" + er.Message);
+                var ermsgobj = new ResponseDTO
+                {
+                    infcode = "1",
+                    err_msg = er.Message
+                };
+                return ermsgobj;
+            }
+        }
+        public ResponseDTO InventoryUpload3506()
+        {
+            try
+            {
+                Inventory3505 request = new Inventory3505();
+                request.operatorId = ConfigurationManager.AppSettings["operatorId"];
+                request.operatorName = ConfigurationManager.AppSettings["operatorName"];
+                if (string.IsNullOrWhiteSpace(apiUrl) || request == null) return null;
+                var uri = apiUrl + "api/YiBao/InventoryUpload_3506";
+                var responseResult = HttpClientHelper.HttpPostString(uri, request.ToJson(), contentType: HttpClientHelper.EnumContentType.json);
+                return responseResult.Trim('"').Replace("\\", "").ToObject<ResponseDTO>();
+            }
+            catch (Exception er)
+            {
+                AppLogger.Info("商品销售信息上传异常：" + er.Message);
                 var ermsgobj = new ResponseDTO
                 {
                     infcode = "1",
