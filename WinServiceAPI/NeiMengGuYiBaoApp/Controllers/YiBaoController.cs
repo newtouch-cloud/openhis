@@ -2710,7 +2710,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 3501 3501A 3502 3503 3504 3505 3506 3507 进销存管理
+        #region 3501 3501A 3502 3502A 3503 3503A 3504 3504A 3505 3505A 3506 3506A 3507 3507A 进销存管理
         /// <summary>
         /// 3501  商品盘存上传
         /// </summary>
