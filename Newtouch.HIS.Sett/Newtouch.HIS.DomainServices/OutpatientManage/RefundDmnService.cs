@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using FrameworkBase.MultiOrg.DmnService;
+﻿using FrameworkBase.MultiOrg.DmnService;
 using FrameworkBase.MultiOrg.Domain.IDomainServices;
 using FrameworkBase.MultiOrg.Infrastructure;
 using Newtouch.Common;
@@ -20,6 +14,12 @@ using Newtouch.HIS.Domain.ValueObjects;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using Newtouch.Tools.DB;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
 using DbParameter = System.Data.Common.DbParameter;
 
 namespace Newtouch.HIS.DomainServices
@@ -27,13 +27,7 @@ namespace Newtouch.HIS.DomainServices
     public class RefundDmnService : DmnServiceBase, IRefundDmnService
     {
         private readonly ISysPatientBasicInfoRepo _sysPatBasicInfoRepository;
-        private OperatorModel userModel
-        {
-            get
-            {
-                return OperatorProvider.GetCurrent(); //获取当前登录用户对象
-            }
-        }
+        private OperatorModel userModel => OperatorProvider.GetCurrent(); //获取当前登录用户对象
         private readonly IFinancialInvoiceRepo _financialInvoiceRepo;//发票号
         private readonly IOutpatientSettlementRepo _outPatientSettleRepo;
         private readonly ISysUserDmnService _sysUserDmnService;
@@ -970,7 +964,7 @@ and isnull(gh.ghzt,'') <> '2'  --排除已退
         /// <param name="xm"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public List<OutpatAccInfoDto> GetBasicInfoSearchListInRegister(Pagination pagination, string blh, string xm, string orgId,string zjh)
+        public List<OutpatAccInfoDto> GetBasicInfoSearchListInRegister(Pagination pagination, string blh, string xm, string orgId, string zjh)
         {
             var strSql = new StringBuilder();
             strSql.Append(@" SELECT  A.patid ,
@@ -1703,8 +1697,8 @@ order by mzjs.CreateTime
      select ypjsmx.ghnm,ypjsmx.jsmxnm,ypjsmx.jslx
      ,ypjsmx.sl 
      --未发药 全部可退，  --已发药需要药房药库接口告知  已退药全部退掉后可以退费
-     ,case when cf.fybz = '2' then isnull(tymx.tysl,0.00) else ypjsmx.sl end ktsl
-     ,case when cf.fybz = '2' then isnull(tymx.tysl,0.00) else ypjsmx.sl end tsl
+    ,case when cf.fybz = '2' then  CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end ktsl
+     ,case when cf.fybz = '2' then CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end tsl
      ,ypjsmx.jyje jsmxje
      ,ypmx.dj, 1 feeType, ypmx.dw
      ,cf.cfh
@@ -1901,20 +1895,20 @@ ORDER BY mzjs.CreateTime
             return FindList<OutPatientRefundableGuiAnJsVO>(sql, pars.ToArray());
         }
 
-		#endregion
+        #endregion
 
-		#region
-	    /// <summary>
-	    /// 获取待退费信息
-	    /// </summary>
-	    /// <param name="orgId"></param>
-	    /// <param name="kssj"></param>
-	    /// <param name="jssj"></param>
-	    /// <param name="mzh"></param>
-	    /// <returns></returns>
-	    public IList<OutPatChongQingVO> RefundableChongQingQuery(string orgId, DateTime? kssj, DateTime? jssj, string mzh)
-	    {
-		    const string sql = @"
+        #region
+        /// <summary>
+        /// 获取待退费信息
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="kssj"></param>
+        /// <param name="jssj"></param>
+        /// <param name="mzh"></param>
+        /// <returns></returns>
+        public IList<OutPatChongQingVO> RefundableChongQingQuery(string orgId, DateTime? kssj, DateTime? jssj, string mzh)
+        {
+            const string sql = @"
 					SELECT  mzgh.mzh,mzgh.ghly,
                     mzjs.jsnm ,
 					mzjs.ybjslsh ybjsh ,mzgh.jzid,ybfy.chrg_bchno pch,ybfy.med_type yllb,mzgh.bzbm bzbm,
@@ -1958,16 +1952,16 @@ ORDER BY mzjs.CreateTime
 			    order by CreateTime
 		;
                     ";
-		    var pars = new DbParameter[]
-		    {
-			    new SqlParameter("@orgId", orgId),
-			    new SqlParameter("@kssj", kssj.HasValue ? kssj.Value.Date : new DateTime(1970, 1, 1)),
-			    new SqlParameter("@jssj", jssj.HasValue ? jssj.Value.AddDays(1).Date : new DateTime(2099, 12, 31)),
-			    new SqlParameter("@mzh", mzh)
-		    };
+            var pars = new DbParameter[]
+            {
+                new SqlParameter("@orgId", orgId),
+                new SqlParameter("@kssj", kssj.HasValue ? kssj.Value.Date : new DateTime(1970, 1, 1)),
+                new SqlParameter("@jssj", jssj.HasValue ? jssj.Value.AddDays(1).Date : new DateTime(2099, 12, 31)),
+                new SqlParameter("@mzh", mzh)
+            };
 
-		    return FindList<OutPatChongQingVO>(sql, pars.ToArray());
-	    }
+            return FindList<OutPatChongQingVO>(sql, pars.ToArray());
+        }
         #endregion
         /// <summary>
         /// 门诊住院预交金患者浮层
@@ -2008,7 +2002,8 @@ ORDER BY mzjs.CreateTime
                                                         AND xz.OrganizeId = kh.OrganizeId
                                 ");
             }
-            else {
+            else
+            {
 
                 strSql.Append(@" SELECT distinct top 50 A.patid ,
                                 a.blh ,
