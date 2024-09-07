@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace NeiMengGuYiBaoApp.Models.SQL
 {
-   public class SqlBase
+    public class SqlBase
     {
 
         #region 获得实体的添加语句
@@ -690,22 +688,42 @@ namespace NeiMengGuYiBaoApp.Models.SQL
         /// <remarks>支持类型：<c>int</c>,<c>decimal</c>,<c>double</c>,<c>float</c>,<c>bool</c>,<c>string</c>,</remarks>
         private string ValueToString(Object value, Type vType)
         {
-            if (vType == typeof(int) || vType == typeof(decimal) || vType == typeof(double) || vType == typeof(float))
-                return value.ToString();//数字类型直接转换为字符串
-            else if (vType == typeof(bool))
-                return Convert.ToInt32(value).ToString();//bool类型先转换为整形(1或0)，再转换为字符串
-            else if (vType == typeof(DateTime))
+            // 获取可空类型的基础类型
+            Type underlyingType = Nullable.GetUnderlyingType(vType);
+
+            // 如果是可空类型，且值为null，直接返回"null"
+            if (underlyingType != null && value == null)
+            {
+                return null;
+            }
+
+            // 如果不是可空类型，则使用原类型
+            Type actualType = underlyingType ?? vType;
+
+            if (actualType == typeof(int) || actualType == typeof(decimal) || actualType == typeof(double) || actualType == typeof(float))
+            {
+                return value.ToString(); // 数字类型直接转换为字符串
+            }
+            else if (actualType == typeof(bool))
+            {
+                return Convert.ToInt32(value).ToString(); // bool类型先转换为整形(1或0)，再转换为字符串
+            }
+            else if (actualType == typeof(DateTime))
             {
                 DateTime dt = Convert.ToDateTime(value);
                 if (dt.Year == 1)
-                    return null;
+                    return null; // 如果是最小时间，返回null
                 else
-                    return "'" + dt.ToString() + "'";
+                    return "'" + dt.ToString() + "'"; // 确保格式化为标准的日期时间字符串
             }
-            else if (vType == typeof(string) && value == null)
-                return "''";
+            else if (actualType == typeof(string) && value == null)
+            {
+                return "''"; // 字符串为null时，返回空字符串
+            }
             else
-                return "'" + value.ToString() + "'";//其他类型在转换为字符串后两端加单引号
+            {
+                return "'" + value.ToString() + "'"; // 其他类型在转换为字符串后两端加单引号
+            }
         }
 
         /// <summary>
