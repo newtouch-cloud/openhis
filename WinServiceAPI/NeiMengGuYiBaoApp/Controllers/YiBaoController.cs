@@ -4973,6 +4973,66 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
+        #region 【5401】项目互认信息查询 【5402】报告明细信息查询
+        /// <summary>
+        /// 【5401】项目互认信息查询
+        /// </summary>
+        [HttpPost]
+        public string GetBilgiteminfo_5401(Post_5401 post5401)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post5401.hisId;
+            post.tradiNumber = "5401";
+            post.insuplc_admdvs = post5401.insuplc_admdvs;
+            post.inModel = 0;
+            post.operatorId = post5401.operatorId;
+            post.operatorName = post5401.operatorName;
+
+            Input_5401 input5401 = new Input_5401();
+            input5401.bilgiteminfo = new Models.Input.YiBao.Bilgiteminfo();
+            input5401.bilgiteminfo.psn_no = post5401.psn_no;
+            input5401.bilgiteminfo.exam_org_name = post5401.exam_org_name;
+            input5401.bilgiteminfo.exam_item_code = post5401.exam_item_code;
+            input5401.bilgiteminfo.exam_item_name = post5401.exam_item_name;
+
+            Output_5401 output5401 = new Output_5401();
+            output5401.bilgiteminfo = new Models.Output.YiBao.Bilgiteminfo();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input5401, out output5401, post, out code);
+            return json;
+        }
+        /// <summary>
+        /// 【5402】报告明细信息查询
+        /// </summary>
+        [HttpPost]
+        public string GetCheckreportdetails_5402(Post_5402 post5402)
+        {
+            string json = "";
+            string code = "1";
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "5402";
+            post.insuplc_admdvs = post5402.insuplc_admdvs;
+            post.inModel = 0;
+            post.operatorId = post5402.operatorId;
+            post.operatorName = post5402.operatorName;
+
+            Input_5402 input5402 = new Input_5402();
+            input5402.rptdetailinfo = new Rptdetailinfo();
+            input5402.rptdetailinfo.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+            input5402.rptdetailinfo.rpotc_no = post5402.rpotc_no;
+            input5402.rptdetailinfo.psn_no = post5402.psn_no;
+
+            Output_5402 output5402 = new Output_5402();
+            output5402.checkReportDetails = new List<CheckReportDetails>();
+            output5402.inspectionReportInformation = new List<InspectionReportInformation>();
+            output5402.inspectiondetails = new List<InspectionDetails>();
+            json = YiBaoHelper.CallAndSaveLog(input5402, out output5402, post, out code);
+            return json;
+
+        }
+        #endregion
+
         #region 5201 5202 5203 5204 5205 5206 5301 5302 5303 5304 信息查询
         /// <summary>
         /// 5201 就诊信息查询

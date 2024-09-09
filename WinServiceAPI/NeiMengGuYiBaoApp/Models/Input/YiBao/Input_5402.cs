@@ -2,7 +2,7 @@
 {
     public class Input_5402 : InputBase
     {
-        public Rptdetailinfo Rptdetailinfo { get; set; }
+        public Rptdetailinfo rptdetailinfo { get; set; }
     }
 
     public class Rptdetailinfo

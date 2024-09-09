@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace NeiMengGuYiBaoApp.Models.Output.YiBao
 {
@@ -7,15 +8,15 @@ namespace NeiMengGuYiBaoApp.Models.Output.YiBao
         /// <summary>
         /// 检查报告明细信息
         /// </summary>
-        public CheckReportDetails checkReportDetails { get; set; }
+        public List<CheckReportDetails> checkReportDetails { get; set; }
         /// <summary>
         /// -检验报告信息
         /// </summary>
-        public InspectionReportInformation inspectionReportInformation { get; set; }
+        public List<InspectionReportInformation> inspectionReportInformation { get; set; }
         /// <summary>
         ///  检验明细信息
         /// </summary>
-        public InspectionDetails inspectiondetails { get; set; }
+        public List<InspectionDetails> inspectiondetails { get; set; }
     }
 
     public class CheckReportDetails
