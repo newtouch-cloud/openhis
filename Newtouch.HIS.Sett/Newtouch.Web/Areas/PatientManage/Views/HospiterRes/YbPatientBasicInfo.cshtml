@@ -91,14 +91,18 @@
                         </td>
                         <th class="formTitle">结算ID：</th>
                         <td class="formValue">
-                            <input type="text" id="settId" name="settId" class="form-control" style="width:150px"/>
+                            <input type="text" id="settId" name="settId" class="form-control" style="width:150px" />
                         </td>
                         <th class="formTitle">就诊ID：</th>
                         <td class="formValue">
-                            <input type="text" id="jzId" name="jzId" class="form-control" style="width:150px"/>
+                            <input type="text" id="jzId" name="jzId" class="form-control" style="width:150px" />
+                        </td>
+                        <th class="formTitle">报告单号：</th>
+                        <td class="formValue">
+                            <input type="text" id="rpotc_no" name="rpotc_no" class="form-control"  placeholder="在5401中获取" style="width:150px" />
                         </td>
                         <td class="formValue">
-                            <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="签退" onclick="SiginOut()"/>
+                            <input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" value="签退" onclick="SiginOut()" />
                         </td>
                     </tr>
                 </table>
@@ -606,6 +610,56 @@
                 }
             });
         }
+        else if (type == "5401") {
+            var rcData = { psn_no: cqPatInfo.grbh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: cqPatInfo.xzqh };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:33333/api/YiBao/GetBilgiteminfo_5401",
+                dataType: "json",
+                data: rcData,
+                async: false,
+                success: function (data) {
+                    var refReg = eval('(' + data + ')');
+                    if (refReg) {
+                        if (refReg.infcode == "0" && !!refReg.output.bilgiteminfo) {
+                            gridListData(refReg.output.bilgiteminfo, type);
+                        }
+                        else {
+                            gridListData("", type);
+                            $.modalAlert(refReg.err_msg, 'error');
+                        }
+                    }
+                },
+                error: function () {
+                    $.modalAlert("服务不可访问", 'warning');
+                }
+            });
+        }
+        else if (type == "5402") {
+            var rcData = { rpotc_no: $('#rpotc_no').val(), psn_no: cqPatInfo.grbh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: cqPatInfo.xzqh };
+            $.ajax({
+                type: "POST",
+                url: "http://127.0.0.1:33333/api/YiBao/GetCheckreportdetails_5402",
+                dataType: "json",
+                data: rcData,
+                async: false,
+                success: function (data) {
+                    var refReg = eval('(' + data + ')');
+                    if (refReg) {
+                        if (refReg.infcode == "0" && !!refReg.output) {
+                            gridListData5402(refReg.output. type);
+                        }
+                        else {
+                            gridListData5402("", type);
+                            $.modalAlert(refReg.err_msg, 'error');
+                        }
+                    }
+                },
+                error: function () {
+                    $.modalAlert("服务不可访问", 'warning');
+                }
+            });
+        }
 
     }
 
@@ -618,104 +672,104 @@
             case '1':
                 captionCon = "待遇享受列表";
                 colModel = [
-        { label: '人员编号', name: 'psn_no', width: 105,align: 'center' },
-        {
-            label: '待遇检查类型', name: "trt_chk_type", width: 105, align: 'center', formatter: function (val) {
-                return $.enum.getDescByValue("Enumdyjclx", val);
-            }
-        },
-         {
-             label: '基金支付类型编码', name: 'fund_pay_type', width: 105, align: 'center'
-         },
-        { label: '基金支付类型', name: 'fund_pay_type', width: 105, align: 'center', formatter: function (val) {
-            return $.enum.getDescByValue("Enumjjzflx", val);
-        }
-        },
+                    { label: '人员编号', name: 'psn_no', width: 105,align: 'center' },
+                    {
+                        label: '待遇检查类型', name: "trt_chk_type", width: 105, align: 'center', formatter: function (val) {
+                            return $.enum.getDescByValue("Enumdyjclx", val);
+                        }
+                    },
+                     {
+                         label: '基金支付类型编码', name: 'fund_pay_type', width: 105, align: 'center'
+                     },
+                    { label: '基金支付类型', name: 'fund_pay_type', width: 105, align: 'center', formatter: function (val) {
+                        return $.enum.getDescByValue("Enumjjzflx", val);
+                    }
+                    },
 
-        {
-            label: '基金款项待遇享受标志', name: 'trt_enjymnt_flag', width: 105, align: 'center', formatter: function (val) {
-                return $.enum.getDescByValue("Enumdyxsbz", val);
-            }
-        },
-        { label: '开始日期', name: 'begndate', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-        { label: '结束日期', name: 'enddate', width: 125, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-        { label: '待遇检查结果', name: 'trt_chk_rslt', width: 105, align: 'center' },
+                    {
+                        label: '基金款项待遇享受标志', name: 'trt_enjymnt_flag', width: 105, align: 'center', formatter: function (val) {
+                            return $.enum.getDescByValue("Enumdyxsbz", val);
+                        }
+                    },
+                    { label: '开始日期', name: 'begndate', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                    { label: '结束日期', name: 'enddate', width: 125, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                    { label: '待遇检查结果', name: 'trt_chk_rslt', width: 105, align: 'center' },
                 ];
                 break;
             case "2":
                 captionCon = "就诊信息";
                 colModel = [
-       { label: '就诊ID', name: 'mdtrt_id', width: 55,  align: 'center' },
-       { label: '开始时间', name: 'begntime', width: 105, formatter: "number", align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-       { label: '结束时间', name: 'endtime', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-       { label: '住院/门诊号', name: 'ipt_otp_no', width: 105, align: 'center' },
-       { label: '主治医生编码', name: 'atddr_no', width: 105, align: 'center' },
-       { label: '主诊医师姓名', name: 'chfpdr_name', width: 105, align: 'center'},
-       { label: '科室编码', name: 'adm_dept_codg', width: 85, align: 'center' },
-       { label: '科室名称', name: 'adm_dept_name', width: 85, align: 'center' },
-       { label: '病种编码', name: 'dise_codg', width: 85, align: 'center' },
-        { label: '病种名称', name: 'dise_name', width: 85, align: 'center' },
+                   { label: '就诊ID', name: 'mdtrt_id', width: 55,  align: 'center' },
+                   { label: '开始时间', name: 'begntime', width: 105, formatter: "number", align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                   { label: '结束时间', name: 'endtime', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                   { label: '住院/门诊号', name: 'ipt_otp_no', width: 105, align: 'center' },
+                   { label: '主治医生编码', name: 'atddr_no', width: 105, align: 'center' },
+                   { label: '主诊医师姓名', name: 'chfpdr_name', width: 105, align: 'center'},
+                   { label: '科室编码', name: 'adm_dept_codg', width: 85, align: 'center' },
+                   { label: '科室名称', name: 'adm_dept_name', width: 85, align: 'center' },
+                   { label: '病种编码', name: 'dise_codg', width: 85, align: 'center' },
+                    { label: '病种名称', name: 'dise_name', width: 85, align: 'center' },
                 ];
                 break;
             case "3":
                 captionCon = "诊断信息";
                 colModel = [
-      { label: '就诊ID', name: 'mdtrt_id', width: 55, align: 'center' },
-      {
-          label: '诊断类别', name: 'diag_type', width: 105, formatter: function (val) {
-              return $.enum.getDescByValue("Enumzdlx", val);
-          }
-      },
-      {
-          label: '主诊断标志', name: 'maindiag_flag', width: 105, align: 'center', formatter: function (val) {
-              return $.enum.getDescByValue("Enumdyxsbz", val);
-          }
-      },
-      { label: '诊断代码', name: 'diag_code', width: 60, align: 'center' },
-      { label: '诊断名称', name: 'diag_name', width: 105, align: 'center' },
-      { label: '诊断科室', name: 'diag_dept', width: 105, align: 'center' },
-      { label: '诊断医生编码', name: 'dise_dor_no', width: 85, align: 'center' },
-      { label: '诊断医生姓名', name: 'dise_dor_name', width: 105, align: 'center' },
-      { label: '诊断时间', name: 'diag_time', width: 105, align: 'center',formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                  { label: '就诊ID', name: 'mdtrt_id', width: 55, align: 'center' },
+                  {
+                      label: '诊断类别', name: 'diag_type', width: 105, formatter: function (val) {
+                          return $.enum.getDescByValue("Enumzdlx", val);
+                      }
+                  },
+                  {
+                      label: '主诊断标志', name: 'maindiag_flag', width: 105, align: 'center', formatter: function (val) {
+                          return $.enum.getDescByValue("Enumdyxsbz", val);
+                      }
+                  },
+                  { label: '诊断代码', name: 'diag_code', width: 60, align: 'center' },
+                  { label: '诊断名称', name: 'diag_name', width: 105, align: 'center' },
+                  { label: '诊断科室', name: 'diag_dept', width: 105, align: 'center' },
+                  { label: '诊断医生编码', name: 'dise_dor_no', width: 85, align: 'center' },
+                  { label: '诊断医生姓名', name: 'dise_dor_name', width: 105, align: 'center' },
+                  { label: '诊断时间', name: 'diag_time', width: 105, align: 'center',formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } }
                 ];
                 break;
             case "4":
                 captionCon = "结算信息";
                 colModel = [
-     { label: '结算ID', name: 'setl_id', width: 85, align: 'center' },
-     { label: '就诊 ID', name: 'mdtrt_id', width: 85 },
-     { label: '开始日期', name: 'begndate', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-     { label: '结束日期', name: 'enddate', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-     { label: '结算时间', name: 'setl_time', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
-     { label: '医疗费总额', name: 'medfee_sumamt', width: 85, align: 'center' },
-     { label: '统筹基金', name: 'hifp_pay', width: 85, align: 'center' },
-     { label: '公务补助', name: 'cvlserv_pay', width: 85, align: 'center' },
-     { label: '企业补助', name: 'hifes_pay', width: 85, align: 'center' },
-     { label: '居民大病', name: 'hifmi_pay', width: 85, align: 'center' },
-     { label: '职工大额', name: 'hifob_pay', width: 85, align: 'center' },
-     { label: '医疗救助', name: 'maf_pay', width: 85, align: 'center' },
-     { label: '个人支付', name: 'psn_pay', width: 85, align: 'center' },
-     { label: '个人账户', name: 'acct_pay', width: 85, align: 'center' }
+                     { label: '结算ID', name: 'setl_id', width: 85, align: 'center' },
+                     { label: '就诊 ID', name: 'mdtrt_id', width: 85 },
+                     { label: '开始日期', name: 'begndate', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                     { label: '结束日期', name: 'enddate', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                     { label: '结算时间', name: 'setl_time', width: 105, align: 'center', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                     { label: '医疗费总额', name: 'medfee_sumamt', width: 85, align: 'center' },
+                     { label: '统筹基金', name: 'hifp_pay', width: 85, align: 'center' },
+                     { label: '公务补助', name: 'cvlserv_pay', width: 85, align: 'center' },
+                     { label: '企业补助', name: 'hifes_pay', width: 85, align: 'center' },
+                     { label: '居民大病', name: 'hifmi_pay', width: 85, align: 'center' },
+                     { label: '职工大额', name: 'hifob_pay', width: 85, align: 'center' },
+                     { label: '医疗救助', name: 'maf_pay', width: 85, align: 'center' },
+                     { label: '个人支付', name: 'psn_pay', width: 85, align: 'center' },
+                     { label: '个人账户', name: 'acct_pay', width: 85, align: 'center' }
                 ];
                 break;
             case "5":
                 captionCon = "费用明细";
                 colModel = [
-     { label: '结算ID', name: 'setl_id', width: 65, align: 'center' },
-     { label: '就诊ID', name: 'mdtrt_id', width: 65 },
-     { label: '费用流水号', name: 'feedetl_sn', width: 65, align: 'center' },
-     { label: '数量', name: 'cnt', width: 55, align: 'center'},
-     { label: '单价', name: 'pric', width: 55, align: 'center' },
-     { label: '总额', name: 'det_item_fee_sumamt', width: 60, align: 'center' },
-     { label: '全自费金额', name: 'fulamt_ownpay_amt', width: 60, align: 'center' },
-     { label: '超限价金额', name: 'overlmt_amt', width: 60, align: 'center' },
-     { label: '先行自付金额', name: 'preselfpay_amt', width: 60, align: 'center' },
-     { label: '符合政策范围', name: 'inscp_scp_amt', width: 60, align: 'center' },
-     { label: '医保目录编码', name: 'hilist_code', width: 80, align: 'center' },
-     { label: '医保目录名称', name: 'hilist_name', width: 100, align: 'center' },
-     { label: '医疗目录编码', name: 'med_list_codg', width: 100, align: 'center' },
-     { label: '开单科室编码', name: 'bilg_dept_codg', width: 70, align: 'center' },
-     { label: '开单科室名称', name: 'bilg_dept_name', width: 100, align: 'center' }
+                     { label: '结算ID', name: 'setl_id', width: 65, align: 'center' },
+                     { label: '就诊ID', name: 'mdtrt_id', width: 65 },
+                     { label: '费用流水号', name: 'feedetl_sn', width: 65, align: 'center' },
+                     { label: '数量', name: 'cnt', width: 55, align: 'center'},
+                     { label: '单价', name: 'pric', width: 55, align: 'center' },
+                     { label: '总额', name: 'det_item_fee_sumamt', width: 60, align: 'center' },
+                     { label: '全自费金额', name: 'fulamt_ownpay_amt', width: 60, align: 'center' },
+                     { label: '超限价金额', name: 'overlmt_amt', width: 60, align: 'center' },
+                     { label: '先行自付金额', name: 'preselfpay_amt', width: 60, align: 'center' },
+                     { label: '符合政策范围', name: 'inscp_scp_amt', width: 60, align: 'center' },
+                     { label: '医保目录编码', name: 'hilist_code', width: 80, align: 'center' },
+                     { label: '医保目录名称', name: 'hilist_name', width: 100, align: 'center' },
+                     { label: '医疗目录编码', name: 'med_list_codg', width: 100, align: 'center' },
+                     { label: '开单科室编码', name: 'bilg_dept_codg', width: 70, align: 'center' },
+                     { label: '开单科室名称', name: 'bilg_dept_name', width: 100, align: 'center' }
                 ];
                 break;
             case "6":
@@ -736,92 +790,106 @@
             case "7":
                 captionCon = "人员累计信息";
                 colModel = [
-     {
-         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumxzlx", val);
-         }
-     },
-     { label: '年度', name: 'year', width: 105, align: 'center' },
-     { label: '累计年月', name: 'cum_ym', width: 105, align: 'center' },
-     { label: '累计类别代码', name: 'cum_type_code', width: 125, align: 'center' },
-      { label: '累计值', name: 'cum', width: 105, align: 'center' }
-
+                     {
+                         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumxzlx", val);
+                         }
+                     },
+                     { label: '年度', name: 'year', width: 105, align: 'center' },
+                     { label: '累计年月', name: 'cum_ym', width: 105, align: 'center' },
+                     { label: '累计类别代码', name: 'cum_type_code', width: 125, align: 'center' },
+                     { label: '累计值', name: 'cum', width: 105, align: 'center' }
                 ];
                 break;
             case "8":
                 captionCon = "人员特殊病备案查询";
                 colModel = [
-     { label: '门慢门特病种目录代码', name: 'opsp_dise_code', width: 105, align: 'center' },
-     { label: '门慢门特病种名称', name: 'opsp_dise_name', width: 405, align: 'center' },
-     { label: '开始日期', name: 'begndate', width: 105, align: 'center' },
-     { label: '结束日期', name: 'enddate', width: 105, align: 'center' }
-
+                     { label: '门慢门特病种目录代码', name: 'opsp_dise_code', width: 105, align: 'center' },
+                     { label: '门慢门特病种名称', name: 'opsp_dise_name', width: 405, align: 'center' },
+                     { label: '开始日期', name: 'begndate', width: 105, align: 'center' },
+                     { label: '结束日期', name: 'enddate', width: 105, align: 'center' }
                 ];
                 break;
             case "9":
                 captionCon = "人员定点信息查询";
                 colModel = [
-     {
-         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumxzlx", val);
-         }
-     },
-     { label: '定点排序号', name: 'fix_srt_no', width: 105, align: 'center' },
-     { label: '定点医药机构编号', name: 'fixmedins_code', width: 105, align: 'center' },
-     { label: '定点医药机构名称', name: 'fixmedins_name', width: 125, align: 'center' },
-     { label: '开始日期', name: 'begndate', width: 105, align: 'center' },
-     { label: '结束日期', name: 'enddate', width: 125, align: 'center' }
+                     {
+                         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumxzlx", val);
+                         }
+                     },
+                     { label: '定点排序号', name: 'fix_srt_no', width: 105, align: 'center' },
+                     { label: '定点医药机构编号', name: 'fixmedins_code', width: 105, align: 'center' },
+                     { label: '定点医药机构名称', name: 'fixmedins_name', width: 125, align: 'center' },
+                     { label: '开始日期', name: 'begndate', width: 105, align: 'center' },
+                     { label: '结束日期', name: 'enddate', width: 125, align: 'center' }
                 ];
                 break;
             case "10":
                 captionCon = "在院信息查询";
                 colModel = [
-     { label: '就诊ID', name: 'mdtrt_id', width: 105, align: 'center' },
-     {
-         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumxzlx", val);
-         }
-     },
-     { label: '开始日期', name: 'begndate', width: 105, align: 'center' },
-     {
-         label: '医疗类别', name: 'med_type', width: 125, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumyllb", val);
-         }
-     },
-     { label: '住院/门诊号', name: 'ipt_otp_no', width: 105, align: 'center' },
-     { label: '异地标志', name: 'out_flag', width: 125, align: 'center' }
+                     { label: '就诊ID', name: 'mdtrt_id', width: 105, align: 'center' },
+                     {
+                         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumxzlx", val);
+                         }
+                     },
+                     { label: '开始日期', name: 'begndate', width: 105, align: 'center' },
+                     {
+                         label: '医疗类别', name: 'med_type', width: 125, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumyllb", val);
+                         }
+                     },
+                     { label: '住院/门诊号', name: 'ipt_otp_no', width: 105, align: 'center' },
+                     { label: '异地标志', name: 'out_flag', width: 125, align: 'center' }
                 ];
                 break;
             case "11":
                 captionCon = "转院信息查询";
                 colModel = [
-     {
-         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumxzlx", val);
-         }
-     },
-     {
-         label: '申报来源', name: 'dcla_souc', width: 105, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumsbly", val);
-         }
-     },
-     { label: '诊断代码', name: 'diag_code', width: 105, align: 'center' },
-     { label: '诊断名称', name: 'diag_name', width: 125, align: 'center' },
-     { label: '转往定点医药机构编号', name: 'reflin_medins_no', width: 105, align: 'center' },
-     { label: '转往医院名称', name: 'reflin_medins_name', width: 125, align: 'center' },
-     {
-         label: '异地标志', name: 'out_flag', width: 105, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumdyxsbz", val);
-         }
-     },
-     { label: '转院日期', name: 'refl_date', width: 125, align: 'center' },
-     { label: '开始时间', name: 'begndate', width: 105, align: 'center' },
-     { label: '结束时间', name: 'enddate', width: 125, align: 'center' },
-     {
-         label: '医院同意转院标志', name: 'hosp_agre_refl_flag', width: 125, align: 'center', formatter: function (val) {
-             return $.enum.getDescByValue("Enumdyxsbz", val);
-         }
-     }
+                     {
+                         label: '险种类型', name: 'insutype', width: 105, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumxzlx", val);
+                         }
+                     },
+                     {
+                         label: '申报来源', name: 'dcla_souc', width: 105, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumsbly", val);
+                         }
+                     },
+                     { label: '诊断代码', name: 'diag_code', width: 105, align: 'center' },
+                     { label: '诊断名称', name: 'diag_name', width: 125, align: 'center' },
+                     { label: '转往定点医药机构编号', name: 'reflin_medins_no', width: 105, align: 'center' },
+                     { label: '转往医院名称', name: 'reflin_medins_name', width: 125, align: 'center' },
+                     {
+                         label: '异地标志', name: 'out_flag', width: 105, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumdyxsbz", val);
+                         }
+                     },
+                     { label: '转院日期', name: 'refl_date', width: 125, align: 'center' },
+                     { label: '开始时间', name: 'begndate', width: 105, align: 'center' },
+                     { label: '结束时间', name: 'enddate', width: 125, align: 'center' },
+                     {
+                         label: '医院同意转院标志', name: 'hosp_agre_refl_flag', width: 125, align: 'center', formatter: function (val) {
+                             return $.enum.getDescByValue("Enumdyxsbz", val);
+                         }
+                     }
+                ];
+                break;
+            case "5401":
+                captionCon = "项目互认信息";
+                colModel = [
+                    { label: '人员编号', name: 'psn_no', width: 90, align: 'center' },
+                    { label: '报告单号', name: 'rpotc_no', width: 90, align: 'center' },
+                    { label: '报告日期', name: 'rpt_date', width: 60, align: 'center' },
+                    { label: '报告单类别代码', name: 'rpotc_type_code', width: 120, align: 'center' },
+                    { label: '机构编号', name: 'fixmedins_code', width: 60, align: 'center' },
+                    { label: '检查报告单名称', name: 'exam_rpotc_name', width: 120, align: 'center' },
+                    { label: '报告日期', name: 'rpt_date', width: 60, align: 'center' },
+                    { label: '检查结果阳性标志', name: 'exam_rslt_poit_flag', width: 120, align: 'center' },
+                    { label: '检查结果异常标志', name: 'exam_rslt_abn', width: 120, align: 'center' },
+                    { label: '检查报告单名称', name: 'exam_rpotc_name', width: 120, align: 'center' },
+                    { label: '检查结论', name: 'examCcls', width: 150, align: 'center' }
                 ];
                 break;
         }
@@ -838,6 +906,97 @@
             caption: captionCon,
             colModel: colModel,
         }, mydata);
+    }
+
+    function gridListData5402(mydata, type) {
+        var checkreportdetails;
+        var inspectionreportinformation;
+        var inspectiondetails;
+        if (mydata) {
+            checkreportdetails = mydata.checkreportdetails;
+            inspectionreportinformation = mydata.inspectionreportinformation;
+            inspectiondetails = mydata.inspectiondetails;
+        } else {
+            checkreportdetails = "";
+            inspectionreportinformation = "";
+            inspectiondetails = "";
+        }
+
+        $("#gbox_gridList").remove();
+
+        var checkreportdetailsCaptionCon = "检查报告明细信息";
+        var checkreportdetailsColModel = [
+            { label: '人员编号', name: 'psn_no', width: 120, align: 'center' },
+            { label: '报告单号', name: 'rpotc_no', width: 120, align: 'center' },
+            { label: '报告日期', name: 'rpt_date', width: 120, align: 'center' },
+            { label: '报告单类别代码', name: 'rpotc_type_code', width: 150, align: 'center' },
+            { label: '检查报告单名称', name: 'exam_rpotc_name', width: 150, align: 'center' },
+            { label: '检查结果阳性标志', name: 'exam_rslt_poit_flag', width: 150, align: 'center' },
+            { label: '检查异常标志', name: 'exam_rslt_abn', width: 120, align: 'center' },
+            { label: '报告医师', name: 'bilgDrName', width: 150, align: 'center' },
+            { label: '检查结论', name: 'exam_ccls', width: 300, align: 'center' }
+        ];
+        $(".gridPanel").append('<table id="gridList"></table>');
+        $('#gridList').jqGrid("clearGridData");
+        var $gridList = $("#gridList");
+
+        $gridList.newtouchLocalDataGrid({
+            height: $(window).height() - 330,
+            autowidth: false,
+            unwritten: false,
+            width: $("#formPat2").width() - 10,
+            caption: checkreportdetailsCaptionCon,
+            colModel: checkreportdetailsColModel,
+        }, checkreportdetails);
+
+        var inspectionreportinformationCaptionCon = "检验报告信息";
+        var inspectionreportinformationColModel = [
+            { label: '人员编号', name: 'psn_no', width: 150, align: 'center' },
+            { label: '报告单号', name: 'rpotc_no', width: 150, align: 'center' },
+            { label: '检验-项目代码', name: 'exam_item_code', width: 150, align: 'center' },
+            { label: '检验-项目名称', name: 'exam_item_name', width: 150, align: 'center' },
+            { label: '报告日期', name: 'rpt_date', width: 150, align: 'center' },
+            { label: '报告医师', name: 'rpot_doc', width: 150, align: 'center' }
+        ];
+;
+        $(".gridPanel").append('<table id="gridList2"></table>');
+        $('#gridList2').jqGrid("clearGridData");
+        var $gridList2 = $("#gridList2");
+
+        $gridList2.newtouchLocalDataGrid({
+            height: $(window).height() - 330,
+            autowidth: false,
+            unwritten: false,
+            width: $("#formPat2").width() - 10,
+            caption: inspectionreportinformationCaptionCon,
+            colModel: inspectionreportinformationColModel,
+        }, inspectionreportinformation);
+
+        var inspectiondetailsCaptionCon = "检验明细信息";
+        var inspectiondetailsColModel = [
+            { label: '报告单号', name: 'rpotc_no', width: 100, align: 'center' },
+            { label: '检验方法', name: 'exam_mtd', width: 150, align: 'center' },
+            { label: '参考值', name: 'ref_val', width: 60, align: 'center' },
+            { label: '检验-计量单位', name: 'exam_unt', width: 120, align: 'center' },
+            { label: '检验-结果(数值)', name: 'exam_rslt_val', width: 120, align: 'center' },
+            { label: '检验-结果(定性)', name: 'exam_rslt_qual', width: 200, align: 'center' },
+            { label: '检验-项目明细代码', name: 'exam_item_detl_code', width: 150, align: 'center' },
+            { label: '检验-项目明细名称', name: 'exam_item_detl_name', width: 150, align: 'center' },
+            { label: '检查/检验结果异常标识', name: 'exam_rslt_abn', width: 150, align: 'center' }
+        ];
+
+        $(".gridPanel").append('<table id="gridList3"></table>');
+        $('#gridList3').jqGrid("clearGridData");
+        var $gridList3 = $("#gridList3");
+
+        $gridList3.newtouchLocalDataGrid({
+            height: $(window).height() - 330,
+            autowidth: false,
+            unwritten: false,
+            width: $("#formPat2").width() - 10,
+            caption: inspectiondetailsCaptionCon,
+            colModel: inspectiondetailsColModel,
+        }, inspectiondetails);
     }
 
 
@@ -1194,9 +1353,9 @@
                 }
             });
         } else if (type === "5101") {
-            
+
             var rcData = {
-                hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId"               
+                hisId: "0", operatorId: "@opr.rygh", operatorName: "@opr.UserName", orgId: "@opr.OrganizeId"
             };
             $.ajax({
                 type: "POST",

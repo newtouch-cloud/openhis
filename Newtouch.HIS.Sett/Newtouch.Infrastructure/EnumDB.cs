@@ -1236,6 +1236,10 @@ namespace Newtouch.Infrastructure
         zyxxcx = 10,
         [Description("【5304】转院信息查询")]
         zyxx = 11,
+        [Description("【5401】项目互认信息查询")]
+        xmhrxx = 5401,
+        [Description("【5402】报告明细信息查询")]
+        bgmxxx = 5402,
 
     }
 
