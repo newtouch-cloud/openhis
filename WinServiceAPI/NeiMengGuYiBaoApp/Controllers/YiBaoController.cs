@@ -4629,7 +4629,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 4501 4502 4503 4504 4505 报告记录
+        #region 4501 4502 4503 4504 4505 4506 报告记录
         /// <summary>
         ///  4501 临床检查报告记录
         /// </summary>
@@ -4749,7 +4749,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post4505.operatorId;
             post.operatorName = post4505.operatorName;
 
-            post.inModel = 0;
             Input_4504 input = new Input_4504();
             input.data = new data_4504();
             input.data.mdtrt_sn = post4505.hisId + RandKey.ToString();
@@ -4791,8 +4790,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post4505.operatorId;
             post.operatorName = post4505.operatorName;
 
-            post.inModel = 0;
-            post.tradiNumber = "4505";
             Input_4505 input = new Input_4505();
             input.data = new data_4505();
             input.data.mdtrt_sn = post4505.hisId + RandKey.ToString();
@@ -4812,6 +4809,35 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            return json;
+        }
+        /// <summary>
+        /// 【4506】非结构化报告记录
+        /// </summary>
+        /// <param name="post4505"></param>
+        /// <returns></returns>
+        public string PostPathologyCheck_4506(Post_4505 post4505)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post4505.hisId;
+            post.tradiNumber = "4506";
+            post.insuplc_admdvs = post4505.insuplc_admdvs;
+            post.inModel = 0;
+            post.operatorId = post4505.operatorId;
+            post.operatorName = post4505.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            post.inModel = 0;
+            post.tradiNumber = "4506";
+            Input_4506 input = new Input_4506();
+            input.data = Function.ToList<data4506>(ClassSqlHelper.QueryIteminfo4506(orgId, post.hisId));
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = "";
+            if (input.data.Count>0)
+            {
+                json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            }
             return json;
         }
         #endregion
