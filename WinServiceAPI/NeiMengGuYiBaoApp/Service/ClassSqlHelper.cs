@@ -1911,13 +1911,15 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", hisid);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_setlinfo_data", Parameters);
         }
+
+        #region 【4502】临床检验报告记录
         /// <summary>
-		/// 临床检验报告记录表 175 检查项目信息（节点标识：iteminfo
-		/// </summary>
-		/// <param name="orgId"></param>
-		/// <param name="hisid"></param>
-		/// <returns></returns>
-		public static DataTable QueryIteminfo4502(string orgId, string hisid)
+        /// 临床检验报告记录表 175 检查项目信息（节点标识：iteminfo
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="hisid"></param>
+        /// <returns></returns>
+        public static DataTable QueryIteminfo4502(string orgId, string hisid)
         {
             Parameters.Clear();
             Parameters.Add("@orgId", orgId);
@@ -1950,6 +1952,9 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", hisid);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_report_lis_labinfo", Parameters);
         }
+        #endregion
+
+        #region  【4401】住院病案首页信息
         /// <summary>
         /// 病案首页上传 基础信息
         /// </summary>
@@ -2028,7 +2033,19 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@zyh", hisid);
             return platFormServer.RunProc_DataTable_WqServer("usp_Inp_shybupload_basy_fpxx", Parameters);
         }
+        #endregion
 
+        #region 【4506】非结构化报告记录
+        public static DataTable QueryIteminfo4506(string orgId, string hisid)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@zyh", hisid);
+            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_struct_data", Parameters);
+        }
+        #endregion
+
+        #region 电子处方
         /// <summary>
         /// 电子处方上传内容查询--前20个字段
         /// </summary>
@@ -2208,6 +2225,6 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             DataTable dt = platFormServer.RunProc_DataTable_WqServer("usp_Inp_DetailAudit_patient_dtos", Parameters);
             return dt;
         }
-
+        #endregion
     }
 }
