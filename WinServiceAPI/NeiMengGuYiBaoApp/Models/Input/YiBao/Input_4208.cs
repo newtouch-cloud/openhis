@@ -4,15 +4,6 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
     public class Input_4208 : InputBase
     {
-        // 自费病人就诊信息
-        public Input4208 input { get; set; }
-    }
-
-    /// <summary>
-    /// 自费病人就诊信息（节点标识：input）
-    /// </summary>
-    public class Input4208
-    {
         /// <summary>
         /// 人员证件类型 (长度: 6)
         /// </summary>
@@ -59,14 +50,15 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         public string cplt_flag { get; set; }
 
         /// <summary>
-        /// 当前页数 (数值型: 4)
+        /// 当前页数 (必填 数值型: 4)
         /// </summary>
         public int page_num { get; set; }
 
         /// <summary>
-        /// 本页数据量 (数值型: 4)
+        /// 本页数据量 (必填 数值型: 4)
         /// </summary>
         public int page_size { get; set; }
+
     }
 
 }
