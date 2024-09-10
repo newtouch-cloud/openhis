@@ -1216,6 +1216,12 @@ namespace Newtouch.Infrastructure
     {
         [Description("【2001】人员待遇享受")]
         rydyxs = 1,
+        [Description("【4207】自费病人就医费用明细查询")]
+        zfbrjyfymx = 4207,
+        [Description("【4208】自费病人就医就诊信息查询")]
+        zfbrjyjzxx = 4208,
+        [Description("【4209】自费病人就医诊断信息查询")]
+        zfbrjyzdxx = 4209,
         [Description("【5201】就诊信息查询")]
         jzxxcx = 2,
         [Description("【5202】诊断信息查询")]
