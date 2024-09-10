@@ -224,7 +224,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.hisId = "0";
             post.tradiNumber = "1101";
             post.insuplc_admdvs = "";
-            post.tradiNumber = "1101";
             post.operatorId = post1162.operatorId;
             post.operatorName = post1162.operatorName;
             post.inModel = 0;
@@ -1933,7 +1932,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 2401 住院办理
+        #region 2401 住院办理 2402 出院办理 2403 入院信息变更 2404 入院撤销 2405 出院撤销
         /// <summary>
         /// 2401 住院办理
         /// </summary>
@@ -1985,9 +1984,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
-        #endregion
 
-        #region 2402 出院办理
         /// <summary>
         /// 2402 出院办理
         /// </summary>
@@ -2048,9 +2045,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
-        #endregion
 
-        #region 2403 入院信息变更
         /// <summary>
         /// 2403 入院信息变更
         /// </summary>
@@ -2098,9 +2093,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             return json;
         }
-        #endregion
-
-        #region 2404 入院撤销
         /// <summary>
         /// 2404 入院撤销
         /// </summary>
@@ -2137,9 +2129,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             return json;
 
         }
-        #endregion
-
-        #region 2405 出院撤销
         /// <summary>
         /// 2405 出院撤销
         /// </summary>
@@ -2179,7 +2168,6 @@ namespace NeiMengGuYiBaoApp.Controllers
             return json;
 
         }
-
         /// <summary>
         /// 出院撤销(住院结算数据落地异常时专用)
         /// </summary>
@@ -4339,6 +4327,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// </summary>
         /// <param name="post"></param>
         /// <returns></returns>
+        [HttpPost]
         public string PostMedicalSettlement_4101(PostBase post)
         {
 
@@ -4384,6 +4373,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <summary>
         /// 4101A 医疗保证基金结算清单信息上传(新)
         /// </summary>
+        [HttpPost]
         public string PostMedicalSettlement_4101_V2(PostBase post)
         {
 
@@ -4427,6 +4417,8 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <summary>
         /// 4102 医疗保障基金结算清单信息状态修改交易
         /// </summary>
+
+        [HttpPost]
         public string MedicalSettlementUpdate_4102(PostBase post)
         {
 
@@ -4472,6 +4464,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <summary>
         /// 4103 医疗保障基金结算清单信息查询
         /// </summary>
+        [HttpPost]
         public string QueryMedicalSettlement_4103(PostBase post)
         {
 
@@ -4507,6 +4500,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <summary>
         /// 4104 医疗保证基金结算清单质控结果查询
         /// </summary>
+        [HttpPost]
         public string QueryQltctrlProblem_4104(PostBase post)
         {
 
@@ -4532,6 +4526,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// </summary>
         /// <param name="post"></param>
         /// <returns></returns>
+        [HttpPost]
         public string QueryQltctrlProblem_4105(Post_4105 post)
         {
             post.inModel = 1;
@@ -4553,12 +4548,13 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 4201 自费病人就医信息
+        #region 4201 4207 4208 4209 自费病人就医信息 
         /// <summary>
         /// 4201 自费病人费用明细信息上传 
         /// </summary>
         /// <param name="post"></param>
         /// <returns></returns>
+        [HttpPost]
         public string PostSelfPayPatientFee_4201(Post_4201 post4201)
         {
             PostBase post = new PostBase();
@@ -4570,6 +4566,91 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【4207】自费病人就医费用明细查询
+        /// </summary>
+        /// <param name="post4207"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetSelfPayPatientsFsiOwnpayPatnFeeListDDTO_4207(Post_4207 post4207)
+        {
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "4207";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post4207.operatorId;
+            post.operatorName = post4207.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_4207, Input_4207>());
+            var mapper = config.CreateMapper();
+
+            Input_4207 input4207 = new Input_4207();
+            input4207 = mapper.Map<Input_4207>(post4207);
+
+            Output_4207 output = new Output_4207();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4207, out output, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【4208】自费病人就医就诊信息查询
+        /// </summary>
+        /// <param name="post4208"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetSelfPayPatientsMdtrtinfo_4208(Post_4208 post4208)
+        {
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "4208";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post4208.operatorId;
+            post.operatorName = post4208.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_4208, Input_4208>());
+            var mapper = config.CreateMapper();
+
+            Input_4208 input4208 = new Input_4208();
+            input4208 = mapper.Map<Input_4208>(post4208);
+
+            Output_4208 output = new Output_4208();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4208, out output, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【4209】自费病人就医诊断信息查询
+        /// </summary>
+        /// <param name="post4209"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string GetSelfPayPatientsDiseinfo_4209(Post_4207 post4209)
+        {
+            PostBase post = new PostBase();
+            post.hisId = "0";
+            post.tradiNumber = "4209";
+            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
+            post.inModel = 0;
+            post.operatorId = post4209.operatorId;
+            post.operatorName = post4209.operatorName;
+
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_4207, Input_4209>());
+            var mapper = config.CreateMapper();
+
+            Input_4209 input4209 = new Input_4209();
+            input4209 = mapper.Map<Input_4209>(post4209);
+            input4209.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            Output_4209 output = new Output_4209();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4209, out output, post, out code);
             return json;
         }
         #endregion
@@ -4834,7 +4915,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = "";
-            if (input.data.Count>0)
+            if (input.data.Count > 0)
             {
                 json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
             }
