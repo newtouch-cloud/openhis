@@ -4827,14 +4827,69 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorName = post4505.operatorName;
 
             string orgId = ConfigurationManager.AppSettings["orgId"];
-            post.inModel = 0;
-            post.tradiNumber = "4506";
             Input_4506 input = new Input_4506();
             input.data = Function.ToList<data4506>(ClassSqlHelper.QueryIteminfo4506(orgId, post.hisId));
             Output_null output = new Output_null();
             string code = "1";
             string json = "";
             if (input.data.Count>0)
+            {
+                json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            }
+            return json;
+        }
+        #endregion
+
+        #region  4601 4602 医疗管理业务- 输血 护理记录
+        /// <summary>
+        /// 【4601】输血信息
+        /// </summary>
+        /// <param name="post4505"></param>
+        /// <returns></returns>
+        public string PostPathologyCheck_4601(Post_4505 post4505)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post4505.hisId;
+            post.tradiNumber = "4601";
+            post.insuplc_admdvs = post4505.insuplc_admdvs;
+            post.inModel = 0;
+            post.operatorId = post4505.operatorId;
+            post.operatorName = post4505.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_4601 input = new Input_4601();
+            input.data = Function.ToList<data4601>(ClassSqlHelper.QueryIteminfo4601(orgId, post.hisId));
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = "";
+            if (input.data.Count > 0)
+            {
+                json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            }
+            return json;
+        }
+        /// <summary>
+        /// 【4602】护理操作生命体征测量记录
+        /// </summary>
+        /// <param name="post4505"></param>
+        /// <returns></returns>
+        public string PostPathologyCheck_4602(Post_4505 post4505)
+        {
+            PostBase post = new PostBase();
+            post.hisId = post4505.hisId;
+            post.tradiNumber = "4602";
+            post.insuplc_admdvs = post4505.insuplc_admdvs;
+            post.inModel = 0;
+            post.operatorId = post4505.operatorId;
+            post.operatorName = post4505.operatorName;
+
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            Input_4602 input = new Input_4602();
+            input.data = Function.ToList<data4602>(ClassSqlHelper.QueryIteminfo4602(orgId, post.hisId));
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = "";
+            if (input.data.Count > 0)
             {
                 json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
             }

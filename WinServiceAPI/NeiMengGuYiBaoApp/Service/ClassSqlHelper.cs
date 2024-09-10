@@ -2045,6 +2045,35 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
         }
         #endregion
 
+        #region 医疗管理业务 【4601】 【4602】
+        /// <summary>
+        /// 【4601】输血信息
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="hisid"></param>
+        /// <returns></returns>
+        public static DataTable QueryIteminfo4601(string orgId, string hisid)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@hisid", hisid);
+            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_transfusion_data", Parameters);
+        }
+        /// <summary>
+        /// 【4602】护理操作生命体征测量记录
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="hisid"></param>
+        /// <returns></returns>
+        public static DataTable QueryIteminfo4602(string orgId, string hisid)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@hisid", hisid);
+            return platFormServer.RunProc_DataTable_WqServer("usp_Inp_ybupload_NursingVitalSigns_data", Parameters);
+        }
+        #endregion
+
         #region 电子处方
         /// <summary>
         /// 电子处方上传内容查询--前20个字段
