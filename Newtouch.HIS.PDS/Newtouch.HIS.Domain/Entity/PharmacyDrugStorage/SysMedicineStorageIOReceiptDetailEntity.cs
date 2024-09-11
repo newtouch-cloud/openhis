@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Newtouch.Infrastructure.EF.Attributes;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Newtouch.Infrastructure.EF.Attributes;
 
 namespace Newtouch.HIS.Domain.Entity
 {
@@ -226,7 +226,7 @@ namespace Newtouch.HIS.Domain.Entity
         /// 1： 是
         /// 2： 否
         /// </summary>
-        public int sfcl { get; set; }
+        public int? sfcl { get; set; }
 
     }
 }
