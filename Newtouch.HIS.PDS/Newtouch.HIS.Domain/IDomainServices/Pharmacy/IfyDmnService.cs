@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Newtouch.Core.Common;
+﻿using Newtouch.Core.Common;
 using Newtouch.HIS.Domain.DTO.Medicine;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.Entity.V;
@@ -9,6 +7,8 @@ using Newtouch.HIS.Domain.ValueObjects.OutPatientPharmacy;
 using Newtouch.HIS.Domain.ValueObjects.SystemManage;
 using Newtouch.HIS.Domain.VO;
 using Newtouch.Infrastructure;
+using System;
+using System.Collections.Generic;
 
 namespace Newtouch.HIS.Domain.IDomainServices
 {
@@ -95,7 +95,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="userCode"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId,string zsm, int sfcl);
+        string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string zsm, int? sfcl);
 
         /// <summary>
         /// 门诊发药
@@ -225,7 +225,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
 
 
         #region 药品 、耗材使用情况
-        List<YfMaterialTjVo> GetMaterialList(Pagination pagination, string orgId,string ks, string ry, string slly, DateTime kssj, DateTime jssj, string keyword);
+        List<YfMaterialTjVo> GetMaterialList(Pagination pagination, string orgId, string ks, string ry, string slly, DateTime kssj, DateTime jssj, string keyword);
 
         #endregion
 

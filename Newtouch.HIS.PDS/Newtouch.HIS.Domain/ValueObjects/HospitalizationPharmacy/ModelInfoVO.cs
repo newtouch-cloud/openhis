@@ -24,7 +24,7 @@ namespace Newtouch.HIS.Domain.ValueObjects
     public class ModelBRXXInfoVO
     {
         public int model1 { get; set; }
-        public int model2{ get; set; }
+        public int model2 { get; set; }
         public string model3 { get; set; }
         public string model4 { get; set; }
         public string model5 { get; set; }
@@ -166,7 +166,7 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 1： 是
         /// 2： 否
         /// </summary>
-        public int sfcl { get; set; }
+        public int? sfcl { get; set; }
 
     }
 }

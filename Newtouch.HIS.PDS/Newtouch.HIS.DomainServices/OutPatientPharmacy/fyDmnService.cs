@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using FrameworkBase.MultiOrg.Domain.DBContext.Infrastructure;
+﻿using FrameworkBase.MultiOrg.Domain.DBContext.Infrastructure;
 using FrameworkBase.MultiOrg.Infrastructure;
 using Newtouch.Common.Operator;
 using Newtouch.Core.Common;
@@ -24,6 +15,15 @@ using Newtouch.HIS.Repository;
 using Newtouch.Infrastructure;
 using Newtouch.Infrastructure.TSQL;
 using Newtouch.Tools;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Newtouch.HIS.DomainServices
 {
@@ -152,7 +152,7 @@ namespace Newtouch.HIS.DomainServices
         /// <param name="userCode"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        public string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string zsm, int sfcl)
+        public string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string zsm, int? sfcl)
         {
             var param = new DbParameter[]
             {
@@ -912,7 +912,7 @@ AND cf.jsnm>0
         }
 
         #region 药品、耗材使用情况
-        public List<YfMaterialTjVo> GetMaterialList(Pagination pagination,string orgId,string ks, string ry, string slly, DateTime kssj,
+        public List<YfMaterialTjVo> GetMaterialList(Pagination pagination, string orgId, string ks, string ry, string slly, DateTime kssj,
             DateTime jssj, string keyword)
         {
             //string sql = @" exec [Rpt_CfMaterialTj] @beginDate ,@endDate,@OrganizeId,@ks,@ys,@ly,@xmmc  ";
@@ -933,7 +933,8 @@ and(cf.ks = @ks or @ks = '') and(cf.ys = @ys or @ys = '')
 and cfmx.xmmc like '%' + @xmmc + '%'
 and(dl.dlcode = '126' or dl.dlcode = '00000032') ";
             }
-            else {
+            else
+            {
                 sql += @"
 select xm.tdrq , dl.dlcode,dl.dlmc,sfxm.sfxmcode,sfxm.sfxmmc,'' jx,sfxm.gg,sfxm.bz gys, sfxm.dw,xm.sl,xm.dj,CONVERT(decimal(12, 2), xm.dj * sl) zje,xm.ks,kdks.name kdksmc, xm.zxks,zxks.name zxksmc
 from NewtouchHIS_Sett..zy_xmjfb xm
@@ -1006,7 +1007,7 @@ where  a.zt='1' and a.OrganizeId=@orgId
         {
             var sql = new StringBuilder();
             var parms = new List<SqlParameter> { };
-            const string strsql= @" select c.mzh,c.blh,c.xm,a.zh,a.CreateTime kssj,isnull(a.ypCode,a.xmcode) ypCode
+            const string strsql = @" select c.mzh,c.blh,c.xm,a.zh,a.CreateTime kssj,isnull(a.ypCode,a.xmcode) ypCode
      ,a.ypmc , d.ypgg gg , a.sl sl,a.dj,a.dw ,mcjl ,pcCode,a.je,e.yzpcmcsm pcmc
      ,c.xb,b.cfh,b.cfId,f.yfmc ypyfmc,a.yfcode,b.ys yscode,ys.name ysmc,b.cflx,yfcf.fybz
  from Newtouch_CIS..xt_cfmx(nolock) a
