@@ -38,16 +38,16 @@ namespace Newtouch.HIS.Domain.DTO.OutOrInStoredOperate
         /// </summary>
         public List<DjDetailDTO> mx { get; set; }
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public string crkId { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public string crkId { get; set; }
 
-		/// <summary>
-		/// 审核状态
-		/// </summary>
-		public string shzt { get; set; }
-	}
+        /// <summary>
+        /// 审核状态
+        /// </summary>
+        public string shzt { get; set; }
+    }
 
     /// <summary>
     /// 单据明细
@@ -181,13 +181,13 @@ namespace Newtouch.HIS.Domain.DTO.OutOrInStoredOperate
         /// <summary>
         /// 追溯码
         /// </summary>
-        public string zsm {get; set;}
+        public string zsm { get; set; }
 
         /// <summary>
         /// 是否拆零
         /// 1： 是
         /// 2： 否
         /// </summary>
-        public int sfcl { get; set;}
+        public int? sfcl { get; set; }
     }
 }

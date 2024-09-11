@@ -25,6 +25,6 @@
         /// 1： 是
         /// 2： 否
         /// </summary>
-        public int sfcl { get; set; }
+        public int? sfcl { get; set; }
     }
 }
