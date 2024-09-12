@@ -4560,9 +4560,16 @@ namespace NeiMengGuYiBaoApp.Controllers
             PostBase post = new PostBase();
             post.inModel = 0;
             post.tradiNumber = "4201";
+            post.insuplc_admdvs = post4201.insuplc_admdvs;
+            post.operatorId = post4201.operatorId;
+            post.operatorName = post4201.operatorName;
+            post.inModel = 0;
+
             Input_4201 input4201 = new Input_4201();
             string orgId = ConfigurationManager.AppSettings["orgId"];
-            string orgcode = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            input4201.feedetail = Function.ToList<feedetail_4201>(ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type));
+
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
