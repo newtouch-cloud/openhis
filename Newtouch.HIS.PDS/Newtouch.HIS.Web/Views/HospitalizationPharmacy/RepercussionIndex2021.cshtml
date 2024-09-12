@@ -27,6 +27,10 @@
     .form-control {
         padding: 0 3px;
     }
+    .scan-input {
+        border: 2px solid #007bff;
+        padding: 5px;
+    }
 </style>
 <div style="float:left;width:20%;">
     <div class="dv-left-title">患者列表</div>
@@ -172,12 +176,77 @@
                 $('#autoPrintSum').attr('checked', false);
             }
         });
+
+        // 药品追溯码扫码
+        $dispenseMedicinGridListByBatch.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                     inputField.val(removeDuplicates(inputField.val()));
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1500);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
+
+        $dispenseMedicinGridListNoBatch.on('keydown', '.scan-input', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+
+                const inputField = $(this);
+                const row = inputField.closest('tr');
+
+                // 是否拆零
+                const sfcl = parseInt(row.find('.sfcl').val(), 10);
+                var maxEntries = 1;
+                if (sfcl === 1) {
+                    maxEntries = 1
+                } else {
+                    maxEntries = parseInt(row.find('.quantity').text(), 10);
+                }
+
+                const entries = inputField.val().split(',').filter(entry => entry.trim() !== '').length;
+
+                if (inputField.val() && !inputField.val().endsWith(',')) {
+                     inputField.val(removeDuplicates(inputField.val()));
+                }
+
+                if (entries >= maxEntries) {
+                    $.modalMsg("已达到该行的最大扫码条目数量！", "warning", 1500);
+                    inputField.val(inputField.val().split(',').filter(entry => entry.trim() != "").slice(0, maxEntries).join(',') + ",");
+                }
+            }
+        });
     });
+
+    function removeDuplicates(str){
+        const arr = str.split(',')
+        const uniqueArr = [...new Set(arr)]
+        return uniqueArr.join(',')+','
+    }
 
     //回车事件绑定
     $(document).keyup(function (event) {
         if (event.keyCode === 13) {
-            $("#btn_search").trigger("click");
+            //$("#btn_search").trigger("click");
         }
     });
 
@@ -288,9 +357,21 @@
                 { label: '姓名', name: 'patientName', width: 70, align: 'left' },
                 { label: '床位号', name: 'cw', width: 60, align: 'left' },
                 { label: '药品', name: 'ypmc', width: 100, align: 'left' },
-                { label: '退数量', name: 'tysl', width: 60, align: 'left', editable: true, editwidth: "85%" },
+                { label: '退数量', name: 'tysl', width: 60, align: 'left', editable: true, editwidth: "85%", classes: "quantity" },
                 { label: '单位', name: 'bmdw', width: 45, align: 'center' },
                 { label: '可退数', name: 'slStr', width: 80, align: 'left' },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<input name=\"zsm\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\">是</option><option value=\"2\">否</option></select>";
+                    }
+                },
                 { label: "批次", name: 'pc', width: 100, align: 'center' },
                 { label: "批号", name: 'ph', width: 100, align: 'center' },
                 { label: '规格', name: 'ypgg', width: 100, align: 'left' },
@@ -335,6 +416,18 @@
                 { label: '药品', name: 'ypmc', width: 100, align: 'left' },
                 { label: '退数量', name: 'tyslStr', width: 70, align: 'right' },
                 { label: '最多可退', name: 'slStr', width: 70, align: 'right' },
+                {
+                    label: '<span class="required">*</span>追溯码', name: 'zsm', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<input name=\"zsm\" id=\"sel_zsm_" + options.rowId + "\" rowid=" + options.rowId + " class=\"scan-input editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" />";
+                    }
+                },
+                {
+                    label: '<span class="required">*</span>是否拆零', name: 'sfcl', width: 80, align: 'center',
+                    formatter: function (cellvalue, options) {
+                        return "<select name=\"sfcl\" id=\"sel_sfcl_" + options.rowId + "\" rowid=" + options.rowId + " class=\"sfcl editable inline-edit-cell form-control\" style=\"padding:0; border-radius: 0px; border: 0px;\" ><option value=\"1\">是</option><option value=\"2\">否</option></select>";
+                    }
+                },
                 { label: '规格', name: 'ypgg', width: 100, align: 'center' },
                 { label: '用量', name: 'ylStr', width: 60, align: 'right' },
                 { label: '金额', name: 'je', width: 60, align: 'center'  },
@@ -348,7 +441,7 @@
                 { label: '单位', name: 'bmdw', width: 45, hidden: true },
                 { label: '单价', name: 'djStr', hidden: true },
                 //{ label: '金额', name: 'je', hidden: true },
-                { label: '可退数量', name: 'sl', hidden: true },
+                { label: '可退数量', name: 'sl', hidden: true, classes: "quantity" },
                 { label: '申请退药数（最小单位）', name: 'tysl', hidden: true },
                 { label: "药品编码", name: 'ypCode', hidden: true },
                 { label: "yzId", name: 'yzId', hidden: true },
@@ -424,6 +517,26 @@
                 return false;
             }
             if (parseInt(rowData.sl) > 0) {
+                const rowid = ids[i]
+                //追溯码
+                var zsm = $("#sel_zsm_" + rowid).val()
+                //是否拆零
+                var sfclValue = Number($("#sel_sfcl_" + rowid).val());
+
+                // 验证追溯码数量。 是否拆零选是，只需要扫一个，否的话需要扫对应入库数量的码
+                const zsmLength = $("#sel_zsm_" + rowid).val().split(',').filter(entry => entry.trim() !== '').length
+                var maxZsmLength = 1
+                if (sfclValue === 1) {
+                    maxZsmLength = 1
+                } else {
+                    maxZsmLength = parseInt(rowData.sl)
+                }
+                if (zsmLength != 0 && zsmLength != maxZsmLength) {
+                    $.modalMsg("条目" + rowData.ypmc + "数量与追溯码数量不一致！", "warning", 1500);
+                    return false;
+                }
+
+
                 tymx.push({
                     "applyNo": rowData.applyNo,
                     "rdbdId": rowData.rdbdId,
@@ -435,7 +548,9 @@
                     "ypmc": rowData.ypmc,
                     "sl": rowData.tysl,
                     "zhyz": rowData.zhyz,
-                    "zytyapplyno": $("#selzytyapplyno").val()
+                    "zytyapplyno": $("#selzytyapplyno").val(),
+                     "zsm": zsm,
+                     "sfcl": sfclValue,
                 });
 
                 if (!tyzyh.find((item) => item.zyh == rowData.zyh)) {
