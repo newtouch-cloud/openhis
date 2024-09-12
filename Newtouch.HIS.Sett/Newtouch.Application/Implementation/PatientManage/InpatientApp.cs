@@ -237,10 +237,10 @@ namespace Newtouch.HIS.Application.Implementation
 	    public object CqYBToZF_Step_3(string zyh)
 	    {
 		    var orgId = this.OrganizeId;
-			var zybrxx = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.zyh == zyh && p.OrganizeId == orgId).FirstOrDefault();
+			var zybrxx = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.zyh == zyh && p.OrganizeId == orgId && p.zt=="1").FirstOrDefault();
 		    var medicalReg = _cqybMedicalReg02Repo.IQueryable().Where(p => p.zymzh == zyh && p.OrganizeId == orgId && p.zt=="1").FirstOrDefault();
             var xtbrxx = _sysPatientBasicInfoRepo.IQueryable().Where(p=>p.patid== zybrxx.patid&&p.OrganizeId==orgId&&p.zt=="1").FirstOrDefault();
-            var card = _SysCardRepository.IQueryable().Where(p => p.patid == zybrxx.patid && p.OrganizeId == orgId).FirstOrDefault();
+            var card = _SysCardRepository.IQueryable().Where(p => p.patid == zybrxx.patid && p.OrganizeId == orgId &&p.CardType!="1" && p.zt=="1").FirstOrDefault();
             return new
 			{
 				zybrxx = zybrxx,
