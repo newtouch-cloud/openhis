@@ -902,46 +902,41 @@ and a.OrganizeId=@OrganizeId
         public List<OutpatAccInfoDto> GetBasicInfoSearchList(Pagination pagination, string blh, string mzh, string xm, string kssj, string jssj, string orgId, string usercode, string jiuzhenbiaozhi)
         {
             var strSql = new StringBuilder();
-            strSql.Append(@" SELECT  A.patid ,
-                                a.blh ,
-                                A.xm ,
-                                A.xb ,
-                                A.csny ,
-                                A.zjlx ,
-                                A.zjh ,
-                                c.CardNo kh ,
-                                CAST(FLOOR(DATEDIFF(DY, a.csny, GETDATE()) / 365.25) AS INT) nl ,
-                                xz.brxz ,
-                                xz.brxzmc ,
-                                yb.sycs ,
-                                A.dh ,
-                                A.dybh ,
-                                gh.CreateTime ghsj,
-                                gh.mzh,
-                                A.phone
-                        FROM    [dbo].[xt_brjbxx] AS A WITH ( NOLOCK )
-                                INNER JOIN dbo.xt_card c ON c.patid = a.patid
-                                                            AND A.OrganizeId = c.OrganizeId
-                                LEFT JOIN xt_brxz xz ON xz.brxz = c.brxz
-                                                        AND xz.OrganizeId = c.OrganizeId
-                                LEFT JOIN xt_ybbab yb ON yb.patid = a.patid
-                                                         AND xz.OrganizeId = yb.OrganizeId
-		                        RIGHT JOIN dbo.mz_gh gh ON gh.patid=a.patid 
-		                        AND gh.OrganizeId=c.OrganizeId
-                        WHERE  gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh
-                                  OR @mzh = '%%'
-                                )
-                                and (isnull(@jiuzhenbiaozhi, '') = '' or isnull(gh.jzbz,'1') in (select * from [f_split](@jiuzhenbiaozhi,',')))
-                                AND ( gh.xm like @xm or A.py like @xm
-                                      OR @xm = '%%'
-                                    )
-                                 AND ( a.blh like @blh
-                                              OR @blh ='%%'
-                                            )
-                                AND a.OrganizeId = @OrganizeId and gh.zt='1' 
---and isnull(gh.ghzt,'') <> '0'  --排除挂号未结                                
-and isnull(gh.ghzt,'') <> '2'  --排除已退
-                                and (isnull(@usercode, '') = '' or gh.CreatorCode=@usercode)");
+            strSql.Append(@"SELECT  A.patid,
+        a.blh,
+        A.xm,
+        A.xb,
+        A.csny,
+        A.zjlx,
+        A.zjh,
+        MAX(c.CardNo) kh, -- 使用 MAX 确保每个字段只取一个值
+        CAST(FLOOR(DATEDIFF(DY, a.csny, GETDATE()) / 365.25) AS INT) nl,
+        MAX(xz.brxz) brxz,
+        MAX(xz.brxzmc) brxzmc,
+        MAX(yb.sycs) sycs,
+        A.dh,
+        A.dybh,
+        MAX(gh.CreateTime) ghsj,
+        gh.mzh,
+        A.phone
+FROM    [dbo].[xt_brjbxx] AS A WITH ( NOLOCK )
+		INNER JOIN dbo.xt_card c ON c.patid = a.patid
+									AND A.OrganizeId = c.OrganizeId
+		LEFT JOIN xt_brxz xz ON xz.brxz = c.brxz
+								AND xz.OrganizeId = c.OrganizeId
+		LEFT JOIN xt_ybbab yb ON yb.patid = a.patid
+									AND xz.OrganizeId = yb.OrganizeId
+		RIGHT JOIN dbo.mz_gh gh ON gh.patid=a.patid 
+		AND gh.OrganizeId=c.OrganizeId
+WHERE  gh.ghrq >=@kssj and gh.ghrq<@jssj and ( gh.mzh like @mzh OR @mzh = '%%')
+       and (isnull(@jiuzhenbiaozhi, '') = '' or isnull(gh.jzbz,'1') in (select * from [f_split](@jiuzhenbiaozhi,',')))
+       AND ( gh.xm like @xm or A.py like @xm OR @xm = '%%')
+	   AND ( a.blh like @blh OR @blh ='%%')
+       AND a.OrganizeId = @OrganizeId and gh.zt='1' 
+		--and isnull(gh.ghzt,'') <> '0'  --排除挂号未结                                
+	   AND isnull(gh.ghzt,'') <> '2'  --排除已退
+       AND (isnull(@usercode, '') = '' or gh.CreatorCode=@usercode)
+GROUP BY A.patid, a.blh, A.xm, A.xb, A.csny, A.zjlx, A.zjh, A.dh, A.dybh, gh.mzh, A.phone");
             DbParameter[] param =
             {
                 new SqlParameter("@xm","%"+(xm??"")+"%"),
