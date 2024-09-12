@@ -2255,5 +2255,15 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             return dt;
         }
         #endregion
+
+        #region 自费病人就医信息
+        public static DataTable QuerySelfCost4201(string orgId, int jsnm,string type)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@jsnm", jsnm);
+            return platFormServer.RunProc_DataTable_WqServer("usp_mz_SelfCost_data", Parameters);
+        }
+        #endregion
     }
 }

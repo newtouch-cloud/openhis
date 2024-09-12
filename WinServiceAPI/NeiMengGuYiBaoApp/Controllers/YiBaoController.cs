@@ -4558,18 +4558,17 @@ namespace NeiMengGuYiBaoApp.Controllers
         public string PostSelfPayPatientFee_4201(Post_4201 post4201)
         {
             PostBase post = new PostBase();
-            post.hisId = "0";
-            post.tradiNumber = "4207";
-            post.insuplc_admdvs = ConfigurationManager.AppSettings["mdtrtarea_admvs"];
             post.inModel = 0;
+            post.tradiNumber = "4201";
+            post.insuplc_admdvs = post4201.insuplc_admdvs;
             post.operatorId = post4201.operatorId;
             post.operatorName = post4201.operatorName;
-
-            var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_4201, Input_4201>());
-            var mapper = config.CreateMapper();
+            post.inModel = 0;
 
             Input_4201 input4201 = new Input_4201();
-            input4201 = mapper.Map<Input_4201>(post4201);
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+
+            input4201.feedetail = Function.ToList<feedetail_4201>(ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type));
 
             Output_null output = new Output_null();
             string code = "1";
