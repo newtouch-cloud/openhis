@@ -10,7 +10,11 @@
         /// <summary>
         /// 结算内码
         /// </summary>
-        public string jsnm { get; set; }
+        public int jsnm { get; set; }
+        /// <summary>
+        /// 0：门诊 1：住院
+        /// </summary>
+        public string type { get; set; }
 
     }
 }
