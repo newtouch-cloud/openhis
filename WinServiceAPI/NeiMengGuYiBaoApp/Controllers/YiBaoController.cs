@@ -4565,7 +4565,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorName = post4201.operatorName;
             post.inModel = 0;
 
-           
+
             string orgId = ConfigurationManager.AppSettings["orgId"];
             DataTable dto = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
             string json = "";
@@ -4577,17 +4577,27 @@ namespace NeiMengGuYiBaoApp.Controllers
                 Output_null output = new Output_null();
                 string code = "1";
                 json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
-                
+
             }
 
-            DataTable dt = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
-            input4201.feedetail = Function.ToList<feedetail_4201>(dt);
-
-            Output_null output = new Output_null();
-            string code = "1";
-            string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
             return json;
         }
+        
+        /// <summary>
+        /// 4201A 自费病人费用明细信息批量上传
+        /// </summary>
+        /// <param name="post4201"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4201A(Post_4201 post4201)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4201A";
+            post.insuplc_admdvs = post4201.insuplc_admdvs;
+            post.operatorId = post4201.operatorId;
+            post.operatorName = post4201.operatorName;
+            post.inModel = 0;
 
             Input_4201A input4201A = new Input_4201A();
             string orgId = ConfigurationManager.AppSettings["orgId"];
