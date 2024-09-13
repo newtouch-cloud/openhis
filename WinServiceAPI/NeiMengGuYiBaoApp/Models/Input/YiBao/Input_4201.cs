@@ -8,7 +8,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
 {
     public class Input_4201 : InputBase
     {
-        public List<feedetail_4201> feedetail { get; set; }
+        public feedetail_4201 feedetail { get; set; }
     }
 
     public class feedetail_4201
@@ -22,7 +22,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 2|住院/门诊号|字符型|30|||Y
         /// </summary>
-        public string ipt_otp_n { get; set; }
+        public string ipt_otp_no { get; set; }
 
         /// <summary>
         /// 3|医疗类别|字符型|6|Y|Y
@@ -57,7 +57,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 9|费用发生时间|日期时间型|||Y
         /// </summary>
-        public DateTime fee_ocur_time { get; set; }
+        public string fee_ocur_time { get; set; }
 
         /// <summary>
         /// 10|数量|数值型|16,4|||Y
@@ -72,7 +72,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 12|明细项目费用总额|数值型|16,2|||Y
         /// </summary>
-        public decimal det_item_fee_sumant { get; set; }
+        public decimal det_item_fee_sumamt { get; set; }
 
         /// <summary>
         /// 13|医疗目录编码|字符型|50|||Y
@@ -107,7 +107,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 19|开单科室名称|字符型|100|||Y
         /// </summary>
-        public string bilg_dept_nam { get; set; }
+        public string bilg_dept_name { get; set; }
 
         /// <summary>
         /// 20|开单医生编码|字符型|30|||Y
@@ -117,7 +117,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 21|开单医师姓名|字符型|50|||Y
         /// </summary>
-        public string bilg_dr_nam { get; set; }
+        public string bilg_dr_name { get; set; }
 
         /// <summary>
         /// 22|受单科室编码|字符型|30||| 
@@ -127,17 +127,17 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 23|受单科室名称|字符型|100||| 
         /// </summary>
-        public string accord_dept_nam { get; set; }
+        public string accord_dept_name { get; set; }
 
         /// <summary>
         /// 24|受单医生编码|字符型|30||| 
         /// </summary>
-        public string orders_dr_cod { get; set; }
+        public string orders_dr_code { get; set; }
 
         /// <summary>
         /// 25|受单医生姓名|字符型|50||| 
         /// </summary>
-        public string orders_dr_nam { get; set; }
+        public string orders_dr_name { get; set; }
 
         /// <summary>
         /// 26|中药使用方式|字符型|6||| 
@@ -152,7 +152,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 28|外检医院编码|字符型|30||| 
         /// </summary>
-        public string etip_hosp_cod { get; set; }
+        public string etip_hosp_code { get; set; }
 
         /// <summary>
         /// 29|出院带药标志|字符型|3|||Y

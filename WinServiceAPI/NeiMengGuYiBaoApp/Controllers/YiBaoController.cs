@@ -4565,14 +4565,21 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorName = post4201.operatorName;
             post.inModel = 0;
 
-            Input_4201 input4201 = new Input_4201();
+           
             string orgId = ConfigurationManager.AppSettings["orgId"];
+            DataTable dto = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
+            string json = "";
+            for (int i = 0; i < dto.Rows.Count; i++)
+            {
+                Input_4201 input4201 = new Input_4201();
+                input4201.feedetail = new feedetail_4201();
+                input4201.feedetail = Function.ToList<feedetail_4201>(dto)[i];
+                Output_null output = new Output_null();
+                string code = "1";
+                json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
+                
+            }
 
-            input4201.feedetail = Function.ToList<feedetail_4201>(ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type));
-            
-            Output_null output = new Output_null();
-            string code = "1";
-            string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
             return json;
         }
 
