@@ -160,8 +160,8 @@ namespace Newtouch.HIS.DomainServices
                 new SqlParameter("@OrganizeId", organizeId),
                 new SqlParameter("@yfbmCode", yfbmCode),
                 new SqlParameter("@userCode",userCode ),
-                new SqlParameter("@zsm",zsm),
-                new SqlParameter("@sfcl",sfcl),
+                new SqlParameter("@zsm",zsm??""),
+                new SqlParameter("@sfcl",sfcl??null),
             };
             return FirstOrDefault<string>(TSqlDispensing.mz_yp_delivery, param);
         }
@@ -769,7 +769,7 @@ AND czjl.operateType=1
         public IList<CfxxVO> SelectRpList(string keyword, string fph, DateTime kssj, DateTime jssj, string yfbmCode, string organizeId)
         {
             const string sql = @"
-SELECT cf.cfnm, cf.CardNo, cf.xm,vout.mzh,cf.Fph, cf.sfsj, cf.cfh, cf.brxzmc, cf.ysmc, cf.ksmc, t.fysj
+SELECT DISTINCT cf.cfnm, cf.CardNo, cf.xm,vout.mzh,cf.Fph, cf.sfsj, cf.cfh, cf.brxzmc, cf.ysmc, cf.ksmc, t.fysj
 FROM dbo.mz_cf(NOLOCK) cf
 INNER JOIN (
 	SELECT czjl.cfh, MAX(cf.CreateTime) fysj, cf.OrganizeId
