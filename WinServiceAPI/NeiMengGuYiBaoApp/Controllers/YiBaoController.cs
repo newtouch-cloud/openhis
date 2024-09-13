@@ -4552,7 +4552,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <summary>
         /// 4201 自费病人费用明细信息上传 
         /// </summary>
-        /// <param name="post"></param>
+        /// <param name="post4201"></param>
         /// <returns></returns>
         [HttpPost]
         public string PostSelfPayPatientFee_4201(Post_4201 post4201)
@@ -4568,11 +4568,197 @@ namespace NeiMengGuYiBaoApp.Controllers
             Input_4201 input4201 = new Input_4201();
             string orgId = ConfigurationManager.AppSettings["orgId"];
 
-            input4201.feedetail = Function.ToList<feedetail_4201>(ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type));
+            DataTable dt = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
+            input4201.feedetail = Function.ToList<feedetail_4201>(dt);
 
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
+            return json;
+        }
+        /// <summary>
+        /// 4201A 自费病人费用明细信息批量上传
+        /// </summary>
+        /// <param name="post4201"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4201A(Post_4201 post4201)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4201A";
+            post.insuplc_admdvs = post4201.insuplc_admdvs;
+            post.operatorId = post4201.operatorId;
+            post.operatorName = post4201.operatorName;
+            post.inModel = 0;
+
+            Input_4201A input4201A = new Input_4201A();
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+
+            DataTable dt = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
+            input4201A.fsiOwnpayPatnFeeListDDTO = Function.ToList<FsiOwnpayPatnFeeListDDTO>(dt);
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4201A, out output, post, out code);
+            return json;
+        }
+        /// <summary>
+        /// 【4202】自费病人住院就诊和诊断信息上传 
+        /// </summary>
+        /// <param name="post4201"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4202(Post_4201 post4201)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4202";
+            post.insuplc_admdvs = post4201.insuplc_admdvs;
+            post.operatorId = post4201.operatorId;
+            post.operatorName = post4201.operatorName;
+            post.inModel = 0;
+
+            Input_4202 input4202 = new Input_4202();
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+
+            //#TODO
+            DataTable ownPayPatnMdtrtDDt = new DataTable();
+            input4202.ownPayPatnMdtrtD = Function.ToList<OwnPayPatnMdtrtD>(ownPayPatnMdtrtDDt)[0];
+
+            //#TODO
+            DataTable ownPayPatnDiagListDDt = new DataTable();
+            input4202.ownPayPatnDiagListD = Function.ToList<OwnPayPatnDiagListD>(ownPayPatnDiagListDDt);
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4202, out output, post, out code);
+            return json;
+        }
+        /// <summary>
+        /// 【4203】自费病人就诊以及费用明细上传完成
+        /// 通过此交易进行自费病人就医信息上传完成标识修改。
+        /// </summary>
+        /// <param name="post4203"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4203(Post_4203 post4203)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4203";
+            post.insuplc_admdvs = post4203.insuplc_admdvs;
+            post.operatorId = post4203.operatorId;
+            post.operatorName = post4203.operatorName;
+            post.inModel = 0;
+
+            Input_4203 input4203 = new Input_4203();
+            input4203.cplt_flag = post4203.cplt_flag;
+            input4203.fixmedins_mdtrt_id = post4203.fixmedins_mdtrt_id;
+            input4203.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4203, out output, post, out code);
+            return json;
+        }
+        /// <summary>
+        /// 【4204】自费病人住院费用明细删除
+        /// 交易输入费用明细信息为单行数据，费用明细流水信息为多行数据；
+        /// 每次接口调用只删除一位患者的住院费用明细。
+        /// 若费用明细流水信息不传，则删除自费病人住院全部费用明细。
+        /// </summary>
+        /// <param name="post4204"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4204(Post_4204 post4204)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4204";
+            post.insuplc_admdvs = post4204.insuplc_admdvs;
+            post.operatorId = post4204.operatorId;
+            post.operatorName = post4204.operatorName;
+            post.inModel = 0;
+
+            Input_4204 input4204 = new Input_4204();
+            input4204.feedetail = new FeeDetail();
+            input4204.feedetail.fixmedins_mdtrt_id = post4204.fixmedins_mdtrt_id;
+            input4204.feedetail.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+            input4204.feedetl = new List<FeeDetl> { new FeeDetl() };
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4204, out output, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【4205】自费病人门诊就医信息上传
+        /// 交易输入就诊信息为单行数据，费用明细和诊断信息为多行数据；
+        /// 每次接口调用只上传一位患者的门诊信息。
+        /// </summary>
+        /// <param name="post4201"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4205(Post_4201 post4201)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4205";
+            post.insuplc_admdvs = post4201.insuplc_admdvs;
+            post.operatorId = post4201.operatorId;
+            post.operatorName = post4201.operatorName;
+            post.inModel = 0;
+
+            Input_4205 input4205 = new Input_4205();
+
+            //#TODO 自费病人门诊就诊信息
+            DataTable mdtrtinfoDt = new DataTable();
+            input4205.mdtrtinfo = Function.ToList<MdtrtInfo>(mdtrtinfoDt)[0];
+
+            //#TODO 自费病人门诊诊断信息
+            DataTable diseinfoDt = new DataTable();
+            input4205.diseinfo = Function.ToList<DiseInfo>(diseinfoDt);
+
+            //#TODO 自费病人门诊费用明细信息
+            DataTable feedetailDt = new DataTable();
+            input4205.feedetail = Function.ToList<FeeDetail4205>(feedetailDt);
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4205, out output, post, out code);
+            return json;
+        }
+
+        /// <summary>
+        /// 【4206】自费病人门诊就医信息删除
+        /// 交易输入自费病人门诊信息为单行数据；
+        /// 每次接口调用只删除一位患者的门诊信息
+        /// </summary>
+        /// <param name="post4204"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public string PostSelfPayPatientFee_4206(Post_4204 post4204)
+        {
+            PostBase post = new PostBase();
+            post.inModel = 0;
+            post.tradiNumber = "4204";
+            post.insuplc_admdvs = post4204.insuplc_admdvs;
+            post.operatorId = post4204.operatorId;
+            post.operatorName = post4204.operatorName;
+            post.inModel = 0;
+
+            Input_4206 input4206 = new Input_4206();
+            input4206.fixmedins_mdtrt_id = post4204.fixmedins_mdtrt_id;
+            input4206.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
+
+
+            Output_null output = new Output_null();
+            string code = "1";
+            string json = YiBaoHelper.CallAndSaveLog(input4206, out output, post, out code);
             return json;
         }
 

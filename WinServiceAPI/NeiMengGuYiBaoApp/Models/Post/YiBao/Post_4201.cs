@@ -8,7 +8,7 @@
         public string mdtrt_id { get; set; }
 
         /// <summary>
-        /// 结算内码
+        /// 结算内码(结算ID)
         /// </summary>
         public int jsnm { get; set; }
         /// <summary>
