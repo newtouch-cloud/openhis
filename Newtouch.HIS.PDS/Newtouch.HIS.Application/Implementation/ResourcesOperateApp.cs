@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using FrameworkBase.MultiOrg.Application;
+﻿using FrameworkBase.MultiOrg.Application;
 using FrameworkBase.MultiOrg.Domain.DBContext.Infrastructure;
 using FrameworkBase.MultiOrg.Domain.IRepository;
 using Newtouch.Core.Common.Exceptions;
@@ -24,6 +18,12 @@ using Newtouch.PDS.Requset;
 using Newtouch.PDS.Requset.ResourcesOperate;
 using Newtouch.PDS.Requset.Zyypyz;
 using Newtouch.Tools;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Newtouch.HIS.Application.Implementation
 {
@@ -179,7 +179,7 @@ namespace Newtouch.HIS.Application.Implementation
             foreach (var item in request.Items)
             {
                 int rpInfo = _mzCfRepo.DeleteCf(item.cfh.ToString(), request.OrganizeId.ToString());
-                if (rpInfo<=0)
+                if (rpInfo <= 0)
                 {
                     throw new FailedException("", "处方状态修改失败");
                 }
@@ -421,14 +421,22 @@ namespace Newtouch.HIS.Application.Implementation
             var errorMsg = new StringBuilder();
             foreach (var s in tyInfo.tyDrugDetail.Select(p => p.cfh).Distinct())
             {
+                var findResult = tyInfo.tyDrugDetail.FindAll(p => p.cfh == s);
+                findResult.ForEach(p =>
+                {
+                    if (string.IsNullOrEmpty(p.zsm))
+                    {
+                        p.zsm = "";
+                    }
+                });
                 var request = new tyInfo
                 {
                     userCode = tyInfo.userCode,
                     cfh = s,
                     yfbmCode = tyInfo.yfbmCode,
                     organizeId = tyInfo.organizeId,
-                    tyDrugDetail = tyInfo.tyDrugDetail.FindAll(p => p.cfh == s)
-                    
+                    tyDrugDetail = findResult
+
                 };
                 var processResult = new OutpatientReturnDrugsProcess(request).Process();
                 if (!processResult.IsSucceed)
@@ -523,14 +531,23 @@ namespace Newtouch.HIS.Application.Implementation
             var locker = new object();
             Parallel.ForEach(tyDetail, p =>
             {
+                // 检查 sl 和 zhyz，如果条件不满足，直接返回
                 if (p.sl <= 0 || p.zhyz <= 0) return;
+
+                // 检查 p.zsm 是否为空，如果为空则赋默认值
+                if (string.IsNullOrEmpty(p.zsm))
+                {
+                    p.zsm = "";  // 你可以根据需求替换为具体的值
+                }
+
+                // 使用锁来保护对共享资源 effectiveLs 的访问
                 lock (locker)
                 {
                     effectiveLs.Add(p);
                 }
             });
 
-            if(effectiveLs[0].zytyapplyno == null || effectiveLs[0].zytyapplyno == "")
+            if (effectiveLs[0].zytyapplyno == null || effectiveLs[0].zytyapplyno == "")
             {
                 throw new Exception("退药申请单号不能为空！");
             }
