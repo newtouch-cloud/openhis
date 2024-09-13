@@ -18,7 +18,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 医药机构就诊 ID (长度: 30)
         /// </summary>
-        public string fixmedins_mdt_rt_id { get; set; }
+        public string fixmedins_mdtrt_id { get; set; }
 
         /// <summary>
         /// 定点医药机构编号 (长度: 30)

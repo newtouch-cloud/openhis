@@ -1422,7 +1422,9 @@ a.Id, a.yzId, a.zxId, a.ypCode, b.yzxz, b.zlff, c.ycmc, b.dj, c.djdw, a.CreateTi
                                     yzId = tyParam.yzId,
                                     zxId = zxpc.zxId,
                                     ypyzxxId = ypyzxxid.FirstOrDefault().Id,
-                                    zytyapplyno = zytyapplyno
+                                    zytyapplyno = zytyapplyno,
+                                    zsm = yp.zsm,
+                                    sfcl= yp.sfcl,
                                 };
                                 db.Insert(czjl);
 
