@@ -1,20 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Web;
-using FrameworkBase.MultiOrg.Application;
+﻿using FrameworkBase.MultiOrg.Application;
 using FrameworkBase.MultiOrg.Domain.DBContext.Infrastructure;
 using Newtouch.CIS.APIRequest.Inpatient;
-using Newtouch.Common.Operator;
 using Newtouch.Common.Web;
 using Newtouch.Core.Common.Exceptions;
-using Newtouch.Core.Common.Utils;
-using Newtouch.HIS.API.Common;
 using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.DO;
-using Newtouch.HIS.Domain.DTO.OutPatientPharmacy;
 using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
@@ -23,6 +13,12 @@ using Newtouch.HIS.DomainServices;
 using Newtouch.HIS.Repository;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web;
 
 namespace Newtouch.HIS.Application.Implementation
 {
@@ -108,7 +104,7 @@ namespace Newtouch.HIS.Application.Implementation
             AssembleData2(drugsParam, yzxxLs, yzphLs, yfbmCode, organizeId);
 
             #endregion
-            return _dispensingDmnService.HospitalizationDispensing(yzphLs, yzxxLs, userCode, out fyid,organizeId);
+            return _dispensingDmnService.HospitalizationDispensing(yzphLs, yzxxLs, userCode, out fyid, organizeId);
         }
 
         /// <summary>
@@ -249,7 +245,7 @@ namespace Newtouch.HIS.Application.Implementation
 
             try
             {
-                for (int m = 0; m < drugsParam.Count; m ++)
+                for (int m = 0; m < drugsParam.Count; m++)
                 {
                     DispensingDrugsParam item = drugsParam[m];
 
@@ -281,13 +277,13 @@ namespace Newtouch.HIS.Application.Implementation
                         item.zxId, item.ypCode, item.organizeId);
                     if (yzxx != null && yzxx.Count > 0)
                     {
-                        for(int n = 0; n < yzxx.Count; n ++)
+                        for (int n = 0; n < yzxx.Count; n++)
                         {
                             ZyYpyzxxEntity px = yzxx[n];
 
-                            if (! yzxxLs.Exists(z => z.Id == px.Id))
+                            if (!yzxxLs.Exists(z => z.Id == px.Id))
                             {
-                                px.zsm = item.zsm;
+                                px.zsm = item.zsm ?? "";
                                 px.sfcl = item.sfcl;
                                 yzxxLs.Add(px);
                             }
@@ -328,7 +324,8 @@ namespace Newtouch.HIS.Application.Implementation
                             }
 
                             // 添加住院患者信息到缓存区
-                            patients.Add(new InpatientBaseInfoDo() {
+                            patients.Add(new InpatientBaseInfoDo()
+                            {
                                 xm = px.patientName,
                                 OrganizeId = px.OrganizeId,
                                 zyh = px.zyh
@@ -351,7 +348,7 @@ namespace Newtouch.HIS.Application.Implementation
                 errorMsg = e.Message;
             }
 
-            if (! string.IsNullOrWhiteSpace(errorMsg))
+            if (!string.IsNullOrWhiteSpace(errorMsg))
             {
                 throw new FailedException(errorCode, errorMsg);
             }
