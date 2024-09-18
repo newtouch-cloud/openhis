@@ -31,7 +31,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 费用发生时间 (必填，日期时间型，格式yyyy-MM-dd HH:mm:ss)
         /// </summary>
-        public DateTime fee_ocur_time { get; set; }
+        public string fee_ocur_time { get; set; }
 
         /// <summary>
         /// 定点医药机构编号 (必填，字符型，长度30)
