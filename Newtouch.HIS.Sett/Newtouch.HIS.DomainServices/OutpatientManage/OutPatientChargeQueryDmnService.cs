@@ -224,7 +224,7 @@ WHERE
         public IList<OutPatientRegChargeMVO> ZFRegChargeQuery(Pagination pagination, string xm, DateTime? createTimestart, DateTime? createTimeEnd)
         {
             var sqlStr = new StringBuilder(@"
-SELECT js.blh, js.jsnm,js.jslx,
+SELECT DISTINCT js.blh, js.jsnm,js.jslx,
        CASE WHEN len(gh.kh) >= 28 THEN substring(gh.kh,1,10) ELSE gh.kh END AS kh,
        js.xm,
        gh.xb,
@@ -242,7 +242,8 @@ SELECT js.blh, js.jsnm,js.jslx,
         sfyuserstaff.Name CreatorName,ghysStaff.Name ghysmc,
         isnull(js.jzsj, js.CreateTime) sfrq,
 		brxz.brxzmc,
-        gh.zdmc,jzys.Name jzys,xtjz.zlkssj jzsj,mzybjs.setl_id zxlsh
+        gh.zdmc,jzys.Name jzys,xtjz.zlkssj jzsj,mzybjs.setl_id zxlsh,
+        CASE WHEN drjk.mlbm_id IS NOT NULL THEN '已上传' ELSE '' END AS sfyb
 FROM dbo.mz_js(NOLOCK) js
 LEFT JOIN mz_js_ybjyfy(nolock) ybjyfy 
     ON ybjyfy.jsnm = js.jsnm
@@ -266,17 +267,12 @@ LEFT JOIN dbo.xt_brjbxx xx
     ON xx.blh = gh.blh AND xx.OrganizeId = js.OrganizeId AND xx.zt = '1'
 LEFT JOIN dbo.drjk_mzjs_output mzybjs 
     ON mzybjs.setl_id = js.ybjslsh AND mzybjs.zt = '1'
+LEFT JOIN dbo.Drjk_jxcsc_output drjk ON drjk.mlbm_id = CONVERT(VARCHAR(50), js.jsnm)  -- 关联条件
 WHERE 
     js.OrganizeId=@OrganizeId and js.zt= '1'
     and js.brxz= '0'
     --未退
-    and ISNULL(js.tbz, 0)=0  
-    -- 排除 Drjk_jxcsc_output 表中存在的 jsnm
-    AND NOT EXISTS (
-        SELECT 1 
-        FROM Drjk_jxcsc_output o 
-        WHERE o.mlbm_id = CONVERT(VARCHAR(50), js.jsnm)
-    )
+    and ISNULL(js.tbz, 0)=0 
 ");
             var paraList = new List<DbParameter>
             {
