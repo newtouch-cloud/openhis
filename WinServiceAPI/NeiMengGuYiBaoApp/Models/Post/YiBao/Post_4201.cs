@@ -15,6 +15,10 @@
         /// 0：门诊 1：住院
         /// </summary>
         public string type { get; set; }
+        /// <summary>
+        /// his的唯一标识
+        /// </summary>
+        public string hisId { get; set; }
 
     }
 }

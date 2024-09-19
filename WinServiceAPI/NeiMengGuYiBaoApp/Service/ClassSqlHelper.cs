@@ -2264,6 +2264,60 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@jsnm", jsnm);
             return platFormServer.RunProc_DataTable_WqServer("usp_mz_SelfCost_data", Parameters);
         }
+        public static DataTable QuerySelfCost4201A(string orgId, int jsnm)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@jsnm", jsnm);
+            return platFormServer.RunProc_DataTable_WqServer("usp_zy_SelfCost_data", Parameters);
+        }
+        public static DataTable QuerySelfCost4202(string orgId, int jsnm)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@jsnm", jsnm);
+            return platFormServer.RunProc_DataTable_WqServer("usp_zy_SelfCost4202_data", Parameters);
+        }
+        public static DataTable QuerySelfCost4202Diag(string orgId, string zyh)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@zyh", zyh);
+            return platFormServer.RunProc_DataTable_WqServer("usp_zy_SelfCost4202_Diagdata", Parameters);
+        }
+        /// <summary>
+        /// 门诊就诊病人信息
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="jsnm"></param>
+        /// <returns></returns>
+        public static DataTable QuerySelfCostPatInfo4205(string orgId, int jsnm)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@jsnm", jsnm);
+            return platFormServer.RunProc_DataTable_WqServer("usp_mz_SelfCostPatInfo4205_data", Parameters);
+        }
+        /// <summary>
+        /// 中西医诊断
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="mzh"></param>
+        /// <returns></returns>
+        public static DataTable QuerySelfCostDiagInfo4205(string orgId, string mzh)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@mzh", mzh);
+            return platFormServer.RunProc_DataTable_WqServer("usp_mz_SelfCostDiagInfo4205_data", Parameters);
+        }
+        public static DataTable QuerySelfCostFeeInfo4205(string orgId, int jsnm)
+        {
+            Parameters.Clear();
+            Parameters.Add("@orgId", orgId);
+            Parameters.Add("@jsnm", jsnm);
+            return platFormServer.RunProc_DataTable_WqServer("usp_mz_SelfCostFeeInfo4205_data", Parameters);
+        }
         #endregion
     }
 }

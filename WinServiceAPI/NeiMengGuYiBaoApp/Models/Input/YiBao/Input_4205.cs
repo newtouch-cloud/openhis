@@ -21,7 +21,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 医药机构就诊 ID (长度: 30)
         /// </summary>
-        public string fixmedins_mdt_rt_id { get; set; }
+        public string fixmedins_mdtrt_id { get; set; }
 
         /// <summary>
         /// 定点医药机构编号 (长度: 30)
@@ -61,12 +61,12 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 出生日期 (格式: yyyy-MM-dd)
         /// </summary>
-        public DateTime brdy { get; set; }
+        public string brdy { get; set; }
 
         /// <summary>
         /// 年龄 (数值型: 4,1)
         /// </summary>
-        public decimal age { get; set; }
+        public decimal? age { get; set; }
 
         /// <summary>
         /// 联系人姓名 (长度: 50)
@@ -86,12 +86,12 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 开始时间 (格式: yyyy-MM-dd HH:mm:ss)
         /// </summary>
-        public DateTime begntime { get; set; }
+        public string begntime { get; set; }
 
         /// <summary>
         /// 结束时间 (格式: yyyy-MM-dd HH:mm:ss)
         /// </summary>
-        public DateTime endtime { get; set; }
+        public string endtime { get; set; }
 
         /// <summary>
         /// 医疗类别 (长度: 6)
@@ -121,7 +121,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 计划生育手术或生育日期 (格式: yyyy-MM-dd)
         /// </summary>
-        public DateTime birctrl_matn_date { get; set; }
+        public string birctrl_matn_date { get; set; }
 
         /// <summary>
         /// 生育类别 (长度: 6)
@@ -131,7 +131,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 孕周数 (数值型: 2)
         /// </summary>
-        public int geso_val { get; set; }
+        public int? geso_val { get; set; }
 
         /// <summary>
         /// 电子票据代码 (长度: 50)
@@ -197,7 +197,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 诊断时间 (格式: yyyy-MM-dd HH:mm:ss)
         /// </summary>
-        public DateTime diag_time { get; set; }
+        public string diag_time { get; set; }
 
         /// <summary>
         /// 有效标志 (长度: 3)
@@ -213,7 +213,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 医药机构就诊 ID (长度: 30)
         /// </summary>
-        public string fixmedins_mdt_rt_id { get; set; }
+        public string fixmedins_mdtrt_id { get; set; }
 
         /// <summary>
         /// 医疗类别 (长度: 6)
@@ -228,7 +228,7 @@ namespace NeiMengGuYiBaoApp.Models.Input.YiBao
         /// <summary>
         /// 费用发生时间 (格式: yyyy-MM-dd HH:mm:ss)
         /// </summary>
-        public DateTime fee_ocur_time { get; set; }
+        public string fee_ocur_time { get; set; }
 
         /// <summary>
         /// 定点医药机构编号 (长度: 30)

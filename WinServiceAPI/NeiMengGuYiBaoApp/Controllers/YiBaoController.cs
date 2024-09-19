@@ -4563,23 +4563,52 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.insuplc_admdvs = post4201.insuplc_admdvs;
             post.operatorId = post4201.operatorId;
             post.operatorName = post4201.operatorName;
+            post.hisId = post4201.hisId;
             post.inModel = 0;
 
-
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
             string orgId = ConfigurationManager.AppSettings["orgId"];
             DataTable dto = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
             string json = "";
+            string code = "1";
             for (int i = 0; i < dto.Rows.Count; i++)
             {
                 Input_4201 input4201 = new Input_4201();
                 input4201.feedetail = new feedetail_4201();
                 input4201.feedetail = Function.ToList<feedetail_4201>(dto)[i];
                 Output_null output = new Output_null();
-                string code = "1";
+                
                 json = YiBaoHelper.CallAndSaveLog(input4201, out output, post, out code);
-
             }
-
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    DateTime date = ClassSqlHelper.GetServerTime();
+                    int eeor = 0;
+                    List<string> sqlList = new List<string>();
+                    Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                    jxcsc.mlbm_id = post4201.jsnm.ToString();
+                    jxcsc.xm_id = post4201.hisId;
+                    jxcsc.OrganizeId = orgId;
+                    jxcsc.OrganizeName = ddyymc;
+                    jxcsc.type = "4201";//接口交易编号
+                    jxcsc.issuccess = "True";//成功
+                    jxcsc.log = json;//接口出参内容
+                    jxcsc.czydm = post.operatorId;
+                    jxcsc.czrq = date;
+                    jxcsc.ph = "";
+                    jxcsc.pch = "";
+                    jxcsc.zt = 1;
+                    sqlList.Add(jxcsc.ToAddSql());
+                    ClassSqlHelper.Merge(sqlList, out eeor);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("4201 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "4201 自费病人费用明细信息批量上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
             return json;
         }
         
@@ -4597,17 +4626,47 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.insuplc_admdvs = post4201.insuplc_admdvs;
             post.operatorId = post4201.operatorId;
             post.operatorName = post4201.operatorName;
+            post.hisId = post4201.hisId;
             post.inModel = 0;
 
             Input_4201A input4201A = new Input_4201A();
             string orgId = ConfigurationManager.AppSettings["orgId"];
-
-            DataTable dt = ClassSqlHelper.QuerySelfCost4201(orgId, post4201.jsnm, post4201.type);
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
+            DataTable dt = ClassSqlHelper.QuerySelfCost4201A(orgId, post4201.jsnm);
             input4201A.fsiOwnpayPatnFeeListDDTO = Function.ToList<FsiOwnpayPatnFeeListDDTO>(dt);
 
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4201A, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    DateTime date = ClassSqlHelper.GetServerTime();
+                    int eeor = 0;
+                    List<string> sqlList = new List<string>();
+                    Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                    jxcsc.mlbm_id = post4201.jsnm.ToString();
+                    jxcsc.xm_id = post4201.hisId;
+                    jxcsc.OrganizeId = orgId;
+                    jxcsc.OrganizeName = ddyymc;
+                    jxcsc.type = "4201A";//接口交易编号
+                    jxcsc.issuccess = "True";//成功
+                    jxcsc.log = json;//接口出参内容
+                    jxcsc.czydm = post.operatorId;
+                    jxcsc.czrq = date;
+                    jxcsc.ph = "";
+                    jxcsc.pch = "";
+                    jxcsc.zt = 1;
+                    sqlList.Add(jxcsc.ToAddSql());
+                    ClassSqlHelper.Merge(sqlList, out eeor);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("4201A 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "4201A 自费病人费用明细信息批量上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
             return json;
         }
         /// <summary>
@@ -4628,19 +4687,50 @@ namespace NeiMengGuYiBaoApp.Controllers
 
             Input_4202 input4202 = new Input_4202();
             string orgId = ConfigurationManager.AppSettings["orgId"];
-
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
             //#TODO
-            DataTable ownPayPatnMdtrtDDt = new DataTable();
-            input4202.ownPayPatnMdtrtD = Function.ToList<OwnPayPatnMdtrtD>(ownPayPatnMdtrtDDt)[0];
-
-            //#TODO
-            DataTable ownPayPatnDiagListDDt = new DataTable();
-            input4202.ownPayPatnDiagListD = Function.ToList<OwnPayPatnDiagListD>(ownPayPatnDiagListDDt);
-
-            Output_null output = new Output_null();
-            string code = "1";
-            string json = YiBaoHelper.CallAndSaveLog(input4202, out output, post, out code);
-            return json;
+            DataTable ownPayPatnMdtrtDDt = ClassSqlHelper.QuerySelfCost4202(orgId, post4201.jsnm);
+            if (ownPayPatnMdtrtDDt.Rows.Count>0)
+            {
+                input4202.ownPayPatnMdtrtD = Function.ToList<OwnPayPatnMdtrtD>(ownPayPatnMdtrtDDt)[0];
+                //#TODO
+                DataTable ownPayPatnDiagListDDt = ClassSqlHelper.QuerySelfCost4202Diag(orgId, input4202.ownPayPatnMdtrtD.fixmedins_mdtrt_id);
+                input4202.ownPayPatnDiagListD = Function.ToList<OwnPayPatnDiagListD>(ownPayPatnDiagListDDt);
+                Output_null output = new Output_null();
+                string code = "1";
+                string json = YiBaoHelper.CallAndSaveLog(input4202, out output, post, out code);
+                if (code == "0")//如果成功则更新本地信息表 
+                {
+                    try
+                    {
+                        DateTime date = ClassSqlHelper.GetServerTime();
+                        int eeor = 0;
+                        List<string> sqlList = new List<string>();
+                        Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                        jxcsc.mlbm_id = post4201.jsnm.ToString();
+                        jxcsc.xm_id = post4201.hisId;
+                        jxcsc.OrganizeId = orgId;
+                        jxcsc.OrganizeName = ddyymc;
+                        jxcsc.type = "4202";//接口交易编号
+                        jxcsc.issuccess = "True";//成功
+                        jxcsc.log = json;//接口出参内容
+                        jxcsc.czydm = post.operatorId;
+                        jxcsc.czrq = date;
+                        jxcsc.ph = "";
+                        jxcsc.pch = "";
+                        jxcsc.zt = 1;
+                        sqlList.Add(jxcsc.ToAddSql());
+                        ClassSqlHelper.Merge(sqlList, out eeor);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Info("【4202】自费病人住院就诊和诊断信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                        return YiBaoHelper.BuildReturnJson("-99", "【4202】自费病人住院就诊和诊断信息上传成功，HIS上传数据失败：" + ex.Message);
+                    }
+                }
+                return json;
+            }
+            return YiBaoHelper.BuildReturnJson("-99", "自费病人住院就诊和诊断信息上传失败"); ;
         }
         /// <summary>
         /// 【4203】自费病人就诊以及费用明细上传完成
@@ -4657,11 +4747,12 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.insuplc_admdvs = post4203.insuplc_admdvs;
             post.operatorId = post4203.operatorId;
             post.operatorName = post4203.operatorName;
+            post.hisId = post4203.hisId;
             post.inModel = 0;
 
             Input_4203 input4203 = new Input_4203();
             input4203.cplt_flag = post4203.cplt_flag;
-            input4203.fixmedins_mdtrt_id = post4203.fixmedins_mdtrt_id;
+            input4203.fixmedins_mdtrt_id = post4203.hisId;
             input4203.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
 
 
@@ -4687,11 +4778,12 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.insuplc_admdvs = post4204.insuplc_admdvs;
             post.operatorId = post4204.operatorId;
             post.operatorName = post4204.operatorName;
+            post.hisId = post4204.hisId;
             post.inModel = 0;
 
             Input_4204 input4204 = new Input_4204();
             input4204.feedetail = new FeeDetail();
-            input4204.feedetail.fixmedins_mdtrt_id = post4204.fixmedins_mdtrt_id;
+            input4204.feedetail.fixmedins_mdtrt_id = post4204.hisId;//post4204.fixmedins_mdtrt_id;
             input4204.feedetail.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
 
             input4204.feedetl = new List<FeeDetl> { new FeeDetl() };
@@ -4699,6 +4791,11 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4204, out output, post, out code);
+            if (code=="0")
+            {
+                post.tradiNumber = "4201A";
+                ClassSqlHelper.DeleteInventory(post4204.jsnm.ToString(), post.tradiNumber, "", "");
+            }
             return json;
         }
 
@@ -4718,25 +4815,57 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.insuplc_admdvs = post4201.insuplc_admdvs;
             post.operatorId = post4201.operatorId;
             post.operatorName = post4201.operatorName;
+            post.hisId = post4201.hisId;
             post.inModel = 0;
 
             Input_4205 input4205 = new Input_4205();
-
+            string orgId = ConfigurationManager.AppSettings["orgId"];
+            string ddyymc = ConfigurationManager.AppSettings["fixmedins_name"];
             //#TODO 自费病人门诊就诊信息
-            DataTable mdtrtinfoDt = new DataTable();
-            input4205.mdtrtinfo = Function.ToList<MdtrtInfo>(mdtrtinfoDt)[0];
-
+            DataTable mdtrtinfoDt = ClassSqlHelper.QuerySelfCostPatInfo4205(orgId, post4201.jsnm);
+            if(mdtrtinfoDt.Rows.Count>0)
+                input4205.mdtrtinfo = Function.ToList<MdtrtInfo>(mdtrtinfoDt)[0];
             //#TODO 自费病人门诊诊断信息
-            DataTable diseinfoDt = new DataTable();
-            input4205.diseinfo = Function.ToList<DiseInfo>(diseinfoDt);
+            DataTable diseinfoDt = ClassSqlHelper.QuerySelfCostDiagInfo4205(orgId, post4201.hisId) ;
+            if(diseinfoDt.Rows.Count>0)
+                input4205.diseinfo = Function.ToList<DiseInfo>(diseinfoDt);
 
             //#TODO 自费病人门诊费用明细信息
-            DataTable feedetailDt = new DataTable();
-            input4205.feedetail = Function.ToList<FeeDetail4205>(feedetailDt);
+            DataTable feedetailDt = ClassSqlHelper.QuerySelfCostFeeInfo4205(orgId,post4201.jsnm);
+                input4205.feedetail = Function.ToList<FeeDetail4205>(feedetailDt);
 
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4205, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    DateTime date = ClassSqlHelper.GetServerTime();
+                    int eeor = 0;
+                    List<string> sqlList = new List<string>();
+                    Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+                    jxcsc.mlbm_id = post4201.jsnm.ToString();
+                    jxcsc.xm_id = post4201.hisId;
+                    jxcsc.OrganizeId = orgId;
+                    jxcsc.OrganizeName = ddyymc;
+                    jxcsc.type = "4205";//接口交易编号
+                    jxcsc.issuccess = "True";//成功
+                    jxcsc.log = json;//接口出参内容
+                    jxcsc.czydm = post.operatorId;
+                    jxcsc.czrq = date;
+                    jxcsc.ph = "";
+                    jxcsc.pch = "";
+                    jxcsc.zt = 1;
+                    sqlList.Add(jxcsc.ToAddSql());
+                    ClassSqlHelper.Merge(sqlList, out eeor);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("4205 自费病人门诊就医信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "4205 自费病人门诊就医信息上传成功，HIS上传数据失败：" + ex.Message);
+                }
+            }
             return json;
         }
 
@@ -4752,20 +4881,26 @@ namespace NeiMengGuYiBaoApp.Controllers
         {
             PostBase post = new PostBase();
             post.inModel = 0;
-            post.tradiNumber = "4204";
+            post.tradiNumber = "4206";
             post.insuplc_admdvs = post4204.insuplc_admdvs;
             post.operatorId = post4204.operatorId;
             post.operatorName = post4204.operatorName;
+            post.hisId = post4204.hisId;
             post.inModel = 0;
 
             Input_4206 input4206 = new Input_4206();
-            input4206.fixmedins_mdtrt_id = post4204.fixmedins_mdtrt_id;
+            input4206.fixmedins_mdtrt_id = post4204.hisId;
             input4206.fixmedins_code = ConfigurationManager.AppSettings["fixmedins_code"];
 
 
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4206, out output, post, out code);
+            if (code == "0")
+            {
+                post.tradiNumber = "4205";
+                ClassSqlHelper.DeleteInventory(post4204.jsnm.ToString(), post.tradiNumber, "", "");
+            }
             return json;
         }
 
@@ -4784,6 +4919,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.inModel = 0;
             post.operatorId = post4207.operatorId;
             post.operatorName = post4207.operatorName;
+            post.hisId = post4207.hisId;
 
             var config = new MapperConfiguration(cfg => cfg.CreateMap<Post_4207, Input_4207>());
             var mapper = config.CreateMapper();
