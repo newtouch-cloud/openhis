@@ -7,9 +7,8 @@ using Newtouch.HIS.Domain.ValueObjects;
 using Newtouch.Tools;
 using System;
 using System.Collections.Generic;
-using System.Web.Mvc;
 using System.Linq;
-using System.Configuration;
+using System.Web.Mvc;
 
 namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
 {
@@ -62,6 +61,39 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             var chargeQueryList = new
             {
                 rows = (list = _outPatienChargeQueryDmnService.RegChargeQuery(pagination, kh, fph, jsfph, xm, syy, createTimestart, createTimeEnd, sfrqTimestart, sfrqTimeEnd, zxlsh)),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+
+            var jsnms = string.Join(",", list.Select(p => p.jsnm).Distinct());
+            if (!string.IsNullOrWhiteSpace(jsnms))
+            {
+                var zffsList = _outPatienChargeQueryDmnService.GetSettZffsResultList(this.OrganizeId, jsnms);
+                foreach (var js in list)
+                {
+                    js.zffsmcstr = string.Join(",", zffsList.Where(p => p.jsnm == js.jsnm).Select(p => p.xjzffsmc));
+                }
+            }
+
+            return Content(chargeQueryList.ToJson());
+        }
+
+        /// <summary>
+        /// 待上传的门诊自费病人结算信息
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="xm"></param>
+        /// <param name="createTimestart"></param>
+        /// <param name="createTimeEnd"></param>
+        /// <returns></returns>
+        [HandlerAjaxOnly]
+        public ActionResult SelectZFRegChargeQuery(Pagination pagination, DateTime? createTimestart, DateTime? createTimeEnd, string xm = "")
+        {
+            IList<OutPatientRegChargeMVO> list;
+            var chargeQueryList = new
+            {
+                rows = (list = _outPatienChargeQueryDmnService.ZFRegChargeQuery(pagination, xm, createTimestart, createTimeEnd)),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records
@@ -171,7 +203,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             _outPatienChargeQueryApp.PrintInvoice(jsnm, isGh);
             return Success();
         }
-         
+
         /// <summary>
         /// 补打
         /// </summary>
