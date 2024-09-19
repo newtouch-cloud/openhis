@@ -24,7 +24,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="createTimestart"></param>
         /// <param name="createTimeEnd"></param>
         /// <returns></returns>
-        IList<OutPatientRegChargeVO> SelectRegChargeQuery(Pagination pagination,string kh, string fph, string xm, string syy, DateTime? createTimestart, DateTime? createTimeEnd);
+        IList<OutPatientRegChargeVO> SelectRegChargeQuery(Pagination pagination, string kh, string fph, string xm, string syy, DateTime? createTimestart, DateTime? createTimeEnd);
 
         /// <summary>
         /// 查询收费项目
@@ -37,8 +37,17 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="createTimestart"></param>
         /// <param name="createTimeEnd"></param>
         /// <returns></returns>
-        IList<OutPatientRegChargeMVO> RegChargeQuery(Pagination pagination, string kh, string fph,string jsfph, string xm, string syy, DateTime? createTimestart, DateTime? createTimeEnd, DateTime? sfrqTimestart, DateTime? sfrqTimeEnd,string zxlsh);
+        IList<OutPatientRegChargeMVO> RegChargeQuery(Pagination pagination, string kh, string fph, string jsfph, string xm, string syy, DateTime? createTimestart, DateTime? createTimeEnd, DateTime? sfrqTimestart, DateTime? sfrqTimeEnd, string zxlsh);
 
+        /// <summary>
+        /// 待上传的门诊自费病人结算信息
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="xm"></param>
+        /// <param name="createTimestart"></param>
+        /// <param name="createTimeEnd"></param>
+        /// <returns></returns>
+        IList<OutPatientRegChargeMVO> ZFRegChargeQuery(Pagination pagination, string xm, DateTime? createTimestart, DateTime? createTimeEnd);
         /// <summary>
         /// 获取结算支付方式
         /// </summary>

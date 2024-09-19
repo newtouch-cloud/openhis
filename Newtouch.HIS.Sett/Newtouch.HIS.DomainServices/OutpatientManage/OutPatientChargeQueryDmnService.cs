@@ -92,7 +92,7 @@ namespace Newtouch.HIS.DomainServices
         /// <param name="createTimestart"></param>
         /// <param name="createTimeEnd"></param>
         /// <returns></returns>
-        public IList<OutPatientRegChargeMVO> RegChargeQuery(Pagination pagination, string kh, string fph,string jsfph, string xm, string syy, DateTime? createTimestart, DateTime? createTimeEnd, DateTime? sfrqTimestart, DateTime? sfrqTimeEnd,string zxlsh)
+        public IList<OutPatientRegChargeMVO> RegChargeQuery(Pagination pagination, string kh, string fph, string jsfph, string xm, string syy, DateTime? createTimestart, DateTime? createTimeEnd, DateTime? sfrqTimestart, DateTime? sfrqTimeEnd, string zxlsh)
         {
             var sqlStr = new StringBuilder(@"
 SELECT js.blh, js.jsnm,js.jslx,
@@ -149,10 +149,10 @@ WHERE
             if (!string.IsNullOrWhiteSpace(xm))
             {
                 //sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or xx.py like @py )");
-	            sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or gh.mzh LIKE @xm or xx.py like @xm)");
-				paraList.Add(new SqlParameter("@xm", "%" + xm.Trim() + "%"));
+                sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or gh.mzh LIKE @xm or xx.py like @xm)");
+                paraList.Add(new SqlParameter("@xm", "%" + xm.Trim() + "%"));
                 paraList.Add(new SqlParameter("@blh", "%" + xm.Trim() + "%"));
-               // paraList.Add(new SqlParameter("@py", "%" + xm.Trim() + "%")); 查询效率过慢 去除 lixin 20200114
+                // paraList.Add(new SqlParameter("@py", "%" + xm.Trim() + "%")); 查询效率过慢 去除 lixin 20200114
             }
             //if (!string.IsNullOrWhiteSpace(kh))  //暂无刷卡功能取消卡号查询
             //{
@@ -163,7 +163,7 @@ WHERE
             if (!string.IsNullOrWhiteSpace(fph))
             {
                 sqlStr.AppendLine("AND js.fph >= @fph");
-                paraList.Add(new SqlParameter("@fph",fph.Trim()));
+                paraList.Add(new SqlParameter("@fph", fph.Trim()));
                 //paraList.Add(new SqlParameter("@fph", "%" + fph.Trim() + "%"));
             }
             if (!string.IsNullOrWhiteSpace(jsfph))
@@ -214,6 +214,99 @@ WHERE
         }
 
         /// <summary>
+        /// 待上传的门诊自费病人结算信息
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="xm"></param>
+        /// <param name="createTimestart"></param>
+        /// <param name="createTimeEnd"></param>
+        /// <returns></returns>
+        public IList<OutPatientRegChargeMVO> ZFRegChargeQuery(Pagination pagination, string xm, DateTime? createTimestart, DateTime? createTimeEnd)
+        {
+            var sqlStr = new StringBuilder(@"
+SELECT js.blh, js.jsnm,js.jslx,
+       CASE WHEN len(gh.kh) >= 28 THEN substring(gh.kh,1,10) ELSE gh.kh END AS kh,
+       js.xm,
+       gh.xb,
+	   gh.mzh,gh.kh sbbh,
+       gh.zjh,
+       isnull(js.fph, '') AS fph,
+       js.zje jszje,js.xjzf jsxjzf,(js.zje-js.xjzf) jsjz,
+       ybjyfy.ybjsh, ybjyfy.JBZF,ybjyfy.GBZF,ybjyfy.JBYE,ybjyfy.GBYE,
+       js.CreatorCode,
+       js.CreateTime,
+       ks.name AS ghksmc,
+       ISNULL(CASE WHEN fpdy.oldFPH IS NOT NULL OR LEN(LTRIM(RTRIM(fpdy.oldFPH)))>0 THEN fpdy.oldFPH ELSE js.fph END, '') oldfph,
+       CASE WHEN fpdy.xfph IS NOT NULL OR fpdy.dyfs=2 THEN '1' ELSE '0' END AS isxfph,
+       ISNULL(js.LastModifierCode, '') tCreatorCode,
+        sfyuserstaff.Name CreatorName,ghysStaff.Name ghysmc,
+        isnull(js.jzsj, js.CreateTime) sfrq,
+		brxz.brxzmc,
+        gh.zdmc,jzys.Name jzys,xtjz.zlkssj jzsj,mzybjs.setl_id zxlsh
+FROM dbo.mz_js(NOLOCK) js
+LEFT JOIN mz_js_ybjyfy(nolock) ybjyfy 
+    ON ybjyfy.jsnm = js.jsnm
+LEFT JOIN dbo.mz_gh(NOLOCK) gh 
+    ON gh.ghnm=js.ghnm AND gh.OrganizeId=js.OrganizeId
+LEFT JOIN [Newtouch_CIS]..xt_jz xtjz
+	ON xtjz.mzh=gh.mzh and xtjz.OrganizeId=gh.OrganizeId and xtjz.zt=1
+LEFT JOIN NewtouchHIS_Base..V_S_Sys_Department ks 
+    ON ks.Code = gh.ks AND ks.zt='1' AND ks.OrganizeId=js.OrganizeId
+LEFT JOIN mz_curr_fp(nolock) fpdy 
+    ON js.jsnm = fpdy.jsnm AND fpdy.zt='1' AND fpdy.OrganizeId=js.OrganizeId
+LEFT JOIN NewtouchHIS_Base..V_C_Sys_UserStaff sfyuserstaff 
+    ON sfyuserstaff.Account = js.CreatorCode AND sfyuserstaff.zt='1' AND sfyuserstaff.OrganizeId=js.OrganizeId
+LEFT JOIN NewtouchHIS_Base..V_S_Sys_Staff ghysStaff 
+    ON ghysStaff.gh = gh.ys AND ghysStaff.zt='1' AND ghysStaff.OrganizeId=js.OrganizeId
+LEFT JOIN NewtouchHIS_Base..V_S_Sys_Staff jzys 
+	ON jzys.gh = gh.ys AND jzys.zt='1' AND jzys.OrganizeId=js.OrganizeId
+LEFT JOIN xt_brxz brxz
+    on brxz.brxz = js.brxz and brxz.zt = '1' and brxz.OrganizeId = js.OrganizeId
+LEFT JOIN dbo.xt_brjbxx xx 
+    ON xx.blh = gh.blh AND xx.OrganizeId = js.OrganizeId AND xx.zt = '1'
+LEFT JOIN dbo.drjk_mzjs_output mzybjs 
+    ON mzybjs.setl_id = js.ybjslsh AND mzybjs.zt = '1'
+WHERE 
+    js.OrganizeId=@OrganizeId and js.zt= '1'
+    and js.brxz= '0'
+    --未退
+    and ISNULL(js.tbz, 0)=0  
+    -- 排除 Drjk_jxcsc_output 表中存在的 jsnm
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM Drjk_jxcsc_output o 
+        WHERE o.mlbm_id = CONVERT(VARCHAR(50), js.jsnm)
+    )
+");
+            var paraList = new List<DbParameter>
+            {
+                new SqlParameter("@OrganizeId", OperatorProvider.GetCurrent().OrganizeId)
+            };
+            if (!string.IsNullOrWhiteSpace(xm))
+            {
+                sqlStr.AppendLine("AND (js.xm LIKE @xm or js.blh LIKE @blh or gh.mzh LIKE @xm or xx.py like @xm)");
+                paraList.Add(new SqlParameter("@xm", "%" + xm.Trim() + "%"));
+                paraList.Add(new SqlParameter("@blh", "%" + xm.Trim() + "%"));
+            }
+
+            if (createTimestart != null)
+            {
+                var start = Constants.MinDate;
+                start = start >= createTimestart ? start : (DateTime)createTimestart;
+                sqlStr.AppendLine("AND js.CreateTime >= @BeginCreateTime");
+                paraList.Add(new SqlParameter("@BeginCreateTime", start));
+            }
+            if (createTimeEnd != null)
+            {
+                var end = Constants.MinDate;
+                end = end >= createTimeEnd ? end : (DateTime)createTimeEnd;
+                sqlStr.AppendLine("AND js.CreateTime<=@EndCreateTime+' 23:59:59'");
+                paraList.Add(new SqlParameter("@EndCreateTime", end));
+            }
+            return QueryWithPage<OutPatientRegChargeMVO>(sqlStr.ToString(), pagination, paraList.ToArray());
+        }
+
+        /// <summary>
         /// 获取结算支付方式
         /// </summary>
         /// <param name="orgId"></param>
@@ -242,12 +335,12 @@ and mzjszffs.OrganizeId = @orgId";
         {
             IList<SqlParameter> par = new List<SqlParameter>();
             string sfxmztbs = _sysConfigRepo.GetValueByCode("sfxmztbs", OperatorProvider.GetCurrent().OrganizeId);
-            if (sfxmztbs=="false")
+            if (sfxmztbs == "false")
             {
                 var inParameters = new Dictionary<string, object>
-            {
-                
-            };
+                {
+
+                };
                 var strSql = new StringBuilder();
                 strSql.Append(@"EXEC spSelectRecordsDetailByJsnm @jsnm=@jsnm,@OrganizeId=@OrganizeId");
                 SqlParameter[] para = {

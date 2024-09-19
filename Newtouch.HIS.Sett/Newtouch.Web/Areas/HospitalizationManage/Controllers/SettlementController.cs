@@ -3,12 +3,9 @@ using Newtouch.Core.Common.Utils;
 using Newtouch.HIS.Application.Interface;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.Infrastructure.Model;
-using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using System;
 using System.Web.Mvc;
-using System.Configuration;
 
 namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
 {
@@ -66,7 +63,7 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
         [HandlerAjaxOnly]
         public ActionResult SubmitSett(string zyh, DateTime expectedcyrq, decimal expectedyjjzhye, decimal expectedjsje, string fph, decimal expectedzhaoling, string xjzfListStr, decimal shishoukuan)
         {
-            var successresult = _outHospSettApp.SaveSett(zyh, expectedcyrq, fph, expectedyjjzhye, expectedjsje, expectedzhaoling, xjzfListStr, shishoukuan); 
+            var successresult = _outHospSettApp.SaveSett(zyh, expectedcyrq, fph, expectedyjjzhye, expectedjsje, expectedzhaoling, xjzfListStr, shishoukuan);
             return Success("结算成功", successresult);
         }
 
@@ -185,6 +182,25 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
             };
             return Content(data.ToJson());
         }
+        /// <summary>
+        /// 待上传的自费结算病人信息
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="keyword"></param>
+        /// <param name="jsksrq"></param>
+        /// <param name="jsjsrq"></param>
+        /// <returns></returns>
+        public ActionResult GetPaginationZFSettlementList(Pagination pagination, string keyword, DateTime? jsksrq, DateTime? jsjsrq)
+        {
+            var data = new
+            {
+                rows = _hospSettDmnService.GetPaginationZFSettlementList(pagination, OrganizeId, keyword, jsksrq, jsjsrq),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(data.ToJson());
+        }
 
         /// <summary>
         /// 
@@ -233,6 +249,6 @@ namespace Newtouch.HIS.Web.Areas.HospitalizationManage.Controllers
         {
             _hospSettDmnService.UpdateSettInvoiceNo(OrganizeId, jsnm, fph);
             return Success();
-        } 
+        }
     }
 }
