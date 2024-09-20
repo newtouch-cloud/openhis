@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Newtouch.HIS.Domain.ValueObjects.OutPatientPharmacy
 {
     public class MzcfcxVo
     {
-        public string  organizeId { get; set; }
+        public string organizeId { get; set; }
         public string ks { get; set; }
         public string cflx { get; set; }
         public string keyword { get; set; }
@@ -34,8 +30,10 @@ namespace Newtouch.HIS.Domain.ValueObjects.OutPatientPharmacy
         public string fybz { get; set; }
         public string ks { get; set; }
         public string ksmc { get; set; }
+        //补打退药单使用
+        public string tydh { get; set; }
     }
-    public class MzcfcxDetailList: MzcfcxList
+    public class MzcfcxDetailList : MzcfcxList
     {
         public string zh { get; set; }
         public string ypcode { get; set; }
