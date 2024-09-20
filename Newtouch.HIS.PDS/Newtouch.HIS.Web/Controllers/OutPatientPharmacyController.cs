@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.Mvc;
-using FrameworkBase.MultiOrg.Domain.DBContext.Infrastructure;
+﻿using FrameworkBase.MultiOrg.Domain.DBContext.Infrastructure;
 using FrameworkBase.MultiOrg.Domain.IRepository;
 using Newtouch.Common.Operator;
 using Newtouch.Core.Common;
@@ -23,6 +17,12 @@ using Newtouch.Infrastructure.Enum;
 using Newtouch.Infrastructure.Log;
 using Newtouch.PDS.Requset;
 using Newtouch.Tools;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web.Mvc;
 using static Newtouch.Common.Web.APIRequestHelper;
 
 namespace Newtouch.HIS.Web.Controllers
@@ -65,6 +65,7 @@ namespace Newtouch.HIS.Web.Controllers
         public ActionResult MzPrescriptionQuery()
         {
             ViewBag.OrganizeId = _OrganizeId;
+            ViewBag.yfbmCode = Constants.CurrentYfbm.yfbmCode;
             return View();
         }
         #endregion
@@ -829,7 +830,7 @@ namespace Newtouch.HIS.Web.Controllers
         }
         public ActionResult ChooseCf()
         {
-           
+
             return View();
         }
 
@@ -859,7 +860,7 @@ namespace Newtouch.HIS.Web.Controllers
         /// <returns></returns>
         [HttpGet]
         public ActionResult GetCfXX(string cardNo, string xm)
-		{
+        {
             var rpList = _fyDmnService.GetRpInfo(Constants.CurrentYfbm.yfbmCode, cardNo, xm, EnumFybz.Yp, OrganizeId);
             if (rpList == null)
             {
@@ -867,7 +868,7 @@ namespace Newtouch.HIS.Web.Controllers
             }
             return Content(rpList.ToJson());
         }
-        
+
         [HttpGet]
         public ActionResult GetFyCfInfo(string cardNo, string xm)
         {
@@ -1004,17 +1005,17 @@ namespace Newtouch.HIS.Web.Controllers
         {
             var result = new List<CfmxVO>();
             try
-			{
-				var tmpli = new fyDmnService(new DefaultDatabaseFactory(), false).SelectCfmx_new(cfh, OrganizeId, Constants.CurrentYfbm.yfbmCode);
-				lock (threadLocker)
-				{
-					result.AddRange(tmpli);
-				}
-			}
-			catch (Exception e)
-			{
-				LogCore.Error("QueryFyCfmxV2_new error", e, "门诊发药获取处方明细异常");
-			}
+            {
+                var tmpli = new fyDmnService(new DefaultDatabaseFactory(), false).SelectCfmx_new(cfh, OrganizeId, Constants.CurrentYfbm.yfbmCode);
+                lock (threadLocker)
+                {
+                    result.AddRange(tmpli);
+                }
+            }
+            catch (Exception e)
+            {
+                LogCore.Error("QueryFyCfmxV2_new error", e, "门诊发药获取处方明细异常");
+            }
             return Content(result.ToJson());
         }
         /// <summary>
@@ -1133,7 +1134,7 @@ namespace Newtouch.HIS.Web.Controllers
             try
             {
                 string zh = "";
-                var output = _mzCfRepo.GetZhInOutpatient(cfh,type);
+                var output = _mzCfRepo.GetZhInOutpatient(cfh, type);
                 List<string> result = new List<string>();
                 foreach (var item in output)
                 {
@@ -1280,7 +1281,7 @@ namespace Newtouch.HIS.Web.Controllers
                 lyyf = Constants.CurrentYfbm.yfbmCode,//OperatorProvider.GetCurrent().DepartmentCode,
                 TimeStamp = DateTime.Now
             };
-            var apiResp = SiteSettAPIHelper.Request<object,DefaultResponse>("api/OutpatientPharmacy/GettyMainInfoList", reqObj);
+            var apiResp = SiteSettAPIHelper.Request<object, DefaultResponse>("api/OutpatientPharmacy/GettyMainInfoList", reqObj);
             if (apiResp == null || apiResp.data == null)
             {
                 return Content("");
@@ -1309,7 +1310,7 @@ namespace Newtouch.HIS.Web.Controllers
                 cfh = pCfh,
                 TimeStamp = DateTime.Now
             };
-            var apiResp = SiteSettAPIHelper.Request<object,DefaultResponse>("api/OutpatientPharmacy/GettyDetailInfoList", reqObj);
+            var apiResp = SiteSettAPIHelper.Request<object, DefaultResponse>("api/OutpatientPharmacy/GettyDetailInfoList", reqObj);
             var result = _fyDmnService.GetAllDetailInfo(apiResp.data.ToJson().ToList<fyDetailListRequest>()).ToJson();
             return Content(result);
         }
@@ -1366,13 +1367,13 @@ namespace Newtouch.HIS.Web.Controllers
 
         [HttpGet]
         [HandlerAjaxOnly]
-        public ActionResult GetMzcfGridJson(Pagination pagination,string ks,string cflx, DateTime kssj, DateTime jssj, string keyword)
+        public ActionResult GetMzcfGridJson(Pagination pagination, string ks, string cflx, DateTime kssj, DateTime jssj, string keyword)
         {
             var reqObj = new MzcfcxVo
             {
-                ks=ks,
+                ks = ks,
                 kssj = kssj,
-                cflx=cflx,
+                cflx = cflx,
                 jssj = jssj,
                 keyword = keyword,
                 organizeId = OrganizeId
