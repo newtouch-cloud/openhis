@@ -974,12 +974,13 @@ and sfxm.sfxmmc like '%' + @xmmc + '%'  ";
 			   when 'MZ' then '麻醉处方' 
 			   when 'LXGB' then '离休干部'
 			   when 'TBCF' then '特病处方' end cftagName
-    ,a.ks,ks.name ksmc,c.xb,b.cfh,a.cfId,a.ys yscode,ys.name ysmc,a.cflx,b.fybz
+    ,a.ks,ks.name ksmc,c.xb,b.cfh,a.cfId,a.ys yscode,ys.name ysmc,a.cflx,b.fybz,tf.returnDrugBillNo AS tydh
 from Newtouch_CIS..xt_cf(nolock) a
 join NewtouchHIS_PDS..mz_cf (nolock) b on b.cfh=a.cfh and b.OrganizeId=a.OrganizeId and b.zt=1
 join Newtouch_CIS..xt_jz(nolock) c on c.jzId = a.jzId and a.OrganizeId=c.OrganizeId
 left join NewtouchHIS_Base..Sys_Staff (nolock) ys on ys.gh=a.ys  and a.OrganizeId=ys.OrganizeId
 left join NewtouchHIS_Base..V_S_Sys_Department (nolock) ks on ks.code=a.ks and ks.OrganizeId=a.OrganizeId
+LEFT JOIN NewtouchHIS_PDS..mz_tfmx (nolock) tf ON tf.cfh = b.cfh 
 where  a.zt='1' and a.OrganizeId=@orgId
     and a.CreateTime>=@kssj and a.CreateTime<=@jssj 
 ");

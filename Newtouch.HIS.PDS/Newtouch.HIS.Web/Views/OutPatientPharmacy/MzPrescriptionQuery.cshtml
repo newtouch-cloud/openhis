@@ -120,8 +120,24 @@
                 { label: '特殊处方', name: 'cftag', width: 80, align: 'left',hidden:true },
                 { label: '特殊处方', name: 'cftagName', width: 80, align: 'left' },
                 {
-                    label: '发药标志', name: 'fybz', width: 50, align: 'center', formatter: function (val) {
-                        return val== "2" ? "已发药":(val=="3"?"已退药":"未发药");  //$.enum.getDescByValue("EnumFybz", val);
+                    label: '发药标志', name: 'fybz', width: 50, align: 'center', formatter: function (val, options, rowData) {
+                        // 判断发药标志
+                        var statusText = val == "2" ? "已发药" : (val == "3" ? "已退药" : "未发药");
+                        return statusText;
+                    }
+                },
+                {
+                    label: '操作',
+                    name: 'tydh',
+                    width: 100,
+                    align: 'center',
+                    formatter: function (cellValue, options, rowData) {
+                        // 判断是否为已退药状态
+                        if (rowData.fybz == "3") {
+                            return "<input type='button' class='btn btn-primary btn-md reprint-btn' onclick='reprintReturnDrug(" + JSON.stringify(rowData) + ")' value='补打退药单' />";
+                        } else {
+                            return "<span>无操作</span>";
+                        }
                     }
                 }
             ],
@@ -135,8 +151,8 @@
                 //btn_clickrow(rowId);
             }
         });
-        
-        
+
+
         function btn_clickrow(rowId)
         {
             var cfh = $("#gridList").jqGrid('getRowData', rowId).cfh;
@@ -241,7 +257,7 @@
     function newtouch_event_f6() {
         debugger;
         var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
-        
+
         if (selRowIds.length == 0) {
             $.modalAlert("请先选中需打印的处方", 'warning');
             return;
@@ -264,5 +280,11 @@
         var rpturl = '@reportUrl' + "?tempCode=" + tempCode + "&orgId=" + '@ViewBag.OrganizeId';
         window.open(rpturl + "&mzh=" + mzh + "&cfId=" + cfId, "_blank",
             "height = 500, width = 1195, top = 100, left = 50, toolbar = no, menubar = no, scrollbars = yes, resizable = yes, location = no, status = no");
+    }
+
+    function reprintReturnDrug(rowData) {
+        console.log()
+        var uri = '@reportUrl' + "?tempCode=62" + "&hospitalCode=" + '@ViewBag.OrganizeId' + "&yfbmCode=" + '@ViewBag.yfbmCode' + "&cfh=" + rowData.cfh + "&tydh=" + rowData.tydh;
+        window.open(uri);
     }
 </script>
