@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Newtouch.HIS.Domain.ValueObjects
 {
@@ -33,6 +29,8 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string cyzd { get; set; }
         public string jtdz { get; set; }
         public string zxlsh { get; set; }
+
+        public string sfyb { get; set; }
     }
 
     /// <summary>

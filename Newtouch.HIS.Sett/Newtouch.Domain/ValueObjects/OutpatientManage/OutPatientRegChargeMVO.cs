@@ -7,7 +7,7 @@ namespace Newtouch.HIS.Domain.ValueObjects
     /// <summary>
     /// 门诊挂号收费查询
     /// </summary>
-    public class OutPatientRegChargeMVO: OutpatientSettYbFeeRelatedDTO
+    public class OutPatientRegChargeMVO : OutpatientSettYbFeeRelatedDTO
     {
         #region 挂号收费查询的主记录
 
@@ -116,6 +116,7 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string zdmc { get; set; }
         public decimal? jsjz { get; set; }
         public string zxlsh { get; set; }
+        public string sfyb { get; set; }
     }
 
     /// <summary>

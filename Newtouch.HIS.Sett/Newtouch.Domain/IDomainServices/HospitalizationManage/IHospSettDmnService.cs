@@ -40,6 +40,15 @@ namespace Newtouch.HIS.Domain.IDomainServices
         IList<HospSettlementInfoVO> GetPaginationSettlementList(Pagination pagination, string organizeId, string keyword, string fph, DateTime? jsksrq, DateTime? jsjsrq);
 
         /// <summary>
+        /// 待上传的自费结算病人信息
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="organizeId"></param>
+        /// <param name="jsksrq"></param>
+        /// <param name="jsjsrq"></param>
+        /// <returns></returns>
+        IList<HospSettlementInfoVO> GetPaginationZFSettlementList(Pagination pagination, string organizeId, string keyword, DateTime? jsksrq, DateTime? jsjsrq);
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="organizeId"></param>
