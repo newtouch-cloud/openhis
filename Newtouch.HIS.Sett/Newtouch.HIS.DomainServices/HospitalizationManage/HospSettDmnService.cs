@@ -8,8 +8,6 @@ using Newtouch.HIS.Domain.Entity;
 using Newtouch.HIS.Domain.IDomainServices;
 using Newtouch.HIS.Domain.IRepository;
 using Newtouch.HIS.Domain.ValueObjects;
-using Newtouch.Infrastructure.Model;
-using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using System;
 using System.Collections.Generic;
@@ -303,6 +301,59 @@ and zyjs.jsnm not in (select cxjsnm from zy_js where jszt = '2' and OrganizeId =
         }
 
         /// <summary>
+        /// 待上传的自费结算病人信息
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="organizeId"></param>
+        /// <param name="keyword"></param>
+        /// <param name="jsksrq"></param>
+        /// <param name="jsjsrq"></param>
+        /// <returns></returns>
+        public IList<HospSettlementInfoVO> GetPaginationZFSettlementList(Pagination pagination, string organizeId, string keyword, DateTime? jsksrq, DateTime? jsjsrq)
+        {
+            var sql = new StringBuilder();
+            sql.Append(@"select DISTINCT zyjs.jsnm, zybrxx.zyh, zybrxx.xm, brxz.brxzmc , zybrxx.ryrq, zybrxx.cyrq, zyjs.fph
+, zyjs.zje, zyjs.xjzf, zyjs.CreatorCode, zyjs.CreateTime,case zybrxx.xb when '1' then '男' else '女' end xb,
+zybrxx.zjh,convert(varchar(50),zybrxx.csny,120) csrq,'否' isxsr,isnull(mz.mzmc,'汉族') mz,uf.Name zzys,case brxxk.cyfs when '1' then '治愈' when '2' then '好转' when '3' then '转院' when '4' then '死亡' else '好转' end gz
+,case brxxk.cyfs when '3' then '医嘱转院' when '4' then '死亡' else '正常离院' end lyfs,brxxk.cyzdmc cyzd,zybrxx.hu_sheng+zybrxx.hu_shi+zybrxx.hu_xian+zybrxx.hu_dz jtzd,ybjs.setl_id zxlsh,
+CASE WHEN drjk.mlbm_id IS NOT NULL THEN '已上传' ELSE '' END AS sfyb
+from zy_js zyjs
+inner join zy_brjbxx zybrxx
+on zybrxx.zyh = zyjs.zyh and zybrxx.OrganizeId = zyjs.OrganizeId
+left join xt_brxz brxz
+on brxz.brxz = zyjs.brxz and brxz.OrganizeId = zyjs.OrganizeId
+LEFT JOIN xt_brjbxx xx ON xx.patid = zybrxx.patid  AND xx.zt='1'
+        AND zybrxx.OrganizeId=xx.OrganizeId
+LEFT JOIN [NewtouchHIS_Base]..V_S_xt_mz mz on mz.mzCode=zybrxx.mz and mz.zt='1'
+LEFT JOIN [NewtouchHIS_Base]..V_C_Sys_UserStaff uf on uf.gh=zybrxx.doctor and uf.OrganizeId=zybrxx.OrganizeId and uf.zt='1'
+left join [Newtouch_CIS].[dbo].[zy_brxxk] brxxk on brxxk.zyh=zybrxx.zyh and brxxk.OrganizeId=zybrxx.OrganizeId and brxxk.zt='1'
+LEFT JOIN [NewtouchHIS_Sett].[dbo].[drjk_zyjs_output] ybjs  ON ybjs.setl_id = zyjs.ybjslsh AND ybjs.zt = '1'
+LEFT JOIN dbo.Drjk_jxcsc_output drjk ON drjk.mlbm_id = CONVERT(VARCHAR(50), zyjs.jsnm)  -- 关联条件
+where zyjs.OrganizeId = @orgId
+and zyjs.zt = '1' and zyjs.jszt = '1' and zyjs.brxz = '0'
+and zyjs.jsnm not in (select cxjsnm from zy_js where jszt = '2' and OrganizeId = @orgId)
+");
+            var pars = new List<SqlParameter>();
+            pars.Add(new SqlParameter("@orgId", organizeId));
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                sql.Append(@" and (zybrxx.xm like @keyword or zybrxx.blh like @keyword or zybrxx.zyh like @keyword)");
+                pars.Add(new SqlParameter("@keyword", "%" + (keyword ?? "") + "%"));
+            }
+            if (jsksrq.HasValue)
+            {
+                sql.Append(@" and zyjs.CreateTime >= @jsksrq");
+                pars.Add(new SqlParameter("@jsksrq", jsksrq.Value.Date));
+            }
+            if (jsjsrq.HasValue)
+            {
+                sql.Append(@" and zyjs.CreateTime < @jsjsrq");
+                pars.Add(new SqlParameter("@jsjsrq", jsjsrq.Value.AddDays(1).Date));
+            }
+
+            return this.QueryWithPage<HospSettlementInfoVO>(sql.ToString(), pagination, pars.ToArray());
+        }
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="organizeId"></param>
@@ -412,7 +463,7 @@ select sfdl.dlCode as dlCode, sfxm.sfxmmc AS sfxmmc,sfxm.dw AS jfdw, sfdl.dlmc a
 
                 db.Commit();
             }
-        }  
+        }
     }
 
 }
