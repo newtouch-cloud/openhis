@@ -2,6 +2,7 @@
 using NeiMengGuYiBaoApp.Models.Log;
 using NeiMengGuYiBaoApp.Models.Output.YiBao;
 using NeiMengGuYiBaoApp.Models.Post.YiBao;
+using NeiMengGuYiBaoApp.Models.SQL;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -2317,6 +2318,38 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             Parameters.Add("@orgId", orgId);
             Parameters.Add("@jsnm", jsnm);
             return platFormServer.RunProc_DataTable_WqServer("usp_mz_SelfCostFeeInfo4205_data", Parameters);
+        }
+        #endregion
+
+        #region 数据采集上传  Drjk_jxcsc_output 落地
+        /// <summary>
+        ///  数据采集上传  Drjk_jxcsc_output 落地
+        /// </summary>
+        /// <param name="mlbm_id"></param>
+        /// <param name="xm_id"></param>
+        /// <param name="tradiNumber"></param>
+        /// <param name="json"></param>
+        /// <param name="czr"></param>
+        public static void SaveDataUploadReturn(string mlbm_id, string xm_id,string tradiNumber,string json,string czr)
+        {
+            DateTime date = GetServerTime();
+            int eeor = 0;
+            List<string> sqlList = new List<string>();
+            Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
+            jxcsc.mlbm_id = mlbm_id;
+            jxcsc.xm_id = xm_id;
+            jxcsc.OrganizeId = ConfigurationManager.AppSettings["orgId"];
+            jxcsc.OrganizeName = ConfigurationManager.AppSettings["fixmedins_name"];
+            jxcsc.type = "4502";//接口交易编号
+            jxcsc.issuccess = "True";//成功
+            jxcsc.log = json;//接口出参内容
+            jxcsc.czydm = czr;
+            jxcsc.czrq = date;
+            jxcsc.ph = "";
+            jxcsc.pch = "";
+            jxcsc.zt = 1;
+            sqlList.Add(jxcsc.ToAddSql());
+            Merge(sqlList, out eeor);
         }
         #endregion
     }

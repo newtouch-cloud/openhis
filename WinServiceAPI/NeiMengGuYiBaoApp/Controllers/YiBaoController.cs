@@ -4548,7 +4548,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         }
         #endregion
 
-        #region 4201 4207 4208 4209 自费病人就医信息 
+        #region 4201 4201A 4202 4203 4204 4205 4206 4207 4208 4209 自费病人就医信息 
         /// <summary>
         /// 4201 自费病人费用明细信息上传 
         /// </summary>
@@ -4584,24 +4584,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    DateTime date = ClassSqlHelper.GetServerTime();
-                    int eeor = 0;
-                    List<string> sqlList = new List<string>();
-                    Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
-                    jxcsc.mlbm_id = post4201.jsnm.ToString();
-                    jxcsc.xm_id = post4201.hisId;
-                    jxcsc.OrganizeId = orgId;
-                    jxcsc.OrganizeName = ddyymc;
-                    jxcsc.type = "4201";//接口交易编号
-                    jxcsc.issuccess = "True";//成功
-                    jxcsc.log = json;//接口出参内容
-                    jxcsc.czydm = post.operatorId;
-                    jxcsc.czrq = date;
-                    jxcsc.ph = "";
-                    jxcsc.pch = "";
-                    jxcsc.zt = 1;
-                    sqlList.Add(jxcsc.ToAddSql());
-                    ClassSqlHelper.Merge(sqlList, out eeor);
+                    ClassSqlHelper.SaveDataUploadReturn(post4201.jsnm.ToString(), post4201.hisId, post.tradiNumber, json, post.operatorId);
                 }
                 catch (Exception ex)
                 {
@@ -4642,24 +4625,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    DateTime date = ClassSqlHelper.GetServerTime();
-                    int eeor = 0;
-                    List<string> sqlList = new List<string>();
-                    Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
-                    jxcsc.mlbm_id = post4201.jsnm.ToString();
-                    jxcsc.xm_id = post4201.hisId;
-                    jxcsc.OrganizeId = orgId;
-                    jxcsc.OrganizeName = ddyymc;
-                    jxcsc.type = "4201A";//接口交易编号
-                    jxcsc.issuccess = "True";//成功
-                    jxcsc.log = json;//接口出参内容
-                    jxcsc.czydm = post.operatorId;
-                    jxcsc.czrq = date;
-                    jxcsc.ph = "";
-                    jxcsc.pch = "";
-                    jxcsc.zt = 1;
-                    sqlList.Add(jxcsc.ToAddSql());
-                    ClassSqlHelper.Merge(sqlList, out eeor);
+                    ClassSqlHelper.SaveDataUploadReturn(post4201.jsnm.ToString(), post4201.hisId, post.tradiNumber, json, post.operatorId);
                 }
                 catch (Exception ex)
                 {
@@ -4703,29 +4669,12 @@ namespace NeiMengGuYiBaoApp.Controllers
                 {
                     try
                     {
-                        DateTime date = ClassSqlHelper.GetServerTime();
-                        int eeor = 0;
-                        List<string> sqlList = new List<string>();
-                        Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
-                        jxcsc.mlbm_id = post4201.jsnm.ToString();
-                        jxcsc.xm_id = post4201.hisId;
-                        jxcsc.OrganizeId = orgId;
-                        jxcsc.OrganizeName = ddyymc;
-                        jxcsc.type = "4202";//接口交易编号
-                        jxcsc.issuccess = "True";//成功
-                        jxcsc.log = json;//接口出参内容
-                        jxcsc.czydm = post.operatorId;
-                        jxcsc.czrq = date;
-                        jxcsc.ph = "";
-                        jxcsc.pch = "";
-                        jxcsc.zt = 1;
-                        sqlList.Add(jxcsc.ToAddSql());
-                        ClassSqlHelper.Merge(sqlList, out eeor);
+                        ClassSqlHelper.SaveDataUploadReturn(post4201.jsnm.ToString(), post4201.hisId, post.tradiNumber, json, post.operatorId);
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("【4202】自费病人住院就诊和诊断信息上传成功，本地保存失败，数据异常：" + ex.Message);
-                        return YiBaoHelper.BuildReturnJson("-99", "【4202】自费病人住院就诊和诊断信息上传成功，HIS上传数据失败：" + ex.Message);
+                        AppLogger.Info("4201A 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
+                        return YiBaoHelper.BuildReturnJson("-99", "4201A 自费病人费用明细信息批量上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
                 return json;
@@ -4841,24 +4790,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 try
                 {
-                    DateTime date = ClassSqlHelper.GetServerTime();
-                    int eeor = 0;
-                    List<string> sqlList = new List<string>();
-                    Drjk_jxcsc_output jxcsc = new Drjk_jxcsc_output();
-                    jxcsc.mlbm_id = post4201.jsnm.ToString();
-                    jxcsc.xm_id = post4201.hisId;
-                    jxcsc.OrganizeId = orgId;
-                    jxcsc.OrganizeName = ddyymc;
-                    jxcsc.type = "4205";//接口交易编号
-                    jxcsc.issuccess = "True";//成功
-                    jxcsc.log = json;//接口出参内容
-                    jxcsc.czydm = post.operatorId;
-                    jxcsc.czrq = date;
-                    jxcsc.ph = "";
-                    jxcsc.pch = "";
-                    jxcsc.zt = 1;
-                    sqlList.Add(jxcsc.ToAddSql());
-                    ClassSqlHelper.Merge(sqlList, out eeor);
+                    ClassSqlHelper.SaveDataUploadReturn(post4201.jsnm.ToString(), post4201.hisId, post.tradiNumber, json, post.operatorId);
                 }
                 catch (Exception ex)
                 {
@@ -5019,6 +4951,19 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4401, out output, post, out code);
+
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4401】住院病案例首页信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4401】住院病案例首页信息上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
 
@@ -5042,13 +4987,25 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4402, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4402】住院医嘱记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4402】住院医嘱记录上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
         #endregion
 
         #region 4501 4502 4503 4504 4505 4506 报告记录
         /// <summary>
-        ///  4501 临床检查报告记录
+        /// 【4501】临床检查报告记录
         /// </summary>
         /// <param name="post"></param>
         /// <returns></returns>
@@ -5071,6 +5028,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4501, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4501】临床检查报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4501】临床检查报告记录上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
 
@@ -5105,6 +5074,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4502, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber,json,post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4502】临床检验报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4502】临床检验报告记录上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
         /// <summary>
@@ -5146,6 +5127,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4503】细菌培养报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4503】细菌培养报告记录上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
         /// <summary>
@@ -5187,6 +5180,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4504】药敏记录报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4504】药敏记录报告记录上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
         /// <summary>
@@ -5226,6 +5231,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4505】病例检查报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4505】病例检查报告记录上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
         /// <summary>
@@ -5252,6 +5269,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             if (input.data.Count > 0)
             {
                 json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+                if (code == "0")//如果成功则更新本地信息表 
+                {
+                    try
+                    {
+                        ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Info("【4506】非结构化报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                        return YiBaoHelper.BuildReturnJson("-99", "【4506】非结构化报告记录上传成功，HIS本地保存失败：" + ex.Message);
+                    }
+                }
             }
             return json;
         }
@@ -5282,6 +5311,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             if (input.data.Count > 0)
             {
                 json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+                if (code == "0")//如果成功则更新本地信息表 
+                {
+                    try
+                    {
+                        ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Info("【4601】输血信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                        return YiBaoHelper.BuildReturnJson("-99", "【4601】输血信息上传成功，HIS本地保存失败：" + ex.Message);
+                    }
+                }
             }
             return json;
         }
@@ -5309,6 +5350,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             if (input.data.Count > 0)
             {
                 json = YiBaoHelper.CallAndSaveLog(input, out output, post, out code);
+                if (code == "0")//如果成功则更新本地信息表 
+                {
+                    try
+                    {
+                        ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Info("【4602】护理操作生命体征测量记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                        return YiBaoHelper.BuildReturnJson("-99", "【4602】护理操作生命体征测量记录上传成功，HIS本地保存失败：" + ex.Message);
+                    }
+                }
             }
             return json;
         }
@@ -5324,7 +5377,6 @@ namespace NeiMengGuYiBaoApp.Controllers
         {
             post.inModel = 0;
             post.tradiNumber = "4701";
-            //post.hisId = "00056";
             Input_4701 input4701 = new Input_4701();
             input4701.adminfo = new adminfo_4701();
             input4701.coursrinfo = new List<coursrinfo_4701>();
@@ -5346,6 +5398,18 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_null output = new Output_null();
             string code = "1";
             string json = YiBaoHelper.CallAndSaveLog(input4701, out output, post, out code);
+            if (code == "0")//如果成功则更新本地信息表 
+            {
+                try
+                {
+                    ClassSqlHelper.SaveDataUploadReturn(post.hisId, post.hisId, post.tradiNumber, json, post.operatorId);
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Info("【4701】 电子病历上传上传成功，本地保存失败，数据异常：" + ex.Message);
+                    return YiBaoHelper.BuildReturnJson("-99", "【4701】 电子病历上传上传成功，HIS本地保存失败：" + ex.Message);
+                }
+            }
             return json;
         }
         [DllImport("ybsjcj.dll")]
