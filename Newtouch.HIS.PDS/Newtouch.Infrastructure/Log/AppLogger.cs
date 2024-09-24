@@ -12,7 +12,7 @@ namespace Newtouch.Infrastructure.Log
         {
             try
             {
-                var root = "C:\\log_yibao\\PDS";
+                var root = "C:\\HISLog\\log_yibao\\PDS";
                 var date = DateTime.Now.ToString("yyyyMMddHHmm");
                 var dirPath = string.Format("{0}\\{1}", root, date.Substring(0, 8));
                 if (!Directory.Exists(dirPath))
