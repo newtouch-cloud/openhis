@@ -1,5 +1,4 @@
 ﻿using NeiMengGuYiBaoApp.Models.Input;
-using NeiMengGuYiBaoApp.Models.Input.NationECCodeDll;
 using NeiMengGuYiBaoApp.Models.Input.YiBao;
 using NeiMengGuYiBaoApp.Models.Post;
 using NeiMengGuYiBaoApp.Models.Post.NationECCodeDll;
@@ -10,13 +9,13 @@ using System.IO;
 
 namespace NeiMengGuYiBaoApp.Service
 {
-	public class AppLogger
+	public class AppYiBaoLogger
 	{
         public static void Info(string message)
         {
             try
             {
-                var root = "C:\\log_yibao";
+                var root = "C:\\HISLog\\log_yibao";
                 var date = DateTime.Now.ToString("yyyyMMddHHmm");
                 var dirPath = string.Format("{0}\\{1}", root, date.Substring(0, 8));
                 if (!Directory.Exists(dirPath))

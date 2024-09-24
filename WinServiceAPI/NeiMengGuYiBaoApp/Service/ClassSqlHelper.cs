@@ -1071,9 +1071,9 @@ where  jz.zyh = '{hisId}'");
                             }
                             catch (Exception ex)
                             {
-                                AppLogger.Info("目录写入数据库失败:【" + tbname + "】-" + ex);
-                                AppLogger.Info("错误的原数据是:【" + sLine + "】");
-                                AppLogger.Info("错误的修改后的数据是:【" + a + "】");
+                                YiBaoCallLogHelper.Info("目录写入数据库失败:【" + tbname + "】-" + ex);
+                                YiBaoCallLogHelper.Info("错误的原数据是:【" + sLine + "】");
+                                YiBaoCallLogHelper.Info("错误的修改后的数据是:【" + a + "】");
                                 continue;
                             }
 
@@ -1087,7 +1087,7 @@ where  jz.zyh = '{hisId}'");
             }
             catch (Exception ex)
             {
-                AppLogger.Info("目录写入数据库失败:【" + tbname + "】-" + ex);
+                YiBaoCallLogHelper.Info("目录写入数据库失败:【" + tbname + "】-" + ex);
                 var errmsg = "目录写入数据库失败:【" + tbname + "】-" + ex;
                 return errmsg;
             }
@@ -1443,7 +1443,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             }
             catch (Exception ex)
             {
-                AppLogger.Info("目录写入数据库失败:【" + ex.Message + "】");
+                YiBaoCallLogHelper.Info("目录写入数据库失败:【" + ex.Message + "】");
                 return "插入Drjk_sqsh_OutputMX表失败" + ex.Message;
             }
             return "";

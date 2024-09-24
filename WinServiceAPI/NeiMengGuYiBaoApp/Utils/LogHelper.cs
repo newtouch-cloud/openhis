@@ -10,10 +10,9 @@ namespace NeiMengGuYiBaoApp
 {
 	public class LogHelper
 	{
-		static string filePath = null;
 		public static void LogError(string strError)
 		{
-			filePath = filePath ?? $"{Application.StartupPath}\\LOG.log";
+            var filePath = "C:\\HISLog\\log_yibao\\LOG.log";
 			if (!File.Exists(filePath))//如果不存在就创建文件
 			{
 				File.Create(filePath);

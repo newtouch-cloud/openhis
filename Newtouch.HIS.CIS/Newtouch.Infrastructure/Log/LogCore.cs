@@ -13,12 +13,12 @@ namespace Newtouch.Infrastructure.Log
     /// </summary>
     public class LogCore
     {
-        private static readonly ILog Logger = LogProxy.GetLogger(string.IsNullOrWhiteSpace(ConfigurationHelper.GetAppConfigValue("ServiceName")) ? "newtouch.sett" : ConfigurationHelper.GetAppConfigValue("ServiceName"));
+        private static readonly ILog Logger = LogProxy.GetLogger(string.IsNullOrWhiteSpace(ConfigurationHelper.GetAppConfigValue("ServiceName")) ? "Newtouch.CIS" : ConfigurationHelper.GetAppConfigValue("ServiceName"));
 
-        private static string xnhLogAddress =
-            string.IsNullOrEmpty(ConfigurationManager.AppSettings["xnhLogAddress"])
-                ? "D:\\log_xinnonghe_guigan"
-                : ConfigurationManager.AppSettings["xnhLogAddress"];
+        private static string LogAddress =
+            string.IsNullOrEmpty(ConfigurationManager.AppSettings["settLogAddress"])
+                ? "C:\\HISLog\\log_sett_web"
+                : ConfigurationManager.AppSettings["settLogAddress"];
 
         public static void Info<T>(string title, T message, Dictionary<string, string> addInfo = null)
         {
@@ -62,12 +62,12 @@ namespace Newtouch.Infrastructure.Log
         /// 写本地日志
         /// </summary>
         /// <param name="message"></param>
-        public static void WriteInfo(string message)
+        public static void WriteInfoWeb(string message)
         {
             try
             {
                 var date = DateTime.Now.ToString("yyyyMMddHHmm");
-                var dirPath = string.Format("{0}\\{1}", xnhLogAddress, date.Substring(0, 8));
+                var dirPath = string.Format("{0}\\{1}", LogAddress, date.Substring(0, 8));
                 if (!Directory.Exists(dirPath))
                 {
                     Directory.CreateDirectory(dirPath);

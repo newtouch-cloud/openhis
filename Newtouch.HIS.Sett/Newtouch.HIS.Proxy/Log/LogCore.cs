@@ -13,15 +13,15 @@ namespace Newtouch.HIS.Proxy.Log
     /// </summary>
     public class LogCore
     {
-        private static readonly ILog Logger = LogProxy.GetLogger(string.IsNullOrWhiteSpace(ConfigurationHelper.GetAppConfigValue("ServiceName")) ? "newtouch.sett" : ConfigurationHelper.GetAppConfigValue("ServiceName"));
+        private static readonly ILog Logger = LogProxy.GetLogger(string.IsNullOrWhiteSpace(ConfigurationHelper.GetAppConfigValue("ServiceName")) ? "Newtouch.Sett" : ConfigurationHelper.GetAppConfigValue("ServiceName"));
 
         private static string xnhLogAddress =
             string.IsNullOrEmpty(ConfigurationManager.AppSettings["xnhLogAddress"])
-                ? "D:\\log_xinnonghe_guigan"
+                ? "C:\\HISLog\\log_xinnonghe_guigan"
                 : ConfigurationManager.AppSettings["xnhLogAddress"];
         private static string LogAddress =
             string.IsNullOrEmpty(ConfigurationManager.AppSettings["settLogAddress"])
-                ? "D:\\log_sett_web"
+                ? "C:\\HISLog\\log_sett_web"
                 : ConfigurationManager.AppSettings["settLogAddress"];
         public static void Info<T>(string title, T message, Dictionary<string, string> addInfo = null)
         {

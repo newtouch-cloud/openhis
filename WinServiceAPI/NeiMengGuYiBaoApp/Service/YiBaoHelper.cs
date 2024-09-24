@@ -414,7 +414,7 @@ namespace NeiMengGuYiBaoApp.Service
           where O : OutputBase
           where I : InputBase
         {
-            AppLogger.Info("进入SaveToInterface1");
+            YiBaoCallLogHelper.Info("进入SaveToInterface1");
             //out参数赋初值
             OutModlem = null;
             code = "-1";
@@ -435,9 +435,9 @@ namespace NeiMengGuYiBaoApp.Service
             InputPost<InputBase> input = new InputPost<InputBase>();
             input.input = new InputBase();
             input.input = InModle;
-            AppLogger.Info("进入SettingsBase");
+            YiBaoCallLogHelper.Info("进入SettingsBase");
             SettingsBase(post, getdate, input);
-            AppLogger.Info("进入SettingsBase:"+ input.cainfo);
+            YiBaoCallLogHelper.Info("进入SettingsBase:"+ input.cainfo);
             JObject baseJson = post.tradiNumber == "1162" ? JObject.Parse(JsonConvert.SerializeObject(InModle)) : JObject.Parse(JsonConvert.SerializeObject(input));
             string strJson = Convert.ToString(baseJson);
             /*0 – 成功，表示此次交易请求成功，业务处理也正常< 0 － 错误，包括系统级别错误(网络、主机、数据库)和业务级别错误，系统级别错误由动态库将错误信息写入输出参数，
@@ -451,8 +451,8 @@ namespace NeiMengGuYiBaoApp.Service
                 strJson = strJson.Replace("null", @"""0""");
             }
             //保存日志记事本文件 在D盘
-            AppLogger.Info("请求交易业务代码：" + post.tradiNumber);
-            AppLogger.Info("请求交易入参：" + strJson);
+            YiBaoCallLogHelper.Info("请求交易业务代码：" + post.tradiNumber);
+            YiBaoCallLogHelper.Info("请求交易入参：" + strJson);
             string url = GetPubWay(post.tradiNumber);
             HttpWebRequest request = null;
             HttpWebResponse response = null;
@@ -482,7 +482,7 @@ namespace NeiMengGuYiBaoApp.Service
                     //request.Headers.Add("x-tif-timestamp", times.ToString());
                     //request.Headers.Add("x-tif-nonce", nonce);
                     request.Headers.Add("apikey", "123456");
-                    AppLogger.Info("请求交易header入参：" + url + @"
+                    YiBaoCallLogHelper.Info("请求交易header入参：" + url + @"
             " + request.Headers.ToString());
                     byte[] bytepostData = System.Text.Encoding.UTF8.GetBytes(strJson);
 
@@ -494,7 +494,7 @@ namespace NeiMengGuYiBaoApp.Service
 
                     //响应
                     response = (HttpWebResponse)request.GetResponse();
-                    AppLogger.Info("response.ContentLength" + response.ContentLength);
+                    YiBaoCallLogHelper.Info("response.ContentLength" + response.ContentLength);
                     using (Stream responseStm = response.GetResponseStream())
                     {
 
@@ -528,7 +528,7 @@ namespace NeiMengGuYiBaoApp.Service
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("post请求异常：" + ex.Message + ex.InnerException);
+                    YiBaoCallLogHelper.Info("post请求异常：" + ex.Message + ex.InnerException);
                     var nn = new { infcode = "-1", inf_refmsgid = "", refmsg_time = "", respond_time = "", enctype = "", signtype = "", err_msg = "本地模拟医保返回异常: " + ex.Message };
                     outputText = JsonConvert.SerializeObject(nn);
                     //throw ex;
@@ -606,11 +606,11 @@ namespace NeiMengGuYiBaoApp.Service
 
             if (post.tradiNumber == "9102")
             {
-                AppLogger.Info("请求交易出参：9102下载完成" );
+                YiBaoCallLogHelper.Info("请求交易出参：9102下载完成" );
             }
             else
             {
-                AppLogger.Info("请求交易出参：" + outputText);
+                YiBaoCallLogHelper.Info("请求交易出参：" + outputText);
             }
 
             /*（待补充实现当BUSINESS_HANDLE函数返回-1时对某些交易的冲正处理）
@@ -644,7 +644,7 @@ namespace NeiMengGuYiBaoApp.Service
             }
 
             //保存交易日志到数据库
-            AppLogger.SaveJyDbLog(post, getdate, input, strJson, outputJson, isSucess);
+            YiBaoCallLogHelper.SaveJyDbLog(post, getdate, input, strJson, outputJson, isSucess);
 
             //转换交易输出实体类
             if (post.inModel == 1 && outputJson.output != null)
@@ -1056,12 +1056,12 @@ namespace NeiMengGuYiBaoApp.Service
 
                 //响应
                 response = (HttpWebResponse)request.GetResponse();
-                AppLogger.Info("response.ContentLength" + response.ContentLength);
+                YiBaoCallLogHelper.Info("response.ContentLength" + response.ContentLength);
                 return response;
             }
             catch (Exception ex)
             {
-                AppLogger.Info("Http请求异常：" + ex.Message + ex.InnerException);
+                YiBaoCallLogHelper.Info("Http请求异常：" + ex.Message + ex.InnerException);
                 return response;
             }
 
@@ -1117,7 +1117,7 @@ namespace NeiMengGuYiBaoApp.Service
                 return Asyncrequeststr;
             }
             string resp = "";
-            AppLogger.Info("9201下载目录：["+tradiNumber.ToString()+"]"+ Asyncrequeststr);
+            YiBaoCallLogHelper.Info("9201下载目录：["+tradiNumber.ToString()+"]"+ Asyncrequeststr);
             YBHttpRequestAsync(tradiNumber,InModle,out resp);
             //保存交易日志到数据库
             return resp;
@@ -1130,7 +1130,7 @@ namespace NeiMengGuYiBaoApp.Service
             //判断路径是否正确
             if (string.IsNullOrEmpty(downloadfilepath))
             {
-                AppLogger.Info("9102下载完成,路径异常");
+                YiBaoCallLogHelper.Info("9102下载完成,路径异常");
             }
             else
             {
@@ -1146,7 +1146,7 @@ namespace NeiMengGuYiBaoApp.Service
                         }
                         catch (Exception ex)
                         {
-                            AppLogger.Info("9102下载完成,创建文件夹失败" + ex.Message);
+                            YiBaoCallLogHelper.Info("9102下载完成,创建文件夹失败" + ex.Message);
                         }
                     }
                     else
@@ -1154,7 +1154,7 @@ namespace NeiMengGuYiBaoApp.Service
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("9102下载完成,生成文件信息对象失败" + ex.Message);
+                    YiBaoCallLogHelper.Info("9102下载完成,生成文件信息对象失败" + ex.Message);
                 }
             }            
             return flag;
@@ -1199,7 +1199,7 @@ namespace NeiMengGuYiBaoApp.Service
 
                 if (string.IsNullOrWhiteSpace(Asyncrequeststr))
                 {
-                    AppLogger.Info("Http请求异常：入参不可为空");
+                    YiBaoCallLogHelper.Info("Http请求异常：入参不可为空");
                     return;
                 }
 
@@ -1220,16 +1220,16 @@ namespace NeiMengGuYiBaoApp.Service
                 requestState.SavePath = Path.Combine(loadpath, InModle.fsDownloadIn.filename);
                 requestState.FileStream = new FileStream(requestState.SavePath, FileMode.OpenOrCreate);
 
-                AppLogger.Info("文件下载路径：" + requestState.SavePath);
+                YiBaoCallLogHelper.Info("文件下载路径：" + requestState.SavePath);
 
                 //开始异步请求资源
-                AppLogger.Info("开始异步请求资源Begin：");
+                YiBaoCallLogHelper.Info("开始异步请求资源Begin：");
                 request.BeginGetResponse(new AsyncCallback(ResponseCallback), requestState);
                 resp = requestState.SavePath;
             }
             catch (Exception ex)
             {
-                AppLogger.Info("Http请求异常：" + ex.Message + ex.InnerException);
+                YiBaoCallLogHelper.Info("Http请求异常：" + ex.Message + ex.InnerException);
             }
 
         }
@@ -1247,7 +1247,7 @@ namespace NeiMengGuYiBaoApp.Service
             requestState.ResponseStream = responseStream;
 
             //开始异步读取流
-            AppLogger.Info("开始异步读取流:" + requestState.BufferRead.Length);
+            YiBaoCallLogHelper.Info("开始异步读取流:" + requestState.BufferRead.Length);
             responseStream.BeginRead(requestState.BufferRead, 0, requestState.BufferRead.Length, ReadCallback, requestState);
         }
 
@@ -1259,7 +1259,7 @@ namespace NeiMengGuYiBaoApp.Service
         {
             HttpRequestDto requestState = (HttpRequestDto)asyncResult.AsyncState;
             int read = requestState.ResponseStream.EndRead(asyncResult);
-            AppLogger.Info("开始异步读取流:read:" + read.ToString());
+            YiBaoCallLogHelper.Info("开始异步读取流:read:" + read.ToString());
             if (read > 0)
             {
                 //将缓冲区的数据写入该文件流

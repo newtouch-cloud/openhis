@@ -14,7 +14,7 @@ namespace YiBaoInterface
         {
             try
             {
-                var root = "C:\\log_yibao";
+                var root = "C:\\HISLog\\log_yibao";
                 var date = DateTime.Now.ToString("yyyyMMddHHmm");
                 var dirPath = string.Format("{0}\\{1}", root, date.Substring(0, 8));
                 if (!Directory.Exists(dirPath))

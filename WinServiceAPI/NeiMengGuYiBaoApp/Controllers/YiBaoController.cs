@@ -47,7 +47,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         [HttpPost]
         public string CardecInfo_1101(Post_1101 post1101)
         {
-            AppLogger.Info("1101请求交易入参：");
+            YiBaoCallLogHelper.Info("1101请求交易入参：");
 
             PostBase post = new PostBase();
             //先进行读卡 然后再获取个人基本信息
@@ -73,7 +73,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_1101 Output1101 = new Output_1101();
 
             string jsonStr = YiBaoHelper.CallAndSaveLog(input1101, out Output1101, post, out code);
-            AppLogger.Info("1101请求交易出参：" + jsonStr);
+            YiBaoCallLogHelper.Info("1101请求交易出参：" + jsonStr);
             return jsonStr;
         }
         public class cardecinfo
@@ -552,9 +552,9 @@ namespace NeiMengGuYiBaoApp.Controllers
                 input9102.fsDownloadIn.file_qury_no = post.file_qury_no;// "fsi/plc/a00a5f4c66cd43568019ea69117510";
 
                 Output_9102 output9102 = new Output_9102();
-                AppLogger.Info("9102目录数据下载开始：编码" + post.tradiNumber);
+                YiBaoCallLogHelper.Info("9102目录数据下载开始：编码" + post.tradiNumber);
                 json = YiBaoHelper.Download_9102(input9102, post1, post.tradiNumber ?? "1301", false);
-                AppLogger.Info("9102目录数据下载完成：编码" + post.tradiNumber + "返回json:" + json);
+                YiBaoCallLogHelper.Info("9102目录数据下载完成：编码" + post.tradiNumber + "返回json:" + json);
             }
             else
             {
@@ -584,7 +584,7 @@ namespace NeiMengGuYiBaoApp.Controllers
         /// <returns></returns>
         public string InsertData9102(Post_Download_SQL post)
         {
-            AppLogger.Info("目录数据开始插入数据库");
+            YiBaoCallLogHelper.Info("目录数据开始插入数据库");
             string resultrow = "Success";
             try
             {
@@ -642,7 +642,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 if (File.Exists(post.files))
                 {
-                    AppLogger.Info("步骤1");
+                    YiBaoCallLogHelper.Info("步骤1");
                     if (!File.Exists(post.files.Replace(".zip", "")))
                     {
                         System.IO.Compression.ZipFile.ExtractToDirectory(post.files, downloadfilepath + post.tradiNumber); //解压
@@ -651,14 +651,14 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 else
                 {
-                    AppLogger.Info("步骤2");
+                    YiBaoCallLogHelper.Info("步骤2");
                     resultrow = "目录编号" + post.tradiNumber + "未下载成功，请重新下载!";
                     //_iG_yb_daysrg_trt_list_bRepo.DataListSQl(tbname, "D:\\YBDownload\\" + XZNR + "\\" + filename.Replace(".zip",""));
                 }
             }
             catch (Exception ex)
             {
-                AppLogger.Info("insert数据库失败:" + post.tradiNumber + "-" + ex);
+                YiBaoCallLogHelper.Info("insert数据库失败:" + post.tradiNumber + "-" + ex);
                 var errmsg = "insert数据库失败:" + post.tradiNumber + "-" + ex;
                 if (errmsg.Contains("正由另一进程使用，因此该进程无法访问此文件"))
                 {
@@ -846,7 +846,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("目录查询：" + ex.Message);
+                YiBaoCallLogHelper.Info("目录查询：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "目录查询失败：" + ex.Message);
             }
         }
@@ -886,7 +886,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("字典表查询：" + ex.Message);
+                YiBaoCallLogHelper.Info("字典表查询：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "字典表查询失败：" + ex.Message);
             }
         }
@@ -1230,7 +1230,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("医保明细撤销成功，HIS删除上传明细数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("医保明细撤销成功，HIS删除上传明细数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "医保明细撤销成功，HIS删除上传明细数据失败：" + ex.Message);
                 }
             }
@@ -1295,7 +1295,7 @@ namespace NeiMengGuYiBaoApp.Controllers
 
             //获取费用金额
             DataTable dtCost = ClassSqlHelper.QueryCost(1, input.hisId, input.chrg_bchno);
-            AppLogger.Info("2207费用：" + (dtCost.Rows[0]["fulamt_ownpay_amt"]));
+            YiBaoCallLogHelper.Info("2207费用：" + (dtCost.Rows[0]["fulamt_ownpay_amt"]));
             string code = "1";
             Input_2207 input2207 = new Input_2207();
             input2207.data = new data2207();
@@ -1308,7 +1308,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             Output_2207 output = new Output_2207();
             output.setlinfo = new setlinfo2207();
             output.setldetail = new List<setldetail>();
-            AppLogger.Info("进入结算：" + (dtCost.Rows[0]["fulamt_ownpay_amt"]));
+            YiBaoCallLogHelper.Info("进入结算：" + (dtCost.Rows[0]["fulamt_ownpay_amt"]));
             string json = YiBaoHelper.CallAndSaveLog(input2207, out output, post, out code);
             if (code == "0")//如果成功则写入医保
             {
@@ -1353,18 +1353,18 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("医保结算成功，HIS写结算数据表异常：" + ex.Message);
-                    AppLogger.Info("自动执行门诊结算撤销...");
+                    YiBaoCallLogHelper.Info("医保结算成功，HIS写结算数据表异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("自动执行门诊结算撤销...");
                     string mzjscs = UpSettlement_2208_For2207(input, output.setlinfo.setl_id);
                     OutputReturn mzjscsRt = JsonConvert.DeserializeObject<OutputReturn>(mzjscs);
                     if (mzjscsRt.infcode != "0")
                     {
-                        AppLogger.Info("自动执行门诊结算撤销失败：" + mzjscsRt.err_msg);
+                        YiBaoCallLogHelper.Info("自动执行门诊结算撤销失败：" + mzjscsRt.err_msg);
                         return YiBaoHelper.BuildReturnJson("-99", "医保结算成功，HIS写结算数据表失败：【" + ex.Message + "】，撤销医保结算失败：【" + mzjscsRt.err_msg + "】，请速联系HIS厂商技术人员。");
                     }
                     else
                     {
-                        AppLogger.Info("自动执行门诊结算撤销成功");
+                        YiBaoCallLogHelper.Info("自动执行门诊结算撤销成功");
                         return YiBaoHelper.BuildReturnJson("-99", "医保结算成功，HIS写结算数据表失败，已自动撤销医保结算，请联系HIS厂商技术人员。");
                     }
                 }
@@ -1410,7 +1410,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("撤销医保结算成功，HIS更新结算数据表状态异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("撤销医保结算成功，HIS更新结算数据表状态异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "撤销医保结算成功，HIS更新结算数据表状态失败：" + ex.Message);
                 }
             }
@@ -1495,7 +1495,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             post.operatorId = post2301.operatorId;
             post.operatorName = post2301.operatorName;
             post.inModel = 1;
-            AppLogger.Info("查询QuertHospitalFeedetailV2开始：");
+            YiBaoCallLogHelper.Info("查询QuertHospitalFeedetailV2开始：");
             DataTable dtFeed = ClassSqlHelper.QuertHospitalFeedetailV2(post2301);
             if (dtFeed.Rows.Count <= 0)//判断有没有要上传的医保费用
             {
@@ -1505,7 +1505,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             inputListAll.feedetail = new List<feedetail2301>();
             inputListAll.feedetail = Function.ToList<feedetail2301>(dtFeed);
             string json = "";
-            AppLogger.Info("查询HospitaFeedetail开始：");
+            YiBaoCallLogHelper.Info("查询HospitaFeedetail开始：");
             HospitaFeedetail(inputListAll.feedetail, post, 0, post2301.uploadCount, out json);
             if (json == "")
             {
@@ -1545,7 +1545,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             {
                 inputList.feedetail.Add(inputListAll[i]);
             }
-            AppLogger.Info("查询HospitaFeedetail开始：" + inputList.feedetail.Count);
+            YiBaoCallLogHelper.Info("查询HospitaFeedetail开始：" + inputList.feedetail.Count);
             string code = "-1";
             string jsonOutput = YiBaoHelper.CallAndSaveLog(inputList, out outputList, post, out code);
             if (code == "0")//成功后写入本地数据库
@@ -1638,7 +1638,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("医保明细撤销成功，HIS删除上传明细数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("医保明细撤销成功，HIS删除上传明细数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "医保明细撤销成功，HIS删除上传明细数据失败：" + ex.Message);
                 }
             }
@@ -1703,7 +1703,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("医保明细撤销成功，HIS删除上传明细数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("医保明细撤销成功，HIS删除上传明细数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "医保明细撤销成功，HIS删除上传明细数据失败：" + ex.Message);
                 }
             }
@@ -1835,18 +1835,18 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("医保结算成功，HIS写结算数据表异常：" + ex.Message);
-                    AppLogger.Info("自动执行住院结算撤销...");
+                    YiBaoCallLogHelper.Info("医保结算成功，HIS写结算数据表异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("自动执行住院结算撤销...");
                     string zyjscx = HospitaUpSettlement_2305_For2304(input, output.setlinfo.setl_id);
                     OutputReturn zyjscxRt = JsonConvert.DeserializeObject<OutputReturn>(zyjscx);
                     if (zyjscxRt.infcode != "0")
                     {
-                        AppLogger.Info("自动执行住院结算撤销失败：" + zyjscxRt.err_msg);
+                        YiBaoCallLogHelper.Info("自动执行住院结算撤销失败：" + zyjscxRt.err_msg);
                         return YiBaoHelper.BuildReturnJson("-99", "医保结算成功，HIS写结算数据表失败，撤销医保结算失败，请速联系HIS厂商技术人员。");
                     }
                     else
                     {
-                        AppLogger.Info("自动执行住院结算撤销成功");
+                        YiBaoCallLogHelper.Info("自动执行住院结算撤销成功");
                         return YiBaoHelper.BuildReturnJson("-99", "医保结算成功，HIS写结算数据表失败，已自动撤销医保结算，请联系HIS厂商技术人员。");
                     }
                     /* (HIS端已有出院撤销处理)
@@ -1907,7 +1907,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("撤销医保结算成功，HIS更新结算数据表状态异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("撤销医保结算成功，HIS更新结算数据表状态异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "撤销医保结算成功，HIS更新结算数据表状态失败：" + ex.Message);
                 }
             }
@@ -2161,7 +2161,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("撤销医保出院成功，HIS更新入院数据表状态异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("撤销医保出院成功，HIS更新入院数据表状态异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "撤销医保出院成功，HIS更新入院数据表状态失败：" + ex.Message);
                 }
             }
@@ -2307,7 +2307,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("明细审核：" + ex.Message);
+                YiBaoCallLogHelper.Info("明细审核：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "明细审核失败：" + ex.Message);
             }
 
@@ -2403,7 +2403,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("事中审核：" + ex.Message);
+                YiBaoCallLogHelper.Info("事中审核：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "事中审核失败：" + ex.Message);
             }
 
@@ -2758,7 +2758,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "商品盘存上传成功，HIS删除数据异常：" + ex.Message);
 
                 }
@@ -2787,7 +2787,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口3501商品盘存上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口3501商品盘存上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口3501商品盘存上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -2816,7 +2816,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口3501商品盘存上传失败，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口3501商品盘存上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口3501商品盘存上传失败，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -2903,7 +2903,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
+                YiBaoCallLogHelper.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "商品盘存上传成功，HIS删除数据异常：" + ex.Message);
 
             }
@@ -2924,7 +2924,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口3501A商品盘存上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口3501A商品盘存上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口3501A商品盘存上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -2943,7 +2943,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口3501A商品盘存上传失败，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口3501A商品盘存上传失败，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口3501A商品盘存上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3002,7 +3002,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("商品库存变更上传成功，HIS删除数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("商品库存变更上传成功，HIS删除数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "商品库存变更上传成功，HIS删除数据异常：" + ex.Message);
                 }
                 if (code == "0")//如果成功则更新本地信息表 
@@ -3030,7 +3030,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口3502商品库存变更上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口3502商品库存变更上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口3502商品库存变更上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3059,7 +3059,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口3502商品库存变更上传失败，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口3502商品库存变更上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口3502商品库存变更上传失败，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3149,7 +3149,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
+                YiBaoCallLogHelper.Info("商品盘存上传成功，HIS删除数据异常：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "商品盘存上传成功，HIS删除数据异常：" + ex.Message);
 
             }
@@ -3170,7 +3170,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口3502A商品库存变更上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口3502A商品库存变更上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口3502A商品库存变更上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3189,7 +3189,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口3502A商品库存变更上传失败，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口3502A商品库存变更上传失败，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口3502A商品库存变更上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3229,7 +3229,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("商商品采购上传成功，HIS删除数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("商商品采购上传成功，HIS删除数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "商品采购上传成功，HIS删除数据异常：" + ex.Message);
                 }
                 if (code == "0")//如果成功则更新本地信息表 
@@ -3255,7 +3255,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3503】商品采购上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3503】商品采购上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503】商品采购上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3282,7 +3282,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3503】商品采购上传失败，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3503】商品采购上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503】商品采购上传失败，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3351,7 +3351,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("商商品采购上传成功，HIS删除数据异常：" + ex.Message);
+                YiBaoCallLogHelper.Info("商商品采购上传成功，HIS删除数据异常：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "商品采购上传成功，HIS删除数据异常：" + ex.Message);
 
             }
@@ -3372,7 +3372,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3503A】商品采购上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3503A】商品采购上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503A】商品采购上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3391,7 +3391,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3503A】商品采购上传失败，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3503A】商品采购上传失败，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3503A】商品采购上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3427,12 +3427,12 @@ namespace NeiMengGuYiBaoApp.Controllers
                 json = YiBaoHelper.CallAndSaveLog(input3504, out output, post, out code);
                 try
                 {
-                    AppLogger.Info("HIS删除商品采购退货数据：" + dtDiseinfo.Rows[i]["mlbm_id"].ToString() + " 类型：" + post.tradiNumber);
+                    YiBaoCallLogHelper.Info("HIS删除商品采购退货数据：" + dtDiseinfo.Rows[i]["mlbm_id"].ToString() + " 类型：" + post.tradiNumber);
                     ClassSqlHelper.DeleteInventory(dtDiseinfo.Rows[i]["mlbm_id"].ToString(), post.tradiNumber, "", "");
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                 }
                 if (code == "0")//如果成功则更新本地信息表 
@@ -3458,7 +3458,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3504】商品采购退货上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3504】商品采购退货上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3504】商品采购退货上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3485,7 +3485,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3504】商品采购退货上传失败，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3504】商品采购退货上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3504】商品采购退货上传失败，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3550,12 +3550,12 @@ namespace NeiMengGuYiBaoApp.Controllers
 
             try
             {
-                AppLogger.Info("HIS删除商品采购退货数据：" + mlbm_ids.ToArray() + " 类型：" + "3504");
+                YiBaoCallLogHelper.Info("HIS删除商品采购退货数据：" + mlbm_ids.ToArray() + " 类型：" + "3504");
                 ClassSqlHelper.DeleteInventoryA(mlbm_ids.ToArray(), "3504");
             }
             catch (Exception ex)
             {
-                AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                YiBaoCallLogHelper.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
 
             }
@@ -3576,7 +3576,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3504A】商品采购退货上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3504A】商品采购退货上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3504A】商品采购退货上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3595,7 +3595,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3504A】商品采购退货上传失败，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3504A】商品采购退货上传失败，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3504A】商品采购上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3652,7 +3652,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                 }
                 if (code == "0")//如果成功则更新本地信息表 
@@ -3678,7 +3678,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3505】商品销售上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3505】商品销售上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505】商品销售上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3705,7 +3705,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3505】商品销售上传失败，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3505】商品销售上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505】商品销售上传失败，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3791,7 +3791,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                YiBaoCallLogHelper.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
 
             }
@@ -3812,7 +3812,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3505A】商品销售上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3505A】商品销售上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505A】商品销售上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3831,7 +3831,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3505A】商品销售上传失败，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3505A】商品销售上传失败，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3505A】商品销售上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -3888,7 +3888,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                 }
                 if (code == "0")//如果成功则更新本地信息表 
@@ -3914,7 +3914,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3506】商品销售退货上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3506】商品销售退货上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3506】商品销售退货上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -3941,7 +3941,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("进销存接口【3506】商品销售退货上传失败，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("进销存接口【3506】商品销售退货上传失败，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3506】商品销售退货上传失败，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -4027,7 +4027,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
+                YiBaoCallLogHelper.Info("商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "商品采购退货上传成功，HIS删除数据异常：" + ex.Message);
 
             }
@@ -4048,7 +4048,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3506A】商品销售退货上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3506A】商品销售退货上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3506A】商品销售退货上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -4067,7 +4067,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("进销存接口【3506A】商品销售退货上传失败，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("进销存接口【3506A】商品销售退货上传失败，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "进销存接口【3506A】商品销售退货上传失败，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -4588,7 +4588,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("4201 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("4201 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "4201 自费病人费用明细信息批量上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -4629,7 +4629,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("4201A 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("4201A 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "4201A 自费病人费用明细信息批量上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -4673,7 +4673,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("4201A 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("4201A 自费病人费用明细信息批量上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "4201A 自费病人费用明细信息批量上传成功，HIS上传数据失败：" + ex.Message);
                     }
                 }
@@ -4794,7 +4794,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("4205 自费病人门诊就医信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("4205 自费病人门诊就医信息上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "4205 自费病人门诊就医信息上传成功，HIS上传数据失败：" + ex.Message);
                 }
             }
@@ -4960,7 +4960,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4401】住院病案例首页信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4401】住院病案例首页信息上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4401】住院病案例首页信息上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -4995,7 +4995,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4402】住院医嘱记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4402】住院医嘱记录上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4402】住院医嘱记录上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5036,7 +5036,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4501】临床检查报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4501】临床检查报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4501】临床检查报告记录上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5082,7 +5082,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4502】临床检验报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4502】临床检验报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4502】临床检验报告记录上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5135,7 +5135,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4503】细菌培养报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4503】细菌培养报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4503】细菌培养报告记录上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5188,7 +5188,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4504】药敏记录报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4504】药敏记录报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4504】药敏记录报告记录上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5239,7 +5239,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4505】病例检查报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4505】病例检查报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4505】病例检查报告记录上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5277,7 +5277,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("【4506】非结构化报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("【4506】非结构化报告记录上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "【4506】非结构化报告记录上传成功，HIS本地保存失败：" + ex.Message);
                     }
                 }
@@ -5319,7 +5319,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("【4601】输血信息上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("【4601】输血信息上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "【4601】输血信息上传成功，HIS本地保存失败：" + ex.Message);
                     }
                 }
@@ -5358,7 +5358,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        AppLogger.Info("【4602】护理操作生命体征测量记录上传成功，本地保存失败，数据异常：" + ex.Message);
+                        YiBaoCallLogHelper.Info("【4602】护理操作生命体征测量记录上传成功，本地保存失败，数据异常：" + ex.Message);
                         return YiBaoHelper.BuildReturnJson("-99", "【4602】护理操作生命体征测量记录上传成功，HIS本地保存失败：" + ex.Message);
                     }
                 }
@@ -5406,7 +5406,7 @@ namespace NeiMengGuYiBaoApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("【4701】 电子病历上传上传成功，本地保存失败，数据异常：" + ex.Message);
+                    YiBaoCallLogHelper.Info("【4701】 电子病历上传上传成功，本地保存失败，数据异常：" + ex.Message);
                     return YiBaoHelper.BuildReturnJson("-99", "【4701】 电子病历上传上传成功，HIS本地保存失败：" + ex.Message);
                 }
             }
@@ -5503,7 +5503,7 @@ namespace NeiMengGuYiBaoApp.Controllers
             }
             catch (Exception ex)
             {
-                AppLogger.Info("医执人员信息查询：" + ex.Message);
+                YiBaoCallLogHelper.Info("医执人员信息查询：" + ex.Message);
                 return YiBaoHelper.BuildReturnJson("-99", "医执人员信息查询失败：" + ex.Message);
             }
         }

@@ -74,7 +74,7 @@ namespace NeiMengGuYiBaoApp.Service
          where O : OutputBase
         {
 
-            AppLogger.Info("进入NationECCode-Call");
+            YiBaoCallLogHelper.Info("进入NationECCode-Call");
             //out参数赋初值
             OutModlem = null;
             DateTime startdate = Convert.ToDateTime(ClassSqlHelper.GetServerTime().ToString("yyyy-MM-dd HH:mm:ss"));
@@ -86,8 +86,8 @@ namespace NeiMengGuYiBaoApp.Service
             StringBuilder rcvMsg = new StringBuilder(20480);
             
             //保存日志记事本文件 在C盘
-            AppLogger.Info("请求交易类型编码：" + input.transType);
-            AppLogger.Info("请求交易入参：" + inputJsonStr);
+            YiBaoCallLogHelper.Info("请求交易类型编码：" + input.transType);
+            YiBaoCallLogHelper.Info("请求交易入参：" + inputJsonStr);
             sendMsg = inputJsonStr;
 
             string outputText = string.Empty;
@@ -105,14 +105,14 @@ namespace NeiMengGuYiBaoApp.Service
                         outputText = rcvMsg.ToString();
                     }
                     else {
-                        AppLogger.Info("调用医保异常: " + returnValueText);
+                        YiBaoCallLogHelper.Info("调用医保异常: " + returnValueText);
                         var errOut = new { code = -1, message = "调用医保异常: " + rcvMsg };
                         outputText = JsonConvert.SerializeObject(errOut);
                     }
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("调用医保异常: " + ex.Message);
+                    YiBaoCallLogHelper.Info("调用医保异常: " + ex.Message);
                     returnValueText = ex.Message;
                     var errOut = new { code = -1, message = "调用医保异常: " + returnValueText };
                     outputText = JsonConvert.SerializeObject(errOut);
@@ -139,7 +139,7 @@ namespace NeiMengGuYiBaoApp.Service
                 }
                 outputText = Convert.ToString(testdata);
             }
-            AppLogger.Info("请求交易出参：" + outputText);
+            YiBaoCallLogHelper.Info("请求交易出参：" + outputText);
             //反序列化输出
             OutputBasePost outputJson = null;
             try
@@ -156,7 +156,7 @@ namespace NeiMengGuYiBaoApp.Service
                 return BuildReturnJson("-1", "JSON反序列化SendRcv4函数输出值失败：" + ex.Message + "，输出值：" + outputText);
             }
             //保存交易日志到数据库
-            AppLogger.SaveNMGJyDbLog(post, startdate, inputJsonStr, outputJson, returnValueText);
+            YiBaoCallLogHelper.SaveNMGJyDbLog(post, startdate, inputJsonStr, outputJson, returnValueText);
             //转换交易输出实体类
             code = outputJson.code;
             if (outputJson.data != null)
@@ -220,7 +220,7 @@ namespace NeiMengGuYiBaoApp.Service
         public static string CallReadCardBasAndSaveLog<O>(out O OutModlem, PostBase post, out int code)
             where O : OutputBase
         {
-            AppLogger.Info("CallReadCardBasAndSaveLog-Call");
+            YiBaoCallLogHelper.Info("CallReadCardBasAndSaveLog-Call");
             //out参数赋初值
             OutModlem = null;
             DateTime startdate = Convert.ToDateTime(ClassSqlHelper.GetServerTime().ToString("yyyy-MM-dd HH:mm:ss"));
@@ -228,8 +228,8 @@ namespace NeiMengGuYiBaoApp.Service
             string inputJsonStr = "";
 
             //保存日志记事本文件 在C盘
-            AppLogger.Info("请求交易类型编码：" + post.tradiNumber);
-            AppLogger.Info("请求交易入参：" + inputJsonStr);
+            YiBaoCallLogHelper.Info("请求交易类型编码：" + post.tradiNumber);
+            YiBaoCallLogHelper.Info("请求交易入参：" + inputJsonStr);
 
             string outputText = string.Empty;
             long returnValue = 0;
@@ -256,7 +256,7 @@ namespace NeiMengGuYiBaoApp.Service
                             var parts = outputText.Split('|');
                             if (parts.Length < 11)
                             {
-                                AppLogger.Info("数据项不足，无法解析社保卡基本信息: " + cardInfo.ToString());
+                                YiBaoCallLogHelper.Info("数据项不足，无法解析社保卡基本信息: " + cardInfo.ToString());
                                 var errOut = new { code = -1, message = "数据项不足，无法解析社保卡基本信息:  " + cardInfo.ToString() };
                                 outputJson.message = JsonConvert.SerializeObject(errOut);
                             }
@@ -281,13 +281,13 @@ namespace NeiMengGuYiBaoApp.Service
                     else
                     {
                         outputJson.code = ((int)returnValue);
-                        AppLogger.Info("调用ReadCardBas异常: " + cardInfo.ToString());
+                        YiBaoCallLogHelper.Info("调用ReadCardBas异常: " + cardInfo.ToString());
                         outputJson.message = cardInfo.ToString();
                     }
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("调用医保异常: " + ex.Message);
+                    YiBaoCallLogHelper.Info("调用医保异常: " + ex.Message);
                     outputJson.code = -1;
                     outputJson.message = "调用医保异常: " + ex.Message;
                 }
@@ -298,10 +298,10 @@ namespace NeiMengGuYiBaoApp.Service
                 outputJson.data = JObject.Parse("{\"IssuingAreaCode\":\"639900\",\"SocialSecurityNumber\":\"111111198101011110\",\"CardNumber\":\"X00000019\",\"CardIdentificationCode\":\"639900D15600000500BF7C7A48FB4966\",\"Name\":\"阿炳\",\"CardResetInfo\":\"00814E43238697159900BF7C7A\",\"SpecificationVersion\":\"1.00\",\"IssuingDate\":\"20101001\",\"ExpirationDate\":\"20201001\",\"TerminalNumber\":\"410100813475\",\"TerminalDeviceNumber\":\"终端设备号\"}");
                 outputText = Convert.ToString(outputJson.data);
             }
-            AppLogger.Info("请求交易出参：" + outputText);
+            YiBaoCallLogHelper.Info("请求交易出参：" + outputText);
 
             //保存交易日志到数据库
-            AppLogger.SaveNMGJyDbLog(post, startdate, inputJsonStr, outputJson, outputJson.code.ToString());
+            YiBaoCallLogHelper.SaveNMGJyDbLog(post, startdate, inputJsonStr, outputJson, outputJson.code.ToString());
             //转换交易输出实体类
             if (outputJson.data != null)
             {
@@ -315,7 +315,7 @@ namespace NeiMengGuYiBaoApp.Service
         public static string CallReadSFZAndSaveLog<O>(out O OutModlem, PostBase post, out int code)
             where O : OutputBase
         {
-            AppLogger.Info("CallReadSFZAndSaveLog-Call");
+            YiBaoCallLogHelper.Info("CallReadSFZAndSaveLog-Call");
             //out参数赋初值
             OutModlem = null;
             DateTime startdate = Convert.ToDateTime(ClassSqlHelper.GetServerTime().ToString("yyyy-MM-dd HH:mm:ss"));
@@ -323,8 +323,8 @@ namespace NeiMengGuYiBaoApp.Service
             string inputJsonStr = "";
 
             //保存日志记事本文件 在C盘
-            AppLogger.Info("请求交易类型编码：" + post.tradiNumber);
-            AppLogger.Info("请求交易入参：" + inputJsonStr);
+            YiBaoCallLogHelper.Info("请求交易类型编码：" + post.tradiNumber);
+            YiBaoCallLogHelper.Info("请求交易入参：" + inputJsonStr);
 
             string outputText = string.Empty;
             long returnValue = 0;
@@ -352,7 +352,7 @@ namespace NeiMengGuYiBaoApp.Service
                             var parts = outputText.Split('|');
                             if (parts.Length < 9)
                             {
-                                AppLogger.Info("数据项不足，无法获取身份证信息: " + outBuff.ToString());
+                                YiBaoCallLogHelper.Info("数据项不足，无法获取身份证信息: " + outBuff.ToString());
                                 var errOut = new { code = -1, message = "数据项不足，无法获取身份证信息:  " + outBuff.ToString() };
                                 outputJson.message = JsonConvert.SerializeObject(errOut);
                             }
@@ -377,13 +377,13 @@ namespace NeiMengGuYiBaoApp.Service
                     else
                     {
                         outputJson.code = ((int)returnValue);
-                        AppLogger.Info("调用ReadCardBas异常: " + outBuff.ToString());
+                        YiBaoCallLogHelper.Info("调用ReadCardBas异常: " + outBuff.ToString());
                         outputJson.message = outBuff.ToString();
                     }
                 }
                 catch (Exception ex)
                 {
-                    AppLogger.Info("调用医保异常: " + ex.Message);
+                    YiBaoCallLogHelper.Info("调用医保异常: " + ex.Message);
                     outputJson.code = -1;
                     outputJson.message = "调用医保异常: " + ex.Message;
                 }
@@ -394,10 +394,10 @@ namespace NeiMengGuYiBaoApp.Service
                 outputJson.data = JObject.Parse("{\"Name\":\"阿炳\",\"Gender\":\"男\",\"Ethnicity\":\"汉\",\"BirthDate\":\"19980101\",\"Address\":\"阿炳\",\"IdNumber\":\"310103197307252018\",\"IssueDate\":\"19980101\",\"ExpiryDate\":\"20101001\",\"IssuingAuthority\":\"签发机关\"}");
                 outputText = Convert.ToString(outputJson.data);
             }
-            AppLogger.Info("请求交易出参：" + outputText);
+            YiBaoCallLogHelper.Info("请求交易出参：" + outputText);
 
             //保存交易日志到数据库
-            AppLogger.SaveNMGJyDbLog(post, startdate, inputJsonStr, outputJson, outputJson.code.ToString());
+            YiBaoCallLogHelper.SaveNMGJyDbLog(post, startdate, inputJsonStr, outputJson, outputJson.code.ToString());
             //转换交易输出实体类
             if (outputJson.data != null)
             {
