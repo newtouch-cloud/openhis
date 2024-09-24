@@ -2340,7 +2340,7 @@ where a.OrganizeId = '" + orgId + "' and a.zt = '1'  and b.xmjfbbh is not null" 
             jxcsc.xm_id = xm_id;
             jxcsc.OrganizeId = ConfigurationManager.AppSettings["orgId"];
             jxcsc.OrganizeName = ConfigurationManager.AppSettings["fixmedins_name"];
-            jxcsc.type = "4502";//接口交易编号
+            jxcsc.type = tradiNumber;//接口交易编号
             jxcsc.issuccess = "True";//成功
             jxcsc.log = json;//接口出参内容
             jxcsc.czydm = czr;
