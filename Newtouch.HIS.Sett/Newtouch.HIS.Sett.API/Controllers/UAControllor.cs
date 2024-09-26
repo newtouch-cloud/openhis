@@ -39,6 +39,9 @@ namespace Newtouch.HIS.Base.HOSP.API.Controllers
         {
             Action<UAGetUserInfoRequest, DefaultResponse> ac = (req, resp) =>
             {
+                //更新过期时间 120?
+                // var config = Convert.ToInt32(ConfigurationHelper.GetAppConfigValue("LoginStatusKeepMinute") ?? "120");
+                var config = 120;
                 if (string.IsNullOrWhiteSpace(request.access_token)
                     || string.IsNullOrWhiteSpace(request.AppId))
                 {
@@ -51,9 +54,16 @@ namespace Newtouch.HIS.Base.HOSP.API.Controllers
                 string account = "", organizeId = "";
 
                 string encryptedResult = null;
-                if (!string.IsNullOrWhiteSpace(req.access_token))
+                string tokenKey = req.access_token;
+                if (!string.IsNullOrWhiteSpace(tokenKey))
                 {
-                    encryptedResult = RedisHelper.StringGet(req.access_token);
+                    encryptedResult = RedisHelper.StringGet(tokenKey);
+                }
+                if (string.IsNullOrWhiteSpace(encryptedResult))
+                {
+                    tokenKey = $"OHIS:{req.access_token}";
+                    encryptedResult = RedisHelper.StringGet(tokenKey);
+                    RedisHelper.StringSet(req.access_token, encryptedResult,new TimeSpan(0,config,0));
                 }
                 if (!string.IsNullOrWhiteSpace(encryptedResult) && encryptedResult != "SIDELINED")
                 {
@@ -80,8 +90,8 @@ namespace Newtouch.HIS.Base.HOSP.API.Controllers
                 }
                 else
                 {
-                    //更新过期时间 120?
-                    RedisHelper.KeyExpire(req.access_token, new TimeSpan(0, 120, 0));
+
+                    RedisHelper.KeyExpire(tokenKey, new TimeSpan(0, config, 0));
                     //
                     resp.data = new
                     {
