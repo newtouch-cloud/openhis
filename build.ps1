@@ -3,6 +3,15 @@
 ## 加入环境变量，生效后，在powershell 运行 ./build.ps1
 
 
+
+Write-Host "开始编译并发布Static"
+MSBuild.exe .\Newtouch.HIS.Static/Newtouch.HIS.Static/Newtouch.HIS.Static.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "编译Static失败！." -ForegroundColor Red
+    exit $LASTEXITCODE
+}
+
+
 Write-Host "开始编译并发布Base"
 MSBuild.exe .\Newtouch.HIS.Base\Newtouch.HIS.Base.HOSP\Newtouch.HIS.Base.HOSP.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
 if ($LASTEXITCODE -ne 0) {
@@ -32,10 +41,10 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host  "开始编译并发布CIS" -ForegroundColor Red
+Write-Host  "开始编译并发布CIS"
 MSBuild.exe .\Newtouch.HIS.CIS\Newtouch.CIS.Web\Newtouch.CIS.Web.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "编译CIS失败！."
+    Write-Host "编译CIS失败！."  -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
@@ -47,14 +56,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host  "开始编译并发布PDS"
-MSBuild.exe Newtouch.HIS.PDS/Newtouch.HIS.Web/Newtouch.HIS.PDS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.PDS/Newtouch.HIS.Web/Newtouch.HIS.PDS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=publish
 if ($LASTEXITCODE -ne 0) {
     Write-Host "编译PDS失败！." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "开始编译并发布PDSAPI"
-MSBuild.exe Newtouch.HIS.PDS/Newtouch.PDS.API/Newtouch.Pds.Api.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.PDS/Newtouch.PDS.API/Newtouch.Pds.Api.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=publish
 if ($LASTEXITCODE -ne 0) {
     Write-Host "编译PDSAPI失败！." -ForegroundColor Red
     exit $LASTEXITCODE
