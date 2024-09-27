@@ -500,10 +500,10 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
             {
                 throw new FailedException("有未结算的住院费用记录，不能取消入院。");
             }
-            if (_PatientBasicInfoDmnService.BoolRuQu(zyh, this.OrganizeId))
-            {
-                throw new FailedException("该病人已在病区中，不能取消入院！");
-            }
+            //if (_PatientBasicInfoDmnService.BoolRuQu(zyh, this.OrganizeId))
+            //{
+            //    throw new FailedException("该病人已在病区中，不能取消入院！");
+            //}
             _PatientBasicInfoDmnService.CancelAdmission(zyh, this.OrganizeId);
             return Success("取消入院成功！");
         }
@@ -517,10 +517,10 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
 		    {
 			    throw new FailedException("有未结算的住院费用记录，不能取消入院。");
 		    }
-            if (_PatientBasicInfoDmnService.BoolRuQu(zyh, this.OrganizeId))
-            {
-                throw new FailedException("该病人已在病区中，不能取消入院！");
-            }
+            //if (_PatientBasicInfoDmnService.BoolRuQu(zyh, this.OrganizeId))
+            //{
+            //    throw new FailedException("该病人已在病区中，不能取消入院！");
+            //}
             return Success("取消入院成功！");
 	    }
 		/// <summary>
