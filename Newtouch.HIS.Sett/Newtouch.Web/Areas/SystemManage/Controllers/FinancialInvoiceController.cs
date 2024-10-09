@@ -19,6 +19,11 @@ namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
             return View();
         }
 
+        public ActionResult InvoiceQuery()
+        {
+            return View();
+        }
+
         //[HandlerAuthorize]
         public override ActionResult Form()
         {
