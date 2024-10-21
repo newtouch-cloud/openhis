@@ -1,0 +1,75 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "backForm";
+    Layout = "~/Views/Shared/_Index.cshtml";
+}
+
+<form>
+    <div class="panel panel-default">
+        <table class="form" style="margin-top:20px;">
+            <tr>
+
+                <th class="formTitle">撤销原因：</th>
+                <td class="formValue">
+                    <input id="cxyy" type="text" class="form-control" style="width:75%;" float:left;" />
+                </td>
+            </tr>
+
+        </table>
+    </div>
+</form>
+
+<script>
+
+
+    var hisId = $.request("hisId");
+    var cfh = $.request("cfh");
+    var cxys = $.request("cxys");
+    var cxyy = $("#cxyy").val();
+
+
+    //保存
+    function SubmitForm() {
+        if (!DataValidate()) {
+            return;
+        }
+        var postData = $("#form1").formSerialize();
+        postData.hisId = hisId;
+        postData.cfh = cfh;
+        postData.cxys = cxys;
+        postData.cxyy = $("#cxyy").val();
+
+        $.submitForm({
+            url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D004",
+            param: postData,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var refdata=eval('(' + data + ')');
+                if (refdata.infcode === "0") {
+                    $.modalMsg('撤销成功', 'success');
+                    callback();
+                } else {
+                    $.loading(false);
+                    $.modalAlert('撤销电子处方失败：' + refdata.message, 'error');
+                }
+               
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                $.modalAlert('医保服务【撤销电子处方】不可访问：' + ex, 'error');
+            }
+        });
+    }
+
+
+    //数据效验
+    function DataValidate() {
+        if ($("#cxyy").val() === "") {
+            $.modalAlert("请填写撤销原因", 'warning');
+            return false;
+        }
+        return true;
+    }
+
+</script>

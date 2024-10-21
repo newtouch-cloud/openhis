@@ -53,6 +53,6 @@ namespace Newtouch.Domain.ValueObjects
         public bool? tbz { get; set; }
         public string sfdlCode { get; set; }
         public string sfdlmc { get; set; }
-
+        
     }
 }

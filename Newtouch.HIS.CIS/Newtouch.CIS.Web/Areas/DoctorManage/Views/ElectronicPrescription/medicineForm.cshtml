@@ -1,0 +1,103 @@
+﻿
+@{
+    ViewBag.Title = "examForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+
+<table class="form">
+    <tr>
+        <th class="formTitle">医保处方编号：</th>
+        <td class="formValue">
+            <input id="hiRxno" name="hiRxno" type="text" disabled="disabled" class="form-control" placeholder="" />
+        </td>
+        <th class="formTitle">医保结算时间：</th>
+        <td class="formValue">
+            <input id="setlTime" name="setlTime" type="text" disabled="disabled" class="form-control" placeholder="" />
+        </td>
+        <th></th>
+        <td></td>
+        <th></th>
+        <td></td>
+        <th></th>
+        <td></td>
+    </tr>
+</table>
+<div class="gridPanel">
+    <table id="gridList"></table>
+</div>
+
+<script lang="javascript">
+
+
+    var hisId = $.request("hisId");
+    var cfh = $.request("cfh");
+    $(function () {
+        debugger;
+        gridListData();
+        initForm();
+    });
+    
+    //初始化表单
+    function initForm() {
+        $.ajax({
+            url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D007",
+            dataType: "json",
+            data: { hisId: hisId, cfh: cfh, },
+            type: "POST",
+            async: false,
+            success: function (ajaxdata) {
+                var tfReturn = eval('(' + ajaxdata + ')');
+                if (tfReturn.infcode == 0 || tfReturn.infcode == "0") {
+                    if (tfReturn.output.code == 0 || tfReturn.output.code == "0") {
+                        var obj = eval('(' + tfReturn.output.encData + ')');
+                        $("#rxStasName").val(obj.rxStasName);
+                        $("#rxUsedStasName").val(obj.rxUsedStasName);
+                        $gridList.newtouchLocalDataGrid({
+                            autowidth: false,
+                            unwritten: false,
+                            caption: "处方信息",
+                        }, eval('(' + tfReturn.output.encData + ')').seltdelts);
+                    } else {
+                        $.modalAlert("电子处方取药结果査询失败：" + tfReturn.output.message, 'error');
+                        return;
+                    }
+                }
+                else {
+                    $.modalAlert("电子处方取药结果査询失败：" + tfReturn.err_msg, 'error');
+                    return;
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                $.modalAlert('医保服务【电子处方取药结果査询】不可访问：' + ex, 'error');
+            }
+        })
+    }
+    function gridListData() {
+        var $gridList = $("#gridList");
+        var captionCon = "处方取药信息";
+        $gridList.dataGrid({
+            height: $(window).height() - 200,
+            caption: captionCon,
+            multiselect: false,
+            unwritten: false,
+            colModel: [
+                { label: '医药机构药品编号', name: 'medinsListCodg', width: 120, align: 'left' },
+                { label: '通用名', name: 'drugGenname', width: 120, align: 'left' },
+                { label: '药品商品名', name: 'drugProdname', width: 120, align: 'left' },
+                { label: '药品剂型', name: 'drugDosform', width: 80, align: 'left' },
+                { label: '药品规格', name: 'drugSpec', width: 80, align: 'left' },
+                { label: '数量', name: 'ent', width: 80, align: 'left' },
+                { label: '批准文号', name: 'aprvno', width: 100, align: 'left' },
+                { label: '批次号', name: 'bchno', width: 80, align: 'left' },
+                { label: '生产批号', name: 'manuLotnum', width: 80, align: 'left' },
+                { label: '生厂厂家', name: 'prdrName', width: 120, align: 'left' }
+            ],
+            viewrecords: true
+        });
+    }
+</script>
+
+
+

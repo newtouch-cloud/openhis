@@ -350,5 +350,20 @@ namespace Newtouch.CIS.Web.Controllers
             var mxbstr = _iDoctorserviceDmnService.GetYfData(OrganizeId);
             return Content(mxbstr.ToJson());
         }
+
+        /// <summary>
+        /// 医保电子处方
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <returns></returns>
+        public ActionResult getdzcfnrxs(string cfh)
+        {
+            var data = _prescriptionDmnService.getdzcfnrxs(cfh, this.OrganizeId);
+            if (data.Count > 0)
+            {
+                return Content("ok");
+            }
+            return Content("");
+        }
     }
 }
