@@ -805,7 +805,8 @@ WHERE cfmx.zt='1' AND cf.zt='1'
                                         cftag = cf.cftag,
                                         djfs = cf.djfs,
                                         djts = cf.djts,
-                                        cfzt = cf.cfzt
+                                        cfzt = cf.cfzt,
+                                        isdzcf = cf.isdzcf
                                     };
                                     if (cfzdlist != null)
                                     {
@@ -875,17 +876,20 @@ WHERE cfmx.zt='1' AND cf.zt='1'
                                     #region 发送处方至pds
 
                                     var t = "";
-                                    if (needOutpatientBook)
+                                    if (cf.isdzcf != "1")//如果走电子处方，不发送处方到药房
                                     {
-                                        t = SendNewRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
-                                    }
-                                    else if (needOutpatientBookModify)
-                                    {
-                                        t = UpdateRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
-                                    }
+                                        if (needOutpatientBook)
+                                        {
+                                            t = SendNewRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
+                                        }
+                                        else if (needOutpatientBookModify)
+                                        {
+                                            t = UpdateRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
+                                        }
 
-                                    if (!string.IsNullOrWhiteSpace(t)) throw new FailedException("syncRpToPdsError", t);
-
+                                        if (!string.IsNullOrWhiteSpace(t)) throw new FailedException("syncRpToPdsError", t);
+                                    }
+                                    
                                     #endregion
                                 }
                             }
@@ -1115,6 +1119,10 @@ where zyzd.zdlx = 1 and jzId = @jzId and zyzd.zt = '1'", new[] { new SqlParamete
                     case (int)EnumCflx.WMPres:
                     case (int)EnumCflx.TCMPres:
                         {
+                            if (cf.isdzcf != null && cf.isdzcf == "1")
+                            {
+                                break;
+                            }
                             if (cf.djbz ?? false)
                             {
                                 var dto1 = new PrescriptionAPIDto
