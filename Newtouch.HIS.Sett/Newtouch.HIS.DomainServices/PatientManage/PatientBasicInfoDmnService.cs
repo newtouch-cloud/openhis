@@ -1513,6 +1513,7 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
             paraList.Add(new SqlParameter("@mjzbz", mjzbz ?? ""));
             paraList.Add(new SqlParameter("@jiuzhenbz", jiuzhenbz ?? ""));
             paraList.Add(new SqlParameter("@keyword", "%" + (keyword ?? "") + "%"));
+            paraList.Add(new SqlParameter("@zzhz",  "0"));
             //
             pagination = pagination ?? new Pagination();
             pagination.page = pagination.page <= 0 ? 1 : pagination.page;
@@ -1539,7 +1540,7 @@ WHERE   zybz NOT IN ( 0, 9 ) and a.OrganizeId=@OrganizeId");
             paraList.Add(outParameter4);
 
             var list = this.FindList<OutPatientRegistrationInfoDTO>(@"exec usp_interface_OutPatientRegistrationQuery @orgId, @lastUpdateTime
-, @outpatientNumber, @ksCode, @ysgh, @mjzbz, @jiuzhenbz, @keyword
+, @outpatientNumber, @ksCode, @ysgh, @mjzbz, @jiuzhenbz, @keyword,@zzhz
 --
 ,@page ,@rows ,@sidx ,@sord
 --

@@ -866,8 +866,8 @@ namespace Newtouch.HIS.Sett.API.Controllers
                                 }
                             }
                         }
-                        //异步推送处方收费成功的通知给药房药库
-                        notifyPDS(jsnmList[0], DateTime.Now, cfnmlist, patInfo.fph, orgId, req.AppID);
+                        //异步推送处方收费成功的通知给药房药库(取消mq的用法)
+                        //notifyPDS(jsnmList[0], DateTime.Now, cfnmlist, patInfo.fph, orgId, req.AppID);
                         resp.data = new SettResp() { RegId = jsnmList[0].ToString(), xjzf = req.TotalAmount, ybzf = 0.00.ToDecimal(), grzf = req.TotalAmount };
                         resp.msg = "";
                         resp.code = ResponseResultCode.SUCCESS;
