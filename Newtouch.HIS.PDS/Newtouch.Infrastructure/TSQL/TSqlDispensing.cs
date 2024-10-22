@@ -568,9 +568,9 @@ END CATCH
         /// 门诊发药处方明细查询
         /// </summary>
         public const string mz_fy_cfmx = @"
-SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,a.gjybdm
+SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm,a.ypCode, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,a.gjybdm
 FROM (
-	SELECT cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, SUM(mxph.sl) zxdwsl, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc
+	SELECT cf.Fph, cf.cfh,cf.cfnm,cfmx.ypCode, cfmx.ypmc, cfmx.gg, SUM(mxph.sl) zxdwsl, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc
 	,cfmx.bz yszt, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 	FROM dbo.mz_cf(NOLOCK) cf 
 	INNER JOIN dbo.mz_cfmx(NOLOCK) cfmx ON cfmx.cfh = cf.cfh AND cfmx.OrganizeId=cf.OrganizeId AND cfmx.zt='1'
@@ -584,13 +584,13 @@ FROM (
 	AND ISNULL(cf.cfh,'')=ISNULL(@cfh,'')
 	AND ISNULL(mxph.czh,'')=ISNULL(cfmx.czh,'')
 	AND mxph.cfmxId=cfmx.Id
-	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
+	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypCode, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 ) a 
 ";
 		public const string mz_fy_cfmx_new = @"
-SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,a.gjybdm
+SELECT a.czh, a.Fph, a.cfh,convert(varchar(50),a.cfnm) cfnm,a.ypCode, a.ypmc, a.gg, CONVERT(INT,a.zxdwsl/a.zhyz) sl, a.dw, a.dj, a.ycmc, a.je, ISNULL(a.jl,0) jl, a.jldw, a.yfmc, a.yszt, a.ysmc, a.sfsj,a.gjybdm
 FROM (
-	SELECT cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, SUM(mxph.sl) zxdwsl, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc
+	SELECT cf.Fph, cf.cfh,cf.cfnm,cfmx.ypCode, cfmx.ypmc, cfmx.gg, SUM(mxph.sl) zxdwsl, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc
 	,cfmx.bz yszt, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 	FROM dbo.mz_cf(NOLOCK) cf 
 	INNER JOIN dbo.mz_cfmx(NOLOCK) cfmx ON cfmx.cfh = cf.cfh AND cfmx.OrganizeId=cf.OrganizeId AND cfmx.zt='1'
@@ -603,7 +603,7 @@ FROM (
 	AND cf.cfh in(select col from dbo.f_split(@cfh,',') where col>'')
 	AND ISNULL(mxph.czh,'')=ISNULL(cfmx.czh,'')
 	AND mxph.cfmxId=cfmx.Id
-	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
+	GROUP BY cf.Fph, cf.cfh,cf.cfnm, cfmx.ypCode, cfmx.ypmc, cfmx.gg, cfmx.dw, cfmx.dj, cfmx.ycmc, cfmx.je, cfmx.jl, cfmx.jldw, cfmx.yfmc, cfmx.bz, cf.ysmc, cf.sfsj, cfmx.czh, cfmx.zhyz,xtyp.gjybdm
 ) a 
 ";
 
@@ -623,7 +623,7 @@ BEGIN
 END
 
 SELECT cfmxphId Id, sl, pc, ph, yp, cfmxId INTO #mxph 
-FROM dbo.mz_cfmxph(NOLOCK) WHERE cfh=@cfh AND OrganizeId=@OrganizeId AND zt='1' AND fyyf=@yfbmCode AND gjzt='0'
+FROM dbo.mz_cfmxph(NOLOCK) WHERE cfh=@cfh and yp=@ypdm AND OrganizeId=@OrganizeId AND zt='1' AND fyyf=@yfbmCode AND gjzt='0'
 
 SET NOCOUNT ON
 SET TRANSACTION ISOLATION LEVEL READ COMMITTED
