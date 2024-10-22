@@ -65,7 +65,7 @@ namespace Newtouch.Domain.ValueObjects
         /// 嘱托
         /// </summary>
         public string cfzt { get; set; }
-
+        public string isdzcf { get; set; }//电子处方 1 是  0 否
         #endregion
 
 
@@ -311,6 +311,6 @@ namespace Newtouch.Domain.ValueObjects
 		/// 处方有效天数
 		/// </summary>
 		public int? yxts { get; set; }
-
-	}
+        public string gjybdm { get; set; }
+    }
 }

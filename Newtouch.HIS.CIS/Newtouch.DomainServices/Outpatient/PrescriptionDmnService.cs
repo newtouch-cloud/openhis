@@ -6,6 +6,7 @@ using Newtouch.Infrastructure;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text;
 
 namespace Newtouch.DomainServices
 {
@@ -265,5 +266,21 @@ WHERE 1=1";
 
 			return 1;
 		}
-	}
+        /// <summary>
+        /// 医保电子处方
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <param name="orgId"></param>
+        /// <returns></returns>
+        public List<string> getdzcfnrxs(string cfh, string orgId)
+        {
+            var sqlpar = new List<SqlParameter>();
+            var par = new StringBuilder();
+            par.Append(@"select top 1 mzh from [NewtouchHIS_Sett]..Dzcf_D003_output where cfh=@cfh and OrganizeId=@orgId and zt='1'");
+            sqlpar.Add(new SqlParameter("@cfh", cfh));
+            sqlpar.Add(new SqlParameter("@orgId", orgId));
+            var resultList = this.FindList<string>(par.ToString(), sqlpar.ToArray());
+            return resultList;
+        }
+    }
 }
