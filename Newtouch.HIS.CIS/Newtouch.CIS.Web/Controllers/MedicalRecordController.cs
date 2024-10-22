@@ -637,6 +637,8 @@ namespace Newtouch.CIS.Web.Controllers
                             djts = cfitem.djts,
                             cfzt = cfitem.cfzt,
 							valiDays=3,
+                            isdzcf = cfitem.isdzcf,
+                            gjybdm = cfitem.gjybdm
                             //ztId = cfitem.yfztbm,
                             //ztmc=cfitem.yfztmc,
 

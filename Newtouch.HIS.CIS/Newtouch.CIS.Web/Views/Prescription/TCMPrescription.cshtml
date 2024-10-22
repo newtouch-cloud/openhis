@@ -152,6 +152,13 @@
             //未提交到数据库的处方，这里length 0 也没问题
             $('span.bbit-tree-node-text[data-value="' + triggereditcfh + '"]').trigger('click');
         }
+        var isdzcf = '0';
+        $.jsonWhere(window.alldataArray.zycf, function (v) {
+            if (v.cfh == triggereditcfh && v.isdzcf != '') {
+                isdzcf = v.isdzcf;
+            }
+        });
+        $("#isdzcfzy").val(isdzcf);
     }
 
     //处方列表
@@ -356,8 +363,8 @@
                 });
         $("#tip_zyyfly").empty();
         $("#gridzycfPager_right").append('<span style="color:red;">药房：</span><select id="tip_zyyfly"></select>');
-        $("#gridzycfPager_right").append('<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option></select>');
-        
+        $("#gridzycfPager_right").append('<span>电子处方：</span><select id="isdzcfzy"><option value="0">否</option><option value="1">是</option></select>&nbsp;&nbsp;&nbsp;<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option></select>');
+
         $.ajax({
             type: "POST",
             dataType: "json", //返回json格式的数据
@@ -397,7 +404,7 @@
     //初始化 浮层
 	function initTCMInlineFunc(rowid) {
 
-		
+
 
         //部分列只读
         $("#" + rowid + "_dj").css('background-color','#f6f7fb').attr('readonly','true');
@@ -413,7 +420,7 @@
         } else {
             $("#" + rowid + "_Remark").parent().next().children('select').val(0).trigger("change");
         }
-        
+
 
         //根据贴数和剂量算出来的
 
@@ -424,19 +431,21 @@
         //药品浮层  //中药西药 会重复么 ‘"#" + rowid + "_ypmc"’
         $("#" + rowid + "_ypmc").sfxmFloatingSelector({
             djDecimalPlaces: 4,
-            searchType: '@(isMedicineSearchRelatedKC ? "yp.kc" : "yp")', //药品是否显示库存
+            searchType: $("#isdzcfzy").val() == "1" ? "yp" : '@(isMedicineSearchRelatedKC ? "yp.kc" : "yp")', //药品是否显示库存
             ajaxparameters: function ($thisinput) {
                  var flag = false;
                 //限制用药的话，flag=true
                 if (window.currPatientInfo.brxzCode != "" &&'@ViewBag.ControlbrxzCode'.indexOf(window.currPatientInfo.brxzCode) > -1) {
                     flag = true;
                 }
-                var mzzybz=$('#tip_zyyfly option:selected').val().split('|')[1];
+                var mzzybz=$('#tip_zyyfly option:selected').val().split('|')[1];//药房部门 0：不发药 1：门诊用药 2：住院用药 3：门诊住院通用
                 if(mzzybz=="3")
                     mzzybz="1";
+                if($("#isdzcfzy").val() == "1")
+                    mzzybz="9";//走电子处方目录
                 return "onlyybflag=" + flag + "&mzzybz="+mzzybz+"&dllb=1&sfdllx=TCM&keyword=" + $.trim($thisinput.val())+"&ypyfbmCode="+$('#tip_zyyfly option:selected').val().split('|')[0];
 			},
-			
+
 			itemdbclickhandler: function ($this) {
 
 				$.ajax({
@@ -543,7 +552,7 @@
                 }
 			}
 
-		
+
 
         });
         //嘱托浮层
@@ -554,7 +563,7 @@
             },
 		});
 
-		
+
     }
 
     //计算明细里的数量
@@ -789,6 +798,7 @@
                 this.klrq = matchedHisCf[0].klrq;
             }
             this.cftag = $("#tip_jmcf").val();
+            this.isdzcf = $("#isdzcfzy").val();
         });
 
         if (!saveResult) {

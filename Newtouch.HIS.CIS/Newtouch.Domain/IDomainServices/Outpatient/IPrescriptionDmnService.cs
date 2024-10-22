@@ -48,5 +48,12 @@ namespace Newtouch.Domain.IDomainServices
 		/// <returns></returns>
 		int ZUOFwzdj(string cfh, string orgId, string rygh);
 
-	}
+        /// <summary>
+        /// 医保电子处方
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <param name="orgId"></param>
+        /// <returns></returns>
+        List<string> getdzcfnrxs(string cfh, string orgId);
+    }
 }

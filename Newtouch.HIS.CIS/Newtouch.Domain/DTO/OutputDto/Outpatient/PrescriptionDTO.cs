@@ -74,6 +74,11 @@ namespace Newtouch.Domain.DTO.OutputDto
         /// </summary>
         public string cftag { get; set; }
         public string jzId { get; set; }
+
+
+        public string isdzcf { get; set; }//电子处方 1 是  0 否
+        public string gjybdm { get; set; }
+
         /// <summary>
         /// 代煎方式
         /// </summary>

@@ -18,6 +18,7 @@ namespace Newtouch.HIS.Domain.VO
         public string cfh { get; set; }
 
         public string cfnm { get; set; }
+        public string ypCode { get; set; }
         /// <summary>
         /// 药品名称
         /// </summary>
