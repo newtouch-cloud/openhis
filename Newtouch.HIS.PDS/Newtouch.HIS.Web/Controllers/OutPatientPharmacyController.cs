@@ -1412,5 +1412,70 @@ namespace Newtouch.HIS.Web.Controllers
         }
 
         #endregion
+
+        #region  电子处方审核
+        public ActionResult ElectronicPrescription()
+        {
+            return View();
+        }
+        /// <summary>
+        /// 获取电子处方病人信息
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult GetElectronicPrescription(Pagination pagination, string isysh, string keyword = "")
+        {
+            var result = _mzCfRepo.GetElectronicPrescription(pagination, OrganizeId, isysh, keyword);
+            var data = new
+            {
+                rows = result,
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records
+            };
+            return Content(data.ToJson());
+        }
+        /// <summary>
+        /// 获取发药处方信息
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public ActionResult GetElectronicPrescriptionCfInfo(string cfh, string xm)
+        {
+            var rpList = _fyDmnService.GetElectronicPrescriptionCfInfo(cfh, xm, OrganizeId);
+            return Content(rpList.ToJson());
+        }
+        /// <summary>
+        /// 获取处方明细信息
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public ActionResult QueryElectronicPrescriptionCfmx(string cfh, string xm)
+        {
+            var result = _mzCfRepo.QueryElectronicPrescriptionCfmx(cfh, xm, OrganizeId);
+            return Content(result.ToJson());
+        }
+        /// <summary>
+		/// 门诊就诊登记修改获取
+		/// </summary>
+		/// <param name="mzh"></param>
+		/// <returns></returns>
+		public ActionResult GetCQjzdjInfo(string mzh)
+        {
+            Input_2203A model = _mzCfRepo.GetCQjzdjInfo(mzh, this.OrganizeId);
+            return Content(model.ToJson());
+        }
+        /// <summary>
+        /// 修改审核不通过意见
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <param name="ysshyj"></param>
+        /// <returns></returns>
+		public ActionResult UpdateCfYsshyj(string cfh, string ysshyj)
+        {
+            _mzCfRepo.UpdateCfYsshyj(cfh, ysshyj, this.OrganizeId);
+            return Content("");
+        }
+
+        #endregion
     }
 }

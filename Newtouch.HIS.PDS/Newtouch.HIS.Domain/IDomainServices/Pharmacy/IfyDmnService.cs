@@ -234,5 +234,14 @@ namespace Newtouch.HIS.Domain.IDomainServices
         IList<MzcfcxDetailList> GetMzcfDetailList(Pagination pagination, MzcfcxVo req);
 
         #endregion
+
+        #region 医保电子处方
+        /// <summary>
+        /// 获取电子处方病人信息
+        /// </summary>
+        /// <returns></returns>
+        List<DzcfBrxxDTO> GetElectronicPrescriptionCfInfo(string cfh, string xm, string organizeId = "");
+
+        #endregion
     }
 }
