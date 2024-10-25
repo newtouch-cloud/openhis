@@ -46,8 +46,8 @@ $.fn.yfFloatingSelector = function (options) {
 $.fn.sfxmFloatingSelector = function (options) {
 	//默认options
 	var defaults = {
-		width: 900,
-		height: 200,
+	    width: 1550,
+		height: 380,
 		clickautotrigger: true,
 		url: '/SystemManage/BaseData/SelectSfxmYp',
 		ajaxparameters: null,   //请指定
@@ -58,10 +58,10 @@ $.fn.sfxmFloatingSelector = function (options) {
 		ypkccbjc: true,    //药品库存初步检查   是否被控制 是否库存0
 
 		colModel: [
-			{ label: '代码', name: 'sfxmCode', widthratio: 7 },
-			{ label: '名称', name: 'sfxmmc', widthratio: 10 },
+			{ label: '代码', name: 'sfxmCode', widthratio: 6 },
+			{ label: '名称', name: 'sfxmmc', widthratio: 6 },
 			{
-				label: '规格', name: 'gg', widthratio: 10
+				label: '规格', name: 'gg', widthratio: 6
 				, hidden: true
 			},
 			{ label: '医嘱类型', name: 'yzlx', hidden: true },
@@ -69,12 +69,12 @@ $.fn.sfxmFloatingSelector = function (options) {
 			{ label: '收费大类', name: 'sfdlCode', hidden: true },
 			{
 				label: '收费大类', name: 'sfdlmc'
-				, widthratio: 10
+				, widthratio: 6
 				, hidden: true
 			},
-			{ label: '单位', name: 'dw', widthratio: 4 },
+			{ label: '单位', name: 'dw', widthratio: 3 },
 			{
-				label: '单价', name: 'dj', widthratio: 10, formatter: function (cellvalue) {
+				label: '单价', name: 'dj', widthratio: 6, formatter: function (cellvalue) {
 					return (!!cellvalue || cellvalue == 0) ? (parseFloat(cellvalue).toFixed(options.djDecimalPlaces ? options.djDecimalPlaces : 2)) : '';
 				}
 			},
@@ -93,11 +93,11 @@ $.fn.sfxmFloatingSelector = function (options) {
 			//},
 			{ label: '报销政策', name: 'zfxz', hidden: true },
 			{
-				label: '报销政策', name: 'zfxzmc', widthratio: 8, formatter: function (cellvalue, a, b) {
+				label: '报销政策', name: 'zfxzmc', widthratio: 5, formatter: function (cellvalue, a, b) {
 					return $.enum.getDescByValue("EnumZiFuXingZhi", b.zfxz);
 				}
 			},
-			{ label: '自负比例', name: 'zfbl', hidden: true },
+			{ label: '自负比例', name: 'zfbl', widthratio: 3,hidden: true },
 			{ label: '特殊药品标志', name: 'tsypbz', hidden: true },
 			{
 				label: '特殊药品标志', name: 'tsypbzmc', hidden: true, formatter: function (cellvalue, a, b) {
@@ -132,33 +132,33 @@ $.fn.sfxmFloatingSelector = function (options) {
 					return $.enum.getDescByValue("EnumKss", b.kssqxjb);
 				} },
 			{
-				label: '超限价金额', name: 'cxjje', formatter: function (cellvalue, a, b) {
+			    label: '医保限价', name: 'cxjje', formatter: function (cellvalue, a, b) {
 					if (b.cxjje == null) {
 						return "0.00"
 					}
 					else return b.cxjje
-				}, widthratio: 7, hidden: true
+				}, widthratio: 4, hidden: true
 			},
 			{
 				label: '药房', name: 'yfbmmc', formatter: function (cellvalue, a, b) {
 					return b.yzlx === '1' && !!cellvalue ? cellvalue : '';
-				}, widthratio: 7, hidden: false
+				}, widthratio: 4, hidden: true
 			},
 			{
 				label: '库存', name: 'kcsl', formatter: function (cellvalue, a, b) {
 					return b.yzlx === '1'&&!!cellvalue ? cellvalue : '';
-				}, widthratio: 6, hidden: true
+				}, widthratio: 4, hidden: true
 			},
 			{
 				label: '库存', name: 'clkcsl', formatter: function (cellvalue, a, b) {
 					//给的kcsl是最小单位的，这里要显示门诊/住院单位的数量
 					return b.yzlx === '1' ? (!!b.kcsl && !!b.cls ? (parseInt(b.kcsl / b.cls)) : '无') : '';
-				}, widthratio: 6, hidden: true
+				}, widthratio: 4, hidden: true
 			},
 			{
 				label: '抗生素', name: 'isKss', formatter: function (cellvalue, a, b) {
 					return cellvalue == '1' ? '是' : '否';
-				}, widthratio: 7, hidden: true
+				}, widthratio: 3, hidden: true
 			},
 			{
 				label: '单次剂量', name: 'jlfw', formatter: function (cellvalue, a, b) {
@@ -179,9 +179,15 @@ $.fn.sfxmFloatingSelector = function (options) {
 			{
 				label: '控制', name: 'kzbz', formatter: function (cellvalue, a, b) {
 					return cellvalue == '1' ? '控制' : '';
-				}, widthratio: 6, hidden: true
+				}, widthratio: 3, hidden: true
 			},
-			{ label: '备注', name: 'bz', hidden: true ,widthratio: 15}
+            {
+                label: '生产厂家', name: 'sccj'/*, hidden: true*/, formatter: function (cellvalue, a, b) {
+                    return cellvalue == undefined ? '' : cellvalue;
+                }, widthratio: 8
+            },
+            { label: '国家医保代码', name: 'gjybdm', widthratio: 8 },
+			{ label: '备注', name: 'bz' }
 		]
 	};
 	var options = $.extend(defaults, options);
@@ -206,6 +212,8 @@ $.fn.sfxmFloatingSelector = function (options) {
 		var colbz = null;
 		var colcxjje = null;
 		var coltsypbz = null;
+		var colsccj = null;
+		var colgjybdm = null;
 		$.each(options.colModel, function () {
 			if (this.name === 'bz') {
 				colbz = this;
@@ -246,6 +254,12 @@ $.fn.sfxmFloatingSelector = function (options) {
 			else if (this.name == 'cxjje') {
 				colcxjje = this;
 			}
+			else if (this.name === 'sccj') {
+			    colsccj = this;
+			}
+			else if (this.name === 'gjybdm') {
+			    colgjybdm = this;
+			}
 			if (this.name === 'tsypbzmc') {
 				coltsypbz = this;
 			}
@@ -253,7 +267,7 @@ $.fn.sfxmFloatingSelector = function (options) {
 		if (!!colsfxmmc && !!colgg && !!colsfdlmc && !!coldwjls && !!colyfbmmc && !!colclkcsl && !!colkzbz) {
 			//已被占用50宽
 			switch (options.searchType) {
-				case "yp": console.log('12');
+				case "yp": 
 					colsfxmmc.widthratio = 10;
 					colgg.hidden = undefined;
 					colgg.widthratio = 8;
@@ -261,16 +275,20 @@ $.fn.sfxmFloatingSelector = function (options) {
 					colsfdlmc.widthratio = 10;
 					colisKss.hidden = undefined;
 					colisKss.widthratio = 6;
-					//colzfbl.hidden = undefined;
-					//colzfbl.widthratio = 10;
+					colzfbl.hidden = undefined;
+					colzfbl.widthratio = 10;
 					colbz.hidden = undefined;
-					colbz.widthratio = 10;
+					colbz.widthratio = 5;
+					colsccj.hidden = undefined;
+					colsccj.widthratio = 10;
+					colgjybdm.hidden = undefined;
+					colgjybdm.widthratio = 5;
 					//coljlfw.hidden = undefined;
 					//coljlfw.widthratio = 10;
 					//colpcfw.hidden = undefined;
 					//colpcfw.widthratio = 10;
 					break;
-				case "sfxm": console.log('1');
+				case "sfxm": 
 					colgg.hidden = undefined;
 					colgg.widthratio = 10;
 					colsfxmmc.widthratio = 20;
@@ -278,20 +296,20 @@ $.fn.sfxmFloatingSelector = function (options) {
 					colsfdlmc.widthratio = 12;
 					colcxjje.hidden = undefined;
 					colcxjje.widthratio = 10;
-					colclkcsl.hidden = undefined;
-					colclkcsl.widthratio = 5;
+					//colclkcsl.hidden = undefined;
+					//colclkcsl.widthratio = 10;
 					break;
 				case "yp,sfxm":
-				case "sfxm,yp": console.log('128');
+				case "sfxm,yp": 
 					colsfxmmc.widthratio = 14;
 					colgg.hidden = undefined;
 					colgg.widthratio = 12;
 					colisKss.hidden = undefined;
 					colisKss.widthratio = 6;
-					//colzfbl.hidden = undefined;
-					//colzfbl.widthratio = 10;
+					colzfbl.hidden = undefined;
+					colzfbl.widthratio = 10;
 					colbz.hidden = undefined;
-					colbz.widthratio = 10;
+					colbz.widthratio = 5;
 					//coljlfw.hidden = undefined;
 					//coljlfw.widthratio = 10;
 					//colpcfw.hidden = undefined;
@@ -300,32 +318,36 @@ $.fn.sfxmFloatingSelector = function (options) {
 				case "yp.kc":
 				case "yp.kc,sfxm":
 				case "sfxm,yp.kc": //cxjje 
-					//coltsypbz.hidden = undefined;
-					//coltsypbz.widthratio = 9;
-					colsfxmmc.widthratio = 20;
+					coltsypbz.hidden = undefined;
+					coltsypbz.widthratio = 8;
+					colsfxmmc.widthratio = 15;
 					colgg.hidden = undefined;
-					colgg.widthratio = 10;
-					//colyfbmmc.hidden = undefined;
-					//colyfbmmc.widthratio = 5;
+					colgg.widthratio = 8;
+					colyfbmmc.hidden = undefined;
+					colyfbmmc.widthratio = 5;
 					colclkcsl.hidden = undefined;
-					colclkcsl.widthratio = 5;
-					//colkzbz.hidden = undefined;
-					//colkzbz.widthratio = 5;
+					colclkcsl.widthratio = 4;
+					colkzbz.hidden = undefined;
+					colkzbz.widthratio = 4;
 					colisKss.hidden = undefined;
-					colisKss.widthratio = 6;
-					//colzfbl.hidden = undefined;
-					//colzfbl.widthratio = 9;
+					colisKss.widthratio = 4;
+					colzfbl.hidden = undefined;
+					colzfbl.widthratio = 5;
 					colbz.hidden = undefined;
-					colbz.widthratio = 10;
+					colbz.widthratio = 5;
 					colbz.cx = undefined;
+					colbz.widthratio = 5;
 					colcxjje.hidden = undefined;
-					colcxjje.widthratio = 10;
+					colcxjje.widthratio = 6;
+					colsccj.widthratio = 8;
+					colgjybdm.hidden = undefined;
+					colgjybdm.widthratio = 8;
 					//coljlfw.hidden = undefined;
 					//coljlfw.widthratio = 10;
 					//colpcfw.hidden = undefined;
 					//colpcfw.widthratio = 10;
 					break;
-				case "sfxm.dwjls": console.log('121');
+				case "sfxm.dwjls": 
 					colgg.hidden = undefined;
 					colgg.widthratio = 10;
 					colsfxmmc.widthratio = 25;
@@ -335,7 +357,7 @@ $.fn.sfxmFloatingSelector = function (options) {
 					colcxjje.widthratio = 10;
 					break;
 				case "yp,sfxm.dwjls":
-				case "sfxm.dwjls,yp": console.log('1233');
+				case "sfxm.dwjls,yp": 
 					colsfxmmc.widthratio = 12;
 					colgg.hidden = undefined;
 					colgg.widthratio = 10;
@@ -343,10 +365,10 @@ $.fn.sfxmFloatingSelector = function (options) {
 					coldwjls.widthratio = 8;
 					colisKss.hidden = undefined;
 					colisKss.widthratio = 7;
-					//colzfbl.hidden = undefined;
-					//colzfbl.widthratio = 10;
+					colzfbl.hidden = undefined;
+					colzfbl.widthratio = 10;
 					colbz.hidden = undefined;
-					colbz.widthratio = 10;
+					colbz.widthratio = 5;
 					//coljlfw.hidden = undefined;
 					//coljlfw.widthratio = 10;
 					//colpcfw.hidden = undefined;
@@ -355,24 +377,24 @@ $.fn.sfxmFloatingSelector = function (options) {
 				case "yp.kc,sfxm.dwjls":
 				case "sfxm.dwjls,yp.kc": 
 					colyfbmmc.hidden = undefined;
-					//coltsypbz.widthratio = 9;
-					colsfxmmc.widthratio = 20;
+					coltsypbz.widthratio = 9;
+					colsfxmmc.widthratio = 12;
 					colgg.hidden = undefined;
 					colgg.widthratio = 8;
 					colyfbmmc.hidden = undefined;
 					colyfbmmc.widthratio = 7;
 					colclkcsl.hidden = undefined;
 					colclkcsl.widthratio = 5;
-					//colkzbz.hidden = undefined;
-					//colkzbz.widthratio = 5;
+					colkzbz.hidden = undefined;
+					colkzbz.widthratio = 5;
 					coldwjls.hidden = undefined;
 					coldwjls.widthratio = 6;
 					colisKss.hidden = undefined;
 					colisKss.widthratio = 6;
-					//colzfbl.hidden = undefined;
-					//colzfbl.widthratio = 10;
+					colzfbl.hidden = undefined;
+					colzfbl.widthratio = 10;
 					colbz.hidden = undefined;
-					colbz.widthratio = 10;
+					colbz.widthratio = 5;
 					//coljlfw.hidden = undefined;
 					//coljlfw.widthratio = 10;
 					//colpcfw.hidden = undefined;

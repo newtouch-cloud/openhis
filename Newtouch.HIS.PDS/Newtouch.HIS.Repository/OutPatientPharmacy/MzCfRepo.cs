@@ -589,5 +589,149 @@ WHERE s.sl>0
             return ExecuteSqlCommand(
                 "UPDATE dbo.mz_cf SET xb=@xb WHERE cfh=@cfh AND OrganizeId=@OrganizeId AND zt='1' ", param);
         }
+
+        /// <summary>
+        /// 门诊退费退还冻结数量的处方信息
+        /// </summary>
+        /// <param name="cfh"></param>
+        /// <param name="organizeId"></param>
+        /// <returns></returns>
+        public List<MzCfEntity> SelectTfRpList(string cfh, string organizeId)
+        {
+            const string sql = "SELECT * FROM dbo.mz_cf(NOLOCK) WHERE cfh=@cfh AND OrganizeId=@OrganizeId ";
+            var param = new DbParameter[]
+            {
+                new SqlParameter("@cfh",cfh ),
+                new SqlParameter("@OrganizeId",organizeId )
+            };
+            return FindList<MzCfEntity>(sql, param);
+        }
+
+        #region 医保电子处方
+        /// <summary>
+        /// 获取电子处方病人信息
+        /// </summary>
+        /// <returns></returns>
+        public IList<patientInfoVO> GetElectronicPrescription(Pagination pagination, string organizeId, string isysh, string keyword = "")
+        {
+            var sql = new StringBuilder(@"
+select jz.xm,cf.cfh,case isnull(cf.ysshyj,'') when '' then isnull(rxStasName,'未审核') else '未通过' end zt,cf.ysshyj from
+[Newtouch_CIS]..xt_cf cf
+inner join [Newtouch_CIS]..xt_jz jz on jz.jzId=cf.jzId and jz.OrganizeId=cf.OrganizeId and jz.zt='1'
+left join [NewtouchHIS_Sett]..Dzcf_D003_output D003 on D003.cfh=cf.cfh and D003.zt='1'
+ where cf.isdzcf='1' 
+ and cf.zt='1' 
+and cf.OrganizeId=@OrganizeId
+");
+            if (isysh == "1")
+            {
+                sql.AppendLine(" and rxStasName is not null ");
+            }
+            else if (isysh == "0")
+            {
+                sql.AppendLine(" and rxStasName is null  and (cf.ysshyj is null or cf.ysshyj='')");
+            }
+            else if (isysh == "2")
+            {
+                sql.AppendLine(" and cf.ysshyj is not null  and cf.ysshyj!='' ");
+            }
+            var param = new List<DbParameter>
+            {
+                new SqlParameter("@OrganizeId", organizeId),
+            };
+            if (string.IsNullOrWhiteSpace(keyword)) return QueryWithPage<patientInfoVO>(sql.ToString(), pagination, param.ToArray());
+            sql.AppendLine("AND (jz.xm LIKE @xm OR jz.kh LIKE @cardNo OR cf.cfh LIKE @cfh)");
+            param.Add(new SqlParameter("@xm", "%" + keyword + "%"));
+            param.Add(new SqlParameter("@cardNo", "%" + keyword + "%"));
+            param.Add(new SqlParameter("@cfh", "%" + keyword + "%"));
+            return QueryWithPage<patientInfoVO>(sql.ToString(), pagination, param.ToArray());
+        }
+        /// <summary>
+        /// 根据处方号和姓名获取处方明细信息
+        /// </summary>
+        /// <returns></returns>
+        public List<DzcfmxVO> QueryElectronicPrescriptionCfmx(string cfh, string xm, string organizeId)
+        {
+            var sql = new StringBuilder(@" select 
+ cf.cfh cfh 
+ ,cfmx.ypmc ypmc 
+ ,isnull(ypsx.ypgg,cfyp.specName) gg 
+,convert(decimal(18,2), cfmx.sl) sl
+ ,convert(varchar(50),cfmx.sl)+cfmx.dw slStr 
+ ,cfmx.dw dw 
+ ,cfmx.dj dj 
+ ,yp.ycmc ycmc 
+ ,cfmx.je je 
+ ,cfmx.mcjl jl 
+ ,cfmx.mcjldw jldw 
+ ,isnull(yf.yfmc,cf.cfyf) yfmc 
+ ,cfmx.remark yszt 
+,ys.Name ysmc  ,
+sf.Name shr,
+convert(varchar(50),d003.czrq,120) shsj,
+pc.yzpcmc pc
+ from 
+ [Newtouch_CIS]..xt_cf cf
+inner join [Newtouch_CIS]..xt_jz jz on jz.jzId=cf.jzId and jz.OrganizeId=cf.OrganizeId and jz.zt='1'
+ left join  [Newtouch_CIS]..xt_cfmx cfmx on cfmx.cfid=cf.cfid and cfmx.organizeid=cf.OrganizeId and cfmx.zt='1'
+  left join [NewtouchHIS_Base]..xt_ypsx ypsx on cfmx.gjybdm=ypsx.gjybdm and cfmx.organizeid=ypsx.OrganizeId and ypsx.zt='1'
+ left join [NewtouchHIS_Base]..xt_yp yp on yp.ypId=ypsx.ypId and yp.organizeid=ypsx.OrganizeId and yp.zt='1'
+   left join [NewtouchHIS_Sett]..Dzcf_CFYP_output cfyp on cfmx.gjybdm=cfyp.medListCodg
+    left join [NewtouchHIS_Base]..xt_ypyf yf on (cfmx.yfCode=yf.yfCode or cf.cfyf=yf.yfCode)
+	left join [NewtouchHIS_Base]..[Sys_Staff] ys on ys.gh=cf.ys and ys.OrganizeId=cf.OrganizeId and ys.zt='1'
+	left join [NewtouchHIS_Sett]..Dzcf_D003_output d003 on d003.cfh=cf.cfh
+	left join [NewtouchHIS_Base]..[Sys_Staff] sf on sf.gh=d003.czydm
+		left join [NewtouchHIS_Base]..V_S_xt_yzpc pc on pc.yzpcCode=cfmx.pcCode
+ where cf.isdzcf='1' 
+ and cf.zt='1'
+and cf.cfh=@cfh
+and  cf.OrganizeId=@OrganizeId
+and jz.xm=@xm
+");
+            var param = new DbParameter[]
+            {
+                new SqlParameter("@xm",xm ??""),
+                new SqlParameter("@cfh",cfh),
+                new SqlParameter("@OrganizeId",organizeId )
+            };
+            return _dataContext.Database.SqlQuery<DzcfmxVO>(sql.ToString(), param).ToList();
+        }
+        public Input_2203A GetCQjzdjInfo(string mzh, string orgId)
+        {
+            StringBuilder strSql = new StringBuilder();
+            strSql.Append(@"
+SELECT   
+			b.jzid mdtrt_id,
+			grbh psn_no,
+			case b.mjzbz  when '2' then '13' when '4' then '14' when '6' then '14' when '5' then '9901' 
+		    when '7' then '14'  when '8' then '19'  when '9' then '51' when '10' then '9906' when '12' then '1102' else '11' end med_type,
+            case b.mjzbz when '9'  then '1' else '' end matn_type,
+			case b.mjzbz when '9'  then '9' else '' end birctrl_type, case b.mjzbz when '9'  then convert(varchar(10),getdate(),120) else '' 
+			end birctrl_matn_date,b.bzbm dise_codg,b.bzmc dise_name,c.cbdbm insuplc_admdvs
+  FROM      [NewtouchHIS_Sett].[dbo].[xt_brjbxx]  a
+			LEFT JOIN [NewtouchHIS_Sett]..mz_gh b on  a.patid=b.patid and b.OrganizeId = a.OrganizeId AND b.zt = '1'
+			LEFT JOIN [NewtouchHIS_Sett]..xt_card c on c.CardNo=b.kh and c.CardType=b.CardType and c.OrganizeId=b.OrganizeId and c.zt='1'
+  WHERE     b.mzh = @mzh
+            AND a.OrganizeId = @OrganizeId
+            AND a.zt = '1'; ");
+            SqlParameter[] par =
+            {
+                new SqlParameter("@mzh", mzh),
+                new SqlParameter("@OrganizeId", orgId)
+            };
+            return this.FindList<Input_2203A>(strSql.ToString(), par).FirstOrDefault();
+        }
+        public int UpdateCfYsshyj(string cfh, string ysshyj, string orgId)
+        {
+            const string sql = " UPDATE [Newtouch_CIS]..xt_cf SET ysshyj=@ysshyj WHERE cfh=@cfh and organizeid=@orgId ";
+            DbParameter[] param =
+            {
+                new SqlParameter("@cfh", cfh),
+                new SqlParameter("@ysshyj", ysshyj),
+                new SqlParameter("@orgId", orgId)
+            };
+            return ExecuteSqlCommand(sql, param);
+        }
+        #endregion
     }
 }

@@ -208,5 +208,13 @@
         /// 抗生素权限级别
         /// </summary>
         public string kssqxjb { get; set; }
+        /// <summary>
+        /// 生产厂家
+        /// </summary>
+        public string sccj { get; set; }
+        /// <summary>
+        /// 国家医保代码
+        /// </summary>
+        public string gjybdm { get; set; }
     }
 }
