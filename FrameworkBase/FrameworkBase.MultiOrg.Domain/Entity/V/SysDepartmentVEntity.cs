@@ -53,5 +53,7 @@ namespace FrameworkBase.MultiOrg.Domain.Entity
         /// </summary>
         public string zt { get; set; }
 
+        public string zlks { get; set; }
+        public string zxks { get; set; }
     }
 }
