@@ -270,7 +270,7 @@ LEFT JOIN [NewtouchHIS_Base]..V_S_xt_yzpc(nolock) pc
 LEFT JOIN [NewtouchHIS_Base]..V_C_xt_yp(nolock) yp
     ON yp.ypCode=cfmx.ypCode
         AND yp.OrganizeId=cfmx.OrganizeId
-LEFT JOIN  [NewtouchHIS_Sett]..Dzcf_CFYP_output cfyp on cfmx.ypcode=cfyp.cfypcode and cf.isdzcf='1' --电子处方目录
+LEFT JOIN  [NewtouchHIS_Sett]..Dzcf_CFYP_output cfyp on cfmx.ypcode=cast(cfyp.cfypcode as varchar) and cf.isdzcf='1' --电子处方目录
 LEFT JOIN [NewtouchHIS_Base]..V_S_xt_ypyf(nolock) yf
     ON yf.yfCode=cfmx.yfCode
 left join [NewtouchHIS_Base]..V_S_xt_sfdl(nolock) sfdl 
