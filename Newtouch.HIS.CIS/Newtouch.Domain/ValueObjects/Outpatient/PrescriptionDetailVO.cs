@@ -167,7 +167,7 @@ namespace Newtouch.Domain.ValueObjects
 		/// 
 		/// </summary>
 		public string ghlybz { get; set; }
-
+        public string gjybdm { get; set; }
 
 	}
 }
