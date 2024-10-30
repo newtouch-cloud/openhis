@@ -8,5 +8,6 @@ namespace Newtouch.Domain.DTO.InputDto.Inpatient
     {
         public int tsl { get; set; }
         public int ktsl { get; set; }
+        public int? yzlx { get; set; }
     }
 }
