@@ -16,6 +16,11 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string OrganizeId { get; set; }
 
         /// <summary>
+        /// 医嘱号
+        /// </summary>
+        public string yzh { get; set; }
+
+        /// <summary>
         /// 医嘱ID
         /// </summary>
         public string yzId { get; set; }
