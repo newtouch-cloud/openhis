@@ -74,6 +74,12 @@ namespace Newtouch.DomainServices.Inpatient
 			var sqlstr3 = sqlstr + " union all " + sqlstr2;
 			return this.FindList<BedItemsVO>(sqlstr3.ToString(), par.ToArray());
 		}
+        /// <summary>
+        /// 医嘱发药查询
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
         public IList<Dispensing> GetDispensings(Pagination pagination, DispensingMXRequestDto req)
         {
             var sqlstr = new StringBuilder();
@@ -82,7 +88,7 @@ namespace Newtouch.DomainServices.Inpatient
 from [NewtouchHIS_PDS].dbo.zy_ypyzczjl czjl
 inner join NewtouchHIS_PDS.dbo.zy_ypyzxx yzxx ON czjl.zxId=yzxx.zxId and czjl.yzid=yzxx.yzid AND czjl.ypCode=yzxx.ypCode AND czjl.OrganizeId=yzxx.OrganizeId 
 inner join [NewtouchHIS_Base].dbo.V_S_Sys_Department ks on ks.Code=yzxx.ksCode and ks.OrganizeId=yzxx.OrganizeId 
-where czjl.createtime>=@kssj and czjl.createtime<=@jssj
+where   czjl.operateType='1' and czjl.createtime>=@kssj and czjl.createtime<=@jssj 
 and czjl.OrganizeId=@OrganizeId
 group by czjl.createtime,czjl.creatorcode,ks.Name ");
             par.Add(new SqlParameter("@OrganizeId", req.OrganizeId));
