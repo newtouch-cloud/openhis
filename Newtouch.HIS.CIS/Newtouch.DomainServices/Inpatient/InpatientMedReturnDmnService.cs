@@ -91,7 +91,7 @@ and e.zybz not in (" + (int)EnumZYBZ.Ycy + "," + (int)EnumZYBZ.Wry + "," + (int)
             string sql = @"select [Id],a.[OrganizeId],[lyxh],[zyh],[hzxm],[yzxh],[fzxh],[yfdm],[WardCode],[DeptCode],[ysgh]
 ,[zxrq],[qqrq],[fyrq],[ypdm],a.[ypmc],[ypsl],a.[ypgg],[ypdw],[dwxs],[ykxs],[ypdj],[zxcs],[tybz]
 ,[fyczyh],[yzxz],[zbbz],[memo],[mcsl],[CreateTime],[CreatorCode],[LastModifyTime],
-[LastModifierCode],a.[zt],ypsl-isnull(ytsl,0) tsl,ypsl-isnull(ytsl,0) ktsl
+[LastModifierCode],a.[zt],ypsl-isnull(ytsl,0) tsl,ypsl-isnull(ytsl,0) ktsl,isnull(yzlx,0) yzlx
 from v_yzisfy a with(nolock) --zy_fyqqk a with(nolock)
 left join [NewtouchHIS_Base].[dbo].[V_C_xt_yp] b with(nolock) on a.[ypdm]=b.ypcode and a.OrganizeId=b.OrganizeId and b.zt='1'
 where a.OrganizeId=@orgId and a.zt='1' and a.tybz in (" + (int)EnumMedSTflag.Receive + "," + (int)EnumMedSTflag.PartReturn + @") 
@@ -182,14 +182,16 @@ and not exists(select 1 from zy_tyjl  b with(nolock)
                     var medentity = Tools.Json.ToList<InMedReturnRequestslDto>(medList);
                     string sql = "";
                     sql = @"
-select Id fyId, yzxh yzId,ypdm ypCode,ypmc,fzxh zh,zxrq,zyh,ypsl tysl,yfdm fyyf,DeptCode ksCode,WardCode bqCode,cast(a.lyxh as bigint) lyxh
+select a.Id fyId, yzxh yzId,ypdm ypCode,ypmc,fzxh zh,zxrq,a.zyh,case when yzlx='10' then cast(ypsl*mcsl as int) else ypsl end tysl,yfdm fyyf,a.DeptCode ksCode,a.WardCode bqCode,cast(a.lyxh as bigint) lyxh
 from zy_fyqqk a with(nolock)
+left join zy_lsyz lsyz with(nolock) on lsyz.Id=a.yzxh and lsyz.OrganizeId=a.OrganizeId and lsyz.zt='1'
 where a.zt=1 and a.OrganizeId=@orgId and tybz in(select col from dbo.f_split(@tybz,',')) and 
 a.id in(select col from dbo.f_split(@medList,',') where col>'')
 and isnull(fzxh,'')='' 
 union all
-select Id fyId, yzxh yzId,ypdm ypCode,ypmc,fzxh zh,zxrq,zyh,ypsl tysl,yfdm fyyf,DeptCode ksCode,WardCode bqCode,cast(b.lyxh as bigint) lyxh
+select b.Id fyId, yzxh yzId,ypdm ypCode,ypmc,fzxh zh,zxrq,b.zyh,case when yzlx='10' then cast(ypsl*mcsl as int) else ypsl end tysl,yfdm fyyf,b.DeptCode ksCode,b.WardCode bqCode,cast(b.lyxh as bigint) lyxh
 from zy_fyqqk b with(nolock) 
+left join zy_lsyz lsyz with(nolock) on lsyz.Id=b.yzxh and lsyz.OrganizeId=b.OrganizeId and lsyz.zt='1'
 where  b.zt=1 and b.OrganizeId=@orgId and b.tybz in(select col from dbo.f_split(@tybz,',')) 
 and exists (
     select 1 -- OrganizeId,fzxh,zyh
@@ -323,15 +325,19 @@ and exists (
                         InpatientMedicineGrantEntity ime = db.IQueryable<InpatientMedicineGrantEntity>().FirstOrDefault(p => p.Id == item.Id && p.tybz != (int)EnumMedSTflag.AllReturn && p.zt == "1" && p.OrganizeId == user.OrganizeId);
                         if (ime != null)
                         {
+                            int ypsl = ime.ypsl;
+                            if (item.yzlx == 10) {
+                                ypsl = Convert.ToInt32(ime.mcsl ?? 0)*ime.ypsl; //中药需ypsl*每次数量 =中药总数量
+                            }
                             ime.ytsl = (ime.ytsl ?? 0) + item.tsl;
-                            if (ime.ytsl == ime.ypsl)
+                            if (ime.ytsl == ypsl)
                             {
                                 ime.tybz = (int)EnumMedSTflag.AllReturn;
                             }
-                            else if (ime.ytsl > ime.ypsl)
+                            else if (ime.ytsl > ypsl)
                             {
                                 throw new FailedException("退药数量不能大于发药数量");
-                            } else if (ime.ytsl < ime.ypsl) {
+                            } else if (ime.ytsl < ypsl) {
                                 ime.tybz = (int)EnumMedSTflag.PartReturn;
                             }
                             ime.LastModifyTime = DateTime.Now;
@@ -350,7 +356,7 @@ and exists (
                                 fyqqxh = ime.lyxh,
                                 ypdm = ime.ypdm,
                                 tysl = item.tsl,
-                                ktypsl = (ime.ypsl - ime.ytsl).ToInt(),
+                                ktypsl = (ypsl - ime.ytsl).ToInt(),
                                 ypgg = ime.ypgg,
                                 ypdw = ime.ypdw,
                                 dwxs = ime.dwxs,
