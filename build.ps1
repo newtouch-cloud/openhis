@@ -2,6 +2,7 @@
 ## eg: C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin
 ## 加入环境变量，生效后，在powershell 运行 ./build.ps1
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 
 Write-Host "开始编译并发布Static"
@@ -56,14 +57,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host  "开始编译并发布PDS"
-MSBuild.exe Newtouch.HIS.PDS/Newtouch.HIS.Web/Newtouch.HIS.PDS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=publish
+MSBuild.exe Newtouch.HIS.PDS/Newtouch.HIS.Web/Newtouch.HIS.PDS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "编译PDS失败！." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "开始编译并发布PDSAPI"
-MSBuild.exe Newtouch.HIS.PDS/Newtouch.PDS.API/Newtouch.Pds.Api.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=publish
+MSBuild.exe Newtouch.HIS.PDS/Newtouch.PDS.API/Newtouch.Pds.Api.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "编译PDSAPI失败！." -ForegroundColor Red
     exit $LASTEXITCODE
