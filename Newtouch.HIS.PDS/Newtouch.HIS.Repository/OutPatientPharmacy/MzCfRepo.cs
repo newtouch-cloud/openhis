@@ -666,27 +666,25 @@ and cf.OrganizeId=@OrganizeId
  ,cfmx.mcjldw jldw 
  ,isnull(yf.yfmc,cf.cfyf) yfmc 
  ,cfmx.remark yszt 
-,ys.Name ysmc  ,
-sf.Name shr,
-convert(varchar(50),d003.czrq,120) shsj,
-pc.yzpcmc pc
+ ,ys.Name ysmc  
+ ,sf.Name shr
+ ,convert(varchar(50),d003.czrq,120) shsj
+ ,pc.yzpcmc pc
  from 
  [Newtouch_CIS]..xt_cf cf
-inner join [Newtouch_CIS]..xt_jz jz on jz.jzId=cf.jzId and jz.OrganizeId=cf.OrganizeId and jz.zt='1'
+ inner join [Newtouch_CIS]..xt_jz jz on jz.jzId=cf.jzId and jz.OrganizeId=cf.OrganizeId and jz.zt='1'
  left join  [Newtouch_CIS]..xt_cfmx cfmx on cfmx.cfid=cf.cfid and cfmx.organizeid=cf.OrganizeId and cfmx.zt='1'
-  left join [NewtouchHIS_Base]..xt_ypsx ypsx on cfmx.gjybdm=ypsx.gjybdm and cfmx.organizeid=ypsx.OrganizeId and ypsx.zt='1'
+ left join [NewtouchHIS_Base]..xt_ypsx ypsx on cfmx.gjybdm=ypsx.gjybdm and cfmx.organizeid=ypsx.OrganizeId and ypsx.zt='1'
  left join [NewtouchHIS_Base]..xt_yp yp on yp.ypId=ypsx.ypId and yp.organizeid=ypsx.OrganizeId and yp.zt='1'
-   left join [NewtouchHIS_Sett]..Dzcf_CFYP_output cfyp on cfmx.gjybdm=cfyp.medListCodg
-    left join [NewtouchHIS_Base]..xt_ypyf yf on (cfmx.yfCode=yf.yfCode or cf.cfyf=yf.yfCode)
-	left join [NewtouchHIS_Base]..[Sys_Staff] ys on ys.gh=cf.ys and ys.OrganizeId=cf.OrganizeId and ys.zt='1'
-	left join [NewtouchHIS_Sett]..Dzcf_D003_output d003 on d003.cfh=cf.cfh
-	left join [NewtouchHIS_Base]..[Sys_Staff] sf on sf.gh=d003.czydm
-		left join [NewtouchHIS_Base]..V_S_xt_yzpc pc on pc.yzpcCode=cfmx.pcCode
+ left join [NewtouchHIS_Sett]..Dzcf_CFYP_output cfyp on cfmx.gjybdm=cfyp.medListCodg
+ left join [NewtouchHIS_Base]..xt_ypyf yf on (cfmx.yfCode=yf.yfCode or cf.cfyf=yf.yfCode)
+ left join [NewtouchHIS_Base]..[Sys_Staff] ys on ys.gh=cf.ys and ys.OrganizeId=cf.OrganizeId and ys.zt='1'
+ left join [NewtouchHIS_Sett]..Dzcf_D003_output d003 on d003.cfh=cf.cfh and d003.OrganizeId=cf.OrganizeId and d003.zt='1'
+ left join [NewtouchHIS_Base]..[Sys_Staff] sf on sf.gh=d003.czydm and sf.OrganizeId=d003.OrganizeId and sf.zt='1'
+ left join [NewtouchHIS_Base]..V_S_xt_yzpc pc on pc.yzpcCode=cfmx.pcCode and pc.OrganizeId=cfmx.OrganizeId and pc.zt='1'
  where cf.isdzcf='1' 
- and cf.zt='1'
-and cf.cfh=@cfh
-and  cf.OrganizeId=@OrganizeId
-and jz.xm=@xm
+  and cf.zt='1' and cf.cfh=@cfh
+  and  cf.OrganizeId=@OrganizeId and jz.xm=@xm
 ");
             var param = new DbParameter[]
             {
