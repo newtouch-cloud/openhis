@@ -1,7 +1,8 @@
-﻿
+﻿@using Newtouch.Infrastructure;
 @{
     ViewBag.Title = "examForm";
     Layout = "~/Views/Shared/_Form.cshtml";
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
 
@@ -60,15 +61,16 @@
             $.ajax({
                 url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D006",
                 dataType: "json",
-                data: { hisId:hisId,cfh:cfh, },
+                data: { hisId: hisId, cfh: cfh, operatorId: '@curOpr.UserCode', operatorName: '@curOpr.UserName' },
                 type: "POST",
                 async: false,
                 success: function (ajaxdata) {
                     var tfReturn = eval('(' + ajaxdata + ')');
                     if (tfReturn.infcode == "0" || tfReturn.infcode == 0)
                     {
-                        if (tfReturn.output.code == 0 || tfReturn.output.code == "0") {
-                            var obj = eval('(' + tfReturn.output.encData + ')');
+                        var data1 = eval('(' + tfReturn.output + ')');
+                        if (data1.code == 0 || data1.code == "0") {
+                            var obj = eval('(' + data1.encData + ')');
                             $("#hiRxno").val(obj.hiRxno);
                             $("#pharName").val(obj.pharName);
                             $("#pharCode").val(obj.pharCode);
@@ -76,8 +78,15 @@
                             $("#rxChkOpnn").val(obj.rxChkOpnn);
                             $("#rxChkTime").val(obj.rxChkTime);
                         }
+                        else {
+                            $.modalAlert("电子处方取药结果査询失败：" + data1.message, 'error');
+                            return;
+                        }
                     }
-                   
+                    else {
+                        $.modalAlert("电子处方审核结果査询失败：" + tfReturn.err_msg, 'error');
+                        return;
+                    }
                 },
                 error: function (request, error, ex) {
                     $.loading(false);
