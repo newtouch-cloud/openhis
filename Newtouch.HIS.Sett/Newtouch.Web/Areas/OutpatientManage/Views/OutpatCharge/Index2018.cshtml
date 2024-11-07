@@ -1377,7 +1377,9 @@
 						        MZJS.jzxx = { mdtrt_id: payoptype.mdtrt_id, psn_no: payoptype.psn_no, med_type: payoptype.med_type, dise_codg: payoptype.dise_codg, hisId: patModel.mzh, bzInfo: bzInfo };
                                 rs = true;
 							}
-							else {
+                            else {
+                                MZJS.jzxx = { mdtrt_id: payoptype.mdtrt_id, psn_no: payoptype.psn_no, med_type: payoptype.med_type, dise_codg: payoptype.dise_codg, hisId: patModel.mzh, bzInfo: bzInfo };
+                                rs = true;
                                 msg = "医保服务(门诊就诊信息上传A)失败：" + medicalReg.err_msg;
 							}
                         }
@@ -1439,6 +1441,9 @@
                         }
                         /* 逐一撤销 */
                         mxscobj.chrg_bchno = hcdata.data[i].pch;
+                        if (cqPatInfo.xzqh.slice(0, 3) != "150") {
+                            mxscobj.chrg_bchno = "0000";
+                        }
                         if (cqPatInfo.ybVer == "shanghaiV5") {
                             mxscobj.ishtqz = "N"; //入参后台取
                             $.ajax({
@@ -1467,11 +1472,15 @@
                                 success: function (data) {
                                     var tfReturn = eval('(' + data + ')');
                                     if (tfReturn) {
-                                        if (tfReturn.infcode == "0") {
+                                        if (tfReturn.infcode == "0" || tfReturn.infcode == 0) {
+                                            var cxpch = hcdata.data[i].pch;
+                                            if (cqPatInfo.xzqh.slice(0, 3) != "150") {
+                                                cxpch = "0000";
+                                            }
                                             $.ajax({
                                                 type: "POST",
                                                 url: "/OutpatientManage/OutpatCharge/UpDateUploadPch",
-                                                data: { zymzh: patModel.mzh, cfh: hcdata.data[i].cfh, pch: hcdata.data[i].pch },
+                                                data: { zymzh: patModel.mzh, cfh: hcdata.data[i].cfh, pch: cxpch },
                                                 dataType: "json",
                                                 async: false,
                                                 success: function (resp) {
@@ -1533,7 +1542,11 @@
             operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)',
             insuplc_admdvs: cqPatInfo.xzqh
         };
-
+	    if (cqPatInfo.xzqh.slice(0, 3) != "150")
+	    {
+	        jylsh = "0000";
+	    }
+	        
 		$.ajax({
             type: 'POST',
 		    url: "/OutpatientManage/OutpatCharge/GetChongQingDetailsMzjsYb",
