@@ -60,11 +60,18 @@ namespace Newtouch.CIS.Web.Areas.DoctorManage.Controllers
             {
                 var FequencyList = frequencyStr.Split(',');
                 var pcInfo = _iDoctorserviceDmnService.getpcInfoByCode(FequencyList[0], OrganizeId);
-                ViewBag.pccode = pcInfo.yzpcCode;
-                ViewBag.zxcs = pcInfo.zxcs;
-                ViewBag.zxzq = pcInfo.zxzq;
-                ViewBag.zxzqdw = pcInfo.zxzqdw;
-                ViewBag.pcmc = pcInfo.yzpcmc;
+                if (pcInfo != null)
+                {
+                    ViewBag.pccode = pcInfo.yzpcCode;
+                    ViewBag.zxcs = pcInfo.zxcs;
+                    ViewBag.zxzq = pcInfo.zxzq;
+                    ViewBag.zxzqdw = pcInfo.zxzqdw;
+                    ViewBag.pcmc = pcInfo.yzpcmc;
+                }
+                else {
+                    throw new Exception($"未找到有效的医嘱频次信息 (医嘱频次编号: {FequencyList[0]})，请稍后重试或联系管理员。");
+                }
+                
             }
             #region 抗生素相关
             ViewBag.IsQyKssKz = _sysConfigRepo.GetBoolValueByCode("openKssQxSwitch", OrganizeId);//是否启用抗生素
