@@ -111,6 +111,8 @@
     var newzyh = $.request('newzyh');
     var zffs = $.request('zffs');
     var khxx = $.request('khxx');
+    var patName = $.request('patName');
+    var patsfz = $.request('patsfz');
     var jzh = "";
     var _psn_cert_type = "";
     var _mdtrt_cert_no = "";
@@ -134,6 +136,7 @@
     var cardInfo2;
     var cardInfo3;
     var yibaoCardInfo;
+    var brxzobj = { brxz: "1", brxzmc: "普通医保" };
     var cqPatInfo = {};//患者读卡信息
     //入院办理信息（医保接口返回）
     var ryblInfo;
@@ -274,7 +277,9 @@
         return;
     }
 
+
     function funcStep4(nextStepCallback) {
+        debugger;
 	    $.loading(true, '正在医保入院办理...');
         setTimeout(function () {
             if(cqPatInfo.ybVer == "shanghaiV5") {
@@ -338,7 +343,7 @@
 		            dise_codg: "",
 		            dise_name: ""
                 };
-                
+
 		        $.ajax({
 		            type: "POST",
 		            url: "http://127.0.0.1:33333/api/YiBao/HospitaMdtrtinfo_2401",
@@ -541,11 +546,30 @@
     }
     function gjyb()
     {
+        debugger;
         var res = { "success": "true", "msg": "" };
-        setTimeout(function () {
-            var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";;
-            var payoptype = { "mdtrt_cert_type": "03", "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
-            if ('@YB_Jzpzl' != 'ON') {
+      //  setTimeout(function () {
+            var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
+            var payoptype = { "mdtrt_cert_type": "03", "mdtrt_cert_no": patsfz, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
+            if (zffs === "sm")//电子凭证
+            {
+                url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
+            }
+            if (zffs === "sfz") {//身份证
+                payoptype.mdtrt_cert_type = "02";
+                payoptype.mdtrt_cert_no = patsfz;
+                payoptype.psn_name = patName;
+                url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1163";
+            }
+            if (zffs === "ck") {//医保磁卡
+                payoptype.mdtrt_cert_type = "00";
+                payoptype.mdtrt_cert_no = patsfz;
+                url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
+            }
+            if (zffs === "sl") {//刷脸
+                url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1164";
+            }
+            @*if ('@YB_Jzpzl' != 'ON') {
                 if (zffs === "sm") {
                     url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
                 }
@@ -559,7 +583,7 @@
                     payoptype.mdtrt_cert_no = khxx;
                     url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
                 }
-            }
+            }*@
             $.ajax({
                 type: "POST",
                 url: url,
@@ -571,8 +595,9 @@
                 }
             });
             $.loading(false);
+            debugger;
             if (yibaoCardInfo) {
-                if (yibaoCardInfo.infcode == "0") {
+                if (yibaoCardInfo.infcode == "0" || yibaoCardInfo.infcode == 0) {
                     if ('@YB_Jzpzl' === 'ON') {
                         var cardecinfo = yibaoCardInfo.output.cardecinfo;
                         switch (cardecinfo.mdtrt_cert_type) {
@@ -598,8 +623,13 @@
                         cqPatInfo.sbkh = cardInfo3.cardno;
                     }
                     if (zffs == "3") {
+                        cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
                         cqPatInfo.ecToken = cardInfo3.ecToken;
                     }
+                    getbrxz(cardInfo2.insutype);
+                    yibaoCardInfo.brxzdm = brxzobj.brxz;
+                    yibaoCardInfo.brxzmc = brxzobj.brxzmc;
+
                     cqPatInfo.xm = cardInfo1.psn_name;
                     cqPatInfo.sfzh = cardInfo1.certno;
                     cqPatInfo.xzqh = cardInfo2.insuplc_admdvs;
@@ -608,8 +638,11 @@
                     cqPatInfo.grbh = cardInfo1.psn_no;
                     cqPatInfo.jzlx = zffs;
                     cqPatInfo.ybVer = "gjyb";
+                    cqPatInfo.mdtrt_cert_type = payoptype.mdtrt_cert_type;
+                    cqPatInfo.mdtrt_cert_no = cqPatInfo.ecToken;
 
                     yibaoCardInfo.readCardCardType = payoptype.mdtrt_cert_type;
+                    //yibaoCardInfo.kh = jzpzlx != "3" ? sbkobj.sbkh : null;
                     yibaoCardInfo.kh = payoptype.mdtrt_cert_type == "01" ? cardInfo3.ecToken : (payoptype.mdtrt_cert_type == "02" ? cardInfo1.certno : cardInfo3.cardno);
                     yibaoCardInfo.qtjz = zffs != "2" ? cardInfo1.certno : null;
                     yibaoCardInfo.ybVer = "gjyb";
@@ -642,18 +675,43 @@
                     //        dataType: "json",
                     //    });
                     //}
-
+                    return res;
                 } else {
                     res.success = false;
-                    res.msg = "刷卡失败:" + yibaoCardInfo.err_ms;
+                    res.msg = "医保服务【1101】(获取医保病人信息失败):" + yibaoCardInfo.err_msg;
+                    return res;
                 }
             } else {
                 res.success = false;
                 res.msg = "刷卡获取医保信息失败！失败原因：医保中心无信息返回，请重试！";
+                return res;
             }
-        }, 50);
+       // }, 50);
 
-        return res;
+        
     }
+    function getbrxz(brlx) {
+        $.ajax({
+            url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
+            data: { xzlx: brlx },
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (data) {
+                if (!!data) {
+                    $.each(data, function (idx, val) {
+                        if (val.insutype && val.insutype == brlx) {
+                            brxzobj.brxz = val.brxz;
+                            brxzobj.brxzmc = val.brxzmc;
+                        }
+                    });
+                }
+                return brxzobj;
+            },
+            error: function (request, error, ex) {
+                return brxzobj;
+            }
+        });
 
+    }
 </script>
