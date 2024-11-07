@@ -2521,17 +2521,18 @@ WHERE   a.zyh = @zyh
             {
                 throw new FailedException("参数异常，身份证号为空");
             }
-            if (string.IsNullOrWhiteSpace(patInfo.kh))
-            {
-                throw new FailedException("参数异常，卡号为空");
-            }
+            //if (string.IsNullOrWhiteSpace(patInfo.kh))
+            //{
+            //    throw new FailedException("参数异常，卡号为空");
+            //}
             using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
             {
-                if (patInfo.kh.Count() > 15)
-                {
-                    // var sfsobj = _sysPatientBasicInfoRepo.IQueryable().Where(p => p.zjh == patInfo.kh && p.OrganizeId == orgId && p.brxz == "1" && p.zt == "1").FirstOrDefault();
-                    //patInfo.kh = sfsobj.sbbh;
-                }
+                //if (patInfo.kh.Count() > 15)
+                //{
+                // var sfsobj = _sysPatientBasicInfoRepo.IQueryable().Where(p => p.zjh == patInfo.kh && p.OrganizeId == orgId && p.brxz == "1" && p.zt == "1").FirstOrDefault();
+                //patInfo.kh = sfsobj.sbbh;
+                // }
+                var cardEnitty = db.IQueryable<SysCardEntity>(p => p.patid == patid && p.OrganizeId==orgId && p.CardType==patInfo.jzpzlx).First();
                 var oldpatid = 0;
                 var zybrxxEntity = db.IQueryable<HospPatientBasicInfoEntity>(p => p.zyh == zyh && p.OrganizeId == orgId).First();
                 //if (zybrxxEntity.patid != patid)
@@ -2540,10 +2541,10 @@ WHERE   a.zyh = @zyh
                 //}
                 oldpatid = zybrxxEntity.patid;
                 //更新zy_brjbxx
-                zybrxxEntity.brxz = "1";    //普通医保
+                zybrxxEntity.brxz = cardEnitty.brxz;    //普通医保
                 zybrxxEntity.zjlx = ((int)EnumZJLX.sfz).ToString();
                 zybrxxEntity.zjh = patInfo.sfzh;
-                zybrxxEntity.kh = patInfo.kh;
+                zybrxxEntity.kh = cardEnitty.CardNo;//patInfo.kh;
                 zybrxxEntity.CardType = patInfo.jzpzlx;
                 zybrxxEntity.CardTypeName = ((EnumCardType)(Convert.ToInt32(patInfo.jzpzlx))).GetDescription();
                 zybrxxEntity.patid = patid;
