@@ -6,7 +6,7 @@
 
 
 Write-Host "¿ªÊ¼±àÒë²¢·¢²¼Static"
-MSBuild.exe .\Newtouch.HIS.Static/Newtouch.HIS.Static/Newtouch.HIS.Static.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe .\Newtouch.HIS.Static/Newtouch.HIS.Static/Newtouch.HIS.Static.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëStaticÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
@@ -14,14 +14,14 @@ if ($LASTEXITCODE -ne 0) {
 
 
 Write-Host "¿ªÊ¼±àÒë²¢·¢²¼Base"
-MSBuild.exe .\Newtouch.HIS.Base\Newtouch.HIS.Base.HOSP\Newtouch.HIS.Base.HOSP.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe .\Newtouch.HIS.Base\Newtouch.HIS.Base.HOSP\Newtouch.HIS.Base.HOSP.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëBaseÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host "¿ªÊ¼±àÒë²¢·¢²¼BaseAPI"
-MSBuild.exe .\Newtouch.HIS.Base\Newtouch.HIS.Base.HOSP.API\Newtouch.HIS.Base.HOSP.API.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe .\Newtouch.HIS.Base\Newtouch.HIS.Base.HOSP.API\Newtouch.HIS.Base.HOSP.API.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëBaseAPIÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
@@ -29,112 +29,112 @@ if ($LASTEXITCODE -ne 0) {
 
 
 Write-Host "¿ªÊ¼±àÒë²¢·¢²¼Sett"
-MSBuild.exe  .\Newtouch.HIS.Sett\Newtouch.Web\Newtouch.HIS.Sett.Web.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe  .\Newtouch.HIS.Sett\Newtouch.Web\Newtouch.HIS.Sett.Web.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëSettÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host "¿ªÊ¼±àÒë²¢·¢²¼SettAPI"
-MSBuild.exe .\Newtouch.HIS.Sett\Newtouch.HIS.Sett.API\Newtouch.HIS.Sett.API.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe .\Newtouch.HIS.Sett\Newtouch.HIS.Sett.API\Newtouch.HIS.Sett.API.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëSettAPIÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼CIS"
-MSBuild.exe .\Newtouch.HIS.CIS\Newtouch.CIS.Web\Newtouch.CIS.Web.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe .\Newtouch.HIS.CIS\Newtouch.CIS.Web\Newtouch.CIS.Web.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëCISÊ§°Ü£¡."  -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼CISAPI"
-MSBuild.exe Newtouch.HIS.CIS/NewtouchCIS.API/NewtouchCIS.API.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.CIS/NewtouchCIS.API/NewtouchCIS.API.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëCISAPIÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼PDS"
-MSBuild.exe Newtouch.HIS.PDS/Newtouch.HIS.Web/Newtouch.HIS.PDS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.PDS/Newtouch.HIS.Web/Newtouch.HIS.PDS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëPDSÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼PDSAPI"
-MSBuild.exe Newtouch.HIS.PDS/Newtouch.PDS.API/Newtouch.Pds.Api.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.PDS/Newtouch.PDS.API/Newtouch.Pds.Api.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëPDSAPIÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼EMR"
-MSBuild.exe Newtouch.HIS.EMR/Newtouch.EMR.Web/Newtouch.EMR.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.EMR/Newtouch.EMR.Web/Newtouch.EMR.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëEMRÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼OR"
-MSBuild.exe Newtouch.HIS.OR/Newtouch.OR.ManageSystem.Web/Newtouch.HIS.OR.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.OR/Newtouch.OR.ManageSystem.Web/Newtouch.HIS.OR.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëORÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼ORAPI"
-MSBuild.exe Newtouch.HIS.OR/Newtouch.OR.ManageSystem.API/Newtouch.HIS.OR.API.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.OR/Newtouch.OR.ManageSystem.API/Newtouch.HIS.OR.API.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëORAPIÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼Herp"
-MSBuild.exe Newtouch.HIS.Herp/Newtouch.Herp.Web/Newtouch.Herp.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.Herp/Newtouch.Herp.Web/Newtouch.Herp.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëHerpÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼MRMS"
-MSBuild.exe Newtouch.HIS.MRMS/Newtouch.MR.ManageSystem.Web/Newtouch.HIS.MRMS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.MRMS/Newtouch.MR.ManageSystem.Web/Newtouch.HIS.MRMS.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëMRMSÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼MRQC"
-MSBuild.exe Newtouch.HIS.MRQC/Newtouch.MRQC.Web/Newtouch.MRQC.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.MRQC/Newtouch.MRQC.Web/Newtouch.MRQC.Web.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëMRQCÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼AuthCenterAPI"
-MSBuild.exe Newtouch.HIS.WebAPI.Manage/NewtouchHIS.AuthenticationCenter/NewtouchHIS.AuthenticationCenter.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.WebAPI.Manage/NewtouchHIS.AuthenticationCenter/NewtouchHIS.AuthenticationCenter.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëAuthCenterAPIÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼ApiManage"
-MSBuild.exe Newtouch.HIS.WebAPI.Manage/NewtouchHIS.WebAPI.Manage/NewtouchHIS.WebAPI.Manage.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.WebAPI.Manage/NewtouchHIS.WebAPI.Manage/NewtouchHIS.WebAPI.Manage.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëApiManageÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼his.baseapi"
-MSBuild.exe Newtouch.HIS.SSO/HIS.BaseAPI/HIS.BaseAPI.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.SSO/HIS.BaseAPI/HIS.BaseAPI.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëhis.baseapiÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
 Write-Host  "¿ªÊ¼±àÒë²¢·¢²¼Union"
-MSBuild.exe Newtouch.HIS.SSO/HIS.SSO/HIS.SSO.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile
+MSBuild.exe Newtouch.HIS.SSO/HIS.SSO/HIS.SSO.csproj  /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "±àÒëUnionÊ§°Ü£¡." -ForegroundColor Red
     exit $LASTEXITCODE
