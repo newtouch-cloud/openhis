@@ -2,6 +2,8 @@
 ## eg: C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin
 ## 加入环境变量，生效后，在powershell 运行 ./build.ps1
 
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 
