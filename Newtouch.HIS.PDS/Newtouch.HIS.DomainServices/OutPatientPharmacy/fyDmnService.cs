@@ -152,7 +152,7 @@ namespace Newtouch.HIS.DomainServices
         /// <param name="userCode"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        public string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string zsm, int? sfcl)
+        public string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string ypdm,string zsm, int? sfcl)
         {
             var param = new DbParameter[]
             {
@@ -160,6 +160,7 @@ namespace Newtouch.HIS.DomainServices
                 new SqlParameter("@OrganizeId", organizeId),
                 new SqlParameter("@yfbmCode", yfbmCode),
                 new SqlParameter("@userCode",userCode ),
+                new SqlParameter("@ypdm",ypdm),
                 new SqlParameter("@zsm",zsm??""),
                 new SqlParameter("@sfcl",sfcl??null),
             };
@@ -1023,6 +1024,57 @@ where  a.zt='1' and a.OrganizeId=@orgId
             parms.Add(new SqlParameter("@cfh", req.cfh));
             parms.Add(new SqlParameter("@orgId", req.organizeId));
             return QueryWithPage<MzcfcxDetailList>(strsql, pagination, parms.ToArray());
+        }
+        #endregion
+
+        #region 电子处方信息获取病人信息
+        /// <summary>
+        /// 根据卡号和姓名获取处方信息
+        /// </summary>
+        /// <param name="yfbmCode"></param>
+        /// <param name="cardNo"></param>
+        /// <param name="xm"></param>
+        /// <param name="fybz"></param>
+        /// <param name="organizeId"></param>
+        /// <returns></returns>
+        public List<DzcfBrxxDTO> GetElectronicPrescriptionCfInfo(string cfh, string xm, string organizeId = "")
+        {
+            const string sql = @"
+select 
+jz.xm xm
+,jz.nlshow nl
+,jz.mzh mzh
+,jz.brxzmc brxzmc 
+,jz.kh  CardNo 
+,cf.cfh  cfh 
+,cf.cfh  cfhComplete 
+,''  cfnm 
+,''  Fph 
+,''  FphComplete 
+,''  fybz 
+,jz.jzysmc  ysmc 
+,jz.jzys  yscode 
+,jz.ghksmc  ksmc 
+,cf.zje  Zje ,
+jz.xb,
+stuff(( select ','+ xyzd.zdmc from [Newtouch_CIS]..xt_xyzd xyzd where (xyzd.jzid=jz.jzId ) for xml path('')),1,1,'') xyzd,
+stuff(( select ','+ zyzd.zdmc from [Newtouch_CIS]..xt_zyzd zyzd where (zyzd.jzid=jz.jzId ) for xml path('')),1,1,'') zyzd
+from 
+[Newtouch_CIS]..xt_cf cf
+inner join [Newtouch_CIS]..xt_jz jz on jz.jzId=cf.jzId and jz.OrganizeId=cf.OrganizeId and jz.zt='1'
+ where cf.isdzcf='1' 
+ and cf.zt='1'
+and cf.cfh=@cfh
+and  cf.OrganizeId=@OrganizeId
+and jz.xm=@xm
+";
+            var param = new DbParameter[]
+            {
+                new SqlParameter("@cfh", cfh),
+                new SqlParameter("@OrganizeId", organizeId),
+                new SqlParameter("@xm", xm),
+            };
+            return FindList<DzcfBrxxDTO>(sql, param);
         }
         #endregion
     }

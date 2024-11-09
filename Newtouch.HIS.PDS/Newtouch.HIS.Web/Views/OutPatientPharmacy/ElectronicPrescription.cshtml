@@ -1,0 +1,622 @@
+﻿
+@{
+    ViewBag.Title = "电子处方审核";
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+<style>
+    #dv_cfInfo {
+        height: 40px;
+    }
+
+        #dv_cfInfo ul {
+            list-style: none;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
+        #dv_cfInfo li {
+            white-space: nowrap;
+            display: inline-block;
+            margin: 3px 15px;
+        }
+</style>
+<form id="form1">
+    <div id="dv_left" class="panel panel-default" style="float: left; width:24%; margin: 0; border: 0;">
+        <div class="topPanel" style="height:45px;">
+            <div class="search" style="width: 90%;">
+                <table style="width: 100%;">
+                    <tr>
+                        <td>
+                            <div class="input-group">
+                                <input id="txtINPUTCODE" type="text" class="form-control" placeholder="卡号 姓名 处方号" style="padding-left: 5px; z-index: 0;">
+                                <span class="input-group-btn">
+                                    <button id="btn_search" type="button" class="btn btn-primary"><i class="fa fa-search"></i></button>
+                                </span>
+
+                            </div>
+                        </td>
+                        <td class="formValue">
+                            <select id="isysh" class="form-control" style="width:60px;height:19px;">
+                                <option value="">请选择</option>
+                                <option value="0" selected>未审核</option>
+                                <option value="1">已审核</option>
+                                <option value="2">未通过</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div id="dv_cfs">
+            <table id="gridPatients"></table>
+            <div id="gridPatientsPager" rel="form1"></div>
+        </div>
+    </div>
+    <div id="dv_right" style="float: left; width: 75.5%; margin-left: 0.5%;">
+        <div class="panel" id="dv_rightTop">
+            <div class="panel-default panel-heading">
+                <span style="font-weight: bold;">处方信息</span>
+                <span class="glyphicon glyphicon-menu-up" aria-hidden="true" style="float: right;"></span>
+            </div>
+            <div id="dv_cfInfo">
+                <ul>
+                    <li>
+                        <span class="formTitle">门诊号：</span>
+                        <label id="lab_mzh" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">姓名：</span>
+                        <label id="lab_name" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">性别：</span>
+                        <label id="lab_xb" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">年龄：</span>
+                        <label id="lab_nl" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">医生：</span>
+                        <label id="lab_ysmc" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">医生工号：</span>
+                        <label id="lab_yscode" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle ">卡号：</span>
+                        <label id="lab_cardNo" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">总金额：</span>
+                        <label id="lab_zje" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">病人性质：</span>
+                        <label id="lab_brxzmc" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">科室：</span>
+                        <label id="lab_ksmc" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">处方号：</span>
+                        <label id="lab_cfh" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">西医诊断：</span>
+                        <label id="lab_zd" type="text" value=""></label>
+                    </li>
+                    <li>
+                        <span class="formTitle">中医诊断：</span>
+                        <label id="lab_zyzd" type="text" value=""></label>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div id="dv_cfmx" style="overflow-x: auto; width: 100%; margin-top: 5px;">
+            <table id="gridCfmx"></table>
+        </div>
+        <div class="ckbox" style="float:left;margin:10px 10px 12px;">
+            <input id="txtbtgyy" type="text" class="form-control" placeholder="请输入不通过原因" style="width:400px;height:15px; padding-left: 5px; z-index: 0;">
+            @*<input id="autoprint" name="autoprint" type="checkbox"><label for="autoprint">自动打印</label>*@
+        </div>
+        @Html.Partial("_BottomButtonsView", new Newtouch.HIS.Web.Core.Models.BottomButtonViewModel
+   {
+       ShowKeyList = new[] { 6,8 },
+           F6Text = "不通过",
+           F8Text = "审核"
+   })
+    </div>
+</form>
+
+<script>
+    var cfsheight = $(window).height() - 60;
+    var cfxxwidth = $(window).width() - $("#dv_left").width() - 10;
+    $(".toolbar").width(300);
+    var $gridPatients = $("#gridPatients");
+    var $gridCfmx = $("#gridCfmx");
+    $(function () {
+        $(window).resize(function () {
+            initLayout();
+        });
+        gridPatients();
+        gridCfmx();
+        $("#btn_search").click(function () {
+            $gridPatients.jqGrid("clearGridData");
+            $gridPatients.jqGrid('setGridParam', {
+                postData: { keyword: $("#txtINPUTCODE").val() }
+            }).trigger('reloadGrid');
+            $gridCfmx.resetSelection();
+            $gridCfmx.jqGrid("clearGridData");
+        });
+        $("#isysh").change(function () {
+            $gridPatients.jqGrid("clearGridData");
+            $gridPatients.jqGrid('setGridParam', {
+                postData: {isysh: $("#isysh").val(), keyword: $("#txtINPUTCODE").val() }
+            }).trigger('reloadGrid');
+            $gridCfmx.resetSelection();
+            $gridCfmx.jqGrid("clearGridData");
+        });
+        $(".glyphicon").click(function () {
+            if ($(this).hasClass("glyphicon-menu-up")) {
+                $(this).removeClass("glyphicon-menu-up");
+                $(this).addClass("glyphicon-menu-down");
+                $("#dv_cfInfo").hide();
+            } else {
+                $(this).removeClass("glyphicon-menu-down");
+                $(this).addClass("glyphicon-menu-up");
+                $("#dv_cfInfo").show();
+            }
+            initLayout();
+        });
+    });
+
+    //回车事件绑定
+    $(document).keyup(function (event) {
+        if (event.keyCode === 13) {
+            $("#btn_search").trigger("click");
+        }
+    });
+
+    //自适应
+    function initLayout() {
+        $("#dv_cfs").height(cfsheight);
+        $("#dv_cfmx").height($(window).height() - $("#dv_rightTop").get(0).offsetHeight - 57);
+    }
+
+    //获取处方信息
+    function gridPatients() {
+        $gridPatients.jqGrid("clearGridData");
+        $gridPatients.dataGrid({
+            height: cfsheight - 110,
+            postData: { isysh: $("#isysh").val(), keyword: $("#txtINPUTCODE").val() },
+            url: "/OutPatientPharmacy/GetElectronicPrescription",
+            caption: "患者列表",
+            shrinkToFit: true,
+            colModel: [
+                { label: '姓名', name: 'xm', width: 50,  align: 'left' },
+                { label: '处方号', name: 'cfh', width: 100, align: 'left' },
+                { label: '状态', name: 'zt', width: 40, align: 'left' },
+                { label: 'ysshyj', name: 'ysshyj', width: 40, hidden: true, align: 'left' }
+            ],
+            beforeRequest: function () {
+                $("#gridPatientsPager_left").hide();
+                $("#gridPatientsPager_right").hide();
+            },
+            pager: "#gridPatientsPager",
+            sortname: 'xm asc',
+            onSelectRow_page: function (rowid) {
+                doingSomethingAfterSelectRow(rowid);
+            },
+            gridComplete: function () {
+                $gridCfmx.jqGrid("clearGridData");
+                var ids = new Array();
+                //getDataIDs()返回当前grid里所有数据的id
+                ids = $gridPatients.getDataIDs();
+                if (ids == null || ids.length <= 0) return;
+                //选择或反选指定行。如果onselectrow为ture则会触发事件onSelectRow，onselectrow默认为ture
+                $gridPatients.setSelection(ids[0], true);
+                doingSomethingAfterSelectRow(ids[0]);
+            }
+        });
+        $("#btn_RpSync").click(function () {
+            $gridPatients.jqGrid("clearGridData");
+            $gridPatients.trigger('reloadGrid');
+        });
+    }
+    var shzt = "";
+    //选中行后
+    function doingSomethingAfterSelectRow(rowid) {
+        var data = $gridPatients.jqGrid('getRowData', rowid);
+        shzt = data.zt;
+        if (data == null) {
+            $("#lab_name").html("");
+            $("#lab_xb").html("");
+            $("#lab_zd").html("");
+            $("#lab_zyzd").html("");
+            $("#lab_mzh").html("");
+            $("#lab_cfh").html("");
+            $("#lab_cfh").attr("title", "");
+            $("#lab_cardNo").html("");
+            $("#lab_zje").html("");
+            $("#lab_brxzmc").html("");
+            $("#lab_nl").html("");
+            $("#lab_ysmc").html("");
+            $("#lab_yscode").html("");
+            $("#lab_ksmc").html("");
+            $("#txtbtgyy").val("");
+            return false;
+        }
+        $.najax({
+            type: "get",
+            url: "/OutPatientPharmacy/GetElectronicPrescriptionCfInfo",
+            data: { cfh: data.cfh, xm: data.xm },
+            dataType: "json",
+            success: function (res) {
+                if (res != null) {
+                    $("#lab_name").html(res[0].xm);
+                    $("#lab_xb").html(res[0].xb);
+                    $("#lab_zd").html(res[0].xyzd);
+                    $("#lab_zyzd").html(res[0].zyzd);
+                    $("#lab_mzh").html(res[0].mzh);
+                    $("#lab_cfh").html(res[0].cfh);
+                    $("#lab_cfh").attr("title", res[0].cfhComplete);
+                    $("#lab_cardNo").html(res[0].CardNo);
+                    $("#lab_zje").html(res[0].Zje);
+                    $("#lab_brxzmc").html(res[0].brxzmc);
+                    $("#lab_nl").html(res[0].nl);
+                    $("#lab_ysmc").html(res[0].ysmc);
+                    $("#lab_yscode").html(res[0].yscode);
+                    $("#lab_ksmc").html(res[0].ksmc);
+                    $("#txtbtgyy").val(data.ysshyj);
+                } else {
+                    $("#lab_name").html("");
+                    $("#lab_xb").html("");
+                    $("#lab_zd").html("");
+                    $("#lab_zyzd").html("");
+                    $("#lab_mzh").html("");
+                    $("#lab_cfh").html("");
+                    $("#lab_cfh").attr("title", "");
+                    $("#lab_cardNo").html("");
+                    $("#lab_zje").html("");
+                    $("#lab_brxzmc").html("");
+                    $("#lab_nl").html("");
+                    $("#lab_ysmc").html("");
+                    $("#lab_yscode").html("");
+                    $("#lab_ksmc").html("");
+                    $("#txtbtgyy").val("");
+                }
+            }
+        });
+        $gridCfmx.jqGrid('setGridParam', {
+            postData: { cfh: data.cfh, xm: data.xm },
+            url: "/OutPatientPharmacy/QueryElectronicPrescriptionCfmx"
+        }).trigger('reloadGrid');
+    }
+
+    //获取处方明细
+    function gridCfmx() {
+        $gridCfmx.jqGrid("clearGridData");
+        $gridCfmx.dataGrid({
+            url: "",
+            caption: "处方明细",
+            height: $(window).height() - $("#dv_cfInfo").height() - 170,
+            colModel: [
+                { label: '处方号', name: 'cfh', align: 'left', width: 110 },
+                { label: '开立医生', name: 'ysmc', align: 'left', width: 60 },
+                { label: '药品名称', name: 'ypmc', align: 'left', width: 120 },
+                { label: '规格', name: 'gg', align: 'left', width: 80 },
+                { label: '频次', name: 'pc', align: 'right', width: 40 },
+                { label: '数量', name: 'sl', align: 'right', width: 40 },
+                { label: '单位', name: 'dw', align: 'left', width: 50 },
+                {
+                    label: '单价', name: 'dj', align: 'right', width: 50,
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(4) : "0.0000";
+                    }
+                },
+                { label: '生产厂家', name: 'ycmc', align: 'left', width: 120 },
+                {
+                    label: '金额', name: 'je', align: 'right', width: 60,
+                    formatter: function (cellvalue) {
+                        return cellvalue ? parseFloat(cellvalue).toFixed(2) : "0.00";
+                    }
+                },
+                { label: '剂量', name: 'jl', align: 'right', width: 60 },
+                { label: '剂量单位', name: 'jldw', align: 'left', width: 55 },
+                { label: '用法', name: 'yfmc', align: 'left', width: 60 },
+                { label: '医生嘱托', name: 'yszt', align: 'left', width: 100 },
+                { label: '审核人', name: 'shr', align: 'left', width: 100 },
+                { label: '审核时间', name: 'shsj', align: 'left', width: 120 },
+            ]
+        });
+    }
+    function newtouch_event_f6() {
+        var pats = new Array();
+        var gridPatients = $gridPatients.jqGrid('getRowData_AllLine', null, true);//param2:默认所有行；param3：true返回object
+        $(gridPatients).each(function () {
+            pats.push({
+                "cfh": this.cfh,
+                "xm": this.xm
+            });
+        });
+        if (pats.length <= 0) {
+            $.modalAlert("未找到有效的电子处方信息！", 'warning');
+            return;
+        }
+        if (shzt == '有效') {
+            $.modalAlert("该处方已审核！不能不通过！", 'warning');
+            return;
+        }
+        if (shzt == '已撤回') {
+            $.modalAlert("该处方已撤回！不能不通过！", 'warning');
+            return;
+        }
+        if ($("#txtbtgyy").val()=="") {
+            $.modalAlert("请输入不通过原因！", 'warning');
+            return;
+        }
+        var shyy = $("#txtbtgyy").val();
+        updatebtgyy(shyy);
+        $gridPatients.trigger("reloadGrid");
+        $gridCfmx.jqGrid("clearGridData");
+        cleanCfInfo();
+    }
+    function updatebtgyy(shyy) {
+        $.ajax({
+            type: "POST",
+            url: "/OutPatientPharmacy/UpdateCfYsshyj",
+            data: { "cfh": $("#lab_cfh").text(), "ysshyj": shyy },
+            dataType: "json",
+            cache: false,
+            async: false,
+            success: function (payoptype) {
+
+            }
+        });
+    }
+    //电子处方 上传 签名
+    function newtouch_event_f8() {
+        var pats = new Array();
+        var gridPatients = $gridPatients.jqGrid('getRowData_AllLine', null, true);//param2:默认所有行；param3：true返回object
+        $(gridPatients).each(function () {
+            pats.push({
+                "cfh": this.cfh,
+                "xm": this.xm
+            });
+        });
+        if (pats.length <= 0) {
+            $.modalAlert("未找到有效的电子处方信息！", 'warning');
+            return;
+        }
+        // 创建一个新的Date对象
+        var date = new Date();
+
+        // 获取年份、月份（注意月份从0开始计数）、日期、小时、分钟和秒钟
+        var year = date.getFullYear(); // 2021
+        var month = (date.getMonth() + 1).toString().padStart(2, '0'); // 09
+        var day = date.getDate().toString().padStart(2, '0'); // 30
+        var hours = date.getHours().toString().padStart(2, '0'); // 15
+        var minutes = date.getMinutes().toString().padStart(2, '0'); // 47
+        var seconds = date.getSeconds().toString().padStart(2, '0'); // 36
+
+        // 将结果组合成指定格式的字符串
+        var currentTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        if (shzt == "已撤回" || shzt == "有效") {
+            $.modalAlert("该处方已审核或已撤回！不能审核！", 'warning');
+            return;
+        }
+
+        //就诊登记
+        CQjzdj();
+        var d001data = { "hisId": $('#lab_mzh').text(), "cfh": $("#lab_cfh").text(), "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)' };
+        $.loading(true, '上传预核验…');
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D001",
+            dataType: "json",
+            data: d001data,
+            async: false,
+            success: function (data) {
+                var medicalD001 = eval('(' + data + ')');
+                if (medicalD001) {
+                    if (medicalD001.infcode == "0") {
+                        $.loading(true, '电子签名中…');
+                        var d002data = { "hisId": $('#lab_mzh').text(), "cfh": $("#lab_cfh").text(), "kfys": $("#lab_ysmc").text(), "kfysgh": $("#lab_yscode").text(), "shks": '@(opr.DepartmentCode)', "shys": '@(opr.UserName)', "shysgh": '@(opr.rygh)', "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "shrq": currentTime };
+                        $.ajax({
+                            type: "POST",
+                            url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D002",
+                            dataType: "json",
+                            data: d002data,
+                            async: false,
+                            success: function (data) {
+                                var medicalD002 = eval('(' + data + ')');
+                                if (medicalD002) {
+                                    debugger;
+                                    if (medicalD002.infcode == "0") {
+                                        $.loading(true, '电子处方上传中…');
+                                        var data1 = eval('(' + medicalD002.output + ')');
+                                        var data2 = eval('(' + data1.encData + ')');
+                                        var D002return = data2;//eval('(' + medicalD002.output + ')').encData;
+                                        if (D002return.rxFile == null || D002return.rxFile == "") {
+                                            $.loading(false);
+                                            $.modalAlert("上传预核验失败，文件无返回信息！", 'warning');
+                                            return;
+                                        }
+                                        var d003data = { "hisId": $('#lab_mzh').text(), "cfh": $("#lab_cfh").text(), "shysgh": '@(opr.rygh)', "shys": '@(opr.UserName)', "shks": '@(opr.DepartmentCode)', "kfys": $("#lab_ysmc").text(), "kfysgh": $("#lab_yscode").text(), "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "rxFile": D002return.rxFile, "signDigest": D002return.signDigest, "shrq": currentTime };
+                                        $.ajax({
+                                            type: "POST",
+                                            url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D003",
+                                            dataType: "json",
+                                            data: d003data,
+                                            async: false,
+                                            success: function (data) {
+                                                var medicalReg = eval('(' + data + ')');
+                                                if (medicalReg) {
+                                                    if (medicalReg.infcode == "0") {
+                                                        $.loading(false);
+                                                        updatebtgyy("");
+                                                        $.modalMsg('审核成功', 'success', 1000);
+                                                        $gridPatients.trigger("reloadGrid");
+                                                        $gridCfmx.jqGrid("clearGridData");
+                                                        cleanCfInfo();
+                                                    }
+                                                    else {
+                                                        $.loading(false);
+                                                        $.modalAlert("电子处方上传中失败：" + medicalReg.err_msg, 'error');
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    }
+                                    else {
+                                        $.loading(false);
+                                        $.modalAlert("电子签名失败：" + medicalD002.err_msg, 'error');
+                                        return;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        $.loading(false);
+                        $.modalAlert("电子处方预核验上传失败：" + medicalD001.err_msg, 'error');
+                        return;
+                    }
+                }
+            },
+            error: function (request, error, ex) {
+                $.loading(false);
+                $.modalAlert("电子处方医保服务不可访问：[" + ex + "]", 'error');
+                return;
+            }
+        });
+    }
+    function CQjzdj() {
+        var rs = false;
+        var msg = "";
+
+		$.ajax({
+			type: "POST",
+			url: "/OutPatientPharmacy/GetCQjzdjInfo",
+            data: { mzh: $('#lab_mzh').text() },
+			dataType: "json",
+			cache: false,
+            async: false,
+			success: function (payoptype) {
+				if (!payoptype) {
+                    msg = "HIS服务(GetCQjzdjInfo)返回信息为空";
+                    return;
+				}
+				var bzInfo = cq_getCurrentTsbbz();
+				if (bzInfo.rs && bzInfo.ryzdmc != "")
+				{
+				    if (bzInfo.ryzd == "0") {
+				        bzInfo.ryzd = "";
+				        bzInfo.ryzdmc = "";
+				        bzInfo.yllb = "11";
+				    }
+				    payoptype.dise_codg = bzInfo.ryzd;
+				    payoptype.dise_name = bzInfo.ryzdmc;
+
+				    payoptype.med_type = bzInfo.yllb;
+				}
+				payoptype.begntime = $.getDate();
+				payoptype.operatorId = '@(opr.rygh)';
+			    payoptype.operatorName = '@(opr.UserName)';
+                payoptype.hisId = $('#lab_mzh').text();
+				$.ajax({
+					type: "POST",
+					url: "http://127.0.0.1:33333/api/YiBao/Mdtrtinfo_2203A",
+					dataType: "json",
+					data: payoptype,
+					async: false,
+					success: function (data) {
+						var medicalReg = eval('(' + data + ')');
+						if (medicalReg) {
+						    if (medicalReg.infcode === "0") {
+						        //MZJS.jzxx = { mdtrt_id: payoptype.mdtrt_id, psn_no: payoptype.psn_no, med_type: payoptype.med_type, dise_codg: payoptype.dise_codg, hisId: patModel.mzh, bzInfo: bzInfo };
+                                rs = true;
+							}
+							else {
+                                msg = "医保服务(门诊就诊信息上传A)失败：" + medicalReg.err_msg;
+							}
+                        }
+                        else {
+                            msg = "医保服务(门诊就诊信息上传A)返回信息为空";
+                        }
+                    },
+                    error: function (request, error, ex) {
+                        msg = "医保服务(门诊就诊信息上传A)不可访问：[" + ex + "]";
+                    }
+				});
+            },
+            error: function (request, error, ex) {
+                msg = "HIS服务(GetCQjzdjInfo)不可访问：[" + ex + "]";
+            }
+        });
+
+        if (!rs) {
+            $.loading(false);
+            $.modalAlert(msg, 'error');
+        }
+
+        return rs;
+    }
+    function cq_getCurrentTsbbz() {
+        var info = { rs: true, ryzd: "", yllb: "11", ryzdmc: "" };
+
+
+        var bzbm = "";
+        var bzmc = "";
+        if (!!!bzbm) {
+            info.rs = false;
+        }
+        else {
+            info.ryzd = bzbm;
+            info.ryzdmc = bzmc;
+            if (bzmc.indexOf("重大疾病") != -1) {
+                info.yllb = "9901";
+            }
+            else if (bzmc.indexOf("(儿童)") != -1) {
+                info.yllb = "9903";
+            }
+            else if (bzmc.indexOf("耐多药") != -1) {
+                info.yllb = "9906";
+            }
+            else if (bzbm == "M09001" || bzbm == "M90400" || bzbm == "M13200") {
+                info.yllb = "19";
+            }
+            else {
+                info.yllb = "14";
+            }
+        }
+
+
+        return info;
+    }
+    //清理处方信息
+    function cleanCfInfo() {
+        $("#lab_name").html("");
+        $("#lab_xb").html("");
+        $("#lab_zd").html("");
+        $("#lab_zyzd").html("");
+        $("#lab_mzh").html("");
+        $("#lab_cfh").html("");
+        $("#lab_cardNo").html("");
+        $("#lab_fph").html("");
+        $("#lab_zje").html("");
+        $("#lab_brxzmc").html("");
+        $("#lab_nl").html("");
+        $("#lab_ysmc").html("");
+        $("#lab_yscode").html("");
+        $("#lab_ksmc").html("");
+        $("#txtbtgyy").val("");
+    }
+</script>

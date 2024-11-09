@@ -210,12 +210,22 @@ namespace Newtouch.Domain.Entity
 
         //留观标志
         public string islgbz { get; set; }
+        /// <summary>
+        /// 组套数量
+        /// </summary>
         public int? ztsl { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         public int? sfzt { get; set; }
         public string zysm { get; set; }
         /// <summary>
         /// 用法对应的项目组套
         /// </summary>
         public string syncfbz { get; set; }
+        /// <summary>
+        /// 国家医保代码
+        /// </summary>
+        public string gjybdm { get; set; }
     }
 }

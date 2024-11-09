@@ -69,5 +69,9 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 2： 否
         /// </summary>
         public int? sfcl { get; set; }
+
+        public string ypdm { get; set; }
+        public string zt { get; set; }
+        public string ysshyj { get; set; }
     }
 }

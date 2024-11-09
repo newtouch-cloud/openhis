@@ -237,16 +237,16 @@ SELECT cf.cfId, cfmx.ypCode,cfmx.ypmc,cfmx.mcjl,cfmx.mcjldw
 ,cfmx.mcjldw AS mcjldwwwwwww,sfdl.dlCode sfdlCode,sfdl.dlmc sfdlmc
 ,cfmx.yfCode,cfmx.pcCode,(case when cfmx.sfzt=1 then cfmx.ztsl else cfmx.sl end) sl, 
         cfmx.zh,cf.tieshu,cf.cfyf,cf.djbz,
-        isnull(CONVERT(DECIMAL(9,4),(isnull(cfmx.sl,0)*(yp.lsj / yp.bzs * yp.mzcls))),0) AS je,  --根据最新的dj算出je
-        isnull(CONVERT(DECIMAL(9,4),yp.lsj / yp.bzs * yp.mzcls,0),0) AS dj,  --最新的dj
+         case isnull(cfyp.dj,'1') when '1' then isnull(CONVERT(DECIMAL(9,4),(isnull(cfmx.sl,0)*(yp.lsj / yp.bzs * yp.mzcls))),0) else isnull(cfmx.sl,0)*isnull(cfyp.dj,0) end AS je,  --根据最新的dj算出je
+        isnull(cfyp.dj,isnull(CONVERT(DECIMAL(9,4),yp.lsj / yp.bzs * yp.mzcls,0),0)) AS dj,  --最新的dj
         pc.yzpcmc AS pcmc,
-        yp.ypgg,
+        isnull(yp.ypgg,cfyp.specName) ypgg ,
         yp.mzcls AS cls,
         yf.yfmc,
         --开的、算钱的一定是用门诊单位 cfmx.dw 和 yp.mzcldw一样
         --中药？
         cfmx.dw,
-        yp.jldw AS redundant_jldw,
+        isnull(yp.jldw,cfyp.minPrepunt) AS redundant_jldw,
         cf.cfh AS cfh,
 cfmx.zxks,  --执行科室（领药药房代码）
 cfmx.Remark,    --嘱托
@@ -254,12 +254,12 @@ cfmx.ybwym,
 cfmx.xzsybz,
 cfmx.cfmxId,
 cfmx.ts,
-yp.jx jxCode,
+isnull(case cfyp.listtype when '102' then '43' when '101' then '21' else null end ,yp.jx)  jxCode,
 cfmx.ds,
 cfmx.zl,
 cfmx.xmmc,
 cf.tbz,
-cfmx.zzfbz,cfmx.ispsbz,cfmx.islgbz,cfmx.ztId,cfmx.ztmc,cfmx.sfzt 
+cfmx.zzfbz,cfmx.ispsbz,cfmx.islgbz,cfmx.ztId,cfmx.ztmc,cfmx.sfzt,cfmx.gjybdm 
 FROM xt_cfmx cfmx
 INNER JOIN xt_cf(nolock) cf
     ON cf.cfId=cfmx.cfId
@@ -270,6 +270,7 @@ LEFT JOIN [NewtouchHIS_Base]..V_S_xt_yzpc(nolock) pc
 LEFT JOIN [NewtouchHIS_Base]..V_C_xt_yp(nolock) yp
     ON yp.ypCode=cfmx.ypCode
         AND yp.OrganizeId=cfmx.OrganizeId
+LEFT JOIN  [NewtouchHIS_Sett]..Dzcf_CFYP_output cfyp on cfmx.ypcode=cast(cfyp.cfypcode as varchar) and cf.isdzcf='1' --电子处方目录
 LEFT JOIN [NewtouchHIS_Base]..V_S_xt_ypyf(nolock) yf
     ON yf.yfCode=cfmx.yfCode
 left join [NewtouchHIS_Base]..V_S_xt_sfdl(nolock) sfdl 
@@ -805,7 +806,8 @@ WHERE cfmx.zt='1' AND cf.zt='1'
                                         cftag = cf.cftag,
                                         djfs = cf.djfs,
                                         djts = cf.djts,
-                                        cfzt = cf.cfzt
+                                        cfzt = cf.cfzt,
+                                        isdzcf = cf.isdzcf
                                     };
                                     if (cfzdlist != null)
                                     {
@@ -875,17 +877,20 @@ WHERE cfmx.zt='1' AND cf.zt='1'
                                     #region 发送处方至pds
 
                                     var t = "";
-                                    if (needOutpatientBook)
+                                    if (cf.isdzcf != "1")//如果走电子处方，不发送处方到药房
                                     {
-                                        t = SendNewRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
-                                    }
-                                    else if (needOutpatientBookModify)
-                                    {
-                                        t = UpdateRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
-                                    }
+                                        if (needOutpatientBook)
+                                        {
+                                            t = SendNewRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
+                                        }
+                                        else if (needOutpatientBookModify)
+                                        {
+                                            t = UpdateRpToPds(jzObject, cf.cfh, cf.cfId, operatorCode, rpDetail, ypyfList);
+                                        }
 
-                                    if (!string.IsNullOrWhiteSpace(t)) throw new FailedException("syncRpToPdsError", t);
-
+                                        if (!string.IsNullOrWhiteSpace(t)) throw new FailedException("syncRpToPdsError", t);
+                                    }
+                                    
                                     #endregion
                                 }
                             }
@@ -1115,6 +1120,10 @@ where zyzd.zdlx = 1 and jzId = @jzId and zyzd.zt = '1'", new[] { new SqlParamete
                     case (int)EnumCflx.WMPres:
                     case (int)EnumCflx.TCMPres:
                         {
+                            if (cf.isdzcf != null && cf.isdzcf == "1")
+                            {
+                                break;
+                            }
                             if (cf.djbz ?? false)
                             {
                                 var dto1 = new PrescriptionAPIDto

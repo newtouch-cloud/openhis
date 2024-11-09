@@ -46,5 +46,6 @@ namespace Newtouch.Domain.DTO.InputDto
     public class InMedReturnRequestslDto {
         public string Id { get; set; }
         public int tsl { get; set; }
+        public int? yzlx { get; set; }
     }
 }

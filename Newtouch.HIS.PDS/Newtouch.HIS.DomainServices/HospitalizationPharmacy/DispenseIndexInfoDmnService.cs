@@ -379,12 +379,14 @@ SELECT o.*, dbo.f_getYfbmYpComplexYpSlandDw(o.zxdwsl, @yfbmCode, o.ypCode, @Orga
 FROM (
 	SELECT SUM(c.sl) zxdwsl, a.zyh, c.ypCode,a.yzId, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz,
 	CASE when a.yzxz = '1' then '临时' when a.yzxz = '2' then '长期' else '/' end yzxzmc,
+    CASE WHEN a.yzxz = '1' THEN lsyz.yzh WHEN a.yzxz = '2' THEN cqyz.yzh ELSE NULL END AS yzh,
 	yp.ycmc,(case when cqyz.yzzt=4 then '[停]'+yp.ypmc else yp.ypmc end) ypmc, ypsx.ypgg,c.CreatorCode pyry, c.CreateTime pyrq, RTRIM(LTRIM(c.ph)) ph, RTRIM(LTRIM(c.pc)) pc,a.ts,ypsx.gjybdm
 	FROM NewtouchHIS_PDS.dbo.zy_ypyzxx(NOLOCK) a 
 	INNER JOIN NewtouchHIS_PDS.dbo.zy_ypyzzxph(NOLOCK) c ON c.zxId=a.zxId AND c.yzId=a.yzId AND c.ypCode=a.ypCode AND c.zt='1' AND c.gjzt='0' AND c.OrganizeId=a.OrganizeId
 	INNER JOIN NewtouchHIS_Base.dbo.v_s_xt_yp yp ON yp.ypCode=a.ypCode AND yp.OrganizeId=a.OrganizeId
 	INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx ypsx ON ypsx.ypId=yp.ypId AND ypsx.OrganizeId=a.OrganizeId
-    left join [Newtouch_CIS].dbo.zy_cqyz  cqyz on a.yzId=cqyz.Id and a.OrganizeId=cqyz.OrganizeId
+    left join [Newtouch_CIS].dbo.zy_cqyz cqyz on a.yzId=cqyz.Id and a.OrganizeId=cqyz.OrganizeId and a.yzxz = '2'
+    left join [Newtouch_CIS].dbo.zy_lsyz lsyz on a.yzId=lsyz.Id and a.OrganizeId=lsyz.OrganizeId and a.yzxz = '1'
 	WHERE a.organizeId=@OrganizeId
 	AND a.fybz='1'
 	AND ISNULL(c.zh,'')=ISNULL(a.zh,'')
@@ -404,9 +406,9 @@ FROM (
     AND ISNULL(a.cw, '') LIKE '%' + @cw + '%'
     AND(a.yzId = @yzId OR '' = @yzId)
     AND c.zyypxxId = a.Id
-    GROUP BY a.yzId,c.ypCode, a.zyh, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz, yp.ycmc, yp.ypmc, ypsx.ypgg,c.CreatorCode, c.CreateTime, c.ph, c.pc, a.ts,cqyz.yzzt,ypsx.gjybdm
+    GROUP BY lsyz.yzh,cqyz.yzh, a.yzId,c.ypCode, a.zyh, a.zxId, a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz, yp.ycmc, yp.ypmc, ypsx.ypgg,c.CreatorCode, c.CreateTime, c.ph, c.pc, a.ts,cqyz.yzzt,ypsx.gjybdm
 ) o
-ORDER BY o.zxId, o.ypmc";
+ORDER BY o.yzh, o.zxId, o.ypmc";
             var param = new DbParameter[]
             {
                 new SqlParameter("@yzId", req.yzId??""),

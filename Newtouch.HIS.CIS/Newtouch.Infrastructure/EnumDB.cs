@@ -192,7 +192,12 @@ namespace Newtouch.Infrastructure
         /// 儿童两病门诊
         /// </summary>
         [Description("儿童两病门诊")]
-        etlbmz = 11
+        etlbmz = 11,
+        /// <summary>
+        /// 简易门诊
+        /// </summary>
+        [Description("简易门诊")]
+        jymz = 12
     }
 
     /// <summary>

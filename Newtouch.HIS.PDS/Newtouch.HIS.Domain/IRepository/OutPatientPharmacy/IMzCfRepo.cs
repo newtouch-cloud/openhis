@@ -160,5 +160,28 @@ namespace Newtouch.HIS.Domain.IRepository
         /// <param name="orgId"></param>
         /// <returns></returns>
         int UpdateGender(string cfh, string xb, string orgId);
+
+        List<MzCfEntity> SelectTfRpList(string cfh, string organizeId);
+
+        #region  医保电子处方
+        /// <summary>
+        /// 返回去重后的姓名和收费时间
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="yfbmCode"></param>
+        /// <param name="organizeId"></param>
+        /// <param name="keyword"></param>
+        /// <param name="fybz"></param>
+        /// <returns></returns>
+        IList<patientInfoVO> GetElectronicPrescription(Pagination pagination, string organizeId, string isysh, string keyword = "");
+        /// <summary>
+        /// 根绝处方号和姓名获取处方明细信息
+        /// </summary>
+        /// <returns></returns>
+        List<DzcfmxVO> QueryElectronicPrescriptionCfmx(string cfh, string xm, string organizeId);
+        Input_2203A GetCQjzdjInfo(string mzh, string orgId);
+        int UpdateCfYsshyj(string cfh, string ysshyj, string orgId);
+
+        #endregion
     }
 }

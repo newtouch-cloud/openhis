@@ -95,7 +95,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="userCode"></param>
         /// <param name="organizeId"></param>
         /// <returns></returns>
-        string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string zsm, int? sfcl);
+        string ExecOutpatientDispensingDrugV2(string cfh, string yfbmCode, string userCode, string organizeId, string ypdm,string zsm, int? sfcl);
 
         /// <summary>
         /// 门诊发药
@@ -232,6 +232,15 @@ namespace Newtouch.HIS.Domain.IDomainServices
         #region 门诊处方
         IList<MzcfcxList> GetMzcfList(Pagination pagination, MzcfcxVo req);
         IList<MzcfcxDetailList> GetMzcfDetailList(Pagination pagination, MzcfcxVo req);
+
+        #endregion
+
+        #region 医保电子处方
+        /// <summary>
+        /// 获取电子处方病人信息
+        /// </summary>
+        /// <returns></returns>
+        List<DzcfBrxxDTO> GetElectronicPrescriptionCfInfo(string cfh, string xm, string organizeId = "");
 
         #endregion
     }

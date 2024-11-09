@@ -128,7 +128,7 @@
             dropUp: true
         });
         $("#gridxycfPager_right").append('<span style="color:red;">药房：</span><select id="tip_yfly"></select>');
-        $("#gridxycfPager_right").append('&nbsp;&nbsp;&nbsp;<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="JI">精神I类处方</option><option value="JII">精神II类处方</option><option value="MZ">麻醉处方</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option><option value="MXB">慢性病</option><option value="RK">儿科</option></select>');
+        $("#gridxycfPager_right").append('<span>电子处方：</span><select id="isdzcfxy"><option value="0">否</option><option value="1">是</option></select>&nbsp;&nbsp;&nbsp;<span style="color:red;">特殊处方：</span><select id="tip_jmcf"><option value="">==请选择==</option><option value="JI">精神I类处方</option><option value="JII">精神II类处方</option><option value="MZ">麻醉处方</option><option value="LXGB">离休干部</option><option value="TBCF">特病处方</option><option value="MXB">慢性病</option><option value="RK">儿科</option></select>');
         $("#tip_yfly").empty();
         $.ajax({
             type: "POST",
@@ -255,6 +255,22 @@
             $('span.bbit-tree-node-text[data-value="' + triggereditcfh + '"]').trigger('click');
         }
         zddata();//诊断复选框生成
+
+        //初始化特殊处方
+        var cftag = '';
+        $.jsonWhere(window.alldataArray.xycf, function (v) {
+            if (v.cfh==triggereditcfh && v.cgtag != '') {
+                cftag = v.cftag;
+            }
+        });
+        $("#tip_jmcf").val(cftag);
+        var isdzcf = '0';
+        $.jsonWhere(window.alldataArray.xycf, function (v) {
+            if (v.cfh == triggereditcfh && v.isdzcf != '') {
+                isdzcf = v.isdzcf;
+            }
+        });
+        $("#isdzcfxy").val(isdzcf);
     }
     //处方列表
     function gridxycf() {
@@ -610,6 +626,7 @@
                 { label: 'sfdlCode', name: 'sfdlCode', editable: true, hidden: true },
                 { label: 'sfdlmc', name: 'sfdlmc', editable: true, hidden: true },
                 { label: 'mrjl', name: 'mrjl', editable: true, hidden: true },
+                { label: 'gjybdm', name: 'gjybdm', editable: true, hidden: true },
                 { label: '操作', name: 'action', width: 80, align: 'center' }
             ],
             editinputwidthborder: false,    //是否需要边框 默认为true
@@ -859,16 +876,18 @@
         //药品浮层  //中药西药 会重复么 ‘"#" + rowid + "_ypmc"’
         $("#" + rowid + "_ypmc").sfxmFloatingSelector({
             djDecimalPlaces: 4,
-            searchType: '@(isMedicineSearchRelatedKC ? "yp.kc" : "yp")', //药品是否显示库存
+            searchType: $("#isdzcfxy").val() == "1" ?"yp": '@(isMedicineSearchRelatedKC ? "yp.kc" : "yp")', //药品是否显示库存
             ajaxparameters: function ($thisinput) {
                 var flag = false;
                 //限制用药的话，flag=true
                 if (window.currPatientInfo.brxzCode != "" &&'@ViewBag.ControlbrxzCode'.indexOf(window.currPatientInfo.brxzCode) > -1) {
                     flag = true;
                 }
-                var mzzybz=$('#tip_yfly option:selected').val().split('|')[1];
+                var mzzybz=$('#tip_yfly option:selected').val().split('|')[1];//药房部门 0：不发药 1：门诊用药 2：住院用药 3：门诊住院通用
                 if(mzzybz=="3")
                     mzzybz="1";
+                if( $("#isdzcfxy").val()=="1")
+                    mzzybz="9";//走电子处方目录
                 return "onlyybflag=" + flag + "&mzzybz="+mzzybz+"&dllb=1&sfdllx=WM&keyword=" + $.trim($thisinput.val()) + "&isQyKssKZ="+ IsQyKssKz + "&qxjb="+qxjb+"&ypyfbmCode="+$('#tip_yfly option:selected').val().split('|')[0];
 			},
 			itemdbclickhandler: function ($this) {
@@ -995,6 +1014,7 @@
                 $("#" + rowid + "_pcfwend").val($this.attr('data-pcfwend'));
                 $("#" + rowid + "_cls").val($this.attr('data-cls'));
                 $("#" + rowid + "_jlzhxs").val($this.attr('data-jldwzhxs'));
+                $("#" + rowid + "_gjybdm").val($this.attr('data-gjybdm'));
 				$("#" + rowid + "_yfCode").val($this.attr('data-mryf'))
                 //$("#" + rowid + "_ypmc").css('background-color','#f6f7fb').attr('readonly','true');
 
@@ -1162,12 +1182,12 @@
                 return "keyword=" + $.trim($thisinput.val())+"&yfcode="+yfbm;
             },
             colModel: [
-                
+
                 { label: '组套编码', name: 'sfmb', widthratio: 60 },
                 { label: '组套名称', name: 'sfmbmc', widthratio: 35 }
             ],
             itemdbclickhandler: function ($this) {
-               
+
                 //var curyfdm = $("#" + rowid + "_ypmc").val();
                 //alert(curyfdm);
                 $("#" + rowid + "_yfztbm").val($this.attr('data-sfmb'));
@@ -1444,6 +1464,7 @@
             }
 
             this.cftag = $("#tip_jmcf").val();
+            this.isdzcf = $("#isdzcfxy").val();
         });
         if ((!(saveResult == false)) && savetodb == '1' && gridxycfData.length > 0) {//药品限制开立
             var isbmzd = $("#mzbck").is(":checked") ? "1" : "0";

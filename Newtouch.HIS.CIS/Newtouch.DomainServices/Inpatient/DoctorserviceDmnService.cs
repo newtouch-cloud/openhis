@@ -1595,8 +1595,8 @@ namespace Newtouch.DomainServices.Inpatient
 										dept.Name deptName ,
                                         yz.yztag,
                                         case yz.yztag when 'JI' then '精I' when 'JII' then '精II' when 'MZ' then '麻醉' else yz.yztag end yztagName,
-										isnull(yz.isjf,1) isjf,ispscs,isnull(zzfbz,0) zzfbz , yz.xmdm,yz.sl,  yz.Px,
-                                        case when yzlx in (2,4,10) then (cast(yz.sl as varchar)+ypxx.zycldw) end zycldw,yfztbs,yply,isfsyz
+										isnull(yz.isjf,1) isjf,ispscs,isnull(zzfbz,0) zzfbz , yz.xmdm,case when yzlx='10' then yz.sl* (cast(yz.ypjl as int)) else yz.sl end sl,  yz.Px,
+                                        case when yzlx in (2,4,10) then (cast(case when yzlx='10' then convert(numeric(18,2),yz.sl*yz.ypjl) else yz.sl end as varchar)+ypxx.zycldw) end zycldw,yfztbs,yply,isfsyz
                               FROM      (
                                               select 'Y' iszt,row_number() over(partition by ztid,yzh order by createtime desc) num ,*
                                                 from zy_cqyz yz with(nolock) where ztid is not null
@@ -1657,8 +1657,8 @@ namespace Newtouch.DomainServices.Inpatient
                                         isnull(yz.isjf,1) isjf,
                                         ispscs ,isnull(zzfbz,0) zzfbz,
                                         xmdm,
-										sl, yz.Px,
-										case when yzlx in (2,4,10) then (cast(sl as varchar)+ypxx.zycldw) end zycldw ,yfztbs,yply,isfsyz
+										case when yzlx='10' then sl* (cast(yz.ypjl as int)) else sl end sl, yz.Px,
+										case when yzlx in (2,4,10) then (cast(case when yzlx='10' then convert(numeric(18,2),sl*yz.ypjl) else  sl end as varchar)+ypxx.zycldw) end zycldw ,yfztbs,yply,isfsyz
                                         from (
                                             select 'Y' iszt,row_number() over(partition by ztid,yzh order by createtime desc) num ,*
                                             from zy_lsyz jyjcyz with(nolock) where ztid is not null--yzlx in ('6','7') 

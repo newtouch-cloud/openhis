@@ -1219,7 +1219,7 @@
             {
                 $.loading(false);
                 /* 收费确认及HIS结算入口 */
-                ybjs_confirm();
+                ybjs_confirm(regInfo);
             }else{
                 $.loading(true, '正在进行医保结算，请稍后...');
                 setTimeout(function () {
@@ -1430,23 +1430,24 @@
                         MZJS.ybjyFeeReturn.pch = MZJS.ghxx.jylsh;
                         MZJS.ybjyFeeReturn.yllb = "12";
 					} else {
-                        delUploadDetail(ghxx);
+                        delUploadDetail(MZJS.ghxx);
                         $.modalAlert("医保服务(门诊结算)失败:"+ybjsSettReturn.err_msg, 'error');
 					}
 				} else {
-					delUploadDetail(ghxx);
+				    delUploadDetail(MZJS.ghxx);
 					$.modalAlert("医保服务(门诊结算)返回信息为空", 'error');
 				}
 			} else {
-                delUploadDetail(ghxx);
+                delUploadDetail(MZJS.ghxx);
                 MZJS.msg="医保服务(门诊预结算)失败:"+ybjsSettReturn1.err_msg;
 			}
 		} else {
-		    delUploadDetail(ghxx);
+		    delUploadDetail(MZJS.ghxx);
 		    MZJS.msg="医保服务(门诊预结算)返回信息为空";
 		}
     }
-	function delUploadDetail(ghxx) {
+    function delUploadDetail(ghxx) {
+        debugger;
 	    var hcGhData = {hisId:ghxx.zymzh, mdtrt_id: ghxx.jzid, chrg_bchno: ghxx.jylsh, psn_no:$("#grbh").val() , operatorId:'@(opr.rygh)', operatorName:'@(opr.UserName)',insuplc_admdvs:$("#cbdbm").val()  };
 		$.ajax({
 			type: "POST",
@@ -1457,6 +1458,16 @@
 			success: function (data) {
 				//此处暂不再做异常提示
 			}
+		});
+		var payoptype = { 'mdtrt_id': ghxx.jzid, "psn_no": cqPatInfo.grbh, insuplc_admdvs: cqPatInfo.xzqh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', 'hisId': ghxx.zymzh, 'ipt_otp_no': ghxx.zymzh };
+		$.ajax({
+		    type: "POST",
+		    url: "http://127.0.0.1:33333/api/YiBao/RegisteredUndo_2202",
+		    dataType: "json",
+		    data: payoptype,
+		    async: false,
+		    success: function (data) {
+		    }
 		});
 	}
     //冲正交易
@@ -1473,6 +1484,16 @@
             async: false,
             success: function (data) {
                 cqybjyDenySettleReturn = eval('(' + data + ')');
+                var payoptype = { 'mdtrt_id': MZJS.ghxx.jzid, "psn_no": cqPatInfo.grbh, insuplc_admdvs: cqPatInfo.xzqh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', 'hisId': MZJS.qzmzh, 'ipt_otp_no': MZJS.qzmzh };
+                $.ajax({
+                    type: "POST",
+                    url: "http://127.0.0.1:33333/api/YiBao/RegisteredUndo_2202",
+                    dataType: "json",
+                    data: payoptype,
+                    async: false,
+                    success: function (data) {
+                    }
+                });
             }
         });
         if (cqybjyDenySettleReturn.infcode != "0"||cqybjyDenySettleReturn.infcode != 0) {

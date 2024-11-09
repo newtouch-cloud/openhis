@@ -173,7 +173,17 @@ where num1=1 ";
            
             return this.FindList<ExecReportReportRightVO>(sql,par.ToArray());
         }
-
+        /// <summary>
+        /// 执行单打印查询
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="orgId"></param>
+        /// <param name="zyh"></param>
+        /// <param name="zxsj"></param>
+        /// <param name="zxsjend"></param>
+        /// <param name="zxdlb"></param>
+        /// <param name="yzxz"></param>
+        /// <returns></returns>
 
         public IList<ExecReportReportRightVO> QueryExecDetailGridJson(Pagination pagination, string orgId, string zyh, DateTime zxsj, DateTime zxsjend, string zxdlb,string yzxz)
         {
@@ -181,12 +191,12 @@ where num1=1 ";
             ,zxrq zxsj,shr,yzlx,ypyfdm,lyxh,shz,zxz,convert(varchar(10),isjf)isjf,sum(dj) dj,sum(case when num1>1 then 0 else sl end) sl,sum(je) je,px  from(
             select tb.*,case when ztmc='' then '1' else num end num1 from 
             (
-            select a.*,aaa.dj,aaa.sl,aaa.je,aaa.lyxh,b.Name shz,c.Name zxz ,Row_Number() OVER (partition by yzh,ztmc ORDER BY zxrq desc) num,zxrq from 
-            (select yzxh,dj,sl,CONVERT(decimal(18,2),dj*sl) je,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_tyssqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
+            select a.*,aaa.dj,case when yzlx='10' then aaa.sl*mcsl else aaa.sl end sl,case when yzlx='10' then CONVERT(decimal(18,2),dj*sl*mcsl) else aaa.je end je,aaa.lyxh,b.Name shz,c.Name zxz ,Row_Number() OVER (partition by yzh,ztmc ORDER BY zxrq desc) num,zxrq from 
+            (select yzxh,dj,sl,mcsl,CONVERT(decimal(18,2),dj*sl) je,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_tyssqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
             union all
-            select yzxh,ypdj,ypsl,CONVERT(decimal(18,2),ypdj*ypsl) je,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_fyqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
+            select yzxh,ypdj,ypsl,mcsl,CONVERT(decimal(18,2),ypdj*ypsl) je,CONVERT(INT,lyxh) lyxh,CreatorCode,zxrq from zy_fyqqk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'')
             union
-            select yzxh,dj,sl,CONVERT(decimal(18,2),dj*sl) je,null lyxh,CreatorCode,zxrq from zy_fymxk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'') and isjf=0
+            select yzxh,dj,sl,1.00 mcsl,CONVERT(decimal(18,2),dj*sl) je,null lyxh,CreatorCode,zxrq from zy_fymxk with(nolock) where OrganizeId=@orgId and zxrq>=@zxsj and zxrq<=@zxsjend and zyh in(select col from dbo.f_split(@zyh,',') where col>'') and isjf=0
             )
             aaa  join 
             (select zyh,isjf,px,'长' clbz,'2' yzxz,hzxm,Id yzId,yzh,zh,case when ztid is not null then ztmc else yznr end yznr,shr,yzlx,ypyfdm,xmdm,isnull(ztmc,'') ztmc,yfztbs 

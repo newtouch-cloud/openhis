@@ -1,0 +1,102 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    ViewBag.Title = "examForm";
+    Layout = "~/Views/Shared/_Form.cshtml";
+    var curOpr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+
+<form id="form1">
+    <div class="container" style="padding:0;">
+        <div class="tab-content" style="margin-top:10px;padding-right:10px;">
+            <div role="tabpanel" class="tab-pane fade in active">
+                <table class="form">
+                    <tr>
+                        <th class="formTitle">医保处方编号：</th>
+                        <td class="formValue" style="width:70px;padding-right:50px;">
+                            <input id="hiRxno" name="hiRxno" disabled="disabled" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle">医保药师姓名：</th>
+                        <td class="formValue" style="width:70px;padding-right:50px;">
+                            <input id="pharName" name="pharName" disabled="disabled" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">医保药师代码：</th>
+                        <td class="formValue" style="width:70px;padding-right:50px;">
+                            <input id="pharCode" name="pharCode" disabled="disabled" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle">处方审核状态名称：</th>
+                        <td class="formValue" style="width:70px;padding-right:50px;">
+                            <input id="rxChkStasCodg" name="rxChkStasCodg" disabled="disabled" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">处方审核意见：</th>
+                        <td class="formValue" style="width:70px;padding-right:50px;">
+                            <input id="rxChkOpnn" name="rxChkOpnn" disabled="disabled" type="text" class="form-control" placeholder="" />
+                        </td>
+                        <th class="formTitle">处方审核时间：</th>
+                        <td class="formValue" style="width:70px;padding-right:50px;">
+                            <input id="rxChkTime" name="rxChkTime" disabled="disabled" type="text" class="form-control" placeholder="" />
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script lang="javascript">
+
+
+    var hisId = $.request("hisId");
+    var cfh = $.request("cfh");
+
+    initForm();
+
+    //初始化表单
+    function initForm() {
+        if (hisId != null && hisId != "") {
+            $.ajax({
+                url: "http://127.0.0.1:33333/api/YiBao/ElectronicPrescription_D006",
+                dataType: "json",
+                data: { hisId: hisId, cfh: cfh, operatorId: '@curOpr.UserCode', operatorName: '@curOpr.UserName' },
+                type: "POST",
+                async: false,
+                success: function (ajaxdata) {
+                    var tfReturn = eval('(' + ajaxdata + ')');
+                    if (tfReturn.infcode == "0" || tfReturn.infcode == 0)
+                    {
+                        var data1 = eval('(' + tfReturn.output + ')');
+                        if (data1.code == 0 || data1.code == "0") {
+                            var obj = eval('(' + data1.encData + ')');
+                            $("#hiRxno").val(obj.hiRxno);
+                            $("#pharName").val(obj.pharName);
+                            $("#pharCode").val(obj.pharCode);
+                            $("#rxChkStasCodg").val(obj.rxChkStasCodg == "1" ? "审核通过" : (obj.rxChkStasCodg == "2" ? "审核不通过" : "待审核"));
+                            $("#rxChkOpnn").val(obj.rxChkOpnn);
+                            $("#rxChkTime").val(obj.rxChkTime);
+                        }
+                        else {
+                            $.modalAlert("电子处方取药结果査询失败：" + data1.message, 'error');
+                            return;
+                        }
+                    }
+                    else {
+                        $.modalAlert("电子处方审核结果査询失败：" + tfReturn.err_msg, 'error');
+                        return;
+                    }
+                },
+                error: function (request, error, ex) {
+                    $.loading(false);
+                    $.modalAlert('医保服务【电子处方审核结果查询】不可访问：' + ex, 'error');
+                }
+            })
+        }
+    }
+
+</script>
+
+
+
