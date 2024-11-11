@@ -26,11 +26,11 @@ namespace Newtouch.HIS.Base.HOSP.Controllers.PharmacyDrugStorage
 
         [HttpGet]
         [HandlerAjaxOnly]
-        public ActionResult GetGridJson(Pagination pagination, string genname, string medListCodg)
+        public ActionResult GetGridJson(Pagination pagination, string genname, string medListCodg,string listType,string zt)
         {
             var data = new
             {
-                rows = _sysMedicineElectronicPrescriptionDmnService.GetPaginationList(pagination, genname,  medListCodg),
+                rows = _sysMedicineElectronicPrescriptionDmnService.GetPaginationList(pagination, genname,  medListCodg,listType,zt),
                 total = pagination.total,
                 page = pagination.page,
                 records = pagination.records

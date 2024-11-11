@@ -28,5 +28,6 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string oppoolFlag { get; set; }
         public string begntime { get; set; }
         public string endtime { get; set; }
+        public string zt { get; set; }
     }
 }
