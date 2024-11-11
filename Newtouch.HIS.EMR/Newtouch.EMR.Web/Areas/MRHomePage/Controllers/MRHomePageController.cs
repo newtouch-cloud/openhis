@@ -183,60 +183,65 @@ namespace Newtouch.EMR.Web.Areas.MRHomePage.Controllers
         public ActionResult SubmitZdList(List<BasyZdDto> dto,string zyh,string Code)
         {
             var data = "";
-            if (dto != null && dto.Count > 0)
-            {
-                //结算病人信息
-                var jsbrxx = _MainRecordDmnService.SettlementQuery(zyh, this.OrganizeId);
-                //是否同步动态参数信息
-                var dtcsxx = _MainRecordDmnService.DiagnosticSave(Code, this.OrganizeId);
-
-                //判断是否结算病人
-                if (jsbrxx.Count>0)
+            try {
+                if (dto != null && dto.Count > 0)
                 {
-                    //参数修改时间为空时取创建时间
-                    var uptime = dtcsxx[0].LastModifyTime.ToString() == null || dtcsxx[0].LastModifyTime.ToString() == "" ? dtcsxx[0].CreateTime : dtcsxx[0].LastModifyTime;
-                    //判断结算时间大于参数的修改或创建时间
-                    if ((jsbrxx[0].CreateTime > uptime) && (dtcsxx[0].Value == "OFF" || dtcsxx[0].Value == "off"))
+                    //结算病人信息
+                    var jsbrxx = _MainRecordDmnService.SettlementQuery(zyh, this.OrganizeId);
+                    //是否同步动态参数信息
+                    var dtcsxx = _MainRecordDmnService.DiagnosticSave(Code, this.OrganizeId);
+
+                    //判断是否结算病人
+                    if (jsbrxx.Count > 0)
                     {
-                        //return Success("已结算病人不能添加诊断信息");
-                        data = "已结算病人不能添加诊断信息";
-                    }
-                    //判断结算时间小于参数的修改或创建时间
-                    else if ((jsbrxx[0].CreateTime < uptime) && (dtcsxx[0].Value == "ON" || dtcsxx[0].Value == "on"))
-                    {
-                        //保存诊断
-                        _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
-                        data = "诊断信息保存成功";
+                        //参数修改时间为空时取创建时间
+                        var uptime = dtcsxx[0].LastModifyTime.ToString() == null || dtcsxx[0].LastModifyTime.ToString() == "" ? dtcsxx[0].CreateTime : dtcsxx[0].LastModifyTime;
+                        //判断结算时间大于参数的修改或创建时间
+                        if ((jsbrxx[0].CreateTime > uptime) && (dtcsxx[0].Value == "OFF" || dtcsxx[0].Value == "off"))
+                        {
+                            //return Success("已结算病人不能添加诊断信息");
+                            data = "已结算病人不能添加诊断信息";
+                        }
+                        //判断结算时间小于参数的修改或创建时间
+                        else if ((jsbrxx[0].CreateTime < uptime) && (dtcsxx[0].Value == "ON" || dtcsxx[0].Value == "on"))
+                        {
+                            //保存诊断
+                            _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
+                            data = "诊断信息保存成功";
+                        }
+                        else {
+                            //return Success("不能添加诊断信息");
+                            data = "不能添加诊断信息";
+                        }
                     }
                     else {
-                        //return Success("不能添加诊断信息");
-                        data = "不能添加诊断信息";
+                        //没有结算并且参数开启时同步和保存诊断
+                        if (dtcsxx[0].Value == "ON" || dtcsxx[0].Value == "on")
+                        {
+                            //保存诊断
+                            _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
+                            //同步诊断信息
+                            _MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
+                            data = "诊断信息保存成功";
+                        }
+                        else if (dtcsxx[0].Value == "OFF" || dtcsxx[0].Value == "off")
+                        {
+                            //保存诊断
+                            _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
+                            data = "诊断信息保存成功";
+                        }
                     }
+
+
+                    //保存诊断
+                    //_MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
+                    //同步诊断信息
+                    //_MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
+
                 }
-                else {
-                    //没有结算并且参数开启时同步和保存诊断
-                    if (dtcsxx[0].Value=="ON" || dtcsxx[0].Value == "on")
-                    {
-                        //保存诊断
-                        _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
-                        //同步诊断信息
-                        _MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
-                        data = "诊断信息保存成功";
-                    }
-                    else if (dtcsxx[0].Value == "OFF" || dtcsxx[0].Value == "off")
-                    {
-                        //保存诊断
-                        _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
-                        data = "诊断信息保存成功";
-                    }
-                }
-
-
-                //保存诊断
-                //_MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
-                //同步诊断信息
-                //_MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
-
+            }
+            catch (Exception e) {
+                data = e.Message;
             }
             data = "{\"data\":\""+ data + "\"}";
             return Content(data.ToJson().ToString());

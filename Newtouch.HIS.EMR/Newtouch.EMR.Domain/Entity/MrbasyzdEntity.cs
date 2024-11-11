@@ -31,7 +31,11 @@ namespace Newtouch.EMR.Domain.Entity
         /// </summary>
         /// <returns></returns>
         public string ZYH { get; set; }
-
+        /// <summary>
+        /// ZDLX 1主要诊断 2其他诊断 3 中医主病 4 中医主证
+        /// </summary>
+        /// <returns></returns>
+        public string ZDLX { get; set; }
         /// <summary>
         /// ZDOrder
         /// </summary>

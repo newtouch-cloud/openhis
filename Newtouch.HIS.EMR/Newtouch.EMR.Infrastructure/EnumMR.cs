@@ -258,11 +258,16 @@ namespace Newtouch.EMR.Infrastructure.EnumMR
 	/// </summary>
 	public enum EnumZdlxbs
 	{
-		[Description("主要诊断")]
+        [Description("主病")]
+        zb = 3,
+        [Description("主证")]
+        zz = 4,
+        [Description("主要诊断")]
 		zy = 1,
 		[Description("次要诊断")]
 		cy = 2
-	}
+        
+    }
 
 
 	/// <summary>
