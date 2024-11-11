@@ -6,63 +6,38 @@
     var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
 }
 
-
-<!DOCTYPE html>
-<style>
-    .showbotton {
-        display: none;
-        position: fixed;
-        bottom: 5px;
-        right: 0;
-        z-index: 9999;
-        background-color: #ccc;
-        width: 50px;
-        height: 44px;
-        filter: alpha(Opacity=90);
-        -moz-opacity: 0.9;
-        opacity: 0.9;
-        cursor: pointer;
-        border-radius: 100px 0 0 100px;
-    }
-
-    #TabGrid {
-        width: 100%;
-        position: fixed;
-        bottom: 10px;
-        right: 0;
-        z-index: 8888;
-        background-color: #253443;
-        filter: alpha(Opacity=92);
-        -moz-opacity: 0.92;
-        opacity: 0.92;
-        box-shadow: 0px 2px 10px #909090;
-    }
-
-        #TabGrid > * {
-            filter: alpha(Opacity=92);
-            -moz-opacity: 0.92;
-            opacity: 0.92;
-        }
-</style>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Index</title>
-</head>
-<body>
-
-    <form>
-        <div class="panel panel-default">
+<form>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            筛选信息
+        </div>
+        <div>
             <table class="form">
                 <tr>
 
                     <th class="formTitle">药品名：</th>
                     <td class="formValue" colspan="2">
-                        <input id="genname" type="text" class="form-control" style="width:50%; float:left;" />
+                        <input id="genname" type="text" class="form-control" />
                     </td>
                     <th class="formTitle">国家医保编码：</th>
                     <td class="formValue" colspan="2">
-                        <input id="medListCodg" type="text" class="form-control" style="width:50%; float:left;" />
+                        <input id="medListCodg" type="text" class="form-control" />
+                    </td>
+                    <td class="formTitle">药品类型：</td>
+                    <td class="formValue">
+                        <select class="form-control" id="listType">
+                            <option value="">全部</option>
+                            <option value="101">西药中成药</option>
+                            <option value="102">中药饮片</option>
+                        </select>
+                    </td>
+                    <td class="formTitle">有效标志：</td>
+                    <td class="formValue">
+                        <select class="form-control" id="zt">
+                            <option value="">全部</option>
+                            <option value="0">无效</option>
+                            <option value="1">有效</option>
+                        </select>
                     </td>
                     <td class="formValue title">
                         <input type="button" id="btn_search" class="btn btn-primary" style="margin-left: 10%;" value="查询" />
@@ -73,14 +48,13 @@
 
             </table>
         </div>
-        <div class="gridPanel">
-            <table id="gridList"></table>
-            <div id="gridPager"></div>
-        </div>
-    </form>
-</body>
-</html>
-
+            
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
 
 <script>
     $(function () {
@@ -92,8 +66,8 @@
         var $gridList = $("#gridList");
         $gridList.dataGrid({
             url: "/SysMedicineElectronicPrescription/GetGridJson",
-            height: $(window).height() - 120,
-            postData: { genname: $("#genname").val(), medListCodg: $("#medListCodg").val() },
+            height: $(window).height() - 160,
+            postData: { genname: $("#genname").val(), medListCodg: $("#medListCodg").val(), listType: $("#listType").val(), zt: $("#zt").val() },
             colModel: [
                 { label: '医疗目录编码', name: 'medListCodg', width: 180, align: 'left' },
                 { label: '国家药品编号', name: 'natDrugNo', width: 120, align: 'left' },
@@ -101,7 +75,11 @@
                 { label: '商品名', name: 'prodname', width: 150, align: 'left' },
                 { label: '注册名', name: 'regName', width: 150, align: 'left' },
                 { label: '目录类别', name: 'listType', width: 80, align: 'left' },
-                { label: '目录类别名称', name: 'listTypeName', width: 120, align: 'left' },
+                {
+                    label: '目录类别名称', name: 'listTypeName', width: 120, align: 'left', formatter: function (cellVallue) {
+                        return cellVallue == "" ? "中药饮片" : cellVallue;
+                    }
+                },
                 { label: '规格名称', name: 'specName', width: 100, align: 'left' },
                 { label: '生厂厂家', name: 'prdrName', width: 150, align: 'left' },
                 { label: '批准文号', name: 'aprvno', width: 150, align: 'left' },
@@ -112,7 +90,7 @@
                 { label: '统筹区编号', name: 'poolareaNo', width: 80, align: 'left' },
                 { label: '统筹区名称', name: 'poolareaName', width: 80, align: 'left' },
                 { label: '是否双通道标志', name: 'dualchnlFlag', width: 80, align: 'left' },
-                { label: '是否门诊统筹标志', name: 'oppoolFlag', width: 80, align: 'left' },
+                { label: '是否门诊统筹标志', name: 'oppoolFlag', hidden: true, width: 80, align: 'left' },
                 { label: '开始时间', name: 'begntime', width: 80, align: 'left' },
                 { label: '结束时间', name: 'endtime', width: 80, align: 'left' },
             ],
@@ -123,16 +101,27 @@
         });
         $("#btn_search").click(function () {
             $gridList.jqGrid('setGridParam', {
-                postData: { genname: $("#genname").val(), medListCodg: $("#medListCodg").val() },
+                postData: {
+                    genname: $("#genname").val(), medListCodg: $("#medListCodg").val(),
+                    listType: $("#listType").val(), zt: $("#zt").val()
+                },
             }).trigger('reloadGrid');
         });
     }
 
     //回车事件
-    $('#txt_keyword').keydownEnterEvent(function () {
+    $('#genname').keydownEnterEvent(function () {
         $('#btn_search').trigger('click');
     })
-
+    $('#medListCodg').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+    $('#listType').change(function () {
+        $('#btn_search').trigger('click');
+    })
+    $('#zt').change(function () {
+        $('#btn_search').trigger('click');
+    })
     //同步
     $('#btn_sync').click(function () {
         $.ajax({
