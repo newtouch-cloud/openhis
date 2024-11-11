@@ -24,4 +24,15 @@ namespace Newtouch.EMR.Domain.DTO.InputDto.MRHomePage
         /// </summary>
         public int ischeck{get;set;}
     }
+    /// <summary>
+    /// 中医症候
+    /// </summary>
+    public class SysDiagZyzh
+    {
+        public string zdCode { get; set; }
+        public string zdmc { get; set; }
+        public string py { get; set; }
+        public string icd10 { get; set; }
+        public string icd10fjm { get; set; }
+    }
 }
