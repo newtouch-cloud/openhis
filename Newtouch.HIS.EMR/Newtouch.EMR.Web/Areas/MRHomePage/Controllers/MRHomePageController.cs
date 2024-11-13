@@ -255,7 +255,14 @@ namespace Newtouch.EMR.Web.Areas.MRHomePage.Controllers
             }
             return Success("手术保存成功");
         }
-
+        /// <summary>
+        /// 病案首页-保存基本信息
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <param name="reldto"></param>
+        /// <param name="keyValue"></param>
+        /// <param name="mbbh"></param>
+        /// <returns></returns>
         public ActionResult SubmitPatBasic(BasyVO dto, BasyRelVO reldto, string keyValue,string mbbh)
         {
             if (!string.IsNullOrWhiteSpace(keyValue))

@@ -159,10 +159,10 @@ namespace Newtouch.EMR.Infrastructure.EnumMR
 	/// </summary>
 	public enum EnumYorN
 	{
-		[Description("否")]
-		N = 1,
 		[Description("是")]
-		Y = 2
+		Y = 1,
+		[Description("否")]
+		N = 2
 	}
 
 
@@ -531,5 +531,17 @@ namespace Newtouch.EMR.Infrastructure.EnumMR
 		[Description("4期")]
 		forth = 4
 	}
+    /// <summary>
+	///实施临床路径 1中医 2西医 3否
+	/// </summary>
+	public enum EnumZYSSLCLJ
+    {
+        [Description("中医")]
+        TCM = 1,
+        [Description("西医")]
+        WM = 2,
+        [Description("否")]
+        none = 3
+    }
 
 }
