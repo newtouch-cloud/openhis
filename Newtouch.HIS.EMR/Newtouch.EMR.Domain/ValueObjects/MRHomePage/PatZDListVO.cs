@@ -33,6 +33,10 @@ namespace Newtouch.EMR.Domain.ValueObjects.MRHomePage
         /// </summary>
         public string ZDLX { get; set; }
         /// <summary>
+        /// WM  TCM
+        /// </summary>
+        public string ZDLB { get; set; }
+        /// <summary>
         /// JBDM
         /// </summary>
         /// <returns></returns>

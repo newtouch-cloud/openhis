@@ -351,13 +351,13 @@ select a.Code from [Newtouch_MRMS].[dbo].[mr_dic_bafeetype] a where a.zt='1' and
 
         public IList<PatZDListVO> GetDiagLsit(string orgId, string bah, string zyh)
         {
-            string zdsql = @"SELECT Id,[BAH],[ZYH],CASE WHEN ZDLX IS NULL THEN (CASE WHEN ZDOrder='1' THEN '1' ELSE '2' END) ELSE ZDLX END ZDLX 
+            string zdsql = @"SELECT Id,[BAH],[ZYH],ZDLB,CASE WHEN ZDLX IS NULL THEN (CASE WHEN ZDOrder='1' THEN '1' ELSE '2' END) ELSE ZDLX END ZDLX 
 ,[ZDOrder],[JBDM],[JBMC],[RYBQ],[RYBQMS]
 ,[CYQK],[CYQKMS]
 ,[LastModifierCode],[OrganizeId]
   FROM [dbo].[mr_basy_zd] with(nolock)
 where zt='1' and OrganizeId=@orgId and BAH=@bah and ZYH=@zyh  
-order BY CASE WHEN ZDLX >= 3 THEN 0 ELSE 1 END, ABS(ZDLX),ZDOrder  ";
+order BY ZDLB, CASE WHEN ZDLX >= 3 THEN 0 ELSE 1 END, ABS(ZDLX),ZDOrder  ";
 
             var zdlist = FindList<PatZDListVO>(zdsql, new SqlParameter[] {
             new SqlParameter("@orgId",orgId),
@@ -424,6 +424,7 @@ order by SSOrder ";
                                 zdety.CYQK = v.CYQK;
                                 zdety.CYQKMS = v.CYQKMS;
                                 zdety.ZDLX = v.ZDLX;
+                                zdety.ZDLB = v.ZDLB;
                                 zdety.JBDM = v.JBDM;
                                 zdety.JBMC = v.JBMC;
                                 zdety.zt = v.zt == null ? zdety.zt : v.zt;
@@ -455,6 +456,7 @@ order by SSOrder ";
                         zdety.JBDM = v.JBDM;
                         zdety.JBMC = v.JBMC;
                         zdety.ZDLX = v.ZDLX;
+                        zdety.ZDLB = v.ZDLB;
                         zdety.zt = v.zt;
                         zdety.ZDOrder = i;
 
@@ -1043,6 +1045,12 @@ order by SSOrder ";
             ety.LXDH = vo.LXDH;
             ety.SJ = vo.SJ;
             ety.BCRQ = vo.BCRQ;
+
+            ety.ZYSSLCLJ = vo.ZYSSLCLJ;
+            ety.SYYLJGZYZJ = vo.SYYLJGZYZJ;
+            ety.SYZYZLSB = vo.SYZYZLSB;
+            ety.SYZYZLJS = vo.SYZYZLJS;
+            ety.BZSH = vo.BZSH;
             return ety;
         }
 
