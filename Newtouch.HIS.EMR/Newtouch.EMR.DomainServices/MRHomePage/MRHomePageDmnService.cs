@@ -351,7 +351,8 @@ select a.Code from [Newtouch_MRMS].[dbo].[mr_dic_bafeetype] a where a.zt='1' and
 
         public IList<PatZDListVO> GetDiagLsit(string orgId, string bah, string zyh)
         {
-            string zdsql = @"SELECT Id,[BAH],[ZYH],ZDLB,CASE WHEN ZDLX IS NULL THEN (CASE WHEN ZDOrder='1' THEN '1' ELSE '2' END) ELSE ZDLX END ZDLX 
+            string zdsql = @"SELECT Id,[BAH],[ZYH],isnull(ZDLB,'WM') ZDLB,CASE WHEN ZDLX IS NULL THEN (CASE WHEN ZDOrder='1' THEN '1' ELSE '2' END)
+    WHEN ZDLX>2 and ZDOrder='1' THEN '1' WHEN ZDLX>2 and ZDOrder>'1' then '2'  ELSE ZDLX END ZDLX 
 ,[ZDOrder],[JBDM],[JBMC],[RYBQ],[RYBQMS]
 ,[CYQK],[CYQKMS]
 ,[LastModifierCode],[OrganizeId]
@@ -1222,7 +1223,7 @@ order by SSOrder ";
         /// <returns></returns>
         public IList<PatZDListVO> GetPatHisZDInfo(string bah, string zyh, string orgId, int? zdlb)
         {
-            string sql = @"select @bah BAH,OrganizeId,ZYH,convert(int,zdlx) ZDOrder,JBDM ,JBMC,
+            string sql = @"select @bah BAH,OrganizeId,ZYH,zddl zdlb,zdlx,px ZDOrder,JBDM ,JBMC,
 convert(varchar(2)," + ((int)EnumRybq.y).ToString() + ") RYBQ,'有' RYBQMS," +
 "convert(varchar(2)," + ((int)EnumCyqk.zy).ToString() + @") CYQK,'治愈' CYQKMS
 from V_HIS_InpPatDiag with(nolock)
