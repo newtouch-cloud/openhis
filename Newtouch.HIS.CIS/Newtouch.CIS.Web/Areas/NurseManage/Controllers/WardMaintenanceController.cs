@@ -23,6 +23,7 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         private readonly IPatientRyDiagnosisApp _patientRyDiagnosisApp;
 		private readonly IInpatientBedCardRepo _InpatientBedCardRepo;
         private readonly ISysDiagnosisRepo _sysDiagnosisRepo;
+        private readonly ISysTCMSyndromeRepo _sysTcmsyndromeRepo;
         public ActionResult WardWardRoomBedMaintenance()
         {
             return View();
@@ -245,23 +246,30 @@ namespace Newtouch.CIS.Web.Areas.NurseManage.Controllers
         /// 中西医诊断
         /// </summary>
         /// <returns></returns>
-        public ActionResult GetryzdSelect(string ryzd, string ybnhlx)
+        public ActionResult GetryzdSelect(string ryzd, string ybnhlx,string zdlb=null)
         {
             if (string.IsNullOrEmpty(ybnhlx))
             {
                 ybnhlx = null;
             }
-            var data = _sysDiagnosisRepo.GetList(this.OrganizeId, ryzd, "WM", ybnhlx);
-            var zydata = _sysDiagnosisRepo.GetList(this.OrganizeId, ryzd, "TCM", ybnhlx);
             List<ZDSelect> zdlist = new List<ZDSelect>();
-            foreach (SysDiagnosisVEntity item in zydata)
+            IList<SysDiagnosisVEntity> data = new List<SysDiagnosisVEntity>();
+            IList<SysTCMSyndromeVEntity> zyzhdata = new List<SysTCMSyndromeVEntity>();
+            if (zdlb == "ZYZH")//中医症候
+            {
+                zyzhdata = _sysTcmsyndromeRepo.GetList(this.OrganizeId, ryzd);
+            }
+            else {
+                data = _sysDiagnosisRepo.GetList(this.OrganizeId, ryzd, zdlb, ybnhlx);
+            }
+            foreach (SysTCMSyndromeVEntity item in zyzhdata)
             {
                 ZDSelect a = new ZDSelect();
-                a.zdbh = item.zdCode;
-                a.icd10 = item.icd10 == null ? "" : item.icd10;
-                a.zdmc = item.zdmc;
+                a.zdbh = item.zhCode;
+                a.icd10 = item.zhCode == null ? "" : item.zhCode;
+                a.zdmc = item.zhmc;
                 a.py = item.py;
-                a.zdnm = item.zdId;
+                a.zdnm = item.zhId;
                 zdlist.Add(a);
             }
             foreach (SysDiagnosisVEntity item in data)

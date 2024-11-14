@@ -14,22 +14,22 @@
                 <tr>
                     <th class="formTitle "><span style="color:red;">*</span> 类别：</th>
                     <td class="formValue">
-                        <label><input type="radio" id="radioTreating" name="optionsRadios" class="optionsRadios formClearIgnore"  value="WM" ) />西医</label>
-                        <label><input type="radio" id="radioTreated" checked="checked" name="optionsRadios" class="optionsRadios formClearIgnore" value="TCM" />中医</label>
+                        <label><input type="radio" id="radioTreating" checked="checked" name="optionsRadios" class="optionsRadios formClearIgnore" value="WM" ) />西医</label>
+                        <label><input type="radio" id="radioTreated" name="optionsRadios" class="optionsRadios formClearIgnore" value="TCM" />中医</label>
                     </td>
                 </tr>
-                <tr>
+                <tr id="xyzdlx">
                     <th class="formTitle ">诊断类型：</th>
                     <td class="formValue">
-                        <select name="zdlx" id="zdlx" class="form-control">
-                            <option value="3">主病</option>
-                            <option value="4">主证</option>
-                            <option value="1">主要诊断</option>
-                            <option value="2">次要诊断</option>
+                        <select name="zdlx" id="zdlx" class="form-control" data-enumtype="EnumZdlxbs">
                         </select>
-                        @*<select name="zdlx" id="zdlx" class="form-control" data-enumtype="EnumZdlxbs">
-                            <option>请选择</option>
-                        </select>*@
+                    </td>
+                </tr>
+                <tr id="zyzdlx" style="display:none">
+                    <th class="formTitle ">诊断类型：</th>
+                    <td class="formValue">
+                        <select name="zdlx2" id="zdlx2" class="form-control" data-enumtype="EnumZyZdlxbs">
+                        </select>
                     </td>
                 </tr>
                 <tr>
@@ -51,11 +51,11 @@
                     </td>
                 </tr>
                 @*<tr>
-                    <th class="formTitle ">次序</th>
-                    <td class="formValue">
-                        <input id="zd_px" name="zd_px" class="form-control" />
-                    </td>
-                </tr>*@
+            <th class="formTitle ">次序</th>
+            <td class="formValue">
+                <input id="zd_px" name="zd_px" class="form-control" />
+            </td>
+        </tr>*@
                 <tr>
                     <th class="formTitle "></th>
                     <td class="formValue">
@@ -82,6 +82,13 @@
 	//var addlist = [];
 	var zddata = {};
 	function getzddata() {
+	    var zdlx = "";
+	    if ($("input[name='optionsRadios']:checked").val() == "WM") {
+	        zdlx = $("#zdlx").val();
+	    }
+	    else {
+	        zdlx = $("#zdlx2").val();
+	    }
 		zddata = {
 			BAH: $("#BAH").val(),
 			ZYH: $("#ZYH").val(),
@@ -92,7 +99,7 @@
 			CYQK: $("#zd_cyqk").val(),
 			CYQKMS: $("#zd_cyqk option:selected").text(),
 			ZDOrder: $("#zd_px").val(),
-			ZDLX: $("#zdlx").val(),
+			ZDLX: zdlx,
 			ZDLB:$("input[name='optionsRadios']:checked").val(),
 			ztsm: ""
 
@@ -219,7 +226,7 @@
 				//        return '<input type="button" onclick="btn_edit(' + option.rowid + ')" />';
 				//    }
 				//},
-                { label: "ZDLB", name: "ZDLB", width: 60, align: 'left', editor: "text", hidden: true },
+                { label: "ZDLB", name: "ZDLB", width: 60, align: 'left', editor: "text", hidden: false },
                 {
                     label: "诊断类别", name: "ZDLBMC", width: 60, align: 'left', editor: "text", formatter: function (row, option, data) {
                         if (data.ZDLB == "WM") {
@@ -239,24 +246,27 @@
 				{ label: "CYQK", name: "CYQK", hidden: true },
 				{ label: "出院情况", name: "CYQKMS", width: 60, align: 'left', editor: "text" },
 				{ label: "ZDOrder", name: "ZDOrder", hidden: true },
-                { label: "ZDLX", name: "ZDLX", width: 50, hidden: true },
+                { label: "ZDLX", name: "ZDLX", width: 50, hidden: false },
 				{
 					label: "诊断类型", name: "Zdlxmc", width: 80, align: 'left', editor: "text", formatter: function (row, option, data) {
-					   if (data.ZDLX == "3")
+					    if (data.ZDLB == "TCM" && data.ZDLX=="1")
 						{
 						    return "主病";
 						}
-						else if (data.ZDLX == "4") {
+					    else if (data.ZDLB == "TCM" && data.ZDLX == "2") {
 						    return "主证";
 						}
-						else if (data.ZDLX == "1") {
+						else if (data.ZDLB == "WM" && data.ZDLX == "1") {
 						    return "主要诊断";
 						}
-					   if (data.ZDOrder == 1) {
+						else if (data.ZDLB == "WM" && data.ZDLX == "2") {
+						    return "次要诊断";
+						}
+					    else if (data.ZDOrder == 1) {
 					       return "主要诊断";
 					   }
 						else
-							return "其他诊断";
+					        return "次要诊断";
 					}
 				},
 				{ label: "zt", name: "zt", hidden: true },
@@ -307,13 +317,31 @@
 
 	$("#zd_cyzd").zxyzdFloatingSelector({
 	    ajaxparameters: function ($thisinput) {
-	        return "keyword=" + $.trim($thisinput.val()) + "&zdlx=" + $("input[name='optionsRadios']:checked").val() + "&zdtype=" + $("#zdlx").val();
+	        var zdlx="";
+	        if ($("input[name='optionsRadios']:checked").val() == "WM") {
+	            zdlx = $("#zdlx").val();
+	        }
+	        else {
+	            zdlx = $("#zdlx2").val();
+	        }
+	        return "keyword=" + $.trim($thisinput.val()) + "&zdlx=" + $("input[name='optionsRadios']:checked").val() + "&zdtype=" + zdlx;
 	    },
 		width: 600,
 		itemdbclickhandler: function ($this) {
 			$("#zd_cyzd").val($this.attr('data-zdmc')).attr("attr-zddm", $this.attr('data-zdCode')).attr("attr-ICD10", $this.attr('data-icd10'));
 		}
 	});
+	$("input[name='optionsRadios']").change(function () {
+	    debugger;
+	   
+	    if ($("input[name='optionsRadios']:checked").val() == "WM") {
+	        $("#xyzdlx").show();
+	        $("#zyzdlx").hide() 
+	    } else {
+	        $("#xyzdlx").hide(); 
+	        $("#zyzdlx").show(); 
+	    }
+	})
 	//function btn_edit(val) {
 	//    alert(val);
 	//}

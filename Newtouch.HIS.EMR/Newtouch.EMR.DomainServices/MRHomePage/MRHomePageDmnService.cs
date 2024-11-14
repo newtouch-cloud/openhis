@@ -400,6 +400,7 @@ order by SSOrder ";
         public void ZdListSubmit(List<BasyZdDto> list, string orgId)
         {
             int i = 1;
+            int zycnt = 1;
             int flag = 0;
             if (list != null && list.Count > 0)
             {
@@ -431,7 +432,10 @@ order by SSOrder ";
 
                                 if (zdety.zt == "1")
                                 {
-                                    zdety.ZDOrder = i;
+                                    if (v.ZDLB == "TCM")
+                                        zdety.ZDOrder = zycnt;
+                                    else
+                                        zdety.ZDOrder = i;
                                 }
 
                                 flag = 1;
@@ -458,8 +462,11 @@ order by SSOrder ";
                         zdety.ZDLX = v.ZDLX;
                         zdety.ZDLB = v.ZDLB;
                         zdety.zt = v.zt;
-                        zdety.ZDOrder = i;
 
+                        if (v.ZDLB == "TCM")
+                            zdety.ZDOrder = zycnt;
+                        else
+                            zdety.ZDOrder = i;
                         zdety.Create(true);
                         _MrbasyzdRepo.Insert(zdety);
                     }
@@ -467,7 +474,10 @@ order by SSOrder ";
                     flag = 0;
                     if (v.zt != "0")
                     {
-                        i++;
+                        if (v.ZDLB == "TCM")
+                            zycnt++;
+                        else
+                            i++;
                     }
 
                 }
@@ -1364,7 +1374,7 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                 new SqlParameter("@zyh",zyh),
                 new SqlParameter("@orgId", orgId)});
 
-                var sqlcx2 = "select Id,ZYH,ZDOrder,JBDM,JBMC,CYQK,ZT,CreateTime,CreatorCode,OrganizeId from [Newtouch_EMR].[dbo].[mr_basy_zd]  a  where  " +
+                var sqlcx2 = "select Id,ZYH,ZDLB,ZDLX,ZDOrder,JBDM,JBMC,CYQK,ZT,CreateTime,CreatorCode,OrganizeId from [Newtouch_EMR].[dbo].[mr_basy_zd]  a  where  " +
                     " a.zyh = @zyh and a.OrganizeId = @orgId and a.jbdm <> '999999999' and a.zt = '1' order by ZDOrder ";
                 var data2 = this.FindList<PatZDListVO>(sqlcx2, new SqlParameter[] {
                 new SqlParameter("@zyh",zyh),
@@ -1378,20 +1388,22 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                         //i = int.Parse(datacount.ToString());
                         var zdlx = datacount + i;
                         var sql = "insert into [Newtouch_CIS]..zy_PatDxInfo  " +
-                            "values(@Id, @OrganizeId, @zyh, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk)";
+                            "values(@Id, @OrganizeId, @zyh, @zddl,@zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk,@px)";
 
                         this.ExecuteSqlCommand(sql, new SqlParameter[] {
                             new SqlParameter("@Id", data2[i].Id),
                             new SqlParameter("@OrganizeId", data2[i].OrganizeId),
                             new SqlParameter("@zyh", data2[i].ZYH),
+                            new SqlParameter("@zddl", data2[i].ZDLB),
                             new SqlParameter("@zdlb", "2"),
-                            new SqlParameter("@zdlx", zdlx),
+                            new SqlParameter("@zdlx", data2[i].ZDLX),
                             new SqlParameter("@zddm", data2[i].JBDM),
                             new SqlParameter("@zdmc", data2[i].JBMC),
                             new SqlParameter("@CreateTime", data2[i].CreateTime),
                             new SqlParameter("@CreatorCode", data2[i].CreatorCode),
                             new SqlParameter("@zt", data2[i].zt),
                             new SqlParameter("@cyqk", data2[i].CYQK),
+                            new SqlParameter("@px", data2[i].ZDOrder),
                             });
                     }
                 }
@@ -1403,20 +1415,22 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                         //i = int.Parse(datacount.ToString());
                         var zdlx = datacount + i;
                         var sql = "insert into [Newtouch_CIS]..zy_PatDxInfo  " +
-                            "values(@Id, @OrganizeId, @zyh, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk)";
+                            "values(@Id, @OrganizeId, @zyh,@zddl, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk,@px)";
 
                         this.ExecuteSqlCommand(sql, new SqlParameter[] {
                             new SqlParameter("@Id", data2[i].Id),
                             new SqlParameter("@OrganizeId", data2[i].OrganizeId),
                             new SqlParameter("@zyh", data2[i].ZYH),
+                            new SqlParameter("@zddl", data2[i].ZDLB),
                             new SqlParameter("@zdlb", "2"),
-                            new SqlParameter("@zdlx", zdlx),
+                            new SqlParameter("@zdlx", data2[i].ZDLX),
                             new SqlParameter("@zddm", data2[i].JBDM),
                             new SqlParameter("@zdmc", data2[i].JBMC),
                             new SqlParameter("@CreateTime", data2[i].CreateTime),
                             new SqlParameter("@CreatorCode", data2[i].CreatorCode),
                             new SqlParameter("@zt", data2[i].zt),
                             new SqlParameter("@cyqk", data2[i].CYQK),
+                            new SqlParameter("@px", data2[i].ZDOrder),
                             });
                     }
                 }
