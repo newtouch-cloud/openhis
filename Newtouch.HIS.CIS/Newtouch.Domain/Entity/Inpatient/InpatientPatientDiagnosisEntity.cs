@@ -30,6 +30,10 @@ namespace Newtouch.Domain.Entity
         /// <returns></returns>
         public string zyh { get; set; }
         /// <summary>
+        /// WM 西医  TCM 中医
+        /// </summary>
+        public string zddl { get; set; }
+        /// <summary>
         /// 1入院诊断2出院诊断
         /// </summary>
         /// <returns></returns>
@@ -79,7 +83,13 @@ namespace Newtouch.Domain.Entity
         /// </summary>
         /// <returns></returns>
         public string zt { get; set; }
-
+        /// <summary>
+        /// 出院情况
+        /// </summary>
         public int? cyqk { get; set; }
+        /// <summary>
+        /// 排序
+        /// </summary>
+        public int? px { get; set; }
     }
 }

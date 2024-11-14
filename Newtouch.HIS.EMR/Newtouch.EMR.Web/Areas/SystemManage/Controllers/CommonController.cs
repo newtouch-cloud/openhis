@@ -252,7 +252,7 @@ namespace Newtouch.EMR.Web.Areas.SystemManage.Controllers
             {
                 ybnhlx = null;
             }
-            if (zdtype == ((int)EnumZdlxbs.zz).ToString())
+            if (zdtype == ((int)EnumZyZdlxbs.cy).ToString()&&zdlx=="TCM")
             {
                 //var zzlist = _sysTcmsyndromeRepo.GetList(this.OrganizeId, keyword);
                 var zzlist = _CommonDmnService.GetZyzhList(this.OrganizeId,keyword);

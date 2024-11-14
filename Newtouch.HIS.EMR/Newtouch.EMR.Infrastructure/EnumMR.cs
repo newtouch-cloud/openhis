@@ -258,22 +258,28 @@ namespace Newtouch.EMR.Infrastructure.EnumMR
 	/// </summary>
 	public enum EnumZdlxbs
 	{
-        [Description("主病")]
-        zb = 3,
-        [Description("主证")]
-        zz = 4,
         [Description("主要诊断")]
 		zy = 1,
 		[Description("次要诊断")]
 		cy = 2
         
     }
-
-
-	/// <summary>
-	/// 入院途径
+    /// <summary>
+	/// 诊断类型-主从
 	/// </summary>
-	public enum EnumRYTJ
+	public enum EnumZyZdlxbs
+    {
+        [Description("主病")]
+        zy = 1,
+        [Description("主证")]
+        cy = 2
+
+    }
+
+    /// <summary>
+    /// 入院途径
+    /// </summary>
+    public enum EnumRYTJ
 	{
 		/// <summary>
 		/// 门诊

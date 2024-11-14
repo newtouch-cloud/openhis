@@ -702,14 +702,14 @@ where OrganizeId=@orgId and zt='1' ";
         {
             string sql = @"
 select zhCode zdCode,zhmc zdmc,py,zhCode icd10,'' icd10fjm from NewtouchHIS_Base..xt_zyzh  with(nolock)
-where OrganizeId=@orgId and zt='1' ";
+where  zt='1' ";
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 sql += " and ((charindex(@keyword,zhmc)>0) or (charindex(@keyword,py)>0) )  ";
             }
             return this.FindList<SysDiagZyzh>(sql, new SqlParameter[] {
-                 new SqlParameter("@orgId",orgId),
+                 //new SqlParameter("@orgId",orgId),
                  new SqlParameter("@keyword",keyword??"")
             });
         }

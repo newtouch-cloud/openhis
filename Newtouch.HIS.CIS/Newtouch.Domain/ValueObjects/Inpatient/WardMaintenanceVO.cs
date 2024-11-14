@@ -59,12 +59,14 @@ namespace Newtouch.Domain.ValueObjects.Inpatient
     public class PatDiagnosisVO
     {
         public string Id { get; set; }
+        public string zddl { get; set; }
         public string zdlb { get; set; }
         public string zdlx { get; set; }
         public string zddm { get; set; }
         public string zdmc { get; set; }
         public string zdyzdmc { get; set; }
         public string cyqk { get; set; }
+        public int px { get; set; }
     }
 
     /// <summary>
