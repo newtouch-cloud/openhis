@@ -246,9 +246,9 @@ where czjl.createtime=@bysj
 			var sqlstr = new StringBuilder();
 			var par = new List<SqlParameter>();
 			sqlstr = sqlstr.Append(@" SELECT  [Id]
-              ,[zddl]
+              ,isnull(zddl,'WM') zddl
               ,[zdlb]
-              ,[zdlx]
+              ,case when [zdlx]='0' then '1' else zdlx end zdlx
               ,[zddm]
               ,[zdmc]
               ,[zdyzdmc]
