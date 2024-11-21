@@ -183,40 +183,25 @@ namespace Newtouch.EMR.Web.Areas.MRHomePage.Controllers
         public ActionResult SubmitZdList(List<BasyZdDto> dto,string zyh,string Code)
         {
             var data = "";
-            try {
-                if (dto != null && dto.Count > 0)
+            if (dto != null && dto.Count > 0)
+            {
+                //结算病人信息
+                var jsbrxx = _MainRecordDmnService.SettlementQuery(zyh, this.OrganizeId);
+                //是否同步动态参数信息
+                var dtcsxx = _MainRecordDmnService.DiagnosticSave(Code, this.OrganizeId);
+                //结算病人是否允许新增修改诊断 ON 可编辑  OFF 不可编辑
+                var outpatDiagModify = _MainRecordDmnService.DiagnosticSave("OutpatDiagModifyOpen", this.OrganizeId);
+                //判断是否结算病人
+                if (jsbrxx.Count > 0)
                 {
-                    //结算病人信息
-                    var jsbrxx = _MainRecordDmnService.SettlementQuery(zyh, this.OrganizeId);
-                    //是否同步动态参数信息
-                    var dtcsxx = _MainRecordDmnService.DiagnosticSave(Code, this.OrganizeId);
-                    //结算病人是否允许新增修改诊断 ON 可编辑  OFF 不可编辑
-                    var outpatDiagModify = _MainRecordDmnService.DiagnosticSave("OutpatDiagModifyOpen", this.OrganizeId);
-                    //判断是否结算病人
-                    if (jsbrxx.Count > 0)
+                    if (outpatDiagModify.Count > 0)
                     {
-                        if (outpatDiagModify.Count > 0)
+                        if (outpatDiagModify[0].Value == "OFF" || outpatDiagModify[0].Value == "off")
                         {
-                            if (outpatDiagModify[0].Value == "OFF" || outpatDiagModify[0].Value == "off")
-                            {
-                                data = "已结算病人不能添加/修改诊断信息";
-                            }
-                            else
-                            {
-                                //保存诊断
-                                _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
-                                data = "诊断信息保存成功";
-                                if (dtcsxx.Count > 0)
-                                {
-                                    if (dtcsxx[0].Value == "ON" || dtcsxx[0].Value == "on")
-                                    {
-                                        //同步诊断信息至CIS出院诊断
-                                        _MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
-                                    }
-                                }
-                            }
+                            data = "已结算病人不能添加/修改诊断信息";
                         }
-                        else {
+                        else
+                        {
                             //保存诊断
                             _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
                             data = "诊断信息保存成功";
@@ -228,28 +213,38 @@ namespace Newtouch.EMR.Web.Areas.MRHomePage.Controllers
                                     _MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
                                 }
                             }
-
                         }
                     }
                     else {
-                        //没有结算并且参数开启时同步和保存诊断
+                        //保存诊断
                         _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
                         data = "诊断信息保存成功";
-
-                        if (dtcsxx.Count > 0) {
+                        if (dtcsxx.Count > 0)
+                        {
                             if (dtcsxx[0].Value == "ON" || dtcsxx[0].Value == "on")
                             {
-                                //同步诊断信息
+                                //同步诊断信息至CIS出院诊断
                                 _MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
                             }
+                        }
+
+                    }
+                }
+                else {
+                    //没有结算并且参数开启时同步和保存诊断
+                    _MainRecordDmnService.ZdListSubmit(dto, OrganizeId);
+                    data = "诊断信息保存成功";
+
+                    if (dtcsxx.Count > 0) {
+                        if (dtcsxx[0].Value == "ON" || dtcsxx[0].Value == "on")
+                        {
+                            //同步诊断信息
+                            _MainRecordDmnService.SynchronizationZD(zyh, this.OrganizeId);
                         }
                     }
                 }
             }
-            catch (Exception e) {
-                data = e.Message;
-            }
-            data = "{\"data\":\""+ data + "\"}";
+            data = "{\"state\":\"success\",\"data\":\"" + data + "\"}";
             return Content(data.ToJson().ToString());
         }
 

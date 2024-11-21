@@ -1735,10 +1735,10 @@ FROM (
 	,dbo.f_getYfbmYpComplexYpSlandDw(d.zxdwsl, @yfbmCode, d.ypCode, @OrganizeId) slStr, CONCAT(d.yl,d.yldw) ylStr, rdb.zytyapplyno
 	,d.dj, LTRIM(RTRIM(d.ph)) ph, LTRIM(RTRIM(d.pc)) pc, d.zhyz, rdb.applyNo, rdbd.Id rdbdId
 	FROM (
-		SELECT SUM(s.zxdwsl) zxdwsl, s.pc, s.ph, s.ypCode, s.yzId, s.zxId, s.zyh, s.fybz, s.zhyz
+		SELECT lyxh,SUM(s.zxdwsl) zxdwsl, s.pc, s.ph, s.ypCode, s.yzId, s.zxId, s.zyh, s.fybz, s.zhyz
 		,s.patientName, s.cw, s.yl, s.yldw, s.pcmc, s.zh, s.zlff, s.dj, s.je, s.yzxz
 		FROM (
-			SELECT c.sl zxdwsl, c.pc, c.ph, c.ypCode, a.yzId, a.zxId, a.zyh, a.fybz,a.zhyz
+			SELECT lyxh,c.sl zxdwsl, c.pc, c.ph, c.ypCode, a.yzId, a.zxId, a.zyh, a.fybz,a.zhyz
 			,a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz 
 			FROM NewtouchHIS_PDS.dbo.zy_ypyzxx(NOLOCK) a 
 			INNER JOIN NewtouchHIS_PDS.dbo.zy_ypyzzxph(NOLOCK) c ON c.zxId=a.zxId AND c.yzId=a.yzId AND c.ypCode=a.ypCode AND c.zt='1' AND c.gjzt='0' AND c.OrganizeId=a.OrganizeId
@@ -1748,7 +1748,7 @@ FROM (
             AND ISNULL(a.zh,'')=ISNULL(c.zh,'')
 			AND a.Id=c.zyypxxId
 			UNION ALL
-			SELECT -1*c.sl zxdwsl, c.pc, c.ph, c.ypCode, a.yzId, a.zxId, a.zyh, a.fybz,a.zhyz
+			SELECT lyxh,-1*c.sl zxdwsl, c.pc, c.ph, c.ypCode, a.yzId, a.zxId, a.zyh, a.fybz,a.zhyz
 			,a.patientName, a.cw, a.yl, a.yldw, a.pcmc, a.zh, a.zlff, a.dj, a.je, a.yzxz
 			FROM NewtouchHIS_PDS.dbo.zy_ypyzxx(NOLOCK) a 
 			INNER JOIN NewtouchHIS_PDS.dbo.zy_tymx(NOLOCK) c ON c.ypCode=a.ypCode AND c.zxId=a.zxId AND c.yzId=a.yzId AND c.OrganizeId=a.OrganizeId AND c.zt='1'
@@ -1759,7 +1759,7 @@ FROM (
 		GROUP BY s.pc, s.ph, s.ypCode, s.yzId, s.zxId, s.patientName, s.cw, s.yl, s.yldw, s.pcmc, s.zh, s.zlff, s.dj, s.je, s.yzxz, s.zyh, s.fybz, s.zhyz
 	) d
 	INNER JOIN dbo.zy_returnDrugApplyBill(NOLOCK) rdb ON  rdb.yzId=d.yzId AND rdb.OrganizeId=@OrganizeId AND rdb.zt='1'
-	INNER JOIN dbo.zy_returnDrugApplyBillDetail(NOLOCK) rdbd ON rdb.Id=rdbd.rabId AND rdbd.ypCode=d.ypCode AND rdbd.zt='1'
+	INNER JOIN dbo.zy_returnDrugApplyBillDetail(NOLOCK) rdbd ON rdb.Id=rdbd.rabId AND rdbd.ypCode=d.ypCode and rdbd.lyxh=d.lyxh AND rdbd.zt='1'
 	INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_yp yp ON yp.ypCode=d.ypCode AND yp.OrganizeId=rdb.OrganizeId
 	INNER JOIN NewtouchHIS_Base.dbo.V_S_xt_ypsx ypsx ON ypsx.ypId=yp.ypId AND ypsx.OrganizeId=@OrganizeId
 	WHERE rdb.ProcessState='0' AND rdb.zytyapplyno=@zytyapplyno
