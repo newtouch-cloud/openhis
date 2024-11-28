@@ -388,14 +388,14 @@ left join Drjk_zyfymxsc_input (NOLOCK) fymx on SUBSTRING(fymx.feedetl_sn,3,50)=x
             StringBuilder strSql = new StringBuilder();
             strSql.Append(@"select  a.szje,a.zhye,a.pzh,s.Name Creator,a.CreateTime,a.szxz,b.xjzffsmc,b.xjzffs,a.Id,szjl.Id tId  
 from [NewtouchHIS_Sett].[dbo].[zy_brjbxx] z with(nolock) 
-left join xt_zhszjl a WITH ( NOLOCK ) on z.patid=a.patid and a.OrganizeId=z.OrganizeId and z.zt='1' 
+left join zy_zhszjl a WITH ( NOLOCK ) on z.zyh=a.zyh and a.OrganizeId=z.OrganizeId and z.zt='1' 
 LEFT JOIN xt_xjzffs b WITH ( NOLOCK ) ON a.xjzffs = b.xjzffs 
 LEFT JOIN NewtouchHIS_Base..V_C_Sys_UserStaff s ON s.Account=a.CreatorCode 
-LEFT JOIN dbo.xt_zhszjl szjl ON szjl.pzh = a.pzh 
+LEFT JOIN dbo.zy_zhszjl szjl ON szjl.pzh = a.pzh 
 AND szjl.szje + a.szje = 0 AND a.szje > 0  
 AND szjl.zt = '1' 
 WHERE z.zyh=@zyh and  
-a.OrganizeId = '6d5752a7-234a-403e-aa1c-df8b45d3469f' AND a.zt = '1' 
+a.OrganizeId =@orgId AND a.zt = '1' 
 ORDER BY a.CreateTime DESC");
             SqlParameter[] par = {
                     new SqlParameter("@zyh", zyh),

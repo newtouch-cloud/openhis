@@ -510,7 +510,6 @@ $.fn.multiquencyNewtouchFloatingSelector = function (options, data) {
 
         //单击其他 隐藏浮层
         $(document).click(function (e) {
-            debugger;
             e = e || window.event;
             $target = $(e.target);
             var elem = e.target || e.srcElement;
