@@ -525,7 +525,18 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 
                     // 用户点击了“保存文档”按钮，
                     // 则试图从WEB请求中加载文档然后保存
-                    loaded = eng.LoadDocumentFromRequestFormData();
+                    int loop = 1;
+                    while (loop < 20) //加载护理记录xml文档存在延迟情况
+                    {
+                        try {
+                            loaded = eng.LoadDocumentFromRequestFormData();
+                        }
+                        catch (Exception er) {
+                            loop++;
+                        }
+                        if (loaded)
+                            break;
+                    }
                     if (loaded)
                     {
                         eng.SaveDocument(currentFileName + blxtmc_hj.Trim() + ".xml", null);
