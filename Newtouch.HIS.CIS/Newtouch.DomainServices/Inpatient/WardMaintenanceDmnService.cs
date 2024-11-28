@@ -246,12 +246,14 @@ where czjl.createtime=@bysj
 			var sqlstr = new StringBuilder();
 			var par = new List<SqlParameter>();
 			sqlstr = sqlstr.Append(@" SELECT  [Id]
+              ,isnull(zddl,'WM') zddl
               ,[zdlb]
-              ,[zdlx]
+              ,case when [zdlx]='0' then '1' else zdlx end zdlx
               ,[zddm]
               ,[zdmc]
               ,[zdyzdmc]
-              ,convert(varchar(2),cyqk)cyqk
+              ,convert(varchar(2),cyqk) cyqk
+              ,isnull(px,1) px
             FROM [Newtouch_CIS].[dbo].[zy_PatDxInfo]
             WHERE zt='1' and zdlb='2' ");
 			if (req != null)
@@ -265,8 +267,8 @@ where czjl.createtime=@bysj
 					sqlstr.Append("  AND zyh=@zyh ");
 				}
 			}
-			sqlstr.Append("  order by convert(int,zdlx)  ");
-			par.Add(new SqlParameter("@OrganizeId", req.OrganizeId));
+            sqlstr.Append("  order by zddl, convert(int,zdlx),px  ");
+            par.Add(new SqlParameter("@OrganizeId", req.OrganizeId));
 			par.Add(new SqlParameter("@zyh", req.zyh));
 			return this.FindList<PatDiagnosisVO>(sqlstr.ToString(), par.ToArray());
 		}
@@ -671,8 +673,10 @@ where czjl.createtime=@bysj
 						diaEntity.Id = Guid.NewGuid().ToString();
 						diaEntity.OrganizeId = OrganizeId;
 						diaEntity.zyh = PatDxEntity.zyh;
+                        diaEntity.zddl = PatDxEntity.zddl;
 						diaEntity.zdlb = PatDxEntity.zdlb;
 						diaEntity.zdlx = PatDxEntity.zdlx;
+                        diaEntity.px = PatDxEntity.px;
 						diaEntity.zddm = PatDxEntity.zddm;
 						diaEntity.zdmc = PatDxEntity.zdmc;
 						diaEntity.cyqk = Convert.ToInt32(PatDxEntity.cyqk);

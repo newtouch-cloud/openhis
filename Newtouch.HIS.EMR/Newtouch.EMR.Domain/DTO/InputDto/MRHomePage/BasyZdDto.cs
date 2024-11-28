@@ -65,5 +65,13 @@ namespace Newtouch.EMR.Domain.DTO.InputDto
         public string CYQKMS { get; set; }
 
         public string zt { get; set; }
+        /// <summary>
+        /// 1主要诊断 2其他诊断 3 中医主病 4 中医主证
+        /// </summary>
+        public string ZDLX { get; set; }
+        /// <summary>
+        /// WM:西医 TCM中医
+        /// </summary>
+        public string ZDLB { get; set; }
     }
 }

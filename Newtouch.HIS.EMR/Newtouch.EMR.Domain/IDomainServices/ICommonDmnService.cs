@@ -165,6 +165,13 @@ namespace Newtouch.EMR.Domain.IDomainServices
         /// <param name="keyword"></param>
         /// <returns></returns>
         IList<xt_bq> GetInpatientArea(string orgId, string keyword);
+        /// <summary>
+        /// 中医症候
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="keyword"></param>
+        /// <returns></returns>
+        IList<SysDiagZyzh> GetZyzhList(string orgId, string keyword);
 
         #region 医嘱打印
         /// <summary>

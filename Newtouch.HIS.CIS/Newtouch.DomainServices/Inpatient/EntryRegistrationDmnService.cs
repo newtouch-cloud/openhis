@@ -418,9 +418,11 @@ FROM    dbo.zy_brxxk zyxx
             StringBuilder sqlStr = new StringBuilder();
             var parlist = new List<SqlParameter>();
             sqlStr.Append(@" SELECT 
-    zyxx.id , zyxx.zyh ,zyxx.xm ,zyxx.sex ,zyxx.brxzdm brxz,
-CAST(FLOOR(DATEDIFF(DY, zyxx.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl ,
-cw.cwmc ,zyxx.ryrq ,  zyxx.brxzmc, zyxx.zdmc zzdmc,cyzd.zdmc cyzdmc,  staff.Name ysxm,zyxx.cqrq,zyxx.CreateTime,zyxx.CreatorCode
+    zyxx.id , zyxx.zyh ,zyxx.xm ,zyxx.sex ,zyxx.brxzdm brxz
+,CAST(FLOOR(DATEDIFF(DY, zyxx.birth, GETDATE()) / 365.25) AS VARCHAR(5)) nl 
+,cw.cwmc ,zyxx.ryrq ,  zyxx.brxzmc, zyxx.zdmc zzdmc
+,(select top 1 zdmc from zy_PatDxInfo cyzd where cyzd.zdlb=2 and cyzd.zt=1  and (cyzd.zdlx='1' or cyzd.zdlx='0') and cyzd.zyh=zyxx.zyh) cyzdmc
+,staff.Name ysxm,zyxx.cqrq,zyxx.CreateTime,zyxx.CreatorCode
 FROM    dbo.zy_brxxk zyxx
         INNER JOIN NewtouchHIS_Base..V_S_xt_bq bq ON bq.bqCode = zyxx.WardCode
                                                      AND bq.OrganizeId = zyxx.OrganizeId
@@ -429,7 +431,7 @@ FROM    dbo.zy_brxxk zyxx
                                                     AND cw.OrganizeId = zyxx.OrganizeId
         LEFT JOIN NewtouchHIS_Base..V_S_Sys_Staff staff ON staff.gh = zyxx.ysgh
                                                    AND staff.OrganizeId = zyxx.OrganizeId
-        LEFT JOIN zy_PatDxInfo cyzd on cyzd.zyh=zyxx.zyh and cyzd.zdlb=2 and cyzd.zdlx=0 and cyzd.zt=1 
+        --LEFT JOIN zy_PatDxInfo cyzd on cyzd.zyh=zyxx.zyh and cyzd.zdlb=2 and cyzd.zdlx=0 and cyzd.zt=1 
         WHERE 1 = 1 and  zyxx.OrganizeId=@orgId ");
             parlist.Add(new SqlParameter("@orgId", orgId.ToString()));
             if (!string.IsNullOrWhiteSpace(keyword))

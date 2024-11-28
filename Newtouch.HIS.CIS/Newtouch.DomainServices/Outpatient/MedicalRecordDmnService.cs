@@ -1091,7 +1091,17 @@ where zyzd.zdlx = 1 and jzId = @jzId and zyzd.zt = '1'", new[] { new SqlParamete
                             };
 
                             var cfmxList = _prescriptionDetailRepo.IQueryable(p => p.cfId == cf.cfId && p.zt == "1").ToList();
-                            var list = cfmxList.Select(cfmx => new TreamentItemVO { sfxm = cfmx.xmCode, dczll = cfmx.mczll, zxcs = Convert.ToInt32(cfmx.sl), dw = cfmx.dw, zzfbz = cfmx.zzfbz, ztId = cfmx.ztId, ztmc = cfmx.ztmc, ztsl = cfmx.ztsl }).Where(p => p.sl > 0).ToList();
+                            var list = cfmxList.Select(cfmx => new TreamentItemVO { 
+                                sfxm = cfmx.xmCode,
+                                dczll = cfmx.mczll,
+                                zxcs = Convert.ToInt32(cfmx.sl),
+                                dw = cfmx.dw,
+                                zzfbz = cfmx.zzfbz,
+                                ztId = cfmx.ztId,
+                                ztmc = cfmx.ztmc,
+                                ztsl = cfmx.ztsl,
+                                sl = Convert.ToDecimal(cfmx.sl)
+                            }).Where(p => p.sl > 0).ToList();
                             dto.AddTreamentItems = list;
                             dtoList.Add(dto);
                             break;

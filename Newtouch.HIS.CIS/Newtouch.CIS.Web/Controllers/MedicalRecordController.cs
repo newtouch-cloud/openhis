@@ -503,8 +503,10 @@ namespace Newtouch.CIS.Web.Controllers
                 };
                 var apiResp = SiteSettAPIHelper.Request<APIRequestHelper.DefaultResponse<SignInStateRequest>>(
                      "api/SignInAppointment/SignInState", reqObj);
-                if (apiResp.msg != null){
-                    return Success("接口调用失败【" + apiResp.msg + apiResp.sub_msg + "】");
+                if (apiResp.msg != null || apiResp.sub_msg != null)
+                {
+                    LogCore.Error("签到状态修改接口调用失败【" + apiResp.msg + apiResp.sub_msg + "】");
+                    throw new FailedException("签到状态修改接口调用失败【" + apiResp.msg + apiResp.sub_msg + "】");
                 }
             }
 

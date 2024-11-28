@@ -10,6 +10,6 @@ namespace Newtouch.HIS.Domain.IDomainServices.PharmacyDrugStorage
 {
     public interface ISysMedicineElectronicPrescriptionDmnService
     {
-        IList<SysMedicineElectronicPrescriptionVO> GetPaginationList(Pagination pagination, string genname, string medListCodg);
+        IList<SysMedicineElectronicPrescriptionVO> GetPaginationList(Pagination pagination, string genname, string medListCodg, string listType, string zt);
     }
 }

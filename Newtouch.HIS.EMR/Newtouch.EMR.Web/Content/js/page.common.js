@@ -44,6 +44,29 @@ $.fn.departmentFloatingSelector = function (options) {
     });
 }
 //诊断
+$.fn.zxyzdFloatingSelector = function (options) {
+    var defaults = {
+        url: '/SystemManage/Common/GetDiagnosisList',
+        width: 600,
+        height: 300,
+        clickautotrigger: true,
+        caption: "选择诊断",
+        ajaxparameters: null,   //请指定
+        itemdbclickhandler: null,
+        colModel: [
+           { label: '代码', name: 'zdCode', hidden: true },
+           { label: '名称', name: 'zdmc', widthratio: 60 },
+           { label: '拼音', name: 'py', widthratio: 20 },
+           { label: 'icd10', name: 'icd10', widthratio: 20 },
+           { label: 'icd10附加码', name: 'icd10fjm', hidden: true }
+        ]
+    };
+    var options = $.extend(defaults, options);
+
+    $(this).newtouchFloatingSelector(options);
+}
+
+//诊断
 $.fn.zdFloatingSelector = function (options) {
     var defaults = {
         url: '/SystemManage/Common/GetDiagnosisList',

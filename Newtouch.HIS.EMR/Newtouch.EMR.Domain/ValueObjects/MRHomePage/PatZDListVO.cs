@@ -28,7 +28,14 @@ namespace Newtouch.EMR.Domain.ValueObjects.MRHomePage
         /// </summary>
         /// <returns></returns>
         public int ZDOrder { get; set; }
-
+        /// <summary>
+        /// 诊断类型WM  1：主要诊断 2：次要诊断  TCM 1：中医主病 2：中医主证
+        /// </summary>
+        public string ZDLX { get; set; }
+        /// <summary>
+        /// WM  TCM
+        /// </summary>
+        public string ZDLB { get; set; }
         /// <summary>
         /// JBDM
         /// </summary>

@@ -6,6 +6,7 @@ using Newtouch.Core.Common.Utils;
 using Newtouch.EMR.Domain.Entity;
 using Newtouch.EMR.Domain.IDomainServices;
 using Newtouch.EMR.Domain.IRepository;
+using Newtouch.EMR.Infrastructure.EnumMR;
 using Newtouch.Tools;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace Newtouch.EMR.Web.Areas.SystemManage.Controllers
     {
         private readonly ICommonDmnService _CommonDmnService;
         private readonly ISysDiagnosisRepo _sysDiagnosisRepo;
+        private readonly ISysTCMSyndromeRepo _sysTcmsyndromeRepo;
         private readonly ISysDepartmentRepo _SysDepartmentRepo;
         private readonly Ibl_bllxRepo _BllxRepo;
         private readonly IBlmblbDmnService _BlmblbDmnService;
@@ -244,14 +246,22 @@ namespace Newtouch.EMR.Web.Areas.SystemManage.Controllers
         /// </summary>
         /// <param name="keyword"></param>
         /// <returns></returns>
-        public JsonResult GetDiagnosisList(string keyword, string zdlx, string ybnhlx)
+        public JsonResult GetDiagnosisList(string keyword, string zdlx, string zdtype,string ybnhlx)
         {
             if (string.IsNullOrEmpty(ybnhlx))
             {
                 ybnhlx = null;
             }
-            var list = _sysDiagnosisRepo.GetList(this.OrganizeId, keyword, zdlx, ybnhlx);
-            return Json(list, JsonRequestBehavior.AllowGet);
+            if (zdtype == ((int)EnumZyZdlxbs.cy).ToString()&&zdlx=="TCM")
+            {
+                //var zzlist = _sysTcmsyndromeRepo.GetList(this.OrganizeId, keyword);
+                var zzlist = _CommonDmnService.GetZyzhList(this.OrganizeId,keyword);
+                return Json(zzlist, JsonRequestBehavior.AllowGet);
+            }
+            else {
+                var list = _sysDiagnosisRepo.GetList(this.OrganizeId, keyword, zdlx, ybnhlx);
+                return Json(list, JsonRequestBehavior.AllowGet);
+            }
         }
 
         public ActionResult GetDiagnosisGrid(Pagination pagination, string keyword, int? zdlx)

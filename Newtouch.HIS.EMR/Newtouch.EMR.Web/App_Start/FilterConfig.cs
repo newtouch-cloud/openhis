@@ -19,7 +19,7 @@ namespace Newtouch.EMR.Web
 
             //全局异常捕获
             filters.Add(new HandlerErrorAttribute());
-
+            filters.Add(new VerificationActionFIlterAttribute());
 
         }
     }

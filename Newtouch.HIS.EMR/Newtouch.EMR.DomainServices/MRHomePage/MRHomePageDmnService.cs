@@ -351,12 +351,14 @@ select a.Code from [Newtouch_MRMS].[dbo].[mr_dic_bafeetype] a where a.zt='1' and
 
         public IList<PatZDListVO> GetDiagLsit(string orgId, string bah, string zyh)
         {
-            string zdsql = @"SELECT Id,[BAH],[ZYH],[ZDOrder],[JBDM],[JBMC],[RYBQ],[RYBQMS]
+            string zdsql = @"SELECT Id,[BAH],[ZYH],isnull(ZDLB,'WM') ZDLB,CASE WHEN ZDLX IS NULL THEN (CASE WHEN ZDOrder='1' THEN '1' ELSE '2' END)
+    WHEN ZDLX>2 and ZDOrder='1' THEN '1' WHEN ZDLX>2 and ZDOrder>'1' then '2'  ELSE ZDLX END ZDLX 
+,[ZDOrder],[JBDM],[JBMC],[RYBQ],[RYBQMS]
 ,[CYQK],[CYQKMS]
 ,[LastModifierCode],[OrganizeId]
   FROM [dbo].[mr_basy_zd] with(nolock)
 where zt='1' and OrganizeId=@orgId and BAH=@bah and ZYH=@zyh  
-order by ZDOrder ";
+order BY ZDLB, CASE WHEN ZDLX >= 3 THEN 0 ELSE 1 END, ABS(ZDLX),ZDOrder  ";
 
             var zdlist = FindList<PatZDListVO>(zdsql, new SqlParameter[] {
             new SqlParameter("@orgId",orgId),
@@ -399,6 +401,7 @@ order by SSOrder ";
         public void ZdListSubmit(List<BasyZdDto> list, string orgId)
         {
             int i = 1;
+            int zycnt = 1;
             int flag = 0;
             if (list != null && list.Count > 0)
             {
@@ -422,13 +425,18 @@ order by SSOrder ";
                                 zdety.RYBQMS = v.RYBQMS;
                                 zdety.CYQK = v.CYQK;
                                 zdety.CYQKMS = v.CYQKMS;
+                                zdety.ZDLX = v.ZDLX;
+                                zdety.ZDLB = v.ZDLB;
                                 zdety.JBDM = v.JBDM;
                                 zdety.JBMC = v.JBMC;
                                 zdety.zt = v.zt == null ? zdety.zt : v.zt;
 
                                 if (zdety.zt == "1")
                                 {
-                                    zdety.ZDOrder = i;
+                                    if (v.ZDLB == "TCM")
+                                        zdety.ZDOrder = zycnt;
+                                    else
+                                        zdety.ZDOrder = i;
                                 }
 
                                 flag = 1;
@@ -452,9 +460,14 @@ order by SSOrder ";
                         zdety.CYQKMS = v.CYQKMS;
                         zdety.JBDM = v.JBDM;
                         zdety.JBMC = v.JBMC;
+                        zdety.ZDLX = v.ZDLX;
+                        zdety.ZDLB = v.ZDLB;
                         zdety.zt = v.zt;
-                        zdety.ZDOrder = i;
 
+                        if (v.ZDLB == "TCM")
+                            zdety.ZDOrder = zycnt;
+                        else
+                            zdety.ZDOrder = i;
                         zdety.Create(true);
                         _MrbasyzdRepo.Insert(zdety);
                     }
@@ -462,7 +475,10 @@ order by SSOrder ";
                     flag = 0;
                     if (v.zt != "0")
                     {
-                        i++;
+                        if (v.ZDLB == "TCM")
+                            zycnt++;
+                        else
+                            i++;
                     }
 
                 }
@@ -1040,6 +1056,12 @@ order by SSOrder ";
             ety.LXDH = vo.LXDH;
             ety.SJ = vo.SJ;
             ety.BCRQ = vo.BCRQ;
+
+            ety.ZYSSLCLJ = vo.ZYSSLCLJ;
+            ety.SYYLJGZYZJ = vo.SYYLJGZYZJ;
+            ety.SYZYZLSB = vo.SYZYZLSB;
+            ety.SYZYZLJS = vo.SYZYZLJS;
+            ety.BZSH = vo.BZSH;
             return ety;
         }
 
@@ -1201,7 +1223,7 @@ order by SSOrder ";
         /// <returns></returns>
         public IList<PatZDListVO> GetPatHisZDInfo(string bah, string zyh, string orgId, int? zdlb)
         {
-            string sql = @"select @bah BAH,OrganizeId,ZYH,convert(int,zdlx) ZDOrder,JBDM ,JBMC,
+            string sql = @"select @bah BAH,OrganizeId,ZYH,zddl zdlb,zdlx,px ZDOrder,JBDM ,JBMC,
 convert(varchar(2)," + ((int)EnumRybq.y).ToString() + ") RYBQ,'有' RYBQMS," +
 "convert(varchar(2)," + ((int)EnumCyqk.zy).ToString() + @") CYQK,'治愈' CYQKMS
 from V_HIS_InpPatDiag with(nolock)
@@ -1353,7 +1375,7 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                 new SqlParameter("@zyh",zyh),
                 new SqlParameter("@orgId", orgId)});
 
-                var sqlcx2 = "select Id,ZYH,ZDOrder,JBDM,JBMC,CYQK,ZT,CreateTime,CreatorCode,OrganizeId from [Newtouch_EMR].[dbo].[mr_basy_zd]  a  where  " +
+                var sqlcx2 = "select Id,ZYH,ZDLB,ZDLX,ZDOrder,JBDM,JBMC,CYQK,ZT,CreateTime,CreatorCode,OrganizeId from [Newtouch_EMR].[dbo].[mr_basy_zd]  a  where  " +
                     " a.zyh = @zyh and a.OrganizeId = @orgId and a.jbdm <> '999999999' and a.zt = '1' order by ZDOrder ";
                 var data2 = this.FindList<PatZDListVO>(sqlcx2, new SqlParameter[] {
                 new SqlParameter("@zyh",zyh),
@@ -1367,20 +1389,22 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                         //i = int.Parse(datacount.ToString());
                         var zdlx = datacount + i;
                         var sql = "insert into [Newtouch_CIS]..zy_PatDxInfo  " +
-                            "values(@Id, @OrganizeId, @zyh, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk)";
+                            "values(@Id, @OrganizeId, @zyh, @zddl,@zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk,@px)";
 
                         this.ExecuteSqlCommand(sql, new SqlParameter[] {
                             new SqlParameter("@Id", data2[i].Id),
                             new SqlParameter("@OrganizeId", data2[i].OrganizeId),
                             new SqlParameter("@zyh", data2[i].ZYH),
+                            new SqlParameter("@zddl", data2[i].ZDLB),
                             new SqlParameter("@zdlb", "2"),
-                            new SqlParameter("@zdlx", zdlx),
+                            new SqlParameter("@zdlx", data2[i].ZDLX),
                             new SqlParameter("@zddm", data2[i].JBDM),
                             new SqlParameter("@zdmc", data2[i].JBMC),
                             new SqlParameter("@CreateTime", data2[i].CreateTime),
                             new SqlParameter("@CreatorCode", data2[i].CreatorCode),
                             new SqlParameter("@zt", data2[i].zt),
                             new SqlParameter("@cyqk", data2[i].CYQK),
+                            new SqlParameter("@px", data2[i].ZDOrder),
                             });
                     }
                 }
@@ -1392,20 +1416,22 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                         //i = int.Parse(datacount.ToString());
                         var zdlx = datacount + i;
                         var sql = "insert into [Newtouch_CIS]..zy_PatDxInfo  " +
-                            "values(@Id, @OrganizeId, @zyh, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk)";
+                            "values(@Id, @OrganizeId, @zyh,@zddl, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk,@px)";
 
                         this.ExecuteSqlCommand(sql, new SqlParameter[] {
                             new SqlParameter("@Id", data2[i].Id),
                             new SqlParameter("@OrganizeId", data2[i].OrganizeId),
                             new SqlParameter("@zyh", data2[i].ZYH),
+                            new SqlParameter("@zddl", data2[i].ZDLB),
                             new SqlParameter("@zdlb", "2"),
-                            new SqlParameter("@zdlx", zdlx),
+                            new SqlParameter("@zdlx", data2[i].ZDLX),
                             new SqlParameter("@zddm", data2[i].JBDM),
                             new SqlParameter("@zdmc", data2[i].JBMC),
                             new SqlParameter("@CreateTime", data2[i].CreateTime),
                             new SqlParameter("@CreatorCode", data2[i].CreatorCode),
                             new SqlParameter("@zt", data2[i].zt),
                             new SqlParameter("@cyqk", data2[i].CYQK),
+                            new SqlParameter("@px", data2[i].ZDOrder),
                             });
                     }
                 }

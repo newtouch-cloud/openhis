@@ -469,14 +469,14 @@
             $.modalAlert('患者信息 联系人地址没有填写', 'warning');
             return false;
         }
-        if (para.MZZD == "") {
-            $.modalAlert('患者信息 门（急）诊诊断没有填写', 'warning');
+        if (para.MZZD == "" && para.RYZD == "") {
+            $.modalAlert('患者信息 门（急）中西医诊断至少填写一个', 'warning');
             return false;
         }
-        if (para.RYZD == "") {
-            $.modalAlert('患者信息 入院诊断没有填写', 'warning');
-            return false;
-        }
+        //if (para.RYZD == "") {
+        //    $.modalAlert('患者信息 入院诊断没有填写', 'warning');
+        //    return false;
+        //}
         var idCard = para.SFZH;
         let birthday = idCard.substring(6, 10) + "-" + idCard.substring(10, 12) + "-" + idCard.substring(12, 14);
         var ss = getSex();
@@ -853,26 +853,32 @@
             $.modalAlert('没有输血量时，输血反应必须为未输', 'warning');
             return false;
         }
-        if (para.ZFY<=0) {
+        if (ovpraseFloat(para.ZFY)<=0) {
             $.modalAlert('费用信息 患者住院总费用必须大于 0', 'warning');
             return false;
         }
-        if (para.ZFY < para.ZFJE) {
+        if (ovpraseFloat(para.ZFY) < ovpraseFloat(para.ZFJE)) {
             $.modalAlert('费用信息 患者住院总费用必须大于自付金额', 'warning');
             return false;
         }
-        if (para.FSSZLXMF < para.WLZLF ) {
+        if (ovpraseFloat(para.FSSZLXMF) < ovpraseFloat(para.WLZLF) ) {
             $.modalAlert('费用信息 非手术治疗项目费必须大于等于临床物理治疗费', 'warning');
             return false;
         }
-        if (para.SSZLF < (para.MAF + para.SSF)) {
+        if (ovpraseFloat(para.SSZLF) < (ovpraseFloat(para.MAF) + ovpraseFloat(para.SSF))) {
             $.modalAlert('费用信息 手术治疗费必须大于等于麻醉费与手术费之和', 'warning');
             return false;
         }
-        if (para.XYF < para.KJYWF) {
+        if (ovpraseFloat(para.XYF) < ovpraseFloat(para.KJYWF)) {
             $.modalAlert('费用信息 西药费必须大于等于抗菌药物费用', 'warning');
             return false;
         }
+    }
+    function ovpraseFloat(val) {
+        if (!val) {
+            val = 0;
+        }
+        return parseFloat(val);
     }
     //功能键操作区
 	function newtouch_event_f2() {
@@ -893,52 +899,48 @@
         })
     }
     //诊断保存
-    function newtouch_event_f3() {
-        var msg = "";
-        var ids = $("#gridzdList").getDataIDs();
-        var rows = [];
-        var i = 0;
-        if (ids.length > 0) {
-            for (i = 0; i < ids.length; i++) {
-                rows.push($("#gridzdList").getRowData(ids[i]));
-            }
-        }
-        $.ajax({
-            url: "/MRHomePage/MRHomePage/SubmitZdList",
-            data: { dto: rows, zyh: $("#ZYH").val(), "Code": "DiagnosticSave" },
-            type: "post",
-            loading: "正在提交数据...",
-            async: false,
-            success: function (data) {
-                var obj = JSON.parse(data);
-                if (obj.data == "") {
-                    $.modalAlert("诊断信息保存成功", 'success');
-                }
-                else {
-                    window.setTimeout(function () {
-                        //var obj = JSON.stringify(data);
-                        console.info(obj); console.info(data);
-                        if (obj.data == "诊断信息保存成功") {
-                            $.modalAlert(obj.data, 'success');
-                            jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
-                        }
-                        else {
-                            $.modalAlert(obj.data, 'warning');
-                        }
-                        //if (obj.state == "success") {
-                        //    $.modalAlert("诊断信息保存成功", 'success');
-                        //    jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
-                        //}wwwwwwwwwwwwwwwwwwwww
-                        //else {
-                        //    $.modalAlert(obj.message, 'warning');
-                        //}
-                    }, 10);
-                }
+	function newtouch_event_f3() {
+	    var msg = "";
+	    var ids = $("#gridzdList").getDataIDs();
+	    var rows = [];
+	    var i = 0;
+	    if (ids.length > 0) {
+	        for (i = 0; i < ids.length; i++) {
+	            rows.push($("#gridzdList").getRowData(ids[i]));
+	        }
+	    }
+	    $.ajax({
+	        url: "/MRHomePage/MRHomePage/SubmitZdList",
+	        data: { dto: rows, zyh: $("#ZYH").val(), "Code": "DiagnosticSave" },
+	        type: "post",
+	        loading: "正在提交数据...",
+	        async: false,
+	        success: function (data) {debugger;
+	            var obj = JSON.parse(data);
+	            if(obj.state == "success"){
+	                if (obj.data == "") {
+	                    $.modalAlert("诊断信息保存成功", 'success');
+	                }else{
+	                    window.setTimeout(function () {  
+	                        if (obj.data == "诊断信息保存成功") {
+	                            $.modalAlert(obj.data, 'success');
+	                            jQuery("#gridzdList").jqGrid().trigger('reloadGrid');
+	                        }
+	                        else {
+	                            $.modalAlert(obj.data, 'warning');
+	                        }
+	                    }, 10);
+	                }
+	            }else{
+	                $.modalAlert(obj.message, 'warning');
+	            }
+	        },error: function (request, error, ex) {
+	            $.loading(false);
+	            $.modalAlert('保存失败：' + ex, 'error');
+	        }
+	    });
 
-            }
-        });
-
-    }
+	}
     //手术列表
     function newtouch_event_f6() {
         var msg = "";

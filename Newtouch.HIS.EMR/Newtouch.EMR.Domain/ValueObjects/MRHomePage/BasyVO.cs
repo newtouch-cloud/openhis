@@ -1138,6 +1138,26 @@ namespace Newtouch.EMR.Domain.ValueObjects.MRHomePage
 		/// 其他医疗机构转入
 		/// </summary>
 		public string QTYLJGZR { get; set; }
+        /// <summary>
+        /// 实施临床路径
+        /// </summary>
+        public string ZYSSLCLJ { get; set; }
+        /// <summary>
+        /// 使用医疗机构中药制剂
+        /// </summary>
+        public string SYYLJGZYZJ { get; set; }
+        /// <summary>
+        /// 使用中医诊疗设备
+        /// </summary>
+        public string SYZYZLSB { get; set; }
+        /// <summary>
+        /// 使用中医诊疗技术
+        /// </summary>
+        public string SYZYZLJS { get; set; }
+        /// <summary>
+        /// 辩证施护
+        /// </summary>
+        public string BZSH { get; set; }
 
-	}
+    }
 }
