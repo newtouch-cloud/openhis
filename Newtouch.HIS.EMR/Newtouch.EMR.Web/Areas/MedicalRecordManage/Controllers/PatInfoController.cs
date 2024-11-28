@@ -434,16 +434,22 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             var zybrxx = _zybrjbxxRepo.FindEntity(p => p.zyh == zyh && p.OrganizeId == this.OrganizeId && p.zt == "1");
 
             var rulseentity = mrwritingrulesRepo.FindEntity(p => p.Bllx == bllx && p.OrganizeId == this.OrganizeId && p.zt == "1");
-            var rulsdate = zybrxx.ryrq.AddDays(rulseentity.RulesDay);
-            if (rulseentity != null && rulseentity.RulesDay != 0)
+            var rulsdate = zybrxx.ryrq;
+            if (rulseentity != null )
             {
-                if (rulsdate <= DateTime.Now)
+                if (rulseentity.RulesDay != 0)
                 {
-                    newblbz = "F";
+                    rulsdate = rulsdate.AddDays(rulseentity.RulesDay);
+                    if (rulsdate <= DateTime.Now)
+                    {
+                        newblbz = "F";
+                    }
+                    else
+                    {
+                        newblbz = "T";
+                    }
                 }
-                else {
-                    newblbz = "T";
-                }
+                
             }
             if (newblbz == "F") //是否有申请记录
             {
