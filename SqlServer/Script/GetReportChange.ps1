@@ -1,12 +1,11 @@
 ﻿# 配置数据库连接信息
-$ServerName = "."
-$DatabaseName = "NewtouchHIS_Base"
-$Server = "127.0.0.1"
+$ServerName = "127.0.0.1"
 $User = "sa"
-$Password = "a1+b2*c3=d4"
-$OutputFolder = "C:\Users\Administrator\Desktop\SQLChange"  # 输出目录路径
-$StartDate = "2024-11-06"
-$EndDate = "2024-11-10"
+$Password = ""
+$DatabaseName = "NewtouchHIS_Base"
+$OutputFolder = [System.IO.Path]::Combine($env:USERPROFILE, "Desktop", "SQLChange")  # 输出目录路径-当前用户桌面的SQLChange文件夹
+$StartDate = "2024-10-20"  # 起始日期
+$EndDate = "2024-11-29"    # 结束日期
 
 
 # 创建输出目录（如果不存在）
@@ -31,7 +30,7 @@ $Tables = @(
 )
 
 # 定义数据库连接字符串
-$ConnectionString = "Server=$Server;Database=$DatabaseName;User ID=$User;Password=$Password;"
+$ConnectionString = "Server=$ServerName;Database=$DatabaseName;User ID=$User;Password=$Password;"
 
 foreach ($Table in $Tables) {
     $TableName = $Table.TableName

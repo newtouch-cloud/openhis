@@ -1,8 +1,10 @@
 ﻿# 配置参数
-$ServerName = "."  # 替换为你的 SQL Server 实例连接
-$OutputFolder = "C:\Users\Administrator\Desktop\SQLChange"  # 输出目录路径
+$ServerName = "."  # 本地 SQL Server 实例（无需用户名和密码）
+$User = ""  # 当ServerName为.时 用户名和密码不用写
+$Password = ""  # 如果不为空，提供 SQL Server 密码
+$OutputFolder = [System.IO.Path]::Combine($env:USERPROFILE, "Desktop", "SQLChange")  # 输出目录路径
 $StartDate = "2024-10-20"  # 起始日期
-$EndDate = "2024-11-10"    # 结束日期
+$EndDate = "2024-11-29"    # 结束日期
 $OrganizeId = "6d5752a7-234a-403e-aa1c-df8b45d3469f"  # 组织 ID
 $RoleName = "管理员"  # 角色名称
 
@@ -14,30 +16,42 @@ if (!(Test-Path -Path $DateOutputFolder)) {
 }
 
 # 获取所有非系统数据库
-$databases = Invoke-Sqlcmd -ServerInstance $ServerName -Query "
+$databasesQuery = @"
 SELECT name 
 FROM sys.databases 
 WHERE state_desc = 'ONLINE' 
 AND name NOT IN ('master', 'tempdb', 'model', 'msdb');
-" | Select-Object -ExpandProperty name
+"@
+
+# 根据是否提供用户名和密码来决定是否使用身份验证
+if ($ServerName -eq '.') {
+    $databases = Invoke-Sqlcmd -ServerInstance $ServerName -Query $databasesQuery | Select-Object -ExpandProperty name
+} else {
+    $databases = Invoke-Sqlcmd -ServerInstance $ServerName -Username $User -Password $Password -Query $databasesQuery | Select-Object -ExpandProperty name
+}
 
 # 遍历每个数据库
 foreach ($DatabaseName in $databases) {
     Write-Host "检查数据库: $DatabaseName 是否存在 [Sys_RoleAuthorize] 表"
 
-    # 检查是否存在 [Sys_Module] 表
+    # 检查是否存在 [Sys_RoleAuthorize] 表
     $TableCheckQuery = @"
     SELECT COUNT(*) AS TableExists
     FROM [$DatabaseName].INFORMATION_SCHEMA.TABLES
     WHERE TABLE_NAME = 'Sys_RoleAuthorize';
 "@
-    $TableExists = Invoke-Sqlcmd -ServerInstance $ServerName -Query $TableCheckQuery | Select-Object -ExpandProperty TableExists
+    
+    if ($ServerName -eq '.') {
+        $TableExists = Invoke-Sqlcmd -ServerInstance $ServerName -Query $TableCheckQuery | Select-Object -ExpandProperty TableExists
+    } else {
+        $TableExists = Invoke-Sqlcmd -ServerInstance $ServerName -Username $User -Password $Password -Query $TableCheckQuery | Select-Object -ExpandProperty TableExists
+    }
 
     if ($TableExists -eq 0) {
         Write-Host "数据库 $DatabaseName 中不存在 [Sys_RoleAuthorize] 表，跳过。"
         continue
     }
-    
+
     Write-Host "处理数据库: $DatabaseName"
 
     # 查询符合条件的数据
@@ -54,7 +68,11 @@ foreach ($DatabaseName in $databases) {
 
     try {
         # 执行查询
-        $Changes = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $query
+        if ($ServerName -eq '.') {
+            $Changes = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $query
+        } else {
+            $Changes = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Username $User -Password $Password -Query $query
+        }
 
         if ($Changes.Count -gt 0) {
             # 创建文件名
@@ -75,8 +93,8 @@ WHERE RoleId = (
             foreach ($Change in $Changes) {
                 # 动态获取字段和值
                 $Fields = $Change.PSObject.Properties | Where-Object {
-                $_.Name -notin @('RowError', 'RowState', 'Table', 'ItemArray', 'HasErrors')
-            } | ForEach-Object {
+                    $_.Name -notin @('RowError', 'RowState', 'Table', 'ItemArray', 'HasErrors')
+                } | ForEach-Object {
                     $Name = $_.Name
                     $Value = $_.Value
                     
