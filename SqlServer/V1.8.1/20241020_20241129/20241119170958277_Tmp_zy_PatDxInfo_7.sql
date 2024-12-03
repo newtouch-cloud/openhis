@@ -1,0 +1,6 @@
+﻿USE [Newtouch_CIS]
+GO
+
+-- 事件类型: ALTER_TABLE
+-- 变更时间: 11/19/2024 17:09:58
+ALTER TABLE dbo.Tmp_zy_PatDxInfo SET (LOCK_ESCALATION = TABLE)

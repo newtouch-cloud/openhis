@@ -1,8 +1,10 @@
 ﻿# 设置 SQL Server 实例名称
-$ServerName = "."
-$OutputFolder = "C:\Users\Administrator\Desktop\SQLChange"  # 输出目录路径
-$StartDate = "2024-11-01"  # 起始日期
-$EndDate = "2024-11-10"    # 结束日期
+$ServerName = "."  # 或者 "." 表示本地实例
+$User = ""  # 用户名 当ServerName为.时 用户名和密码不用写
+$Password = ""  # 密码
+$OutputFolder = [System.IO.Path]::Combine($env:USERPROFILE, "Desktop", "SQLChange")  # 输出目录路径-当前用户桌面的SQLChange文件夹
+$StartDate = "2024-10-20"  # 起始日期
+$EndDate = "2024-11-29"    # 结束日期
 
 # 创建输出目录（如果不存在）
 $DateFolderName = "$($StartDate.Replace('-', ''))_$($EndDate.Replace('-', ''))"
@@ -11,13 +13,20 @@ if (!(Test-Path -Path $DateOutputFolder)) {
     New-Item -ItemType Directory -Path $DateOutputFolder | Out-Null
 }
 
-# 获取所有非系统数据库
-$databases = Invoke-Sqlcmd -ServerInstance $ServerName -Query "
+# 获取所有非系统数据库查询
+$databasesQuery = @"
 SELECT name 
 FROM sys.databases 
 WHERE state_desc = 'ONLINE' 
 AND name NOT IN ('master', 'tempdb', 'model', 'msdb');
-" | Select-Object -ExpandProperty name
+"@
+
+# 判断是否为本地实例
+if ($ServerName -eq ".") {
+    $databases = Invoke-Sqlcmd -ServerInstance $ServerName -Query $databasesQuery | Select-Object -ExpandProperty name
+} else {
+    $databases = Invoke-Sqlcmd -ServerInstance $ServerName -Username $User -Password $Password -Query $databasesQuery | Select-Object -ExpandProperty name
+}
 
 # 遍历所有数据库
 foreach ($DatabaseName in $databases) {
@@ -29,7 +38,13 @@ foreach ($DatabaseName in $databases) {
     FROM [$DatabaseName].INFORMATION_SCHEMA.TABLES
     WHERE TABLE_NAME = 'Sys_Module';
 "@
-    $TableExists = Invoke-Sqlcmd -ServerInstance $ServerName -Query $TableCheckQuery | Select-Object -ExpandProperty TableExists
+
+    # 判断是否为本地实例
+    if ($ServerName -eq ".") {
+        $TableExists = Invoke-Sqlcmd -ServerInstance $ServerName -Query $TableCheckQuery | Select-Object -ExpandProperty TableExists
+    } else {
+        $TableExists = Invoke-Sqlcmd -ServerInstance $ServerName -Username $User -Password $Password -Query $TableCheckQuery | Select-Object -ExpandProperty TableExists
+    }
 
     if ($TableExists -eq 0) {
         Write-Host "数据库 $DatabaseName 中不存在 [Sys_Module] 表，跳过。"
@@ -55,8 +70,12 @@ foreach ($DatabaseName in $databases) {
 "@
 
     try {
-        # 执行查询并获取数据
-        $Changes = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $query
+        # 判断是否为本地实例
+        if ($ServerName -eq ".") {
+            $Changes = Invoke-Sqlcmd -ServerInstance $ServerName -Database $DatabaseName -Query $query
+        } else {
+            $Changes = Invoke-Sqlcmd -ServerInstance $ServerName -Username $User -Password $Password -Database $DatabaseName -Query $query
+        }
 
         # 遍历每条记录并生成 SQL 内容
         foreach ($Change in $Changes) {
