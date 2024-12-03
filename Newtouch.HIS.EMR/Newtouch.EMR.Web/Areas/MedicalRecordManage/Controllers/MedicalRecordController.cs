@@ -29,6 +29,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Web.Mvc;
 using System.Xml;
 
@@ -525,17 +526,10 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 
                     // 用户点击了“保存文档”按钮，
                     // 则试图从WEB请求中加载文档然后保存
-                    int loop = 1;
-                    while (loop < 20) //加载护理记录xml文档存在延迟情况
-                    {
-                        try {
-                            loaded = eng.LoadDocumentFromRequestFormData();
-                        }
-                        catch (Exception er) {
-                            loop++;
-                        }
-                        if (loaded)
-                            break;
+                    try {
+                        loaded = eng.LoadDocumentFromRequestFormData();
+                    }
+                    catch (Exception er) {
                     }
                     if (loaded)
                     {
@@ -711,8 +705,8 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             ViewBag.zyh = zyh;
             ViewBag.mzh = mzh;
             ViewBag.blxtmc_yj = blxtmc_yj;
-            ViewBag.userid = this.UserIdentity.UserId;
-            ViewBag.username = this.UserIdentity.UserName;
+            //ViewBag.userid = this.UserIdentity.UserId;
+            //ViewBag.username = this.UserIdentity.UserName;//不可再赋值用户 会导致护理文书保存失败
             //string oldstr = "span style=&quot;color:black;font-size:9pt;background-color:white";
             //string tip = "style=\"position:relative;left:4px;top:1px";
             eng.Options.LogUserEditTrack = true;
