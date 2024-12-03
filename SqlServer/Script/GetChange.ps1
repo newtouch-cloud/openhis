@@ -3,8 +3,8 @@ $ServerName = "127.0.0.1"  # 本地 SQL Server 实例
 $User = "sa"  # 
 $Password = ""  # 
 $OutputFolder = [System.IO.Path]::Combine($env:USERPROFILE, "Desktop", "SQLChange")  # 输出目录路径-当前用户桌面的SQLChange文件夹
-$StartDate = "2024-10-20"  # 起始日期
-$EndDate = "2024-11-29"    # 结束日期
+$StartDate = "2024-11-30"  # 起始日期
+$EndDate = "2024-12-03"    # 结束日期
 
 # 创建输出目录（如果不存在）
 $DateFolderName = "$($StartDate.Replace('-', ''))_$($EndDate.Replace('-', ''))"
