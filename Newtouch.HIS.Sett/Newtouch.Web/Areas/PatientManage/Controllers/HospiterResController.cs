@@ -261,7 +261,12 @@ namespace Newtouch.HIS.Web.Areas.PatientManage.Controllers
         {
             return View();
         }
-
+        /// <summary>
+        /// 一卡通日志
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="xm"></param>
+        /// <returns></returns>
         [HttpGet]
         [HandlerAjaxOnly]
         public ActionResult GetModifyLog(Pagination pagination, string xm)

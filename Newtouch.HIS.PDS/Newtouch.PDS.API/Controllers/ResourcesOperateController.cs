@@ -94,6 +94,24 @@ namespace Newtouch.PDS.API.Controllers
         }
 
         /// <summary>
+        /// HIS门诊退费后 冻结库存返还
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Route("OutpatientCancelDjYpReturn")]
+        public HttpResponseMessage OutpatientCancelDjYpReturn(OutpatientCancelAllBookRequestDTO request)
+        {
+            Action<OutpatientCancelAllBookRequestDTO, DefaultResponse> ac = (req, resp) =>
+            {
+                resp.data = _resourcesOperateApp.OutpatientCancelDjYpReturn(request);
+                resp.code = ResponseResultCode.SUCCESS;
+            };
+            var result = CommonExecute(ac, request);
+            return CreateResponse(result);
+        }
+
+        /// <summary>
         /// 门诊确认资源（Commit）
         /// </summary>
         /// <param name="request"></param>

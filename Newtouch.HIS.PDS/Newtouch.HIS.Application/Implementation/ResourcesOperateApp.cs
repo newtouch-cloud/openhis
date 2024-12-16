@@ -296,6 +296,31 @@ namespace Newtouch.HIS.Application.Implementation
         }
 
         /// <summary>
+        /// 门诊取消结算冻结库存返还
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public string OutpatientCancelDjYpReturn(OutpatientCancelAllBookRequestDTO request)
+        {
+            var cfxx = _mzCfRepo.SelectTfRpList(request.cfh, request.OrganizeId);
+            if (cfxx == null || cfxx.Count == 0)
+            {
+                throw new FailedException("", "未找到指定处方");
+            }
+            var mxphList = _mzCfphRepo.GetList(request.cfh, cfxx[0].lyyf, request.OrganizeId, "0");
+            var fybz = cfxx[0].fybz;
+            if (((int)EnumFybz.Yp).ToString().Equals(cfxx[0].fybz))
+            {
+                var result = _dispensingDmnService.OutPatientYpdjReturn(mxphList, request.OrganizeId, request.CreatorCode);
+                if (!string.IsNullOrWhiteSpace(result))
+                {
+                    throw new FailedException("", result);
+                }
+            }
+            return "";
+        }
+
+        /// <summary>
         /// 修改处方状态
         /// </summary>
         /// <param name="rpList"></param>
