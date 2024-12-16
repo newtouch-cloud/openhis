@@ -6,6 +6,7 @@ using Newtouch.HIS.Domain.IRepository.SystemManage;
 using Newtouch.HIS.Domain.ValueObjects.TherapeutistCompleteManage;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,51 +20,8 @@ namespace Newtouch.HIS.Repository.SystemManage
         {
 
         }
-
-        /// <summary>
-        /// string zhmc, string zhcode, string ord, string zlxm, string zlxmmc, string price, string zlxmpy, string zhje
-        /// 
-        /// </summary>
-        /// <param name="zhmc"></param>
-        /// <param name="zhcode"></param>
-        /// <param name="ord"></param>
-        /// <param name="zlxm"></param>
-        /// <param name="zlxmmc"></param>
-        /// <param name="price"></param>
-        /// <param name="zlxmpy"></param>
-        /// <param name="zhje"></param>
-        //public void Insert(string OrganizeId, string zhmc, string zhcode, string ord, string zlxm, string zlxmmc, string price, string zlxmpy, string zhje)
-        //{
-        //    TreatmentportfolioEntity entity = new TreatmentportfolioEntity();
-        //    if (!string.IsNullOrEmpty(OrganizeId))
-        //    {
-        //        entity.OrganizeId = OrganizeId;
-        //        //entity.Id = collection["OrganizeId"];
-        //        entity.zhmc = zhmc;
-        //        entity.zhcode = zhcode;
-        //        entity.ord = int.Parse(ord);
-        //        entity.zlxm = zlxm;
-        //        entity.zlxmmc = zlxmmc;
-        //        entity.zt = "";
-        //        entity.price = price;
-        //        //entity.CreatorCode = "kradmin";
-        //        //entity.CreateTime = Convert.ToDateTime(DateTime.Now.ToString());
-        //        //entity.LastModifyTime = Convert.ToDateTime(DateTime.Now.ToString());
-        //        //entity.LastModifierCode = "";
-        //        entity.zlxmpy =zlxmpy;
-        //        entity.sfdl = zhje;
-        //        entity.Create(true);
-        //        this.Insert(entity);
-        //    }
-
-        //    //throw new NotImplementedException();
-        //}
-
         public void ADDInsert(TreatmentportfolioEntity entity, string keyValue)
         {
-            //entity.Create(true);
-            //this.Insert(entity);
-
             if (!string.IsNullOrEmpty(keyValue))
             {
                 entity.Modify(keyValue);
@@ -76,117 +34,90 @@ namespace Newtouch.HIS.Repository.SystemManage
             }
 
         }
-
-
-
-     
-
+        /// <summary>
+        /// 保存收费项目组合
+        /// </summary>
+        /// <param name="entity"></param>
         public void ADDrowdata(TreatmentportfolioEntity entity)
         {
             entity.Create(true);
             this.Insert(entity);
-            //throw new NotImplementedException();
         }
-
-        public void deleteid(string keyValue)
+        /// <summary>
+        /// 删除收费项目组合
+        /// </summary>
+        /// <param name="keyValue"></param>
+        public void deleteid(string keyValue, string orgId)
         {
-            this.Delete(p => p.zhcode == keyValue);
-            
-        }
-
-        public void deletemc(string keyValue,string zhcodemc)
-        {
-            this.Delete(p => p.zlxmmc == keyValue && p.zhcode==zhcodemc);
-
-        }
-
-        public IList<TreatmentportfolioEntity> ListselectTJ(string keyword)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IList<TreatmentportfolioEntity> selectid(TreatmentportfolioEntity entity, string keyValue)
-        {
-            string id = entity.Id;
-            var sql = "select * from mz_gh_zlxmzh where Id='"+keyValue+"'";
-            return this.FindList<TreatmentportfolioEntity>(sql);
-
-            //throw new NotImplementedException();
-        }
-
-        public IList<TreatmentportfolioEntity> TJchaxun(string zhcodetj, string sfxmmc123)
-        {
-            var sql = "select * from mz_gh_zlxmzh where zhcode='"+zhcodetj+ "'and zlxmmc='"+sfxmmc123+"'";
-            return this.FindList<TreatmentportfolioEntity>(sql);
-        }
-
-        public void Updatexg(TreatmentportfolioEntity entity, string keyValue)
-        {
-            entity.Modify(keyValue);
-            this.Update(entity);
+            this.Delete(p => p.zhcode == keyValue && p.OrganizeId == orgId && p.zt == "1");
         }
 
         /// <summary>
-        /// 加载数据
+        /// 删除收费组合中明细
         /// </summary>
+        /// <param name="keyValue"></param>
+        /// <param name="zhcodemc"></param>
+        public void deletemc(string keyValue, string zhcodemc, string orgId)
+        {
+            this.Delete(p => p.zlxmmc == keyValue && p.zhcode == zhcodemc && p.OrganizeId == orgId && p.zt == "1");
+        }
+
+        /// <summary>
+        /// 是否已存在收费项目组合
+        /// </summary>
+        /// <param name="zhcode"></param>
+        /// <param name="sfxmmc"></param>
+        /// <param name="orgId"></param>
         /// <returns></returns>
-//        IList<TreatmentportfolioEntity> ITreatmentportfolioRepo.Listselect()
-//        {
-////            var sql =string.Format(@"select a.*,  b.dlmc from [NewtouchHIS_Sett].[dbo].[mz_gh_zlxmzh] a,[NewtouchHIS_Base].[dbo].[xt_sfdl] b
-////where a.sfdl = b.dlCode order by a.zhmc");
-//            var sql = "select * from mz_gh_zlxmzh order by zhmc desc";
-//                return this.FindList<TreatmentportfolioEntity>(sql);
-//                //return this.SqlQueryForDataTatable(sql);
-            
-            
-//        }
-
-//        IList<TreatmentportfolioEntity> ITreatmentportfolioRepo.Keyword(string keyword)
-//        {
-//            var sql = "select * from mz_gh_zlxmzh where zhmc='" + keyword + "' or zhcode='" + keyword + "'";
-//            return this.FindList<TreatmentportfolioEntity>(sql);
-//        }
-
-        public IList<TreatmentportfolioEntity> Codecx(TreatmentportfolioEntity entity, string zhcode)
+        public IList<TreatmentportfolioEntity> TJchaxun(string zhcode, string sfxmmc, string orgId)
         {
-            var sql = "select * from mz_gh_zlxmzh where zhcode='" + zhcode + "'";
-            return this.FindList<TreatmentportfolioEntity>(sql);
+            var sql = "select * from mz_gh_zlxmzh where zhcode=@zhcode  and zlxmmc=@sfxmmc  and  OrganizeId=@orgId and zt='1'";
+            SqlParameter[] par = {
+                new SqlParameter("@zhcode",zhcode),
+                new SqlParameter("@sfxmmc",sfxmmc),
+                 new SqlParameter("@orgId",orgId)
+                };
+            return this.FindList<TreatmentportfolioEntity>(sql, par);
         }
 
-        
-
-//        public IList<TreamentviewVO> Loginview()
-//        {
-//            var sql = string.Format(@"select a.*,  b.dlmc from [NewtouchHIS_Sett].[dbo].[mz_gh_zlxmzh] a,[NewtouchHIS_Base].[dbo].[xt_sfdl] b
-//where a.sfdl = b.dlCode order by a.zhmc");
-//            return this.FindList<TreamentviewVO>(sql);
-//        }
-
-        public string sfdlcx(string sfxmmc123)
+        /// <summary>
+        /// 获取修改收费项目组合
+        /// </summary>
+        /// <param name="orgId"></param>
+        /// <param name="zhcode"></param>
+        /// <returns></returns>
+        public IList<TreatmentportfolioEntity> Codecx(string orgId, string zhcode)
         {
-            var sql = "select sfdlCode from [NewtouchHIS_Base].[dbo].[xt_sfxm] where sfxmmc='" + sfxmmc123 + "'";
-            var a = FindList<string>(sql)[0].ToString();
-            return a;
+            var sql = "select * from mz_gh_zlxmzh where zhcode=@zhcode  and  OrganizeId=@orgId and zt='1' ";
+            SqlParameter[] par = {
+                new SqlParameter("@zhcode",zhcode),
+                new SqlParameter("@orgId",orgId)
+
+                };
+            return this.FindList<TreatmentportfolioEntity>(sql, par);
         }
-
-
-
-
-        public IList<TreamentviewVO> Loginview(Pagination pagination)
+        /// <summary>
+        /// 查询收费项目组合
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="keyword"></param>
+        /// <param name="orgId"></param>
+        /// <returns></returns>
+        public IList<TreamentviewVO> Keyword(Pagination pagination, string keyword, string orgId)
         {
-            pagination.sidx = "zhmccode";
-            var sql = string.Format(@"select a.*,  b.dlmc,a.zhmc+'-'+a.zhcode as zhmccode from [NewtouchHIS_Sett].[dbo].[mz_gh_zlxmzh] a,[NewtouchHIS_Base].[dbo].[xt_sfdl] b
-where a.sfdl = b.dlCode");
-            string a = this.QueryWithPage<TreamentviewVO>(sql, pagination).ToString();
-            return this.QueryWithPage<TreamentviewVO>(sql,pagination);
-        }
+            IList<SqlParameter> inSqlParameterList = new List<SqlParameter>();
 
-        public IList<TreamentviewVO> Keyword(Pagination pagination, string keyword)
-        {
-            pagination.sidx = "zhmccode";
-            var sql = string.Format(@"select a.*,  b.dlmc,a.zhmc+'-'+a.zhcode as zhmccode from [NewtouchHIS_Sett].[dbo].[mz_gh_zlxmzh] a,[NewtouchHIS_Base].[dbo].[xt_sfdl] b
-where a.sfdl = b.dlCode and (a.zhmc='" + keyword + "' or a.zhcode='" + keyword+"')");
-            return this.QueryWithPage<TreamentviewVO>(sql,pagination);
+            string sql = @"select a.*,  b.dlmc,a.zhmc+'-'+a.zhcode as zhmccode from [NewtouchHIS_Sett].[dbo].[mz_gh_zlxmzh] a,[NewtouchHIS_Base].[dbo].[xt_sfdl] b
+                where a.sfdl = b.dlCode and a.OrganizeId=b.OrganizeId and a.zt='1' and a.OrganizeId=@orgId ";
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                sql = sql + " and (a.zhmc like  @keyword or a.zhcode like @keyword )";
+                inSqlParameterList.Add(new SqlParameter("@keyword", '%' + keyword + '%'));
+            }
+
+            inSqlParameterList.Add(new SqlParameter("@orgId", orgId));
+            return this.QueryWithPage<TreamentviewVO>(sql, pagination, inSqlParameterList.ToArray());
         }
 
 

@@ -491,13 +491,30 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
               return Success(msg , newJszbInfo);
         }
 
-       
+
         /// <summary>
-        /// 更新CIS退标志
+        /// 更新CIS退标志和退还药房冻结库存
         /// </summary>
         /// <param name="tcfh"></param>
-        public void UpdateChargeTbz(List<string> tcfh)
+        public void UpdateChargeTbz(List<string> tcfh, List<string> typcfh)
         {
+            foreach (var cfh in typcfh)
+            {
+                //接口内容
+                var cancalreqObj = new
+                {
+                    cfh = cfh,
+                    OrganizeId = OrganizeId,
+                    CreatorCode = this.UserIdentity.UserCode,
+                };
+                var apiRespPush = SitePDSAPIHelper.Request<APIRequestHelper.DefaultResponse>(
+              "/api/ResourcesOperate/OutpatientCancelDjYpReturn", cancalreqObj);
+                if (apiRespPush.code != APIRequestHelper.ResponseResultCode.SUCCESS)
+                {
+                    AppLogger.Info(string.Format("处方退费返还冻结库存更新API同步至PDS，处方号：{0}，结果：{1}、{2}", tcfh, apiRespPush.code, apiRespPush.sub_code));
+                }
+            }
+
             var reqObj = new
             {
                 cfList = tcfh,

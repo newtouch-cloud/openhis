@@ -967,5 +967,108 @@ SELECT @resultMsg resultMsg
 ";
 
         #endregion
+
+        #region 门诊取消结算 库存解冻
+        public const string mz_yp_cancelSett_kcjd = @"
+IF EXISTS(SELECT 1 FROM tempdb..sysobjects WHERE id=OBJECT_ID(N'tempdb..#CancalSettData') AND type='U')
+BEGIN
+	DROP TABLE #CancalSettData; --排药数据
+END
+
+BEGIN TRY
+DECLARE @cfId BIGINT, @ph VARCHAR(50), @pc VARCHAR(50), @kcsl INT, @cfmxphId VARCHAR(50), @curKcId VARCHAR(50), @fybz CHAR(1), @jsnm BIGINT;
+
+SELECT @cfId=Id, @fybz=fybz, @jsnm=jsnm FROM dbo.mz_cf WHERE cfh=@cfh  AND OrganizeId=@OrganizeId AND lyyf=@yfbmCode   --AND zt='1'
+
+IF ISNULL(@cfId, 0)=0
+BEGIN
+	SELECT '未找到指定处方';
+	RETURN ;
+END
+
+SELECT * 
+	INTO #CancalSettData
+FROM dbo.mz_cfmxph	
+WHERE yp=@ypdm AND OrganizeId=@OrganizeId AND fyyf=@yfbmCode AND zt='1' AND gjzt='0' AND cfh=@cfh 
+
+IF NOT EXISTS(SELECT 1 FROM #CancalSettData)
+BEGIN
+	SELECT '未找到排药数或已取消';
+	RETURN;
+END 
+
+if(exists(select 1 from [mz_cfypczjl] a with(nolock),#CancalSettData b where a.mzcfmxid=b.cfmxid))
+begin
+	SELECT '处方已发药，不能取消预定';
+	RETURN ;
+end
+
+DECLARE @bookCout INT;
+DECLARE @sysl INT;
+
+SELECT @sysl=SUM(sl) FROM #CancalSettData
+
+DECLARE @errorMsg VARCHAR(500);
+SET @errorMsg='';
+
+BEGIN TRANSACTION
+	WHILE EXISTS(SELECT 1 FROM #CancalSettData) AND @sysl>0
+	BEGIN
+		SELECT TOP 1 @cfmxphId=cfmxphId, @ph=ph, @pc=pc, @kcsl=sl FROM #CancalSettData ORDER BY yxq asc
+		SELECT TOP 1 @curKcId=ISNULL(kcId,'') 
+			FROM dbo.xt_yp_kcxx WITH (XLOCK, ROWLOCK) 
+			WHERE ypdm=@ypdm AND yfbmCode=@yfbmCode AND ph=@ph AND pc=@pc AND OrganizeId=@OrganizeId 
+		IF @curKcId=''
+			BEGIN
+				DECLARE @ypmc VARCHAR(256);
+				SELECT @ypmc=ypmc FROM NewtouchHIS_Base.dbo.V_C_xt_yp WHERE ypCode=@ypdm AND OrganizeId=@OrganizeId AND zt='1'
+				SET @errorMsg+=CONCAT('处方【',@cfh,'】未找到冻结时所用批号为【',@ph,'】的药品【',@ypmc,'】。');
+				BREAK;
+			END 
+				print @kcsl;
+				print @sysl;
+			IF @kcsl>@sysl
+			BEGIN
+				SET @kcsl=@sysl;
+				SET @sysl=0;
+			END
+			ELSE
+			BEGIN
+				
+				SET @sysl=@sysl-@kcsl; 
+				UPDATE dbo.mz_cfmxph SET gjzt='1', zt='0', LastModifyTime=GETDATE(), LastModifierCode=@CreatorCode WHERE cfmxphId=@cfmxphId
+			END  
+			UPDATE dbo.xt_yp_kcxx SET djsl=djsl-@kcsl, LastModifyTime=GETDATE(), LastModifierCode=@CreatorCode WHERE kcId=@curKcId ;
+			DELETE FROM #CancalSettData WHERE cfmxphId=@cfmxphId
+
+			update dbo.mz_cfmx set zt='0',LastModifyTime=getdate(),LastModiFierCode=@CreatorCode where cfh=@cfh and OrganizeId=@OrganizeId and ypCode=@ypdm and zt='1' 
+
+			if(not exists(select 1 from mz_cfmx a with(nolock),mz_cf b with(nolock) 
+					where a.cfh=b.cfh and a.OrganizeId=b.OrganizeId and a.zt='1' and b.zt='1' and b.cfh=@cfh))
+			begin
+					update dbo.mz_cf 
+					set zt='0',LastModifyTime=getdate(),LastModiFierCode=@CreatorCode 
+					where cfh=@cfh and OrganizeId=@OrganizeId and zt='1'
+			end
+	END
+IF(@errorMsg='')
+	BEGIN
+		COMMIT TRANSACTION;
+	END
+	ELSE
+	BEGIN
+		ROLLBACK TRANSACTION;
+	END 
+	SELECT @errorMsg;
+END TRY
+BEGIN CATCH
+IF @@TRANCOUNT>0
+BEGIN
+	ROLLBACK TRANSACTION
+END 
+SELECT ERROR_MESSAGE();
+END CATCH
+";
+        #endregion
     }
 }
