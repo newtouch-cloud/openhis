@@ -33,20 +33,13 @@
         <table class="form">
             <tr>
                 <th class="formTitle">门诊号：</th>
-                <td class="formValue">
-                    <input type="text" class="form-control" id="query_mzh" placeholder="" style="float: left;" />
-
-                </td>
-
-                <td class="formTitle">
+                <td class="formValue" colspan="2">
+                    <input type="text" class="form-control" id="query_mzh" placeholder="" style="float: left; width:60%" />
                     <input type="button" class="btn btn-default btn-md btn-default-color" id="btnsyy" style="margin-left:10px;" title="选择病人" value="查询" onclick="GetPatSerarchView($('#query_mzh').val());">
                 </td>
-                <td class="formValue">
-
-                    @*<input type="button" class="btn btn-default btn-md btn-default-color" id="btkhsr" style="margin-left:0px; float: left"  value="证件号输入" onclick="GetPatSbkh();">*@
+                <td class="formValue" style="width:150px">
                     @Html.Partial("YibaoRedCardCommon")
                 </td>
-
                 <th class="formTitle">收费日期：</th>
                 <td class="formValue" colspan="2">
                     <input id="kssj" type="text" class="form-control input-wdatepicker formClearIgnore" style="width:42%; float:left;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd', onpicked: function () { $('#btn_search').trigger('click'); } })" />
@@ -161,6 +154,7 @@
     var currejlsx;
     var sfqt = true; //是否全退
     var tjscfh = [];
+    var tjsypcfh = [];
     $(function() {
         gridList();
 
@@ -579,6 +573,7 @@
         $('#gridList').jqGrid("clearGridData");
         jszbList = [];
         tjscfh = [];
+        tjsypcfh = [];
         thisJszb = null;
         //结算信息
         $('#settTime').html('');
@@ -708,6 +703,8 @@
             if (v.tsl === v.ktsl) {
                 if (i < 0 && $.inArray(v.cfh, aaa) < 0 && !!v.cfh) {
                     tjscfh.push(v.cfh);
+                    if (v.feeType == "药品")
+                        tjsypcfh.push(v.cfh);
                 }
             } else {
                 if ($.inArray(v.cfh, aaa) < 0) {
@@ -715,6 +712,7 @@
                 }
                 if (i > -1) {
                     tjscfh.splice(i, 1);
+                    tjsypcfh.splice(i, 1);
                 }
             }
         });
@@ -790,7 +788,7 @@
                             refundPrintInvoiceReq(thisJszb.fph, patModel, ajaxresp.data);
                         }
                         if (tjscfh.length>0) {
-                            UpdateChargeTbz(tjscfh);
+                            UpdateChargeTbz(tjscfh, tjsypcfh);
                         }
 
                         //HIS退费成功
@@ -804,10 +802,10 @@
     }
 
     //更新退标志
-    function UpdateChargeTbz(tcfh) {
+    function UpdateChargeTbz(tcfh, tjsypcfh) {
         $.ajax({
             type: "POST",
-            data: { tcfh: tcfh },
+            data: { tcfh: tcfh, typcfh: tjsypcfh },
             url: "@Url.Action("UpdateChargeTbz")",
             dataType: "json"
         });
@@ -1052,7 +1050,7 @@
                                                                 'success');
                                                             //更新退标志
                                                             if (tjscfh.length > 0) {
-                                                                UpdateChargeTbz(tjscfh);
+                                                                UpdateChargeTbz(tjscfh, tjsypcfh);
                                                             }
                                                         }
                                                         //广西电子发票
@@ -1640,7 +1638,7 @@
                         else {
                             $.modalAlert("已退完<br/><b>退还支付差额：<span style='color:red;'>" + (thisJszb.XJZF - 0) + "</span></b>", 'success');
                             if (tjscfh.length>0) {
-                                UpdateChargeTbz(tjscfh);
+                                UpdateChargeTbz(tjscfh, tjsypcfh);
                             }
                         }
                         //

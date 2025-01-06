@@ -160,6 +160,61 @@ namespace Newtouch.HIS.DomainServices
         }
 
         /// <summary>
+        /// HIS门诊取消结算冻结返还
+        /// </summary>
+        /// <param name="mxphlist"></param>
+        /// <param name="organizeId"></param>
+        /// <param name="creatorCode"></param>
+        /// <returns></returns>
+        public string OutPatientYpdjReturn(List<OutpatientPrescriptionDetailBatchNumberEntity> mxphlist, string organizeId, string creatorCode)
+        {
+            if (mxphlist == null || mxphlist.Count == 0)
+            {
+                return "请传入要取消的排班明细";
+            }
+            using (var db = new EFDbTransaction(_databaseFactory).BeginTrans())
+            {
+                foreach (var p in mxphlist)
+                {
+                    var tempResult = OutPatientCancelSettMulti(p.cfmxphId, p.yp, (int)p.sl, p.fyyf, p.cfh, organizeId, creatorCode);
+                    if (!string.IsNullOrWhiteSpace(tempResult)) return tempResult;
+                    p.zt = "0";
+                    p.gjzt = "1";
+                    p.LastModifyTime = DateTime.Now;
+                    p.LastModifierCode = creatorCode;
+                    _mzphRepo.Update(p);
+                };
+                db.Commit();
+
+                return "";
+            }
+        }
+        /// <summary>
+        /// HIS门诊取消结算冻结返还
+        /// </summary>
+        /// <param name="ypCode"></param>
+        /// <param name="sl">最小单位数量</param>
+        /// <param name="yfbmCode"></param>
+        /// <param name="cfh"></param>
+        /// <param name="organizeId"></param>
+        /// <param name="creatorCode"></param>
+        /// <returns></returns>
+        public string OutPatientCancelSettMulti(string cfmxphid, string ypCode, int sl, string yfbmCode, string cfh, string organizeId, string creatorCode)
+        {
+            var param = new DbParameter[]
+            {
+                new SqlParameter("@ypdm", ypCode),
+                new SqlParameter("@yfbmCode", yfbmCode),
+                new SqlParameter("@cfh", cfh),
+                new SqlParameter("@sl", sl),
+                new SqlParameter("@OrganizeId", organizeId),
+                new SqlParameter("@CreatorCode", creatorCode),
+                new SqlParameter("@oldcfmxphid",cfmxphid)
+            };
+            return FirstOrDefaultNoLog<string>(TSqlDispensing.mz_yp_cancelSett_kcjd, param);
+        }
+
+        /// <summary>
         /// outpatient commit
         /// </summary>
         /// <param name="ypCode"></param>

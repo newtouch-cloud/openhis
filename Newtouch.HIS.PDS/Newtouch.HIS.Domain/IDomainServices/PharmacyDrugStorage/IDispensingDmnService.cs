@@ -49,6 +49,15 @@ namespace Newtouch.HIS.Domain.IDomainServices
         string OutPatientBookCancel(List<OutpatientPrescriptionDetailBatchNumberEntity> mxphlist, string organizeId, string creatorCode);
 
         /// <summary>
+        /// HIS取消结算  冻结返还
+        /// </summary>
+        /// <param name="mxphlist"></param>
+        /// <param name="organizeId"></param>
+        /// <param name="creatorCode"></param>
+        /// <returns></returns>
+        string OutPatientYpdjReturn(List<OutpatientPrescriptionDetailBatchNumberEntity> mxphlist, string organizeId, string creatorCode);
+
+        /// <summary>
         /// outpatient commit
         /// </summary>
         /// <param name="ypCode"></param>

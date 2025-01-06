@@ -40,6 +40,13 @@ namespace Newtouch.HIS.Application.Interface
         string OutpatientCancelBook(OutpatientCancelAllBookRequestDTO request);
 
         /// <summary>
+        /// 门诊退费 冻结库存返还
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        string OutpatientCancelDjYpReturn(OutpatientCancelAllBookRequestDTO request);
+
+        /// <summary>
         /// 门诊确定资源（commit）
         /// </summary>
         /// <param name="request"></param>
