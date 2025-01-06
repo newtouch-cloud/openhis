@@ -129,7 +129,7 @@ where a.zt = '1' and b.zt = '1' and c.zt = '1' and c.Id is not null and a.UserId
 from Sys_Department dept
 left join Sys_Organize org on org.Id = dept.OrganizeId
 left join Sys_Items it on it.Name like '%医保科室%'
-left join Sys_ItemsDetail de  on it.id = de.ItemId and de.OrganizeId= dept.OrganizeId  and de.zt=1 and dept.ybksbm=de.Code
+left join Sys_ItemsDetail de  on it.id = de.ItemId and (de.OrganizeId= dept.OrganizeId or de.organizeid='*')   and de.zt=1 and dept.ybksbm=de.Code
 where dept.OrganizeId = @OrganizeId
 order by dept.CreateTime desc";
             return this.FindList<SysDepartmentVO>(sql, new[] { new SqlParameter("@OrganizeId", organizeId ?? "") });

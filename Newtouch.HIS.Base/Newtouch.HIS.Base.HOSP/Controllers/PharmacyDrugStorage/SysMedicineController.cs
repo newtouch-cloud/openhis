@@ -116,7 +116,7 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                 throw new FailedException("请选择医疗机构（医院或诊所）");
             }
             _sysMedicineDmnService.SubmitMedicine(model, keyValue);
-            var t = _sysPharmacyDepartmentApp.SubmitEmpowermentPharmacyDepartment(keyValue, ypCode, OrganizeId, UserIdentity.UserCode, p);
+            var t = _sysPharmacyDepartmentApp.SubmitEmpowermentPharmacyDepartment(keyValue, ypCode, model.OrganizeId, UserIdentity.UserCode, p);
 
             var msg = string.IsNullOrWhiteSpace(t) ? "操作成功。" : ("保存药品信息成功，但授权药房药库失败，" + t);
             return Success(msg);
@@ -220,9 +220,9 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         /// 获取所有药房药库
         /// </summary>
         /// <returns></returns>
-        public ActionResult GetAllYfbm()
+        public ActionResult GetAllYfbm(string organizeId)
         {
-            var result = _sysPharmacyDepartmentRepo.GetEffectiveList(OrganizeId, null);
+            var result = _sysPharmacyDepartmentRepo.GetEffectiveList(organizeId ?? OrganizeId, null);
             return Success("", result.ToJson());
         }
 
@@ -231,9 +231,9 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         /// </summary>
         /// <param name="ypId"></param>
         /// <returns></returns>
-        public ActionResult GetEmpowermentPharmacyDepartment(string ypId)
+        public ActionResult GetEmpowermentPharmacyDepartment(string ypId, string organizeId)
         {
-            var result = _sysPharmacyDepartmentApp.EmpowermentPharmacyDepartmentQuery(ypId, OrganizeId);
+            var result = _sysPharmacyDepartmentApp.EmpowermentPharmacyDepartmentQuery(ypId, organizeId ?? OrganizeId);
             return Content(result.ToJson());
         }
 

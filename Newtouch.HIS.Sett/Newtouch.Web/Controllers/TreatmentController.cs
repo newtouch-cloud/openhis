@@ -14,9 +14,9 @@ using Newtouch.Core.Common;
 
 namespace Newtouch.HIS.Web.Controllers
 {
-    
 
-    public class TreatmentController :OrgControllerBase
+
+    public class TreatmentController : OrgControllerBase
     {
 
         private readonly ITreatmentportfolioRepo _treatmentportfolio;
@@ -25,33 +25,36 @@ namespace Newtouch.HIS.Web.Controllers
         // GET: Treatment
         public ActionResult Index()
         {
-            
-            return View();
-        }
-        
-        
-        public ActionResult AForm() {
 
-            
             return View();
         }
 
-        public ActionResult tianjia(TreatmentportfolioEntity entity, string keyValue) {
-            
+
+        public ActionResult AForm()
+        {
+
+
+            return View();
+        }
+
+        public ActionResult tianjia(TreatmentportfolioEntity entity, string keyValue)
+        {
+
             //_treatmentportfolio.Insert(collection["OrganizeId"], collection["zhmc"], collection["zhcode"], collection["ord"], collection["zlxm"], collection["zlxmmc"], collection["price"], collection["zlxmpy"], collection["zhje"]);
-            _treatmentportfolio.ADDInsert(entity,keyValue);
+            _treatmentportfolio.ADDInsert(entity, keyValue);
 
             return Success("操作成功");
         }
 
 
-       
+
 
         /// <summary>
         /// 页面加载时的数据
         /// </summary>
         /// <returns></returns>
-        public ActionResult Login( string keyword) {
+        public ActionResult Login(string keyword)
+        {
 
 
             //var data = keyword == "" ? _treatmentportfolio.Listselect().ToJson() : _treatmentportfolio.Keyword(keyword).ToJson();
@@ -61,67 +64,70 @@ namespace Newtouch.HIS.Web.Controllers
 
         }
 
-
-        public ActionResult loginfy(Pagination pagination,string keyword) {
-            
-                var data = new
-                {
-                    rows = keyword == "" ? _treatmentportfolio.Loginview(pagination).ToJson() : _treatmentportfolio.Keyword(pagination,keyword).ToJson(),
-                    total = pagination.total,
-                    page = pagination.page,
-                    records = pagination.records,
-
-        };
-            
+        /// <summary>
+        /// 查询收费项目组合
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="keyword"></param>
+        /// <param name="OrganizeId"></param>
+        /// <returns></returns>
+        public ActionResult loginfy(Pagination pagination, string keyword, string OrganizeId)
+        {
+            var data = new
+            {
+                rows = _treatmentportfolio.Keyword(pagination, keyword, OrganizeId).ToJson(),
+                total = pagination.total,
+                page = pagination.page,
+                records = pagination.records,
+            };
             return Content(data.rows);
         }
 
-
-        public ActionResult selectid(TreatmentportfolioEntity entity, string keyValue)
+        /// <summary>
+        /// 删除收费项目组合
+        /// </summary>
+        /// <param name="keyValue"></param>
+        /// <returns></returns>
+        public ActionResult deleteid(string keyValue, string orgId)
         {
-            var data = _treatmentportfolio.selectid(entity, keyValue);
-            string a = data[0].ToJson();
-            return Content(data[0].ToJson());
-        }
-
-
-        public ActionResult Updatexg(TreatmentportfolioEntity entity, string keyValue) {
-            _treatmentportfolio.Updatexg(entity,keyValue);
-            return Success("修改成功");
-        }
-
-
-        public ActionResult deleteid(string keyValue) {
-            _treatmentportfolio.deleteid(keyValue);
+            _treatmentportfolio.deleteid(keyValue, orgId);
             return Success("删除成功");
         }
 
-        public ActionResult deletemc(string keyValue,string zhcodemc)
+        /// <summary>
+        /// 删除收费组合中明细
+        /// </summary>
+        /// <param name="keyValue"></param>
+        /// <param name="zhcodemc"></param>
+        /// <returns></returns>
+        public ActionResult deletemc(string keyValue, string zhcodemc, string orgId = null)
         {
-            _treatmentportfolio.deletemc(keyValue, zhcodemc);
+            _treatmentportfolio.deletemc(keyValue, zhcodemc, orgId ?? OrganizeId);
             return Success("删除成功");
         }
 
-
+        /// <summary>
+        /// 保存收费项目组合
+        /// </summary>
+        /// <param name="dataset"></param>
+        /// <returns></returns>
         [HttpPost]
         [HandlerAjaxOnly]
-        public ActionResult rowdata(string dataset) {
+        public ActionResult rowdata(string dataset, string orgId = null)
+        {
             JArray jar = JArray.Parse(dataset);
             for (int i = 0; i < jar.Count; i++)
             {
                 JObject jobjar = JObject.Parse(jar[i].ToString());
 
                 string zhcodetj = jobjar["zhcode"].ToString();
-                string sfxmmc123 = jobjar["zlxmmc"].ToString();
-                if (_treatmentportfolio.TJchaxun(zhcodetj, sfxmmc123).Count > 0)
+                string sfxmmc = jobjar["zlxmmc"].ToString();
+                if (_treatmentportfolio.TJchaxun(zhcodetj, sfxmmc, orgId ?? OrganizeId).Count > 0)
                 {
                     continue;
                 }
-                else {
-
-                    //string sfdl = jobjar["sfdl"].ToString();
-                    var sfdlsu=_treatmentportfolio.sfdlcx(sfxmmc123);
-
+                else
+                {
                     TreatmentportfolioEntity addrow = new TreatmentportfolioEntity
                     {
                         zhmc = jobjar["zhmc"].ToString(),
@@ -131,43 +137,50 @@ namespace Newtouch.HIS.Web.Controllers
                         zlxmmc = jobjar["zlxmmc"].ToString(),
                         price = decimal.Parse(jobjar["price"].ToString()),
                         zlxmpy = jobjar["zlxmpy"].ToString(),
-                        OrganizeId = OrganizeId,
-                        sfdl = sfdlsu
+                        OrganizeId = orgId ?? OrganizeId,
+                        sfdl = jobjar["sfdlcode"].ToString()
                     };
                     _treatmentportfolio.ADDrowdata(addrow);
                 }
-                
+
             }
-            
+
             return Success("添加成功");
         }
-
-
-
-
+        /// <summary>
+        /// 是否已存在收费项目组合
+        /// </summary>
+        /// <param name="zhcodetj"></param>
+        /// <param name="sfxmmc123"></param>
+        /// <returns></returns>
         [HttpPost]
         [HandlerAjaxOnly]
-        public ActionResult Tjchaxun(string zhcodetj,string sfxmmc123) {
+        public ActionResult Tjchaxun(string zhcodetj, string sfxmmc, string orgId = null)
+        {
 
-            var data = _treatmentportfolio.TJchaxun(zhcodetj,sfxmmc123);
+            var data = _treatmentportfolio.TJchaxun(zhcodetj, sfxmmc, orgId ?? OrganizeId);
             if (data.Count > 0)
             {
                 return Content("1");
             }
-            else {
+            else
+            {
                 return Content("0");
             }
-            
-        }
 
+        }
+        /// <summary>
+        /// 获取修改收费项目组合
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="zhcode"></param>
+        /// <returns></returns>
         [HttpPost]
         [HandlerAjaxOnly]
-        public ActionResult Codecx(TreatmentportfolioEntity entity, string zhcode)
+        public ActionResult Codecx(TreatmentportfolioEntity entity, string zhcode, string orgId)
         {
-            var data = _treatmentportfolio.Codecx(entity,zhcode);
-            var str = JsonConvert.SerializeObject(_treatmentportfolio.Codecx(entity, zhcode));
-            var a = data.ToJson();
-            return Content(str);
+            var data = JsonConvert.SerializeObject(_treatmentportfolio.Codecx(orgId ?? OrganizeId, zhcode));
+            return Content(data);
         }
 
 
