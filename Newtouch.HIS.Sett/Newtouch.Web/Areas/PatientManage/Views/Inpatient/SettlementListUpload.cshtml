@@ -64,12 +64,12 @@
                     <input type="button" id="btn_jsqdquery" class="btn btn-info" style="width:21%;display:inline-block;" value="(4103)结算清单信息查询" />
                     <input type="button" id="btn_querynum" class="btn btn-info" style="width:27.5%;display:inline-block;" value="(4105)查询结算清单数量统计结果" />
                 </td>
-                <td class="formValue">
+                <td class="formValue" colspan="4">
                     <input type="button" id="btn_jsqdall" class="btn btn-info" style="display:inline-block;" value="结算清单全部上传" />
-                </td>
-                <td class="formValue">
                     <input type="button" id="btn_jsqdsubmitall" class="btn btn-info" style="display:inline-block;" value="结算清单状态全部提交" />
+                    <input type="button" id="btn_jsqdSubmitRevoke" class="btn btn-info" style="width:21%;display:inline-block;" value="结算清单提交撤销" />
                 </td>
+               
                 <th class="formTitle"></th>
                 <td class="formValue" colspan="2"></td>
             </tr>
@@ -176,12 +176,35 @@
             $.modalAlert("错误：选择的是已提交", "error");
             return;
         }
-        upqddataupdate(zyh)
+        upqddataupdate(zyh, "1")
+
+    });
+    //结算清单提交撤销
+    $('#btn_jsqdSubmitRevoke').click(function () {
+        var seleRow = check1();
+        if (!!!seleRow) {
+            return;
+        }
+        var isBrxzOk = seleRow.brxz == '0';
+        if (isBrxzOk) {
+            $.modalAlert("错误：选择的是非医保", "error");
+            return;
+        }
+        var zyh = seleRow.zyh;
+        if (seleRow.sczt == "未上传") {
+            $.modalAlert("错误：请选择已上传的数据进行提交", "error");
+            return;
+        }
+        if (seleRow.sczt == "未提交") {
+            $.modalAlert("错误：请选择已提交的数据进行回滚", "error");
+            return;
+        }
+        upqddataupdate(zyh, "0")
 
     });
     //结算清单全部提交
     $('#btn_jsqdsubmitall').click(function () {
-        upqddataupdate()
+        upqddataupdate("", "1")
     });
     //结算清单信息查询
     $('#btn_jsqdquery').click(function () {
@@ -237,6 +260,7 @@
             }
         });
     });
+
     function upqddata()
     {
         $.ajax({
@@ -288,9 +312,10 @@
             }
         });
     }
-    function upqddataupdate(zyh)
+
+    function upqddataupdate(zyh, stas_type)
     {
-        var dbscobj = { mdtrt_id: "", psn_no: "", hisId: zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: "" };
+        var dbscobj = { mdtrt_id: "", psn_no: "", hisId: zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: "", stas_type: stas_type };
         $.ajax({
             type: "POST",
             url: "http://127.0.0.1:33333/api/YiBao/MedicalSettlementUpdate_4102",
@@ -303,13 +328,21 @@
                     if (tfReturn.infcode == 0 || tfReturn.infcode == "0") {
                         $.loading(false);
                         $('#btn_search').trigger('click');
-                        $.modalAlert("提交成功", 'warning');
+                        if (stas_type == "0") {
+                            $.modalAlert("状态回撤成功", 'warning');
+                        } else {
+                            $.modalAlert("提交成功", 'warning');
+                        }
                         return;
                     }
                     else {
                         $.loading(false);
                         $('#btn_search').trigger('click');
-                        $.modalAlert("提交失败：" + tfReturn.err_msg, 'error');
+                        if (stas_type == "0") {
+                            $.modalAlert("状态回撤失败：" + tfReturn.err_msg, 'error');
+                        } else {
+                            $.modalAlert("提交失败：" + tfReturn.err_msg, 'error');
+                        }
                         return;
                     }
                 }
@@ -320,7 +353,7 @@
             }
         });
     }
-        function uploadData(upobj) {
+    function uploadData(upobj) {
             var seleRow = check1();
             if (!!!seleRow) {
                 return;
@@ -370,8 +403,9 @@
                     $.modalAlert("服务异常：", 'error');
                 }
             });
-        }
-        function check1() {
+    }
+
+    function check1() {
             var seleRow = $("#gridList").jqGridRowValue();
             var zyh = seleRow.zyh;
             if (!!!zyh) {
@@ -388,6 +422,7 @@
             }
             return seleRow;
     }
+
     function btn_edit() {
         var keyValue = $("#gridList").jqGridRowValue().zyh;
         if (!!!keyValue) {
@@ -404,6 +439,7 @@
             }
         });
     }
+
     function getUrl() {
         var srcUrl = '@Html.Raw(reportUrl)';
 
