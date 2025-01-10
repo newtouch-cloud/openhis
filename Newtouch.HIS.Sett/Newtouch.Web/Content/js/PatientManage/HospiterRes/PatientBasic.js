@@ -250,7 +250,16 @@ function initControl() {
             return resultObjArr;
         }
     });
-
+    //婚姻
+    $("#hf").newtouchBindSelect({
+        datasource: function () {
+            var resultObjArr = new Array();
+            $.each($.itemDetails.getItems('hy'), function () {
+                $('#hf').append('<option value="' + this.Code + '">' + this.Name + '</option>');
+            });
+            return resultObjArr;
+        }
+    });
     //紧急联系人关系
     $("#jjllrgx").newtouchBindSelect({
         datasource: function () {
