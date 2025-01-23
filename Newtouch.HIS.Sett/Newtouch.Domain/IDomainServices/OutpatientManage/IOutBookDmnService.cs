@@ -16,7 +16,7 @@ namespace Newtouch.HIS.Domain.IDomainServices.OutpatientManage
         void SaveDatapb(List<OutBookScheduleEntity> pbList, string orgId);
         void SaveDatatzcz(Decimal ScheduId, string czzt, string orgId,string tzyy);
         string getStaffName(string gh);
-        OutBookVO getArrangeInfo(int ghpbId);
+        OutBookVO getArrangeInfo(int ghpbId,string orgId);
         OutBookDateVO getDateInfo(string organizeId, int ghpbId);
         IList<OutBookDateVO>  getDateTimeInfo(string organizeId, int ghpbId,string timeslot);
         int UpdateArrange(OutBookArrangeVO entity, int ghpbId, string orgId, string User, DateTime Time);

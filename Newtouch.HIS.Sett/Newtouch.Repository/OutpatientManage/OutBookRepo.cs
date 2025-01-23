@@ -21,8 +21,8 @@ namespace Newtouch.HIS.Repository.OutpatientManage
         }
 
         //根据科室获取医生
-        public IList<string> getStaffByKs(string ks) {
-            string sql = "select ys from [dbo].[mz_ghpb_rel_doc]  where 1=1 and zt='1'";
+        public IList<string> getStaffByKs(string ks,string orgId) {
+            string sql = "select ys from [dbo].[mz_ghpb_rel_doc]  where 1=1 and zt='1' and OrganizeId=@orgId";
             //var para = new List<SqlParameter>();
             if (!string.IsNullOrWhiteSpace(ks))
             {
@@ -32,18 +32,20 @@ namespace Newtouch.HIS.Repository.OutpatientManage
             //var result = this.FindList<OutBookRelEntity>(sql, para.ToArray()).FirstOrDefault();
             //return result;
             var result= this.FindList<string>(sql, new SqlParameter[] {
-                new SqlParameter("@ks",ks)
+                new SqlParameter("@ks",ks),
+                  new SqlParameter("@orgId",orgId)
             });
             return result;
         }
 
         //设置科室下状态为0
-        public int updateZt(string ks, string CreateCode, DateTime CreateTime) {
-            string sql = "update mz_ghpb_rel_doc set zt='0',LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode where ks=@ks";
+        public int updateZt(string ks, string CreateCode, DateTime CreateTime,string orgId) {
+            string sql = "update mz_ghpb_rel_doc set zt='0',LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode where ks=@ks and OrganizeId=@orgId";
             SqlParameter[] para ={
                 new SqlParameter("@LastModifyTime",Convert.ToDateTime(CreateTime)),
                 new SqlParameter("@LastModifierCode",CreateCode ?? ""),
-                new SqlParameter("@ks",ks ?? "")
+                new SqlParameter("@ks",ks ?? ""),
+                 new SqlParameter("@orgId",orgId)
                 };
             return this.ExecuteSqlCommand(sql, para);
         }
@@ -51,12 +53,13 @@ namespace Newtouch.HIS.Repository.OutpatientManage
         public int SubmitForm(string orgId, string ks, string gh, string CreateCode, DateTime CreateTime) {
             if (this.IQueryable().Any(p => p.ks == ks && p.ys == gh))
             {//设置zt=1
-                string sql = "update mz_ghpb_rel_doc set zt='1',LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode where ks=@ks and ys=@ys";
+                string sql = "update mz_ghpb_rel_doc set zt='1',LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode where ks=@ks and ys=@ys and OrganizeId=@orgId";
                 SqlParameter[] para ={
                 new SqlParameter("@LastModifyTime",Convert.ToDateTime(CreateTime)),
                 new SqlParameter("@LastModifierCode",CreateCode ?? ""),
                 new SqlParameter("@ks",ks ?? ""),
-                new SqlParameter("@ys",gh ?? "")
+                new SqlParameter("@ys",gh ?? ""),
+                new SqlParameter("@orgId",orgId)
                 };
                 return this.ExecuteSqlCommand(sql, para);
             }
@@ -102,12 +105,13 @@ namespace Newtouch.HIS.Repository.OutpatientManage
                 //sql += " where ks=@ks";
                 //para.Add(new SqlParameter("@ks", ks));
 
-                string sql = "update mz_ghpb_rel_doc set ys=@ys,zt='1',LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode where ks=@ks";
+                string sql = "update mz_ghpb_rel_doc set ys=@ys,zt='1',LastModifyTime=@LastModifyTime,LastModifierCode=@LastModifierCode where ks=@ks and OrganizeId=@orgId";
                 SqlParameter[] para ={
                 new SqlParameter("@ys",gh ?? ""),
                 new SqlParameter("@LastModifyTime",Convert.ToDateTime(CreateTime)),
                 new SqlParameter("@LastModifierCode",CreateCode ?? ""),
-                new SqlParameter("@ks",ks ?? "")
+                new SqlParameter("@ks",ks ?? ""),
+                new SqlParameter("@orgId",orgId)
                 };
                 return this.ExecuteSqlCommand(sql, para);
             }

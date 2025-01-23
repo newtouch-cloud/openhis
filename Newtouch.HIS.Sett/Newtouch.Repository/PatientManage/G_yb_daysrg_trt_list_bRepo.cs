@@ -32,70 +32,70 @@ namespace Newtouch.HIS.Repository.PatientManage
                 case "1301":
                     sqlstr = @"select  MED_LIST_CODG ,REG_NAME,DRUGSTDCODE,DRUG_DOSFORM,DRUG_DOSFORM_NAME,DRUG_TYPE,DRUG_SPEC,REG_DOSFORM,REG_SPEC,EACH_DOS,OTC_FLAG
 ,PACMATL,EFCC_ATD, MIN_PAC_CNT,MIN_PACUNT,MIN_PREPUNT,DRUG_EXPY,MIN_PRCUNT,PRODENTP_CODE,PRODENTP_NAME,MKT_STAS,VALI_FLAG,VER,VER_NAME 
-from NewtouchHIS_Base.[dbo].G_yb_wm_tcmpat_info_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or REG_NAME=@key) ";
+from NewtouchHIS_Base.[dbo].G_yb_wm_tcmpat_info_b with(nolock) where  MED_LIST_CODG like  @key or  REG_NAME like @key ";
                     break;
                 case "1302":
                     sqlstr = @"select MED_LIST_CODG,TCMHERB_NAME,MED_PART,CNVL_USED,NATFLA,CAT,BEGNDATE,ENDDATE,VALI_FLAG,VER,VER_NAME,MLMS_NAME,EFCC_ATD,PSDG_MTD,ECY_TYPE,MLMS_CAT_SOUC
-                        from NewtouchHIS_Base.[dbo].G_yb_tcmherb_info_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or TCMHERB_NAME=@key)";
+                        from NewtouchHIS_Base.[dbo].G_yb_tcmherb_info_b with(nolock) where  MED_LIST_CODG like @key or   TCMHERB_NAME like @key";
                     break;
                 case "1303":
                     sqlstr = @"select MED_LIST_CODG,DRUG_PRODNAME,DOSFORM,EFCC_ATD,DRUG_SPEC,EACH_DOS,DRUG_TYPE,PACMATL,MIN_PAC_CNT,MIN_PACUNT,MIN_PREPUNT,EFCC_ATD
 PSDG_MTD,VALI_FLAG,BEGNTIME,ENDTIME,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_selfprep_info_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or DRUG_PRODNAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_selfprep_info_b with(nolock) where  MED_LIST_CODG like @key or   DRUG_PRODNAME like @key";
                     break;
                 case "1305":
                     sqlstr = @"select MED_LIST_CODG,PRCUNT,PRCUNT_NAME,TRT_ITEM_DSCR,TRT_EXCT_CONT,VALI_FLAG,SERVITEM_TYPE,SERVITEM_NAME,BEGNDATE,ENDDATE,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_trt_serv_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or SERVITEM_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_trt_serv_b with(nolock) where  MED_LIST_CODG like @key  or   SERVITEM_NAME like @key ";
                     break;
                 case "1306":
                     sqlstr = @"select MED_LIST_CODG,HI_GENNAME,SPEC,MCS_MATL,BEGNDATE,ENDDATE,PRODENTP_CODE,PRODENTP_NAME,VALI_FLAG,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_mcs_info_b with(nolock) where (@key='' or MED_LIST_CODG=@key) or  (@key='' or HI_GENNAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_mcs_info_b with(nolock) where  MED_LIST_CODG like @key  or  HI_GENNAME like @key";
                     break;
                 case "1307":
                     sqlstr = @"select DIAG_LIST_ID,CPR,CPR_CODE_SCP,CPR_NAME,SEC_CODE_SCP,SEC_NAME,CGY_CODE,CGY_NAME,SOR_CODE,SOR_NAME,DIAG_CODE,DIAG_NAME,USED_STD,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_diag_list_b with(nolock)  where (@key='' or DIAG_CODE=@key) or  (@key='' or DIAG_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_diag_list_b with(nolock)  where  DIAG_CODE like @key or   DIAG_NAME like @key";
                     break;
                 case "1308":
                     sqlstr = @"select OPRN_STD_LIST_ID,CPR,CPR_CODE_SCP,CPR_NAME,CGY_CODE,CGY_NAME,SOR_CODE,SOR_NAME,DTLS_CODE,DTLS_NAME,OPRN_OPRT_CODE,OPRN_OPRT_NAME,
-VALI_FLAG,VER,VER_NAME from NewtouchHIS_Base.[dbo].G_yb_oprn_std_b with(nolock) where (@key='' or OPRN_OPRT_CODE=@key) or  (@key='' or OPRN_OPRT_NAME=@key)";
+VALI_FLAG,VER,VER_NAME from NewtouchHIS_Base.[dbo].G_yb_oprn_std_b with(nolock) where  OPRN_OPRT_CODE like @key or   OPRN_OPRT_NAME like @key ";
                     break;
                 case "1309":
                     sqlstr = @"select OPSP_DISE_CODE,OPSP_DISE_MAJCLS_NAME,OPSP_DISE_SUBD_CLSS_NAME,ADMDVS,VALI_FLAG,OPSP_DISE_NAME,OPSP_DISE_MAJCLS_CODE,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_opsp_dise_list_b with(nolock) where (@key='' or OPSP_DISE_CODE=@key) or  (@key='' or OPSP_DISE_MAJCLS_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_opsp_dise_list_b with(nolock) where  OPSP_DISE_CODE like @key or   OPSP_DISE_MAJCLS_NAME like @key";
                     break;
                 case "1310":
                     sqlstr = @"select DISE_SETL_LIST_ID,BYDISE_SETL_LIST_CODE,BYDISE_SETL_DISE_NAME,QUA_OPRN_OPRT_CODE,QUA_OPRN_OPRT_NAME,VALI_FLAG,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_dise_setl_list_b with(nolock)  where (@key='' or BYDISE_SETL_LIST_CODE=@key) or  (@key='' or BYDISE_SETL_DISE_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_dise_setl_list_b with(nolock)  where  BYDISE_SETL_LIST_CODE like @key or   BYDISE_SETL_DISE_NAME like @key ";
                     break;
                 case "1311":
                     sqlstr = @"select DAYSRG_TRT_LIST_ID,DAYSRG_DISE_LIST_CODE,DAYSRG_DISE_NAME,VALI_FLAG,QUA_OPRN_OPRT_CODE,QUA_OPRN_OPRT_NAME,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_daysrg_trt_list_b with(nolock) where (@key='' or DAYSRG_DISE_LIST_CODE=@key) or  (@key='' or DAYSRG_DISE_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_daysrg_trt_list_b with(nolock) where  DAYSRG_DISE_LIST_CODE like @key or   DAYSRG_DISE_NAME like @key";
                     break;
                 case "1313":
                     sqlstr = @"select TMOR_MPY_ID,TMOR_CELL_TYPE_CODE,TMOR_CELL_TYPE,MPY_TYPE_CODE,MPY_TYPE,VALI_FLAG,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_tmor_mpy_b with(nolock)  where (@key='' or TMOR_CELL_TYPE_CODE=@key) or  (@key='' or TMOR_CELL_TYPE=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_tmor_mpy_b with(nolock)  where  TMOR_CELL_TYPE_CODE like @key or TMOR_CELL_TYPE like @key";
                     break;
                 case "1314":
                     sqlstr = @"select TCM_DIAG_ID,CATY_CGY_CODE,CATY_CGY_NAME,SPCY_SYS_TAXA_CODE,SPCY_SYS_TAXA_NAME,DISE_TYPE_CODE,DISE_TYPE_NAME,VALI_FLAG,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_tcm_diag_b with(nolock)  where (@key='' or DISE_TYPE_CODE=@key) or  (@key='' or DISE_TYPE_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_tcm_diag_b with(nolock)  where  DISE_TYPE_CODE like @key or  DISE_TYPE_NAME like @key ";
                     break;
                 case "1315":
                     sqlstr = @"select TCMSYMP_ID,SDS_CGY_CODE,SDS_CGY_NAME,SDS_ATTR_CODE,SDS_ATTR,SDS_TYPE_CODE,SDS_TYPE_NAME,VALI_FLAG,VER,VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_tcmsymp_type_b with(nolock) where (@key='' or SDS_TYPE_CODE=@key) or  (@key='' or SDS_TYPE_NAME=@key)";
+from NewtouchHIS_Base.[dbo].G_yb_tcmsymp_type_b with(nolock) where SDS_TYPE_CODE like @key or  SDS_TYPE_NAME like @key";
                     break;
                 case "1320":
                     sqlstr = @"select ZYPFKL_CODE, ZYPFKL_NAME, DDYC, GG, ZYPFKLZXBZ, ZYYP_CODE, ZYYP_NAME, YC_NAME, GXFL,GNZZ, CGYF, SJGXSJ, CJJG_CODE, YBQH, VER
-from NewtouchHIS_Base.[dbo].G_yb_zypfklmu_list_b with (nolock) where(@key = '' or ZYPFKL_NAME = @key) or(@key = '' or YC_NAME = @key)";
+from NewtouchHIS_Base.[dbo].G_yb_zypfklmu_list_b with (nolock) where ZYPFKL_NAME like @key or YC_NAME like @key";
                     break;
                 case "1321":
                     sqlstr = @"select YLML_CODE, YLFWXM_NAME, YLFWXMSC, JGGC, JJDW, JJSM, ZLXMSM, FYLXKJ, EFFECTIVE_TIME, EXPIRATION_TIME, VER, VER_NAME
-from NewtouchHIS_Base.[dbo].G_yb_ylfuxm_new_list_b with (nolock) where(@key = '' or YLML_CODE = @key) or(@key = '' or YLFWXM_NAME = @key)";
+from NewtouchHIS_Base.[dbo].G_yb_ylfuxm_new_list_b with (nolock) where YLML_CODE like @key or YLFWXM_NAME like @key";
                     break;
                 default:
                     break;
             }
             try {
-                pars.Add(new SqlParameter("@key", key));
+                pars.Add(new SqlParameter("@key",'%'+key+'%'));
                 return QueryWithPage<G_yb_mluCommon_Info>(sqlstr.ToString(), pagination, pars.ToArray());
             }
             catch (Exception e) {
