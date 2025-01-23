@@ -217,6 +217,13 @@ namespace JSViewer_MVCCore.Controllers
             var reqstr = templateId+","+ hospitalCode+","+ reportdec;
             return new ObjectResult(WqsjResponse.ToResponse(true, "", reqstr));
         }
+        /// <summary>
+        /// 获取有效报表
+        /// </summary>
+        /// <param name="reportCode"></param>
+        /// <param name="hospitalCode"></param>
+        /// <param name="systemCode"></param>
+        /// <returns></returns>
         [HttpGet("GetTempLateData/{reportCode}/{hospitalCode}/{systemCode}")]
         public ActionResult GetTempLateData(string reportCode, string hospitalCode,string systemCode)
         {

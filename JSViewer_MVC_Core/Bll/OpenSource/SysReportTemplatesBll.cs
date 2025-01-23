@@ -115,7 +115,7 @@ namespace JSViewer_MVC_Core.Bll.OpenSource
                 var d = Models.Enums.ReportType.AREA;
                 //int status = Models.Enums.Status.qy;
 
-                var template = context.SysReportTemplate.FirstOrDefault(x => x.HospitalCode == hospitalCode && x.TemplateID == TemplateId && x.zt==1);
+                var template = context.SysReportTemplate.OrderByDescending(x=>x.HospitalCode).FirstOrDefault(x => (x.HospitalCode == hospitalCode || x.HospitalCode == "*") && x.TemplateID == TemplateId && x.zt==1);
                 if (template == null)
                 {
                     promptMsg = "模板目录不存在";
@@ -126,7 +126,7 @@ namespace JSViewer_MVC_Core.Bll.OpenSource
                 {
                     return true;
                 }
-                var temp = context.SysReport.FirstOrDefault(x=>x.ReportCode== template.ReportCode && x.zt==1);
+                var temp = context.SysReport.FirstOrDefault(x=>x.ReportCode== template.ReportCode && x.HospitalCode== template.HospitalCode && x.zt==1);
                 string content = string.Empty;
                 System.Text.UTF8Encoding utf8 = new System.Text.UTF8Encoding();
                 switch ((Models.Enums.ReportType)temp.ReportType)
@@ -164,7 +164,8 @@ namespace JSViewer_MVC_Core.Bll.OpenSource
         public string GetTempLateData(string templateCode, string hospitalCode,string systemCode)
         {
             using (NewTouchKyContext context = new NewTouchKyContext()) {
-                var template = context.SysReportTemplate.FirstOrDefault(x => x.ReportCode == templateCode && x.HospitalCode == hospitalCode && x.SystemCode==systemCode && x.ReportStatus==1 && x.zt == 1);
+                //获取当前机构报表 如无获取*号报表
+                var template = context.SysReportTemplate.OrderByDescending(x=>x.HospitalCode).FirstOrDefault(x => x.ReportCode == templateCode && (x.HospitalCode == hospitalCode || x.HospitalCode=="*") && x.SystemCode==systemCode && x.ReportStatus==1 && x.zt == 1);
 
                 if (template == null)
                     return "";

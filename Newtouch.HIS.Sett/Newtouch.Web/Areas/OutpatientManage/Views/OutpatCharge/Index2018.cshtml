@@ -37,6 +37,7 @@
     var openszsh = SysConfigReader.Bool("Out_Inpat_SzshFlag");
     var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var ReportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
     //就诊凭证类型是否从医保端获取
     var YB_Jzpzl = SysConfigReader.String("YB_Jzpzl");
     //挂号是是否进行医保登记交易
@@ -674,7 +675,7 @@
 
     //添加
     function newtouch_event_f2() {
-        
+
         if (editingNewid) {
             return; //正在处于修改状态，是不能点击添加按钮的   要disable处理
         }
@@ -818,7 +819,7 @@
 
     //F4清除
     function newtouch_event_f4() {
-        
+
         sItemList = null;
         settOnce = null;
         isYbjyjz = null;
@@ -909,7 +910,7 @@
 
     //获取明细
     function getEditRowData() {
-        
+
         var tempCfh = "";
         if ($('#yzlx').val() == "2") {
             //药品
@@ -1351,6 +1352,7 @@
 				payoptype.begntime = $.getDate();
 				payoptype.operatorId = '@(opr.rygh)';
 			    payoptype.operatorName = '@(opr.UserName)';
+			    payoptype.orgId= '@(opr.OrganizeId)';
 			    payoptype.hisId = patModel.mzh;
 				$.ajax({
 					type: "POST",
@@ -1395,7 +1397,7 @@
 
     /* 撤销所有已上传未结算明细 新版国家医保通用*/
     function CQmxcx() {
-        
+
         var msg = "";
         var mxscobj = {
             hisId: MZJS.jzxx.hisId, operatorId: '@(opr.rygh)',
@@ -1534,7 +1536,7 @@
 	    {
 	        jylsh = "0000";
 	    }
-	        
+
 		$.ajax({
             type: 'POST',
 		    url: "/OutpatientManage/OutpatCharge/GetChongQingDetailsMzjsYb",
@@ -1573,7 +1575,7 @@
                             dataType: "json",
                             async: false,
                             success: function (data) {
-                                
+
                                 var upDataReturn = eval('(' + data + ')');
                                 if (!upDataReturn) {
                                     MZJS.setCurrentState(-1, "医保服务(门诊费用明细信息上传)返回信息为空");
@@ -1801,7 +1803,7 @@
                         }
                         else {
                             MZJS.setCurrentState(0, "");
-                            MZJS.cfList[MZJS.index].ybjyFeeReturn = ybjyCqFeeReturn; 
+                            MZJS.cfList[MZJS.index].ybjyFeeReturn = ybjyCqFeeReturn;
                         }
 					} else {
 				        MZJS.setCurrentState(-1, "医保结算失败：" + Veremg(ybjsSettReturn));
@@ -1910,7 +1912,7 @@
             height: heightpx,
             callBack: function (iframeId) {
                 $.currentWindow(iframeId).AcceptClick(function (feeRelated, outTradeNo) {
-                    
+
                     $.loading(true, '正在进行HIS结算，请稍候...');
                     subMzh = "";
                     subMzh = patModel.mzh;
@@ -1928,7 +1930,7 @@
                 });
             },
             cancelCallBack: function (iframeId) {
-                
+
                 if (isYbjyjz) {
                     var errMsg = "";
                     switch (cqPatInfo.ybVer) {
@@ -1951,7 +1953,7 @@
     //多处方结算
     function SubmitAllCfSett(xmzje, isYbjyjz, ybjyFeeReturn, feeRelated, outTradeNo)
     {
-        
+
         var success = true;
         var errMsg = "";
         var stroutTradeNo = (!!outTradeNo ? outTradeNo : "");
@@ -1985,7 +1987,7 @@
                 errMsg = "HIS结算失败：" + ajaxresp.message;
                 return;
             }
-            
+
 			if (ajaxresp.data && ajaxresp.data.jsnm) {
 				///pacs接口调用
 				//$.ajax({
@@ -2014,6 +2016,7 @@
                 //});
                 paySettlementNo = "";
                 paySettlementNo = ajaxresp.data.jsnm;
+                CQPrintBSBill(ajaxresp.data.jsnm);
             }
             else {
                 success = false;
@@ -2054,7 +2057,7 @@
                         if ('@(autoPrintFP)' === 'True')
                             window.open(data.data.pictureUrl,
                                 "_blank",
-                                "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");   
+                                "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
                         $.loading(false);
                     }, 3000);
                 }
@@ -2086,7 +2089,7 @@
                 if (data.code == "0") {
                     window.open(data.data.pictureUrl,
                         "_blank",
-                        "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");                    
+                        "height=1000, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
                 }
                 else {
                     $.loading(false);
@@ -2223,6 +2226,7 @@
                     paySettlementNo = ajaxresp.data.jsnm;
                     /* 设置处方HIS结算成功状态 */
                     MZJS.cfList[m].his_js_error = 0;
+                    CQPrintBSBill(ajaxresp.data.jsnm);
                     @*if (openCfdYReport === 'True') {
                         jsnmstr = jsnmstr + ajaxresp.data.jsnm + ",";
                         if (m == MZJS.cfList.length - 1) {
@@ -2375,12 +2379,13 @@
      /* BS发票打印 */
     function CQPrintBSBill(jsnm) {
         //var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + jsnm;
-        var uri = '@reportUrl' + "?tempCode=02" + "&hospitalCode=" + orgId + "&jsnm=" + jsnm;
+        var uri = '@reportUrl' + "?tempCode=02" + "&systemCode=" + '@Html.Raw(ReportSystemCode)'+ "&hospitalCode=" + orgId + "&jsnm=" + jsnm;
         window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
     }
      /* YK BS发票打印 */
     function YKPrintBSBill(jsnm) {
-        var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + jsnm;
+        var uri = '@reportUrl' + "?tempCode=02" + "&systemCode=" + '@Html.Raw(ReportSystemCode)' + "&hospitalCode=" + orgId + "&jsnm=" + jsnm;
+        //var uri = '@Html.Raw(invoiceReportUrl)' + "&jsnm=" + jsnm;
         window.open(uri, "_blank", "height=500, width=1195,top=100, left=50, toolbar =no, menubar=no, scrollbars=yes, resizable=yes, location=no, status=no");
     }
 
@@ -2544,7 +2549,7 @@
 
 
     function cq_getCurrentTsbbz() {
-        
+
         var info = { rs: true, ryzd: "", yllb: "11", ryzdmc: "" };
         if (cqPatInfo) {
             if (cqPatInfo.xzlx == "390")
@@ -3137,7 +3142,7 @@
         settOnce = ybSettOnce && (isYbjyjz | isXnhjyjz);
         respmzh = patModel.mzh;
         sItemList = null;
-        
+
         if (settOnce === true || settOnce === 1) {
             //直接列出全部待收费，必须一次性整体收费
             setTimeout('loadAllUnsetted("' + patModel.mzh + '")', 50);
@@ -3363,7 +3368,7 @@
 
     function ybszsh()
     {
-        var rcszsh = { "zyh": patModel.mzh, "operatorId": '@(opr.UserCode)', "operatorName": '@(opr.UserName)',"txlx":"mz" }
+        var rcszsh = { "zyh": patModel.mzh, "operatorId": '@(opr.UserCode)', "operatorName": '@(opr.UserName)', "orgId": '@opr.OrganizeId', insuplc_admdvs: cqPatInfo.xzqh, "txlx": "mz" }
         $.ajax({
             type: "POST",
             url: "http://127.0.0.1:33333/api/YiBao/Undereview_3102",

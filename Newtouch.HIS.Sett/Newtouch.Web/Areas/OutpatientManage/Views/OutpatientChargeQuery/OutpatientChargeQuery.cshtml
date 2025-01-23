@@ -30,6 +30,7 @@
     //医保所属地，区分系统将执行何处医保逻辑
     var medicalInsurance = SysConfigReader.String("Outpatient_MedicalInsurance");
     var reportUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportUrl");
+    var ReportSystemCode = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("ReportSystemCode");
 }
 <style>
     .form .formTitle {
@@ -184,7 +185,7 @@
                 { label: '费用性质', name: 'brxzmc', width: 90, align: 'left' },
                 { label: '发票号', name: 'fph', width: 80, align: 'left' },
                 { label: '医保结算号', name: 'zxlsh', width: 140, align: 'left' },
-              
+
                 {
                     label: '结算金额', name: 'jszje', width: 70, align: 'left', formatter: function (cellvalue) {
                         return cellvalue ? cellvalue.toFixed(2) : "0.00";
@@ -218,7 +219,7 @@
                                     //str += '<a class="btn btn-default" title="开具电子票据" style="width: 10%;" onclick="openInvoice(\'' + rowobject.mzh + '\',\'' + rowobject.jsnm + '\')">开票</a>';
                                     //str += '<a class="btn btn-default" title="查询打印发票" style="width: 10%;" onclick="queryInvoice(\'' + rowobject.jsnm + '\')">打票</a>';
                                     //str += '<a class="btn btn-default" title="打印发票凭条" style="width: 12%;" onclick="printReceipt(\'' + rowobject.mzh + '\',\'' + rowobject.jsnm + '\')">打小票</a>';
-                                   
+
                                 }
                                 else {
                                     //否则不打印
@@ -279,7 +280,7 @@
         var jsfph = $("#txtjsfph").val();
         var xm = $("#txtxm").val();
         var syy = $("#txtsyy").val();
-        var zxlsh = $("#txtzxlsh").val();  
+        var zxlsh = $("#txtzxlsh").val();
         var createTimestart = useSfrqFilter ? null : $("#txtCreateTimestart").val();
         var createTimeEnd = useSfrqFilter ? null : $("#txtCreateTimeEnd").val();
         var sfrqTimestart = useSfrqFilter ? $("#txtCreateTimestart").val() : null;
@@ -316,7 +317,7 @@
             dataType: "json",
             success: function (ajaxresp) {
                 $("#table_HJ").remove();
-                
+
                 $('#gridJSMXList').newtouchLocalDataGrid(null, ajaxresp.data.ghRecordsDetails);
                 jsmxarrlist = ajaxresp.data.ghRecordsDetails;
                 var fldata = uniq(ajaxresp.data.ghRecordsDetails,"dlmc");
@@ -349,7 +350,7 @@
             },
         ],
         onSelectRow: function (rowid, status) {
-            
+
             $('#gridrightList').jqGrid("clearGridData");
             var gridId = $("#gridleftList").jqGridRowValue().dlmc;
             var fllist = jsmxarrlist.filter(item => item.dlmc == gridId)
@@ -473,9 +474,9 @@
         //打印HIS收据（当前非发票）
         var uri;
         var orgId = '@(ViewBag.OrgId)';
-        uri = '@reportUrl' + "?tempCode=02" + "&hospitalCode=" + orgId + "&jsnm=" + jsnm;
+        uri = '@reportUrl' + "?tempCode=02" + "&systemCode=" + '@Html.Raw(ReportSystemCode)' + "&hospitalCode=" + orgId + "&jsnm=" + jsnm;
         if (jslx == 0) {
-            uri = '@reportUrl' + "?tempCode=01" + "&hospitalCode=" + orgId + "&jsnm=" + jsnm ;
+            uri = '@reportUrl' + "?tempCode=01" + "&systemCode=" + '@Html.Raw(ReportSystemCode)' + "&hospitalCode=" + orgId + "&jsnm=" + jsnm;
         }
         if (uri) {
             window.open(uri,
@@ -624,7 +625,7 @@
         $.loading(true, '正在查询门诊医保结算单据，请稍后...');
 
         var inputp0001 = { "mzzy_lx": "1", "setlId": setlId, "operatorId": '@curOpr.UserCode' , "operatorName": '@curOpr.UserName'  };
-       
+
         $.ajax({
             type: "POST",
             url: "http://127.0.0.1:33333/api/YiBao/Print_P0001",

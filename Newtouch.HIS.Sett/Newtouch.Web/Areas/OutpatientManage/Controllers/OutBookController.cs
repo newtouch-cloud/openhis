@@ -106,7 +106,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             var CreateCode = UserIdentity.UserName;
             var CreateTime = DateTime.Now;
             //设置该科室下状态为0
-            _OutBookRepo.updateZt(ks, CreateCode, CreateTime);
+            _OutBookRepo.updateZt(ks, CreateCode, CreateTime,OrganizeId);
             foreach (var gh in ghList)
             {
                 //新增 更新
@@ -123,8 +123,8 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             }
             else
             {
-                var result = _OutBookDmnService.getArrangeInfo(ghpbId);
-                var ghList = _OutBookRepo.getStaffByKs(result.ks);//根据科室获取医生工号列表
+                var result = _OutBookDmnService.getArrangeInfo(ghpbId,OrganizeId);
+                var ghList = _OutBookRepo.getStaffByKs(result.ks,OrganizeId);//根据科室获取医生工号列表
                 //if (result != null && result.mjzbz != ((int)EnumOutPatientType.expertOutpat).ToString())
                 //{
                 //    result.ys = getStaffGh(ghList);//拼接以逗号分割的医生工号
@@ -297,7 +297,7 @@ namespace Newtouch.HIS.Web.Areas.OutpatientManage.Controllers
             var oplist = new List<OutBookScheduleVO>();
             for (int i = 0; i < list.Count; i++)
             {
-                var ghList = _OutBookRepo.getStaffByKs(list[i].czks);//根据科室获取医生工号列表
+                var ghList = _OutBookRepo.getStaffByKs(list[i].czks,OrganizeId);//根据科室获取医生工号列表
                 list[i].ysgh = getStaffGh(ghList);
                 list[i].ysxm = getStaffName(ghList);//将医生工号列表转换成以逗号分割的医生姓名
             }

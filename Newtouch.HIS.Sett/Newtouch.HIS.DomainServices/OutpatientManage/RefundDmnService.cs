@@ -1692,8 +1692,8 @@ order by mzjs.CreateTime
      select ypjsmx.ghnm,ypjsmx.jsmxnm,ypjsmx.jslx
      ,ypjsmx.sl 
      --未发药 全部可退，  --已发药需要药房药库接口告知  已退药全部退掉后可以退费
-    ,case when cf.fybz = '2' then  CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end ktsl
-     ,case when cf.fybz = '2' then CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end tsl
+    ,case when cf.fybz = '2' and tymx.tysl>yp.bzs then  CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end ktsl
+     ,case when cf.fybz = '2' and tymx.tysl>yp.bzs then CONVERT(numeric, isnull(tymx.tysl,0)/yp.bzs) else ypjsmx.sl end tsl
      ,ypjsmx.jyje jsmxje
      ,ypmx.dj, 1 feeType, ypmx.dw
      ,cf.cfh

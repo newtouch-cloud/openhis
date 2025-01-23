@@ -49,8 +49,8 @@ from mz_ghpb_config ghpb
 left join NewtouchHIS_Base.[dbo].[V_S_xt_sfxm] sfxm 
 on  sfxm.sfxmCode=ghpb.ghlx and sfxm.OrganizeId = ghpb.OrganizeId
 left join NewtouchHIS_Base.[dbo].[V_S_Sys_Department] department 
-on ghpb.ks =department.Code
-left join (select zhcode,zhmc,OrganizeId from mz_gh_zlxmzh group by zhcode,zhmc,OrganizeId) zlsfxm 
+on ghpb.ks =department.Code and department.OrganizeId=ghpb.OrganizeId and department.zt='1'
+left join (select zhcode,zhmc,OrganizeId from mz_gh_zlxmzh where OrganizeId= @OrganizeId group by zhcode,zhmc,OrganizeId) zlsfxm 
 on zlsfxm.zhcode=ghpb.zlxm and zlsfxm.OrganizeId = ghpb.OrganizeId
 left join NewtouchHIS_Base.[dbo].[V_S_Sys_Staff] staff 
 on ghpb.ys=staff.gh  
@@ -99,7 +99,7 @@ on ghpb.ys=staff.gh
         }
 
         //排班页获取排班信息
-        public OutBookVO getArrangeInfo(int ghpbId) {
+        public OutBookVO getArrangeInfo(int ghpbId,string orgId) {
             if (ghpbId==0)
             {
                 return null;
@@ -116,8 +116,8 @@ ghpb.[zhl] ,ghpb.[ghzb],ghpb.[CreatorCode] ,ghpb.[CreateTime] ,ghpb.[LastModifyT
 ghpb.[px],ghpb.[ghlx] ,ghpb.[zlxm] ,ghpb.[mjzbz],sfxm.sfxmmc,zlsfxm.zhmc zlxmmc,department.name as ksmz,staff.name as ysxm 
 from mz_ghpb_config ghpb
 left join NewtouchHIS_Base.[dbo].[V_S_xt_sfxm] sfxm on  sfxm.sfxmCode=ghpb.ghlx and sfxm.OrganizeId = ghpb.OrganizeId
-left join NewtouchHIS_Base.[dbo].[V_S_Sys_Department] department on ghpb.ks =department.Code
-left join (select zhcode,zhmc,OrganizeId from mz_gh_zlxmzh group by zhcode,zhmc,OrganizeId) zlsfxm on zlsfxm.zhcode=ghpb.zlxm and zlsfxm.OrganizeId = ghpb.OrganizeId
+left join NewtouchHIS_Base.[dbo].[V_S_Sys_Department] department on ghpb.ks =department.Code  and ghpb.OrganizeId= department.OrganizeId and department.zt='1'
+left join (select zhcode,zhmc,OrganizeId from mz_gh_zlxmzh where OrganizeId=@orgId group by zhcode,zhmc,OrganizeId) zlsfxm on zlsfxm.zhcode=ghpb.zlxm and zlsfxm.OrganizeId = ghpb.OrganizeId
 left join NewtouchHIS_Base.[dbo].[V_S_Sys_Staff] staff on ghpb.ys=staff.gh and ghpb.OrganizeId=staff.OrganizeId
 where 1=1 ";
             if (ghpbId!=0)
@@ -125,7 +125,8 @@ where 1=1 ";
                 sql += " and ghpbId=@ghpbId ";
             }
             return this.FirstOrDefault<OutBookVO>(sql, new SqlParameter[] {
-                new SqlParameter("@ghpbId",ghpbId)
+                new SqlParameter("@ghpbId",ghpbId),
+                new SqlParameter("@orgId",orgId)
             });
         }
         public IList<OutBookDateVO> getDateTimeInfo(string organizeId, int ghpbId,string timeslot)
@@ -294,8 +295,9 @@ values(@ghpbId,@OrganizeId, @ks, @mjzbz, @ghlx,@zlxm, '1', @CreatorCode, @Create
                 };
             return this.ExecuteSqlCommand(sql, para);
         }
-        public int getghpbId() {
-            string sql = "select isnull(Max(ghpbId),0)+1 ghpbId from [dbo].[mz_ghpb_config] ";
+        public int getghpbId()
+        {
+            string sql = "select isnull(Max(ghpbId),0)+1 ghpbId from [dbo].[mz_ghpb_config]  ";
             return this.FirstOrDefault<int>(sql, new SqlParameter[] {
             });
         }

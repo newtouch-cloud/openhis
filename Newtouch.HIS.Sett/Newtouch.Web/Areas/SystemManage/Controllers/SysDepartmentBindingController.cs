@@ -57,7 +57,7 @@ namespace Newtouch.HIS.Web.Areas.SystemManage.Controllers
         {
             sysDepartmentBindgEntity.zt = sysDepartmentBindgEntity.zt == "true" ? "1" : "0";
             sysDepartmentBindgEntity.OrganizeId = this.OrganizeId;
-            var Screen = _sysDepartmentBindingRepo.FindEntity(o => o.ks == sysDepartmentBindgEntity.ks);
+            var Screen = _sysDepartmentBindingRepo.FindEntity(o => o.ks == sysDepartmentBindgEntity.ks && o.OrganizeId==OrganizeId && o.zt=="1");
             if (Screen!=null && !string.IsNullOrEmpty(Screen.bddm))
             {
                 return Error("请一一对应，不能绑定多个！");
