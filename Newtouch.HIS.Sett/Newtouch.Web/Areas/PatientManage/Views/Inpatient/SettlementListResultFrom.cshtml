@@ -8,16 +8,19 @@
 <form>
     <div class="gridPanel" style="margin-top:1%">
         <table id="gridList"></table>
-        <div id="gridPager"></div>
+        @*<div id="gridPager"></div>*@
+        <table id="detailGrid"></table>
     </div>
 </form>
 <script>
     var colModel;
     var zyh = $.request('zyh');
     var $gridList = $("#gridList");
+    var $detailGrid = $("#detailGrid");
     $(function () {
         gridListData();
         bindGridList();
+        displayDetailInfo([]);
     });
     function bindGridList() {
         colModel = [
@@ -44,6 +47,7 @@
             dataType: "json",
             async: false,
             success: function (data) {
+                debugger;
                 var tfReturn = eval('(' + data + ')');
                 if (tfReturn) {
                     if (tfReturn.infcode == 0 || tfReturn.infcode == "0") {
@@ -52,7 +56,10 @@
                             unwritten: false,
                             caption: "结算清单质控查询",
                             colModel: colModel,
-                        }, tfReturn.output.data);                    }
+                        }, tfReturn.output.data);
+                        // 调用显示详情信息表格的函数
+                        displayDetailInfo(tfReturn.output.data[0].detailinfo);
+                    }
                     else {
                         $.modalAlert("结算清单质控查询失败：" + tfReturn.err_msg, 'error');
                         return;
@@ -70,7 +77,7 @@
         var $gridList = $("#gridList");
         var captionCon = "质控结果";
         $gridList.dataGrid({
-            height: $(window).height() - 80,
+            height: $(window).height() - 300,
             caption: captionCon,
             multiselect: false,
             unwritten: false,
@@ -91,8 +98,28 @@
                 { label: '证件号码', name: 'cert_no', align: 'center', width: 100 },
 
             ],
-            pager: "#gridPager",
+            //pager: "#gridPager",
             viewrecords: true
         });
+    }
+
+    // 显示详情信息的函数
+    function displayDetailInfo(detailData) {
+        var $detailGrid = $("#detailGrid");
+        var detailColModel = [
+            { label: '错误等级', name: 'err_lv', align: 'center', width: 50 },
+            { label: '质控检查结果', name: 'qltctrl_chk_rslt', align: 'center', width: 150 },
+            { label: '初始值', name: 'init_val', align: 'center', width: 50 },
+            { label: '检查数据字段', name: 'exam_data_fld', align: 'center', width: 150 },
+            { label: '回退标志', name: 'retn_flag', align: 'center', width: 50 }
+        ];
+
+        // 创建并填充detailGrid表格
+        $detailGrid.newtouchLocalDataGrid({
+            autowidth: true,
+            unwritten: false,
+            caption: "质控详情",
+            colModel: detailColModel,
+        }, detailData.length > 0 ? detailData : [{/* Empty row to show column headers */ }]);
     }
 </script>
