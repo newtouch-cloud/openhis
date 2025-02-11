@@ -174,7 +174,13 @@ namespace Newtouch.HIS.Base.HOSP.Areas.Sys.Controllers
 			};
 			return Content(data.ToJson());
 		}
-
+        /// <summary>
+        /// 获取项目信息集合
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="keyword"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
 		public ActionResult Getxmxxlist(Pagination pagination, string keyword, string type)
 		{
 			pagination.sidx = "CreateTime desc";

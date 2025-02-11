@@ -111,7 +111,7 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                 throw new FailedException("请选择组织机构");
             }
 
-            if (!_sysOrganizeDmnService.IsMedicalOrganize(model.OrganizeId))
+            if (!_sysOrganizeDmnService.IsMedicalOrganize(model.OrganizeId) && !model.OrganizeId.Equals("*"))
             {
                 throw new FailedException("请选择医疗机构（医院或诊所）");
             }
@@ -231,7 +231,7 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         /// </summary>
         /// <param name="ypId"></param>
         /// <returns></returns>
-        public ActionResult GetEmpowermentPharmacyDepartment(string ypId, string organizeId)
+        public ActionResult GetEmpowermentPharmacyDepartment(string ypId,string organizeId)
         {
             var result = _sysPharmacyDepartmentApp.EmpowermentPharmacyDepartmentQuery(ypId, organizeId ?? OrganizeId);
             return Content(result.ToJson());

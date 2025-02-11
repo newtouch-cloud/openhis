@@ -56,15 +56,18 @@ namespace Newtouch.HIS.Domain.DBContext.Infrastructure
             modelBuilder.Entity<SysStaffEntity>().RegisterTable().HasKey(p => p.Id);
 
             modelBuilder.Entity<SysChargeCategoryEntity>().RegisterTable().HasKey(p => p.dlId);
+            modelBuilder.Entity<SysChargeCategoryBaseEntity>().RegisterTable().HasKey(p => p.dlId);
             modelBuilder.Entity<SysMedicalOrderFrequencyEntity>().RegisterTable().HasKey(p => p.yzpcId);
             modelBuilder.Entity<SysMedicineClassificationEntity>().RegisterTable().HasKey(p => p.ypflId);
             modelBuilder.Entity<SysMedicineEntity>().RegisterTable().HasKey(p => p.ypId);
+            modelBuilder.Entity<SysMedicineBaseEntity>().RegisterTable().HasKey(p => p.ypId);
             //药品剂量 精确到4位小数
             modelBuilder.Entity<SysMedicineEntity>().Property(x => x.jl).HasPrecision(9, 4);
             modelBuilder.Entity<SysMedicineAntibioticTypeEntity>().RegisterTable().HasKey(p => p.Id);
             modelBuilder.Entity<SysMedicineAntibioticInfoEntity>().RegisterTable().HasKey(p => p.Id);
             modelBuilder.Entity<SysMedicineFormulationEntity>().RegisterTable().HasKey(p => p.jxId);
             modelBuilder.Entity<SysMedicinePropertyEntity>().RegisterTable().HasKey(p => p.ypsxId);
+            modelBuilder.Entity<SysMedicinePropertyBaseEntity>().RegisterTable().HasKey(p => p.ypsxId);
             modelBuilder.Entity<SysMedicineStorageIOModeEntity>().RegisterTable().HasKey(p => p.crkfsId);
             modelBuilder.Entity<SysMedicineSupplierEntity>().RegisterTable().HasKey(p => p.gysId);
             modelBuilder.Entity<SysMedicineUnitEntity>().RegisterTable().HasKey(p => p.ypdwId);
@@ -79,6 +82,7 @@ namespace Newtouch.HIS.Domain.DBContext.Infrastructure
             modelBuilder.Entity<SysMedicalRecordChargeCategoryEntity>().RegisterTable().HasKey(p => p.dlId);
             modelBuilder.Entity<SysAgriInsuranceChargeCategoryEntity>().RegisterTable().HasKey(p => p.dlId);
             modelBuilder.Entity<SysChargeItemEntity>().RegisterTable().HasKey(p => p.sfxmId);
+            modelBuilder.Entity<SysChargeItemBaseEntity>().RegisterTable().HasKey(p => p.sfxmId);
 
             modelBuilder.Entity<SysDutyEntity>().RegisterTable().HasKey(p => p.Id);
             modelBuilder.Entity<SysDiagnosisEntity>().RegisterTable().HasKey(p => p.zdId);

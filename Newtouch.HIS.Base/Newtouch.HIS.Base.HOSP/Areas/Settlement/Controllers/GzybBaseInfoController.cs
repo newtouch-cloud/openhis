@@ -69,6 +69,11 @@ namespace Newtouch.HIS.Base.HOSP.Areas.Settlement.Controllers
         }
 
         #region 医保目录相关
+        /// <summary>
+        /// 获取目录下载最新版本号
+        /// </summary>
+        /// <param name="tbname"></param>
+        /// <returns></returns>
         public ActionResult GetVer(string tbname)
         {
             switch (tbname)
@@ -122,7 +127,13 @@ namespace Newtouch.HIS.Base.HOSP.Areas.Settlement.Controllers
             return Content(data.ToJson());
         }
 
-
+        /// <summary>
+        /// 获取下载数据
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="tbname"></param>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public ActionResult CatalogueData(Pagination pagination, string tbname, string key)
         {
             pagination.sidx = "VER desc";
