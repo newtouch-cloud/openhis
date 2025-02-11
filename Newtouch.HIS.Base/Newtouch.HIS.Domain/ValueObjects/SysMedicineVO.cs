@@ -486,6 +486,12 @@ namespace Newtouch.HIS.Domain.ValueObjects
         /// 默认用法名称
         /// </summary>
         public string mryfmc { get; set; }
-        /// <summary>        /// 医保规格        /// </summary>        public string ybgg { get; set; }
+        /// <summary>
+        /// 医保规格
+        /// </summary>
+        public string ybgg { get; set; }
+        
+        //暂为国药准字
+        public string ypzsm { get; set; }
     }
 }

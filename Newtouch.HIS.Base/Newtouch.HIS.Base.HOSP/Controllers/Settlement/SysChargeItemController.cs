@@ -16,14 +16,20 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         private readonly ISysChargeItemRepo _sysChargeItemRepo;
         private readonly ISysOrganizeDmnService _SysOrganizeDmnService;
         private readonly ISysChargeItemDmnService _sysChargeItemDmnService;
+        private readonly ISysChargeItemBaseRepo _sysChargeItemBaseRepo;
 
         public SysChargeItemController(ISysChargeItemRepo _sysChargeItemRepo
             , ISysOrganizeDmnService sysOrganizeDmnService
-            , ISysChargeItemDmnService sysChargeItemDmnService)
+            , ISysChargeItemDmnService sysChargeItemDmnService,
+                ISysChargeItemBaseRepo sysChargeItemBaseRepo
+            )
         {
             this._sysChargeItemRepo = _sysChargeItemRepo;
             this._SysOrganizeDmnService = sysOrganizeDmnService;
             this._sysChargeItemDmnService = sysChargeItemDmnService;
+            this._sysChargeItemBaseRepo = sysChargeItemBaseRepo;
+            _sysChargeItemBaseRepo = sysChargeItemBaseRepo;
+
         }
 
         public ActionResult YbbxblForm()
@@ -39,7 +45,7 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         {
             pagination.sidx = "CreateTime desc";
             pagination.sord = "asc";
-            if (!_SysOrganizeDmnService.IsMedicalOrganize(organizeId))
+            if (!_SysOrganizeDmnService.IsMedicalOrganize(organizeId) && !"*".Equals(organizeId))
             {
                 return Content(new
                 {
@@ -49,15 +55,32 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                     records = 0,
                 }.ToJson());
             }
-            var list = _sysChargeItemDmnService.GetPagintionList(organizeId, pagination, sfdl, keyword);
-            var data = new
+
+            if ("*".Equals(organizeId))
             {
-                rows = list,
-                total = pagination.total,
-                page = pagination.page,
-                records = pagination.records
-            };
-            return Content(data.ToJson());
+                var list = _sysChargeItemDmnService.GetPagintionList(organizeId, pagination, sfdl, keyword);
+                var data = new
+                {
+                    rows = list,
+                    total = pagination.total,
+                    page = pagination.page,
+                    records = pagination.records
+                };
+                return Content(data.ToJson());
+                
+            }
+            else
+            {
+                var list = _sysChargeItemDmnService.GetPagintionList(organizeId, pagination, sfdl, keyword);
+                var data = new
+                {
+                    rows = list,
+                    total = pagination.total,
+                    page = pagination.page,
+                    records = pagination.records
+                };
+                return Content(data.ToJson());
+            }
         }
         
         /// <summary>
@@ -83,15 +106,23 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
             entity.tsbz = entity.tsbz == "true" ? "1" : "0";
             entity.sfbz = entity.sfbz == "true" ? "1" : "0";
             entity.zt = entity.zt == "true" ? "1" : "0";
-            if (string.IsNullOrWhiteSpace(entity.OrganizeId))
+            if (string.IsNullOrWhiteSpace(entity.OrganizeId) && !"*".Equals(entity.OrganizeId))
             {
                 throw new FailedException("请选择组织机构");
             }
-            else if (!_SysOrganizeDmnService.IsMedicalOrganize(entity.OrganizeId))
+            else if (!_SysOrganizeDmnService.IsMedicalOrganize(entity.OrganizeId)&& !"*".Equals(entity.OrganizeId))
             {
                 throw new FailedException("请选择医疗机构（医院或诊所）");
             }
-            _sysChargeItemRepo.SubmitForm(entity, keyValue);
+
+            if ("*".Equals(entity.OrganizeId))
+            {
+                _sysChargeItemBaseRepo.SubmitForm(entity.ToJson().ToObject<SysChargeItemBaseEntity>(), keyValue);
+            }
+            else
+            {
+                _sysChargeItemRepo.SubmitForm(entity, keyValue);
+            }
             return Success("操作成功。");
         }
 
@@ -131,13 +162,23 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                 return Success("缺少医保代码！");
             }
         }
-
+        /// <summary>
+        /// 获取医保报销比例集合
+        /// </summary>
+        /// <param name="keyValue"></param>
+        /// <returns></returns>
         public ActionResult Getybbxbldata(string keyValue)
         {
             var list = _sysChargeItemDmnService.Getybbxbldata(keyValue, this.OrganizeId);
             return Content(list.ToJson());
         }
-
+        /// <summary>
+        /// 保存医保报销比例设置
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="xmbm"></param>
+        /// <param name="xmmc"></param>
+        /// <returns></returns>
         public ActionResult SaveYbblValue(List<Sh_YbfyxzblEntity> entity, string xmbm,string xmmc)
         {
             _sysChargeItemDmnService.SaveYbblValue(entity, xmbm, xmmc, this.OrganizeId,this.UserIdentity.rygh);

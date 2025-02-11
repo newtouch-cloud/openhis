@@ -49,7 +49,7 @@ convert(varchar(50),b.ReportStatus) isty,
 convert(varchar(50),b.ReportCode) ReportCode
 ,convert(varchar(50),case c.DirectoryFlag when 1 then 0 else c.reporttype end) reporttype
  from Sys_Report c
- inner join  dbo.Sys_ReportTemplate b on b.ReportCode=c.ReportCode and b.HospitalCode=c.HospitalCode and c.zt=b.zt
+ inner join  dbo.Sys_ReportTemplate b on b.ReportCode=c.ReportCode and (b.HospitalCode=c.HospitalCode or c.HospitalCode='*')  and c.zt=b.zt
  where b.zt='1'  and c.zt='1'
  ) b 
 where 1=1

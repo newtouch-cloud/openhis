@@ -7,6 +7,7 @@ using System.Web.Mvc;
 using System.Linq;
 using Newtouch.Common;
 using System.Collections.Generic;
+using Newtouch.HIS.Repository;
 
 namespace Newtouch.HIS.Base.HOSP.Controllers
 {
@@ -17,12 +18,14 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
     {
         private readonly ISysChargeCategoryRepo _SysChargeCategoryRepo;
         private readonly ISysOrganizeDmnService _SysOrganizeDmnService;
+        private readonly ISysChargeCategoryBaseRepo _SysChargeCategoryBaseRepo;
 
         public ChargeCategoryController(ISysChargeCategoryRepo SysChargeCategoryRepo
-            , ISysOrganizeDmnService sysOrganizeDmnService)
+            , ISysOrganizeDmnService sysOrganizeDmnService , ISysChargeCategoryBaseRepo SysChargeCategoryBaseRepo)
         {
             this._SysChargeCategoryRepo = SysChargeCategoryRepo;
             this._SysOrganizeDmnService = sysOrganizeDmnService;
+            this._SysChargeCategoryBaseRepo = SysChargeCategoryBaseRepo;
         }
 
         //收费大类树形（医院） 下拉 数据源
@@ -31,29 +34,58 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         public ActionResult GetTreeSelectJson(string organizeId, string treeidFieldName = "Code")
         {
             var data = _SysChargeCategoryRepo.GetValidList(organizeId);
+            var data1 = _SysChargeCategoryBaseRepo.GetValidList(organizeId);
             var treeList = new List<TreeSelectModel>();
-            foreach (var item in data)
+           // 基础数据
+            if (organizeId .Equals("*") )
             {
-                if (treeidFieldName == "Code")
+                // 遍历 data1
+                foreach (var item in data1)
                 {
                     TreeSelectModel treeModel = new TreeSelectModel();
-                    treeModel.id = item.dlCode;
-                    treeModel.text = item.dlmc;
-                    treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0)
-                        ? data.Where(p => p.dlId == item.ParentId).Select(p => p.dlCode).FirstOrDefault()
-                        : null;
-                    treeList.Add(treeModel);
-                }
-                else
-                {
-                    TreeSelectModel treeModel = new TreeSelectModel();
-                    treeModel.id = item.dlId.ToString();
-                    treeModel.text = item.dlmc;
-                    treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0) ? item.ParentId.ToString() : null;
+                    if (treeidFieldName == "Code")
+                    {
+                        treeModel.id = item.dlCode;
+                        treeModel.text = item.dlmc;
+                        treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0)
+                            ? data1.Where(p => p.dlId == item.ParentId).Select(p => p.dlCode).FirstOrDefault()
+                            : null;
+                    }
+                    else
+                    {
+                        treeModel.id = item.dlId.ToString();
+                        treeModel.text = item.dlmc;
+                        treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0) ? item.ParentId.ToString() : null;
+                    }
                     treeList.Add(treeModel);
                 }
             }
+            else
+            {
+                // 遍历 data
+                foreach (var item in data)
+                {
+                    TreeSelectModel treeModel = new TreeSelectModel();
+                    if (treeidFieldName == "Code")
+                    {
+                        treeModel.id = item.dlCode;
+                        treeModel.text = item.dlmc;
+                        treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0)
+                            ? data.Where(p => p.dlId == item.ParentId).Select(p => p.dlCode).FirstOrDefault()
+                            : null;
+                    }
+                    else
+                    {
+                        treeModel.id = item.dlId.ToString();
+                        treeModel.text = item.dlmc;
+                        treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0) ? item.ParentId.ToString() : null;
+                    }
+                    treeList.Add(treeModel);
+                }
+            }
+
             return Content(treeList.TreeSelectJson(null));
+
         }
 
         /// <summary>
@@ -63,25 +95,61 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         /// <returns></returns>
         public ActionResult GetTreeGridJson(string organizeId, string keyword)
         {
-            var data = _SysChargeCategoryRepo.GetList(organizeId);
-            if (!string.IsNullOrEmpty(keyword))
+            if (!organizeId.Equals("*"))
             {
-                data = data.ToList().TreeWhereForKeyInt(t => t.dlmc.Contains(keyword), keyValue : "dlId", parentId: "ParentId");
+                //非基础数据
+                var data = _SysChargeCategoryRepo.GetList(organizeId);
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    data = data.ToList().TreeWhereForKeyInt(t => t.dlmc.Contains(keyword), keyValue: "dlId",
+                        parentId: "ParentId");
+                }
+
+                var treeList = new List<TreeGridModel>();
+                foreach (var item in data)
+                {
+                    TreeGridModel treeModel = new TreeGridModel();
+                    treeModel.id = item.dlId.ToString();
+                    bool hasChildren = data.Count(t => t.ParentId == item.dlId) == 0 ? false : true;
+                    treeModel.id = item.dlId.ToString();
+                    treeModel.isLeaf = hasChildren;
+                    treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0)
+                        ? item.ParentId.ToString()
+                        : null;
+                    treeModel.expanded = hasChildren;
+                    treeModel.entityJson = item.ToJson();
+                    treeList.Add(treeModel);
+                }
+
+                return Content(treeList.TreeGridJson(null));
             }
-            var treeList = new List<TreeGridModel>();
-            foreach (var item in data)
+            else
             {
-                TreeGridModel treeModel = new TreeGridModel();
-                treeModel.id = item.dlId.ToString();
-                bool hasChildren = data.Count(t => t.ParentId == item.dlId) == 0 ? false : true;
-                treeModel.id = item.dlId.ToString();
-                treeModel.isLeaf = hasChildren;
-                treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0) ? item.ParentId.ToString() : null;
-                treeModel.expanded = hasChildren;
-                treeModel.entityJson = item.ToJson();
-                treeList.Add(treeModel);
+                var data = _SysChargeCategoryBaseRepo.GetList(organizeId);
+                if (!string.IsNullOrEmpty(keyword))
+                {
+                    data = data.ToList().TreeWhereForKeyInt(t => t.dlmc.Contains(keyword), keyValue: "dlId",
+                        parentId: "ParentId");
+                }
+
+                var treeList = new List<TreeGridModel>();
+                foreach (var item in data)
+                {
+                    TreeGridModel treeModel = new TreeGridModel();
+                    treeModel.id = item.dlId.ToString();
+                    bool hasChildren = data.Count(t => t.ParentId == item.dlId) == 0 ? false : true;
+                    treeModel.id = item.dlId.ToString();
+                    treeModel.isLeaf = hasChildren;
+                    treeModel.parentId = (item.ParentId.HasValue && item.ParentId.Value != 0)
+                        ? item.ParentId.ToString()
+                        : null;
+                    treeModel.expanded = hasChildren;
+                    treeModel.entityJson = item.ToJson();
+                    treeList.Add(treeModel);
+                }
+
+                return Content(treeList.TreeGridJson(null));
             }
-            return Content(treeList.TreeGridJson(null));
         }
 
         /// <summary>

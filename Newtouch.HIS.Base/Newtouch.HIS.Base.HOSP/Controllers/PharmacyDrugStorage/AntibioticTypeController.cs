@@ -91,14 +91,14 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         {
             var data = _ISysMedicineAntibioticTypeRepo.GetListByParentId(OrganizeId, parentId);
             List<object> list = new List<object>();
-            if (data != null)
+            if (data!=null)
             {
                 foreach (SysMedicineAntibioticTypeEntity item in data)
                 {
                     list.Add(new { id = item.Id + "|" + item.qxjb, text = item.typeName });//将权限级别信息带入Id中
                 }
             }
-
+            
             return Content(list.ToJson());
         }
     }

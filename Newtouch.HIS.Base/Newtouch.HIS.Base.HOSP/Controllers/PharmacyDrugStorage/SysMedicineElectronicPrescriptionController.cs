@@ -23,7 +23,15 @@ namespace Newtouch.HIS.Base.HOSP.Controllers.PharmacyDrugStorage
         {
             return View();
         }
-
+        /// <summary>
+        /// 电子处方目录
+        /// </summary>
+        /// <param name="pagination"></param>
+        /// <param name="genname"></param>
+        /// <param name="medListCodg"></param>
+        /// <param name="listType"></param>
+        /// <param name="zt"></param>
+        /// <returns></returns>
         [HttpGet]
         [HandlerAjaxOnly]
         public ActionResult GetGridJson(Pagination pagination, string genname, string medListCodg,string listType,string zt)

@@ -119,7 +119,11 @@ namespace Newtouch.HIS.Domain.Entity
         /// 国家机构代码
         /// </summary>
         public string gjjgdm { get; set; }
+        
 
+        public string ybxzqhCode { get; set; }
+        
+        public string ybxzqhName { get; set; }
         
     }
 }

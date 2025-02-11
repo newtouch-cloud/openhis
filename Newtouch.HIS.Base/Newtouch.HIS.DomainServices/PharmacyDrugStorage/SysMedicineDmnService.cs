@@ -11,6 +11,7 @@ using Newtouch.HIS.Domain.ValueObjects;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
 
+
 namespace Newtouch.HIS.DomainServices
 {
 	/// <summary>
@@ -20,13 +21,19 @@ namespace Newtouch.HIS.DomainServices
 	{
 		private readonly ISysMedicineRepo _sysMedicineRepository;
 		private readonly ISysMedicinePropertyRepo _sysMedicinePropertyRepo;
+		
+		private readonly ISysMedicineBaseRepo _sysMedicineBaseRepository;
+		private readonly ISysMedicinePropertyBaseRepo _sysMedicinePropertyBaseRepo;
 
 		public SysMedicineDmnService(IBaseDatabaseFactory databaseFactory, ISysMedicineRepo sysMedicineRepository
-			, ISysMedicinePropertyRepo sysMedicinePropertyRepo)
+			, ISysMedicinePropertyRepo sysMedicinePropertyRepo, ISysMedicineBaseRepo sysMedicineBaseRepository
+			, ISysMedicinePropertyBaseRepo sysMedicinePropertyBaseRepo)
 			: base(databaseFactory)
 		{
 			this._sysMedicineRepository = sysMedicineRepository;
 			this._sysMedicinePropertyRepo = sysMedicinePropertyRepo;
+			this._sysMedicineBaseRepository = sysMedicineBaseRepository;
+			this._sysMedicinePropertyBaseRepo = sysMedicinePropertyBaseRepo;
 		}
 
 		/// <summary>
@@ -694,30 +701,57 @@ AND x.OrganizeId=@OrganizeId
         {
             if (ypId.HasValue && ypId.Value > 0)
             {
-                model.ypId = ypId.Value;
-                //更新
-                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
-                {
-                    var ypEntity = db.IQueryable<SysMedicineEntity>().FirstOrDefault(p => p.ypId == model.ypId);
-                    var ypsxEntity = db.IQueryable<SysMedicinePropertyEntity>().FirstOrDefault(p => p.ypId == model.ypId);
-                    ypEntity.pfj = model.pfj;
-                    var oldypEntity = ypEntity.Clone();
-                    var oldypsxEntity = ypsxEntity.Clone();
+	            if (!model.OrganizeId.Equals("*"))
+	            { model.ypId = ypId.Value;
+		            //更新
+		            using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+		            {
+			            var ypEntity = db.IQueryable<SysMedicineEntity>().FirstOrDefault(p => p.ypId == model.ypId);
+			            var ypsxEntity = db.IQueryable<SysMedicinePropertyEntity>().FirstOrDefault(p => p.ypId == model.ypId);
+			            ypEntity.pfj = model.pfj;
+			            var oldypEntity = ypEntity.Clone();
+			            var oldypsxEntity = ypsxEntity.Clone();
 
-                    model.OrganizeId = ypEntity.OrganizeId;//组织 机构 不能变
-                    UpdateEnityProperties(ypEntity, ypsxEntity, model);
+			            model.OrganizeId = ypEntity.OrganizeId;//组织 机构 不能变
+			            UpdateEnityProperties(ypEntity, ypsxEntity, model);
 
-                    ypEntity.Modify();
-                    ypsxEntity.Modify();
+			            ypEntity.Modify();
+			            ypsxEntity.Modify();
 
-                    db.Update(ypEntity);
-                    db.Update(ypsxEntity);
+			            db.Update(ypEntity);
+			            db.Update(ypsxEntity);
 
-                    db.Commit();
+			            db.Commit();
 
-                    AppLogger.WriteEntityChangeRecordLog(oldypEntity, ypEntity, SysMedicineEntity.GetTableName(), oldypEntity.ypId.ToString());
-                    AppLogger.WriteEntityChangeRecordLog(oldypsxEntity, ypsxEntity, SysMedicinePropertyEntity.GetTableName(), oldypsxEntity.ypsxId.ToString());
-                }
+			            AppLogger.WriteEntityChangeRecordLog(oldypEntity, ypEntity, SysMedicineEntity.GetTableName(), oldypEntity.ypId.ToString());
+			            AppLogger.WriteEntityChangeRecordLog(oldypsxEntity, ypsxEntity, SysMedicinePropertyEntity.GetTableName(), oldypsxEntity.ypsxId.ToString());
+		            }
+		            
+	            }
+	            else
+	            {
+		            model.ypId = ypId.Value;
+		            using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+		            {
+			            //系统基础库更新
+			            var ypEntity = db.IQueryable<SysMedicineBaseEntity>().FirstOrDefault(p => p.ypId == ypId);
+			            var ypsxEntity = db.IQueryable<SysMedicinePropertyBaseEntity>().FirstOrDefault(p => p.ypId == ypId);
+			            ypEntity.pfj = model.pfj;
+			            var oldypEntity = ypEntity.Clone();
+			            var oldypsxEntity = ypsxEntity.Clone();
+			            model.OrganizeId = ypEntity.OrganizeId;//组织 机构 不能变
+			            UpdateEnityProperties(ypEntity,ypsxEntity, model);
+			            ypEntity.Modify();
+			            ypsxEntity.Modify();
+			            _sysMedicineBaseRepository.Update(ypEntity);
+			            _sysMedicinePropertyBaseRepo.Update(ypsxEntity);
+			            db.Commit();
+			            AppLogger.WriteEntityChangeRecordLog(oldypEntity, ypEntity, SysMedicineBaseEntity.GetTableName(), oldypEntity.ypId.ToString());
+			            AppLogger.WriteEntityChangeRecordLog(oldypsxEntity, ypsxEntity, SysMedicinePropertyBaseEntity.GetTableName(), oldypsxEntity.ypsxId.ToString());
+		            }
+		            
+	            }
+
             }
             else
             {
@@ -725,15 +759,36 @@ AND x.OrganizeId=@OrganizeId
                 //新增
                 var ypEntity = new SysMedicineEntity();
                 var ypsxEntity = new SysMedicinePropertyEntity();
+                if (model.OrganizeId.Equals("*"))
+                {
+	                //在系统基础库插入插入药品
+	                UpdateEnityProperties(ypEntity, ypsxEntity, model);
+	                ypEntity.Create();
+	                var yp = Json.ToJson(ypEntity);
+	                var sysMedicineBaseEntity = yp.ToObject<SysMedicineBaseEntity>();
+	                var entity = sysMedicineBaseEntity.Clone();
 
-                //插入药品
-                UpdateEnityProperties(ypEntity, ypsxEntity, model);
-                ypEntity.Create();
-                _sysMedicineRepository.Insert(ypEntity);
-                //插入药品属性
-                ypsxEntity.ypId = ypEntity.ypId;
-                ypsxEntity.Create();
-                _sysMedicinePropertyRepo.Insert(ypsxEntity);
+	                 _sysMedicineBaseRepository.Insert(entity);
+	                //插入药品属性
+	                ypsxEntity.ypId = entity.ypId;
+	                ypsxEntity.Create();
+	                var ypsx = Json.ToJson(ypsxEntity);
+	                _sysMedicinePropertyBaseRepo.Insert(ypsx.ToObject<SysMedicinePropertyBaseEntity>());
+	                
+                }
+                else
+                {
+	                //插入药品
+	                UpdateEnityProperties(ypEntity, ypsxEntity, model);
+	                ypEntity.Create();
+	                _sysMedicineRepository.Insert(ypEntity);
+	                //插入药品属性
+	                ypsxEntity.ypId = ypEntity.ypId;
+	                ypsxEntity.Create();
+	                _sysMedicinePropertyRepo.Insert(ypsxEntity);
+                }
+
+               
             }
         }
         /// <summary>
@@ -908,6 +963,100 @@ AND x.OrganizeId=@OrganizeId
                 new SqlParameter("@searchKeyword", "%" + (keyword ?? "") + "%")
             });
         }
+         public void UpdateEnityProperties(SysMedicineBaseEntity modelyp, SysMedicinePropertyBaseEntity modelypsx, SysMedicineVO model)
+        {
+            #region 药品信息表值
+            modelyp.bzdw = model.bzdw;
+            modelyp.bzs = model.bzs;
+            modelyp.cfdw = "";//默认
+            modelyp.cfl = decimal.Parse("0.0000");
+            //modelyp.cldw = model.cldw;
+            //modelyp.cls = model.cls;
+            modelyp.djdw = model.djdw;
+            modelyp.dlCode = model.dlCode;
+            modelyp.jl = model.jl;
+            modelyp.jldw = model.jldw; ;
+            modelyp.jx = model.jx;//( or liek ) and bgbz='0' and zt='1' 根据代码/姓名/首拼获取剂型信息获得
+            modelyp.lsj = model.lsj;
+            modelyp.medextid = 0;//默认
+            modelyp.medid = 0;//默认
+            modelyp.mzcldw = model.mzcldw;
+            modelyp.mzcls = model.mzcls;
+            modelyp.mzzybz = "1";//门诊住院标志默认1
+            modelyp.nbdl = model.nbdl;
+            modelyp.pfj = model.pfj;
+            modelyp.px = model.px;
+            modelyp.py = model.py;
+            modelyp.spm = model.spm;
+            modelyp.OrganizeId = model.OrganizeId;    //组织机构Id
+            modelyp.ycmc = model.ycmc;
+            modelyp.ypbzdm = model.ypbzdm;//药品包装代码默认3
+            modelyp.bz = model.bz;
+            modelyp.cxjje = model.cxjje;//超限价金额
+            modelyp.ypId = model.ypId;
+            modelyp.ypCode = model.ypCode;
+            modelyp.ypmc = model.ypmc;
+            modelyp.yphz = "";//默认
+            modelyp.ypqz = "";//默认
+            modelyp.zfbl = model.zfbl;
+            modelyp.zfxz = model.zfxz;
+            modelyp.zt = model.zt;
+            modelyp.zycldw = model.zycldw;
+            modelyp.zycls = model.zycls;
+            modelyp.zxdw = model.zxdw;
+            modelyp.isKss = model.isKss;
+            modelyp.kssId = model.kssId;
+            modelyp.jybz = model.jybz;
+			modelyp.tsypbz = model.tsypbz;
+			#endregion
+
+			#region 药品SX值
+			modelypsx.OrganizeId = model.OrganizeId;    //组织机构Id
+            modelypsx.dczdjl = model.dczdjl;
+            modelypsx.dczdsl = model.dczdsl;
+            modelypsx.ghdw = model.ghdw;
+            modelypsx.gzy = model.gzy;
+            modelypsx.jsbz = model.jsbz;
+            modelypsx.jzlx = model.jzlx;
+            modelypsx.ljzdjl = model.ljzdjl;
+            modelypsx.ljzdsl = model.ljzdsl;
+            modelypsx.mrbzq = model.mrbzq;
+            modelypsx.mzy = model.mzy;
+            //modelypsx.px = model.px;
+            modelypsx.pzwh = model.pzwh;
+            modelypsx.shbz = model.shbz;
+            modelypsx.sjap = model.sjap;
+            modelypsx.syts = model.syts;
+            modelypsx.tsbz = model.tsbz;
+            modelypsx.xglx = model.xglx;
+            modelypsx.ybdm = model.ybdm;
+            modelypsx.xnhybdm = model.xnhybdm;
+            modelypsx.yl = model.yl;
+            modelypsx.yldw = model.yldw;
+            modelypsx.yljsy = model.yljsy;
+            modelypsx.ypcd = model.ypcd;
+            modelypsx.ypCode = model.ypCode;
+            modelypsx.ypflCode = model.ypflCode;
+            modelypsx.ypgg = model.ypgg;
+            modelypsx.ypId = model.ypId;
+            modelypsx.yptssx = model.yptssx;
+            modelypsx.zbbz = model.zbbz;
+            modelypsx.zjtzsj = model.zjtzsj;
+            modelypsx.zlff = model.zlff;
+            modelypsx.mrjl = model.mrjl;
+            modelypsx.mrpc = model.mrpc;
+            modelypsx.ybbz = model.ybbz;
+            modelypsx.gjybdm = model.gjybdm;
+            modelypsx.gjybmc = model.gjybmc;
+            modelypsx.dcxl = model.dcxl;
+            modelypsx.mbxl = model.mbxl;
+            modelypsx.mryf = model.mryf;
+            modelypsx.ybgg = model.ybgg;
+            //modelypsx.zt = model.zt;
+
+            #endregion
+        }
+
 
     }
 }
