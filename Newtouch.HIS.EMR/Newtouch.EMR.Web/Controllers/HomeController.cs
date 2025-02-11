@@ -20,12 +20,15 @@ namespace Newtouch.EMR.Web.Controllers
         [HttpGet]
         public override ActionResult Index()
         {
-            var userName = OperatorProvider.GetCurrent().UserCode;
-            if (userName != "root")
-            {
-                var rygh = OperatorProvider.GetCurrent().rygh;
-                ViewBag.gjybdm = _sysUserDmnService.GetYbdmByGh(rygh);
-            }
+            var userName = OperatorProvider.GetCurrent();
+            //var userName = OperatorProvider.GetCurrent().UserCode;
+            //if (userName != "root")
+            //{
+            //    var rygh = OperatorProvider.GetCurrent().rygh;
+            //    ViewBag.gjybdm = _sysUserDmnService.GetYbdmByGh(rygh);
+            //}
+            var loginFromFlag = WebHelper.GetCookie(Constants.AppId + "_LoginFromFlag");
+            ViewBag.loginFromFlag = loginFromFlag;
             return base.Index();
         }
 
