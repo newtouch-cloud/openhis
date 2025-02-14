@@ -12,7 +12,7 @@ GO
 --exec  usp_Inp_RegulatoryDataJg0001 '6d5752a7-234a-403e-aa1c-df8b45d3469f',''
 --select top 2 * from NewtouchHIS_Base..V_C_xt_yp
 --select top 2 * from NewtouchHIS_Base..xt_sfdl 
-alter proc [dbo].[usp_Inp_RegulatoryDataJg0001]
+CREATE proc [dbo].[usp_Inp_RegulatoryDataJg0001]
 	@orgId varchar(50),
 	@crkId varchar(50)
 as

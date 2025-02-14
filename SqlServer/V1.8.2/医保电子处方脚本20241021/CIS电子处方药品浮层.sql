@@ -3,11 +3,16 @@ use Newtouch_CIS
 exec [usp_SelectDzcf] '2',''
 
 */
+
+GO
+
 create PROCEDURE [dbo].[usp_SelectDzcf]
  @topCount int, --前多少条          
  @keyword varchar(50) = ''  
 
 as
+BEGIN
+
  CREATE TABLE #YpQuery(      
     ypCode varchar(20),      
     ypmc varchar(256),      
@@ -47,8 +52,9 @@ as
     bz varchar(500),
 	sccj varchar(500),
 	gjybdm varchar(50)
-    )   
-INSERT INTO #YpQuery  
+    ) 
+	
+	INSERT INTO #YpQuery  
 	select 
 	cfypcode ypCode,
 	regname ypmc, 
@@ -139,3 +145,5 @@ where (isnull(@keyword, '') = '' or sfxmCode like '%' + @keyword + '%' or sfxmmc
 and isnull(ybdm,'')<>''      
       
 order by sfxmCode   
+
+END

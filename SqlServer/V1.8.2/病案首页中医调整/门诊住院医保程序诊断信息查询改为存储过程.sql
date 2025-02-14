@@ -6,7 +6,7 @@ exec [mzzy_diagxx] '03296','6d5752a7-234a-403e-aa1c-df8b45d3469f','3','1212','12
 
 */
 
-alter PROCEDURE [dbo].[mzzy_diagxx]  
+CREATE PROCEDURE [dbo].[mzzy_diagxx]  
 
 @hisId varchar(20), --住院号  
 @orgId varchar(50),--组织机构  

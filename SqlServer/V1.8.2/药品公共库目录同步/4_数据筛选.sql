@@ -25,11 +25,11 @@ jxId,
     CASE VALI_FLAG WHEN '1' THEN 'ÊÇ' WHEN '0' THEN '·ñ' ELSE '' END AS VALI_FLAG,
     VER_NAME 
 FROM 
-    [dbo].G_yb_wm_tcmpat_info_b b WITH (NOLOCK)
-	left join xt_ypjx d on d.jxmc=b.DRUG_DOSFORM
+    NewtouchHIS_Base.[dbo].G_yb_wm_tcmpat_info_b b WITH (NOLOCK)
+	left join NewtouchHIS_Base.dbo.xt_ypjx d on d.jxmc=b.DRUG_DOSFORM
 WHERE 
     NOT EXISTS (
         SELECT 1 
-        FROM xt_yp_base 
+        FROM NewtouchHIS_Base.dbo.xt_yp_base 
         WHERE xt_yp_base.VER = b.VER
     )
