@@ -22,7 +22,7 @@ GO
 --exec  [usp_Inp_RegulatoryDataJg10010] '6d5752a7-234a-403e-aa1c-df8b45d3469f',''
 --select top 1244 * from [NewtouchHIS_PDS]..xt_yp_pdxxmx order by createtime desc
 --select * from [NewtouchHIS_PDS].dbo.xt_yp_pdxx order by createtime desc
-alter proc [dbo].[usp_Inp_RegulatoryDataJg10010]
+CREATE proc [dbo].[usp_Inp_RegulatoryDataJg10010]
 	@orgId varchar(50), --组织机构
 	@pdId varchar(50)  --盘点明细id
 as

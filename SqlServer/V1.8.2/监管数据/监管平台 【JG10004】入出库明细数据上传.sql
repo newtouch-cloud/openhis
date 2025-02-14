@@ -10,7 +10,7 @@ GO
 
 -- 监管平台 【JG10004】入出库明细数据上传
 --exec  [usp_Inp_RegulatoryDataJg0004] '6d5752a7-234a-403e-aa1c-df8b45d3469f',''
-alter proc [dbo].[usp_Inp_RegulatoryDataJg0004]
+CREATE proc [dbo].[usp_Inp_RegulatoryDataJg0004]
 	@orgId varchar(50), --组织机构
 	@crkId varchar(50)   --出入库明细id
 as

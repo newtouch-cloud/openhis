@@ -12,7 +12,7 @@ GO
 
 --°æJG10013°ø’ÔÀ˘ÕÀΩ·À„
 --exec  [usp_Inp_RegulatoryDataJg10013] '6d5752a7-234a-403e-aa1c-df8b45d3469f',''
-alter proc [dbo].[usp_Inp_RegulatoryDataJg10013]
+CREATE proc [dbo].[usp_Inp_RegulatoryDataJg10013]
 	@orgId varchar(50),
 	@setl_id varchar(50)
 as

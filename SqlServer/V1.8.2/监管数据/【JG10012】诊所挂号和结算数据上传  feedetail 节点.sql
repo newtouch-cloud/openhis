@@ -12,7 +12,7 @@ GO
 
 --【JG10012】诊所挂号和结算数据上传  feedetail 节点
 --exec  [usp_Inp_RegulatoryDataJg10012_feedetail] '6d5752a7-234a-403e-aa1c-df8b45d3469f','','89914'
-ALTER proc [dbo].[usp_Inp_RegulatoryDataJg10012_feedetail]
+CREATE proc [dbo].[usp_Inp_RegulatoryDataJg10012_feedetail]
 	@orgId varchar(50),
 	@hisId varchar(50),
 	@setl_id varchar(50)

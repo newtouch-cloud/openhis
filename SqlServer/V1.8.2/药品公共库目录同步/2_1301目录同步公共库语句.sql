@@ -1,5 +1,5 @@
 --下载的医保目录语句导入公共库
-insert into xt_ypsx_base ( [ypId], [OrganizeId], [ypCode], [shbz], [tsbz], [jsbz], [gzy], [mzy], [yljsy], [zbbz], [zlff], [sjap], [yl], [yldw], [ypgg], [ybdm], [syts], [dczdjl], [dczdsl], [ljzdjl], [ljzdsl], [pzwh], [yptssx], [ypflCode], [jzlx], [mrbzq], [zjtzsj], [xglx], [ghdw], [ypcd], [CreatorCode], [CreateTime], [LastModifyTime], [LastModifierCode], [zt], [px], [xzyy], [xzyysm], [LastYBUploadTime], [mrjl], [mrpc], [ybbz], [xnhybdm], [gjybdm], [ybmlscrq], [gjybmc], [xjbs], [dcxl], [mbxl], [mryf], [ybgg], [ypzsm])
+insert into NewtouchHIS_Base.dbo.xt_ypsx_base ( [ypId], [OrganizeId], [ypCode], [shbz], [tsbz], [jsbz], [gzy], [mzy], [yljsy], [zbbz], [zlff], [sjap], [yl], [yldw], [ypgg], [ybdm], [syts], [dczdjl], [dczdsl], [ljzdjl], [ljzdsl], [pzwh], [yptssx], [ypflCode], [jzlx], [mrbzq], [zjtzsj], [xglx], [ghdw], [ypcd], [CreatorCode], [CreateTime], [LastModifyTime], [LastModifierCode], [zt], [px], [xzyy], [xzyysm], [LastYBUploadTime], [mrjl], [mrpc], [ybbz], [xnhybdm], [gjybdm], [ybmlscrq], [gjybmc], [xjbs], [dcxl], [mbxl], [mryf], [ybgg], [ypzsm])
 SELECT   
 --'000000'+convert(varchar,row_number() over (order by REG_NAME) ) [ypCode], REG_NAME [ypmc], '*' [OrganizeId],'' [ypqz], '' [yphz], '' [spm],
 --[dbo].[f_GetPy](REG_NAME) [py], 
@@ -18,12 +18,12 @@ NULL [mryf],NULL [ybgg],REPLACE(APRVNO,'国药准字','') [ypzsm]
 
 
 FROM 
-    [dbo].G_yb_wm_tcmpat_info_b b WITH (NOLOCK)
-	left join xt_ypjx d on d.jxmc=b.DRUG_DOSFORM
+    NewtouchHIS_Base.[dbo].G_yb_wm_tcmpat_info_b b WITH (NOLOCK)
+	left join NewtouchHIS_Base.dbo.xt_ypjx d on d.jxmc=b.DRUG_DOSFORM
 WHERE 
     NOT EXISTS (
         SELECT 1 
-        FROM xt_yp_base 
+        FROM NewtouchHIS_Base.dbo.xt_yp_base 
         WHERE xt_yp_base.VER = b.VER
     )
 

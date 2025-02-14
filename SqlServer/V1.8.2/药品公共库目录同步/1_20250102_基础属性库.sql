@@ -2,8 +2,8 @@
 
 -- Drop table 药品属性
 
-DROP TABLE NewtouchHIS_Base.dbo.xt_ypsx_base;
-CREATE TABLE NewtouchHIS_Base.dbo.xt_ypsx_base (
+CREATE TABLE NewtouchHIS_Base.dbo.xt_ypsx_base 
+(
 	ypsxId int IDENTITY(1,1) NOT NULL,
 	ypId int NOT NULL,
 	OrganizeId varchar(50) COLLATE Chinese_PRC_CI_AS NOT NULL,
@@ -57,14 +57,16 @@ CREATE TABLE NewtouchHIS_Base.dbo.xt_ypsx_base (
 	mryf varchar(50) COLLATE Chinese_PRC_CI_AS NULL,
 	ybgg varchar(300) COLLATE Chinese_PRC_CI_AS NULL,
 	ypzsm varchar(100) COLLATE Chinese_PRC_CI_AS NULL,
-	CONSTRAINT PK_xt_ypsx_2 PRIMARY KEY (ypsxId),
+	CONSTRAINT PK_xt_ypsx_3 PRIMARY KEY (ypsxId),
 	VER varchar(255) COLLATE Chinese_PRC_CI_AS NULL
 );
- CREATE NONCLUSTERED INDEX idx_org_ypcode ON dbo.xt_ypsx_base (  OrganizeId ASC  , ypCode ASC  , zt ASC  )  
+
+CREATE NONCLUSTERED INDEX idx_org_ypcode ON NewtouchHIS_Base.dbo.xt_ypsx_base (  OrganizeId ASC  , ypCode ASC  , zt ASC  )  
 	 INCLUDE ( ypgg ) 
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;
- CREATE NONCLUSTERED INDEX ix_xt_ypsx_ypId ON dbo.xt_ypsx_base (  ypId ASC  )  
+
+CREATE NONCLUSTERED INDEX ix_xt_ypsx_ypId ON NewtouchHIS_Base.dbo.xt_ypsx_base (  ypId ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;
 
@@ -73,8 +75,8 @@ CREATE TABLE NewtouchHIS_Base.dbo.xt_ypsx_base (
 
 -- Drop table 系统药品
 
-DROP TABLE NewtouchHIS_Base.dbo.xt_yp_base;
-CREATE TABLE NewtouchHIS_Base.dbo.xt_yp_base (
+CREATE TABLE NewtouchHIS_Base.dbo.xt_yp_base
+(
 	ypId int NOT NULL,
 	ypCode varchar(30) COLLATE Chinese_PRC_CI_AS NOT NULL,
 	ypmc varchar(256) COLLATE Chinese_PRC_CI_AS NOT NULL,
@@ -124,19 +126,21 @@ CREATE TABLE NewtouchHIS_Base.dbo.xt_yp_base (
 	tsypbz varchar(50) COLLATE Chinese_PRC_CI_AS NULL,
 	VER varchar(255) COLLATE Chinese_PRC_CI_AS NULL
 );
- CREATE NONCLUSTERED INDEX ypCode_index ON dbo.xt_yp_base (  ypCode ASC  )  
+
+CREATE NONCLUSTERED INDEX ypCode_index ON NewtouchHIS_Base.dbo.xt_yp_base (  ypCode ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;
- CREATE NONCLUSTERED INDEX ypmc_index ON dbo.xt_yp_base (  ypmc ASC  )  
+
+CREATE NONCLUSTERED INDEX ypmc_index ON NewtouchHIS_Base.dbo.xt_yp_base (  ypmc ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;
 
 -- NewtouchHIS_Base.dbo.xt_sfdl_base definition
 
 -- Drop table
-DROP TABLE NewtouchHIS_Base.dbo.xt_sfdl_base;
 
-CREATE TABLE NewtouchHIS_Base.dbo.xt_sfdl_base (
+CREATE TABLE NewtouchHIS_Base.dbo.xt_sfdl_base
+(
 	dlId int IDENTITY(1,1) NOT NULL,
 	dlCode varchar(20) COLLATE Chinese_PRC_CI_AS NOT NULL,
 	dlmc varchar(50) COLLATE Chinese_PRC_CI_AS NOT NULL,
@@ -163,16 +167,16 @@ CREATE TABLE NewtouchHIS_Base.dbo.xt_sfdl_base (
 	zydzfplbmc varchar(30) COLLATE Chinese_PRC_CI_AS NULL,
 	CONSTRAINT PK_xt_sfdl_base1 PRIMARY KEY (dlId)
 );
- CREATE NONCLUSTERED INDEX ix_xt_sfdl_base_dlCodeOrgId ON dbo.xt_sfdl_base (  dlCode ASC  , OrganizeId ASC  )  
+
+CREATE NONCLUSTERED INDEX ix_xt_sfdl_base_dlCodeOrgId ON NewtouchHIS_Base.dbo.xt_sfdl_base (  dlCode ASC  , OrganizeId ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;		
 
 
 
-	 -- NewtouchHIS_Base.dbo.xt_sfxm definition
+-- NewtouchHIS_Base.dbo.xt_sfxm definition
 
 -- Drop table
-DROP TABLE NewtouchHIS_Base.dbo.xt_sfxm;
 
 CREATE TABLE NewtouchHIS_Base.dbo.xt_sfxm_base (
 	sfxmId int IDENTITY(1,1) NOT NULL,
@@ -227,12 +231,13 @@ CREATE TABLE NewtouchHIS_Base.dbo.xt_sfxm_base (
 	iswzsame varchar(2) COLLATE Chinese_PRC_CI_AS NULL,
 	CONSTRAINT PK_XT_SFXM_BASE PRIMARY KEY (sfxmId)
 );
- CREATE NONCLUSTERED INDEX Basesfxm_sfxmCode_OrganizeId_sfxmmc ON dbo.xt_sfxm_base (  sfxmCode ASC  , OrganizeId ASC  )  
+
+CREATE NONCLUSTERED INDEX Basesfxm_sfxmCode_OrganizeId_sfxmmc ON NewtouchHIS_Base.dbo.xt_sfxm_base (  sfxmCode ASC  , OrganizeId ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;
- CREATE NONCLUSTERED INDEX sfxmCode_index ON dbo.xt_sfxm_base (  sfxmCode ASC  )  
+CREATE NONCLUSTERED INDEX sfxmCode_index ON NewtouchHIS_Base.dbo.xt_sfxm_base (  sfxmCode ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;
- CREATE NONCLUSTERED INDEX sfxmmc_index ON dbo.xt_sfxm_base (  sfxmmc ASC  )  
+CREATE NONCLUSTERED INDEX sfxmmc_index ON NewtouchHIS_Base.dbo.xt_sfxm_base (  sfxmmc ASC  )  
 	 WITH (  PAD_INDEX = OFF ,FILLFACTOR = 100  ,SORT_IN_TEMPDB = OFF , IGNORE_DUP_KEY = OFF , STATISTICS_NORECOMPUTE = OFF , ONLINE = OFF , ALLOW_ROW_LOCKS = ON , ALLOW_PAGE_LOCKS = ON  )
 	 ON [PRIMARY ] ;

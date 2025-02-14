@@ -13,7 +13,7 @@ GO
 --exec  [usp_Inp_RegulatoryDataJg10012_mdtrtinfo] '6d5752a7-234a-403e-aa1c-df8b45d3469f','',''
 --select * from mz_js
 --select * from mz_gh where '3'='3' order by createtime desc select distinct cardtype,cardtypename from mz_gh
-alter proc [dbo].[usp_Inp_RegulatoryDataJg10012_mdtrtinfo]
+CREATE proc [dbo].[usp_Inp_RegulatoryDataJg10012_mdtrtinfo]
 	@orgId varchar(50),
 	@hisId varchar(50),
 	@setl_id varchar(50)

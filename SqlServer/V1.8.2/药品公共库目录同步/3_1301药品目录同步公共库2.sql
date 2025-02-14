@@ -1,8 +1,8 @@
 --下载的医保目录语句导入公共库
-insert into xt_yp_base (ypid,[ypCode], [ypmc], [OrganizeId], [ypqz], [yphz], [spm], [py], [cfl], [cfdw], [jl], [jldw], [bzs], [bzdw], [mzcls], [mzcldw], [zycls], [zycldw], [zxdw], [djdw], [lsj], [pfj], [zfbl], [zfxz], [dlCode], [jx], [ycmc], [medid], [medextid], [ypbzdm], [nbdl], [mzzybz], [CreatorCode], [CreateTime], [LastModifyTime], [LastModifierCode], [zt], [px], [lsbz], [mjzbz], [yfCode], [isKss], [kssId], [jybz], [bz], [cxjje], [tsypbz])
+insert into NewtouchHIS_Base.dbo.xt_yp_base (ypid,[ypCode], [ypmc], [OrganizeId], [ypqz], [yphz], [spm], [py], [cfl], [cfdw], [jl], [jldw], [bzs], [bzdw], [mzcls], [mzcldw], [zycls], [zycldw], [zxdw], [djdw], [lsj], [pfj], [zfbl], [zfxz], [dlCode], [jx], [ycmc], [medid], [medextid], [ypbzdm], [nbdl], [mzzybz], [CreatorCode], [CreateTime], [LastModifyTime], [LastModifierCode], [zt], [px], [lsbz], [mjzbz], [yfCode], [isKss], [kssId], [jybz], [bz], [cxjje], [tsypbz])
 SELECT    row_number() over (order by REG_NAME) ypid,
 '000000'+convert(varchar,row_number() over (order by REG_NAME) ) [ypCode], REG_NAME [ypmc], '*' [OrganizeId],'' [ypqz], '' [yphz], '' [spm],
-[dbo].[f_GetPy](REG_NAME) [py], 
+NewtouchHIS_Base.[dbo].[f_GetPy](REG_NAME) [py], 
 NULL [cfl], '' [cfdw],1.00 [jl],MIN_PREPUNT [jldw], convert(numeric(19,2),isnull(MIN_PAC_CNT,0.0)) [bzs],MIN_PACUNT [bzdw], 
 convert(numeric(19,4),MIN_PAC_CNT) [mzcls], MIN_PACUNT [mzcldw], 
 1.00 [zycls],MIN_PACUNT [zycldw], MIN_PREPUNT [zxdw],MIN_PACUNT [djdw], 0.00 [lsj],0.00 [pfj], 0.00 [zfbl],'4' [zfxz], '01' [dlCode],
@@ -18,12 +18,12 @@ NULL [LastModifyTime],NULL [LastModifierCode],'1' [zt], NULL [px],NULL [lsbz], N
 
 
 FROM 
-    [dbo].G_yb_wm_tcmpat_info_b b WITH (NOLOCK)
-	left join xt_ypjx d on d.jxmc=b.DRUG_DOSFORM
+    NewtouchHIS_Base.[dbo].G_yb_wm_tcmpat_info_b b WITH (NOLOCK)
+	left join NewtouchHIS_Base.[dbo].xt_ypjx d on d.jxmc=b.DRUG_DOSFORM
 WHERE 
     NOT EXISTS (
         SELECT 1 
-        FROM xt_yp_base 
+        FROM NewtouchHIS_Base.[dbo].xt_yp_base 
         WHERE xt_yp_base.VER = b.VER
     )
 
