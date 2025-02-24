@@ -969,7 +969,7 @@ and sfxm.sfxmmc like '%' + @xmmc + '%'  ";
         public IList<MzcfcxList> GetMzcfList(Pagination pagination, MzcfcxVo req)
         {
             var parms = new List<SqlParameter> { };
-            var strSql = new StringBuilder(@" select  c.mzh,c.xm,b.CreateTime kssj,a.zje,a.cftag
+            var strSql = new StringBuilder(@" select distinct c.mzh,c.xm,b.CreateTime kssj,a.zje,a.cftag
     ,case  a.cftag when 'JI' then '精神I类处方' 
 			   when 'JII' then '精神II类处方' 
 			   when 'MZ' then '麻醉处方' 
