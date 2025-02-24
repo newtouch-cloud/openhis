@@ -223,6 +223,11 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <returns></returns>
         IList<YpdlDTO> getYpdl(string orgId);
 
+        /// <summary>
+        /// 同步所有收费但是没有同步到PDS的处方
+        /// </summary>
+        string SyncPDSCfFromSett(string organizeId);
+
 
         #region 药品 、耗材使用情况
         List<YfMaterialTjVo> GetMaterialList(Pagination pagination, string orgId, string ks, string ry, string slly, DateTime kssj, DateTime jssj, string keyword);
