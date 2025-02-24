@@ -1076,6 +1076,37 @@ and jz.xm=@xm
             };
             return FindList<DzcfBrxxDTO>(sql, param);
         }
+
+        /// <summary>
+        /// 同步所有收费但是没有同步到PDS的处方
+        /// </summary>
+        public string SyncPDSCfFromSett(string organizeId)
+        {
+            
+            
+                var strSql = new StringBuilder();
+                strSql.Append(@"UPDATE p 
+SET p.[jsnm] = jsmx.[jsnm],
+    p.[cfnm] = s.[cfnm],
+    p.[sfsj] = s.[jsrq],
+    p.[Fph] = js.[fph]
+FROM [NewtouchHIS_PDS].[dbo].[mz_cf] p with(nolock) 
+JOIN [NewtouchHIS_Sett].[dbo].[mz_cf] s  with(nolock)  ON p.[cfh] = s.[cfh] and p.OrganizeId=s.OrganizeId and s.zt='1'
+JOIN [NewtouchHIS_Sett].[dbo].[mz_cfmx] m  with(nolock)  ON s.[cfnm] = m.[cfnm] and m.OrganizeId=s.OrganizeId and m.zt='1'
+JOIN [NewtouchHIS_Sett].[dbo].[mz_jsmx] jsmx  with(nolock)  ON m.[cfmxId] = jsmx.[cf_mxnm] and jsmx.OrganizeId=m.OrganizeId and jsmx.zt='1'
+JOIN [NewtouchHIS_Sett].[dbo].[mz_js] js  with(nolock) ON jsmx.[jsnm] = js.[jsnm] and js.OrganizeId=jsmx.OrganizeId and js.zt='1'
+WHERE  p.cfnm ='0' and p.zt='1' and p.OrganizeId=@OrganizeId
+    AND s.[cfzt] = '1'
+	AND p.[CreateTime] >= DATEADD(DAY, -30, GETDATE())");
+                var paraList = new DbParameter[]
+                {
+                        new SqlParameter("@OrganizeId",organizeId)
+                };
+
+            int num = ExecuteSqlCommand(strSql.ToString(), paraList);
+            return "同步成功, "+ num +" 条数据被影响";
+            
+        }
         #endregion
     }
 }

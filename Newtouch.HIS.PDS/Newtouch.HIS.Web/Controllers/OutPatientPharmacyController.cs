@@ -23,6 +23,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using System.Web.Services.Description;
 using static Newtouch.Common.Web.APIRequestHelper;
 
 namespace Newtouch.HIS.Web.Controllers
@@ -850,6 +851,19 @@ namespace Newtouch.HIS.Web.Controllers
                 records = pagination.records
             };
             return Content(data.ToJson());
+        }
+
+        /// <summary>
+        /// 同步所有收费但是没有同步到PDS的处方
+        /// </summary>
+        /// <param name="cardNo"></param>
+        /// <param name="xm"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public ActionResult SyncPDSCfFromSett()
+        {
+            string message = _fyDmnService.SyncPDSCfFromSett(OrganizeId);
+            return Content(message);
         }
 
         /// <summary>
