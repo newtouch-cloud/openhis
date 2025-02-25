@@ -2047,14 +2047,14 @@ where ksby.zt=1  and ksby.OrganizeId=@OrgId
             if (req.yzxz == "1")
             {
                 strSql.AppendLine(@"select yz.zyh,hzxm,WardCode,bq.bqmc,DeptCode,yzh cfh,'1' yzxz,'临时' yzxzmc
-	,yz.ysgh,staff.Name ysmc,sum(CONVERT(decimal(12,2),(yz.sl*yp.lsj))) je,yz.yzlx,yz.yzlx yzlxstr,kssj,yzxx.fybz,yzxx.lyxh
+	,yz.ysgh,staff.Name ysmc,sum(CONVERT(decimal(12,2),(yz.sl*yp.lsj))) je,yz.yzlx,yz.yzlx yzlxstr,yzxx.zxrq kssj,yzxx.fybz,yzxx.lyxh
 from Newtouch_CIS..zy_lsyz  (nolock) yz
 join NewtouchHIS_PDS..zy_ypyzxx (nolock) yzxx on yz.Id=yzxx.yzId and yzxx.OrganizeId=yz.OrganizeId
 left join NewtouchHIS_Base..V_S_xt_yp yp on yp.ypCode=yz.xmdm and yp.OrganizeId=yz.OrganizeId
 left join NewtouchHIS_Base..V_S_xt_bq bq on bq.bqCode=yz.WardCode and bq.OrganizeId=yz.OrganizeId
 left join NewtouchHIS_Base..V_S_Sys_Staff staff on staff.gh=yz.ysgh and staff.OrganizeId=yz.OrganizeId
 where yz.OrganizeId=@OrganizeId and yz.zt=1 
-	and yz.kssj>=@kssj and yz.kssj<=@jssj
+	and yzxx.zxrq>=@kssj and yzxx.zxrq<=@jssj
 	");
                 
             }
@@ -2067,7 +2067,7 @@ left join NewtouchHIS_Base..V_S_xt_yp yp on yp.ypCode=yz.xmdm and yp.OrganizeId=
 left join NewtouchHIS_Base..V_S_xt_bq bq on bq.bqCode=yz.WardCode and bq.OrganizeId=yz.OrganizeId
 left join NewtouchHIS_Base..V_S_Sys_Staff staff on staff.gh=yz.ysgh and staff.OrganizeId=yz.OrganizeId
 where yz.OrganizeId=@OrganizeId and yz.zt=1 
-	and yz.kssj>=@kssj and yz.kssj<=@jssj
+	and yzxx.zxrq>=@kssj and yzxx.zxrq<=@jssj
 ");
             }
             if (!string.IsNullOrWhiteSpace(req.bq))
@@ -2081,7 +2081,7 @@ where yz.OrganizeId=@OrganizeId and yz.zt=1
                 parms.Add(new SqlParameter("@keyword", "%" + req.keyword + "%"));
             }
             if (req.yzxz == "1")
-                strSql.AppendLine(@" group by yz.zyh,hzxm,yz.zh,WardCode,bq.bqmc,DeptCode,yzh ,yz.ysgh ,yz.ysgh,staff.Name ,yz.yzlx,kssj,yzxx.fybz,yzxx.lyxh ");
+                strSql.AppendLine(@" group by yz.zyh,hzxm,yz.zh,WardCode,bq.bqmc,DeptCode,yzh ,yz.ysgh ,yz.ysgh,staff.Name ,yz.yzlx,yzxx.zxrq,yzxx.fybz,yzxx.lyxh ");
             else
                 strSql.AppendLine(@" group by yz.zyh,hzxm,yz.zh,WardCode,bq.bqmc,DeptCode,yzh ,yz.ysgh,yz.ysgh,staff.Name ,yz.yzlx,yzxx.zxrq,yzxx.fybz,yzxx.lyxh");
 
