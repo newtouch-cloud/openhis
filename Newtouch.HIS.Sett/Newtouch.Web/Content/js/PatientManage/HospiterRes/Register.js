@@ -696,8 +696,13 @@ function btn_Save() {
 
         if (openYbSett && $("#brxzmc").attr("data-brxzlb") === "1") //启用医保,医保性质
         {
+            console.log("启用医保,医保性质判断", cqPatInfo)
+            if (!cqPatInfo || (typeof cqPatInfo === "object" && Object.keys(cqPatInfo).length === 0)) {
+                $.modalAlert("报销政策为【医保病人】，请先读卡！", 'warning');
+                return;
+            }
             if (cqPatInfo.ybVer != "shanghaiV5") {
-                if (cqPatInfo.ybVer == undefined) {
+                if (cqPatInfo.ybVer == undefined || cqPatInfo.ybVer == '') {
                     $.modalAlert("报销政策为【医保病人】，请先读卡！", 'warning');
                     return;
                 }
