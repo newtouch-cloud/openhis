@@ -1,0 +1,461 @@
+﻿@using Newtouch.Infrastructure;
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+
+    var isZFtoYB = SysConfigReader.Bool("Inpatient_Open_ZF_to_YB", false).Value;
+    var isYBtoZF = SysConfigReader.Bool("Inpatient_Open_YB_to_ZF", false).Value;
+
+    //是否和医保交易
+    var openYbSett = SysConfigReader.Bool("Inpatient_Sett_OpenYbSett");
+    //是否和新农合交易
+    var openXnhSett = SysConfigReader.Bool("Inpatient_Sett_OpenXnhSett");
+    //医保所属地，区分系统将执行何处医保逻辑
+    var medicalInsurance = SysConfigReader.String("Inpatient_MedicalInsurance");
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+    var openManualinputCard = SysConfigReader.Bool("Inpatient_Open_ManualinputCard", false).Value;
+    var reportUrl = SysConfigReader.OrgReportLink("Settlementlist");
+}
+<style>
+    .title {
+        width: 60px;
+    }
+</style>
+<form>
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle" style="width:70px;padding-right:12px;">关键字：</th>
+                <td class="formValue">
+                    <input id="txt_keyword" type="text" class="form-control form-an" placeholder="姓名/病历号/住院号">
+                </td>
+                <th class="formTitle">出院日期：</th>
+                <td class="formValue" colspan="2">
+                    <input id="cykssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddMonths(-2).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:1%;float:left">—</span>
+                    <input id="cyjssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <th class="formTitle" style="width:70px;padding-right:12px;">上传状态：</th>
+                <td class="formValue">
+                    <select id="sczt" name="sczt" class="form-control">
+                        <option value="">全部</option>
+                        <option value="1">未上传</option>
+                        <option value="2">已上传</option>
+                    </select>
+                </td>
+                <th class="formTitle" style="width:70px;padding-right:12px;">提交状态：</th>
+                <td class="formValue">
+                    <select id="tjzt" name="tjzt" class="form-control">
+                        <option value="">全部</option>
+                        <option value="1">未提交</option>
+                        <option value="2">已提交</option>
+                    </select>
+                </td>
+                <td class="formValue title">
+                    <input type="button" id="btn_search" class="btn btn-primary" style="width:36%;margin-left: 10%;" value="查询" />
+                </td>
+            </tr>
+            <tr>
+                <td class="formValue" colspan="6">
+                    <input type="button" id="btn_jsqd" class="btn btn-info" style="width:19%;display:inline-block;" value="(4101A)结算清单上传" />
+                    <input type="button" id="btn_jsqdsubmit" class="btn btn-info" style="width:21%;display:inline-block;" value="(4102)结算清单状态提交" />
+                    <input type="button" id="btn_jsqdquery" class="btn btn-info" style="width:21%;display:inline-block;" value="(4103)结算清单信息查询" />
+                    <input type="button" id="btn_querynum" class="btn btn-info" style="width:27.5%;display:inline-block;" value="(4105)查询结算清单数量统计结果" />
+                </td>
+                <td class="formValue" colspan="4">
+                    <input type="button" id="btn_jsqdall" class="btn btn-info" style="display:inline-block;" value="结算清单全部上传" />
+                    <input type="button" id="btn_jsqdsubmitall" class="btn btn-info" style="display:inline-block;" value="结算清单状态全部提交" />
+                    <input type="button" id="btn_jsqdSubmitRevoke" class="btn btn-info" style="width:21%;display:inline-block;" value="结算清单提交撤销" />
+                </td>
+               
+                <th class="formTitle"></th>
+                <td class="formValue" colspan="2"></td>
+            </tr>
+        </table>
+    </div>
+    <div class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+</form>
+
+<script>
+    $(function () {
+        initControl();
+        gridList();
+    })
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/PatientManage/Inpatient/GridSettlementGridJson",
+            height: $(window).height() - 128,
+            postData: { keyword: $("#txt_keyword").val(), sczt: $("#sczt").val(), tjzt: $("#tjzt").val(), cykssj: $("#cykssj").val(), cyjssj: $("#cyjssj").val() },
+            colModel: [
+                { label: '住院号', name: 'zyh', width: 60, align: 'left', key: true },
+                { label: '上传状态', name: 'sczt', width: 60, align: 'left' },
+                { label: '提交状态', name: 'tjzt', width: 60, align: 'left' },
+                { label: '病历号', name: 'blh', hidden: true },
+                { label: '姓名', name: 'xm', width: 60, align: 'left' },
+                { label: '性别', name: 'sexValue', width: 40, align: 'left' },
+                {
+                    label: '年龄', name: 'nlshow', width: 40, align: 'left', formatter: function (cellvalue, a, b) {
+                        return getAgeFromBirthTime({ begin: b.csny }).text;
+                    }
+                },
+                { label: '出生年月', name: 'csny', width: 80, align: 'left' },
+                { label: '病人性质', name: 'brxzmc', width: 80, align: 'left' },
+                { label: '卡类型', name: 'CardTypeName', width: 80, align: 'left' },
+                { label: '费用性质', name: 'brxzmc', width: 80, align: 'left' },
+                { label: '第一诊断', name: 'zzdmc', width: 100, align: 'left' },
+                { label: '入院日期', name: 'ryrq', width: 80, align: 'left' },
+                { label: '出院日期', name: 'cyrq', width: 80, align: 'left' },
+                { label: '病区', name: 'bqmc', width: 80, align: 'left' },
+                { label: 'setl_id', name: 'setl_id', hidden: true },
+                { label: 'psn_no', name: 'psn_no', hidden: true },
+                
+            ],
+            pager: "#gridPager",
+            sortname: 'cyrq',
+            sortorder:"desc",
+            viewrecords: true,
+        });
+        $("#btn_search").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: { keyword: $("#txt_keyword").val(), sczt: $("#sczt").val(), tjzt: $("#tjzt").val(), cykssj: $("#cykssj").val(), cyjssj: $("#cyjssj").val() },
+            }).trigger('reloadGrid');
+        });
+    }
+    //回车事件
+    $('#txt_keyword').keydownEnterEvent(function () {
+        $('#btn_search').trigger('click');
+    })
+    $('#zybz').change(function () {
+        $('#btn_search').trigger('click');
+    });
+    function initControl() {
+
+    }
+</script>
+<script type="text/javascript">
+    var orgId = '@(ViewBag.OrgId)';
+        var openYbSett = '@openYbSett' === 'True'; //开关配置：医保患者是否使用医保交易流程
+        var openXnhSett = '@openXnhSett' === 'True';//开关配置：新农合患者是否使用新农合交易流程
+    var medicalInsurance = '@medicalInsurance';
+        var zyh = '';
+        var kh = "";
+        var ybkCardType = "@((int)EnumCardType.YBJYK)";
+    var jzh = '';
+    var cqPatInfo = {};
+        //结算清单上传
+    $('#btn_jsqd').click(function () {
+            uploadData("1")
+    });
+    //结算清单全部上传
+    $('#btn_jsqdall').click(function () {
+        upqddata()
+    });
+    //结算清单提交
+    $('#btn_jsqdsubmit').click(function () {
+        var seleRow = check1();
+        if (!!!seleRow) {
+            return;
+        }
+        var isBrxzOk = seleRow.brxz == '0';
+        if (isBrxzOk) {
+            $.modalAlert("错误：选择的是非医保", "error");
+            return;
+        }
+        var zyh = seleRow.zyh;
+        if (seleRow.sczt == "未上传") {
+            $.modalAlert("错误：请选择已上传的数据进行提交", "error");
+            return;
+        }
+        if (seleRow.sczt == "已提交") {
+            $.modalAlert("错误：选择的是已提交", "error");
+            return;
+        }
+        upqddataupdate(zyh, "1")
+
+    });
+    //结算清单提交撤销
+    $('#btn_jsqdSubmitRevoke').click(function () {
+        var seleRow = check1();
+        if (!!!seleRow) {
+            return;
+        }
+        var isBrxzOk = seleRow.brxz == '0';
+        if (isBrxzOk) {
+            $.modalAlert("错误：选择的是非医保", "error");
+            return;
+        }
+        var zyh = seleRow.zyh;
+        if (seleRow.sczt == "未上传") {
+            $.modalAlert("错误：请选择已上传的数据进行提交", "error");
+            return;
+        }
+        if (seleRow.sczt == "未提交") {
+            $.modalAlert("错误：请选择已提交的数据进行回滚", "error");
+            return;
+        }
+        upqddataupdate(zyh, "0")
+
+    });
+    //结算清单全部提交
+    $('#btn_jsqdsubmitall').click(function () {
+        upqddataupdate("", "1")
+    });
+    //结算清单信息查询
+    $('#btn_jsqdquery').click(function () {
+        var seleRow = check1();
+        if (!!!seleRow) {
+            return;
+        }
+        var isBrxzOk = seleRow.brxz == '0';
+        if (isBrxzOk) {
+            $.modalAlert("错误：选择的是非医保", "error");
+            return;
+        }
+        var zyh = seleRow.zyh;
+        var dbscobj = { setl_id: seleRow.setl_id, psn_no: seleRow.psn_no, hisId: seleRow.zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', orgId: '@(opr.OrganizeId)', insuplc_admdvs: "" };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/QueryMedicalSettlement_4103",
+            data: dbscobj,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var tfReturn = eval('(' + data + ')');
+                if (tfReturn) {
+                    if (tfReturn.infcode == 0 || tfReturn.infcode == "0") {
+                        $.loading(false);
+                        $.modalAlert("医疗保障基金结算清单信息查询成功", 'warning');
+                        return;
+                    }
+                }
+            }, error: function () {
+                $.loading(false);
+                $.modalAlert("服务异常：", 'error');
+                return;
+            }
+        });
+        @*var url = getUrl();
+
+        url += "&zyh=" + zyh + "&orgId=" +  '@(opr.OrganizeId)';
+        window.open(url);*@
+    });
+    //结算清单数量查询
+    $('#btn_querynum').click(function () {
+        var kssj = $("#cykssj").val();
+        var jssj = $("#cyjssj").val();
+        $.modalOpen({
+            id: "QuerySettlementResultFrom",
+            title: "结算清单统计结果数据",
+            url: "/PatientManage/Inpatient/QuerySettlementResultFrom?kssj=" + kssj + "&jssj=" + jssj,
+            width: "1000px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    });
+
+    function upqddata()
+    {
+        $.ajax({
+            url: "/PatientManage/Inpatient/UpqdScData",
+            data: { kssj: $('#cykssj').val(), jssj: $('#cyjssj').val()+" 23:59:59" },
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (ckdata) {
+                var data = ckdata.data;
+                if (data != null && data != "") {
+                    $.loading("数据加载中，请稍等");
+                    for (var i = 0; i < data.split(',').length; i++) {
+                        var dbscobj = { mdtrt_id: "", psn_no: "", hisId: data.split(',')[i], operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', orgId: '@(opr.OrganizeId)', insuplc_admdvs: "" };
+                        $.ajax({
+                            type: "POST",
+                            url: "http://127.0.0.1:33333/api/YiBao/PostMedicalSettlement_4101_V2",
+                            data: dbscobj,
+                            dataType: "json",
+                            async: false,
+                            success: function (data) {
+                                var tfReturn = eval('(' + data + ')');
+                                if (tfReturn) {
+                                    if (tfReturn.infcode == 0 || tfReturn.infcode == "0") {
+                                        $.loading(false);
+                                        $.modalAlert("上传成功", 'warning');
+                                        $('#btn_search').trigger('click');
+                                        return;
+                                    }
+                                    else {
+                                        $.loading(false);
+                                        $.modalAlert("结算清单上传失败：" + tfReturn.err_msg, 'error');
+                                        $('#btn_search').trigger('click');
+                                        return;
+                                    }
+                                }
+                            }, error: function () {
+                                $.loading(false);
+                                $.modalAlert("服务异常：", 'error');
+                                return;
+                            }
+                        });
+                    }
+                } else {
+                    $.loading(false);
+                    $.modalAlert("暂无需要上传的清单", 'error');
+                    return;
+                }
+            }
+        });
+    }
+
+    function upqddataupdate(zyh, stas_type)
+    {
+        var dbscobj = { mdtrt_id: "", psn_no: "", hisId: zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', orgId: '@(opr.OrganizeId)', insuplc_admdvs: "", stas_type: stas_type };
+        $.ajax({
+            type: "POST",
+            url: "http://127.0.0.1:33333/api/YiBao/MedicalSettlementUpdate_4102",
+            data: dbscobj,
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                var tfReturn = eval('(' + data + ')');
+                if (tfReturn) {
+                    if (tfReturn.infcode == 0 || tfReturn.infcode == "0") {
+                        $.loading(false);
+                        $('#btn_search').trigger('click');
+                        if (stas_type == "0") {
+                            $.modalAlert("状态回撤成功", 'warning');
+                        } else {
+                            $.modalAlert("提交成功", 'warning');
+                        }
+                        return;
+                    }
+                    else {
+                        $.loading(false);
+                        $('#btn_search').trigger('click');
+                        if (stas_type == "0") {
+                            $.modalAlert("状态回撤失败：" + tfReturn.err_msg, 'error');
+                        } else {
+                            $.modalAlert("提交失败：" + tfReturn.err_msg, 'error');
+                        }
+                        return;
+                    }
+                }
+            }, error: function () {
+                $.loading(false);
+                $.modalAlert("服务异常：", 'error');
+                return;
+            }
+        });
+    }
+    function uploadData(upobj) {
+            var seleRow = check1();
+            if (!!!seleRow) {
+                return;
+            }
+            var isBrxzOk = seleRow.brxz == '0';
+            if (isBrxzOk) {
+                $.modalAlert("错误：选择的是非医保", "error");
+                return;
+            }
+            var zyh = seleRow.zyh;
+
+            if (seleRow.sczt=="已上传") {
+                $.modalAlert("错误：选择的是已上传", "error");
+                return;
+            }
+            var dbscobj = { mdtrt_id: "", psn_no: "", hisId: zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', orgId: '@(opr.OrganizeId)', insuplc_admdvs: "" };
+            var upUrl;
+            switch (upobj) {
+                case '1':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalSettlement_4101_V2";
+                    break;
+            }
+            $.loading("数据加载中，请稍等");
+            $.ajax({
+                type: "POST",
+                url: upUrl,
+                data: dbscobj,
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    var tfReturn = eval('(' + data + ')');
+                    if (tfReturn) {
+                        if (tfReturn.infcode === 0) {
+                            $.loading(false);
+                            $('#btn_search').trigger('click');
+                            $.modalAlert("住院号为:" + zyh + "，上传成功", 'warning');
+                        }
+                        else {
+                            $.loading(false);
+                            $('#btn_search').trigger('click');
+                            $.modalAlert("结算清单上传失败：" + tfReturn.err_msg, 'error');
+                            
+                        }
+                    }
+                }, error: function () {
+                    $.loading(false);
+                    $.modalAlert("服务异常：", 'error');
+                }
+            });
+    }
+
+    function check1() {
+            var seleRow = $("#gridList").jqGridRowValue();
+            var zyh = seleRow.zyh;
+            if (!!!zyh) {
+                $.modalAlert("尚未选择一条记录", "error");
+                return;
+            }
+            else if (seleRow.zybz == '作废记录') {
+                $.modalAlert("已作废记录", "error");
+                return;
+            }
+            if (!medicalInsurance) {
+                $.modalAlert("缺少配置医保就医地", "error");
+                return;
+            }
+            return seleRow;
+    }
+
+    function btn_edit() {
+        var keyValue = $("#gridList").jqGridRowValue().zyh;
+        if (!!!keyValue) {
+            return;
+        }
+        $.modalOpen({
+            id: "SettlementListResultFrom",
+            title: "质控结果查询",
+            url: "/PatientManage/Inpatient/SettlementListResultFrom?zyh=" + keyValue,
+            width: "1100px",
+            height: "600px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+
+    function getUrl() {
+        var srcUrl = '@Html.Raw(reportUrl)';
+
+        //获取自定义样式
+        if (true) {
+            if (srcUrl.indexOf('&rc:Stylesheet') == -1) {
+                srcUrl += "&rc:Stylesheet=MyStyleSheet";
+            }
+        }
+        if (false) {
+            srcUrl += "&curUserCode=" + curUserCode;
+        }
+        if (false) {
+            srcUrl += "&isHospAdministrator=" + isHospAdministrator;
+        }
+
+        return srcUrl;
+    }
+</script>

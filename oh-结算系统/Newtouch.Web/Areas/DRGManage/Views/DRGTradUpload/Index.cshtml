@@ -1,0 +1,455 @@
+﻿
+@{
+    Layout = "~/Views/Shared/_Index.cshtml";
+    var opr = Newtouch.Common.Operator.OperatorProvider.GetCurrent();
+}
+
+
+<style>
+    @@media screen and (min-width:600px) {
+        #btn_ {
+            width: 160px;
+        }
+
+        .form .formTitle {
+            width: 55px;
+        }
+
+        .form .formValue {
+            width: 100px;
+        }
+    }
+
+    @@media screen and (min-width:1000px) {
+        .form .formTitle {
+            width: 25px;
+        }
+
+        .form .formValue {
+            width: 60px;
+        }
+    }
+</style>
+<form>
+    <div class="panel panel-default">
+        <div class="panel-heading navb-bg">
+            筛选条件
+        </div>
+        <table class="form">
+            <tr>
+                <th class="formTitle">开始时间：</th>
+                <td class="formValue" style="width:150px;">
+                    <input id="kssj" type="text" class="form-control input-wdatepicker" style="width:42%; float:left;" value="@DateTime.Now.AddMonths(-1).ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                    <span style="margin-left:1%;float:left">—</span>
+                    <input id="jssj" type="text" class="form-control input-wdatepicker" style="width:43%; float:left;margin-left:1%;" value="@DateTime.Now.ToString("yyyy-MM-dd")" onfocus="WdatePicker({ dateFmt: 'yyyy-MM-dd' })" />
+                </td>
+                <th class="formTitle" style="width:70px;padding-right:12px;">上传情况：</th>
+                <td class="formValue">
+                    <select id="scqk" name="scqk" class="form-control">
+                        <option value="">==请选择==</option>
+                        <option value="0" selected="selected">已上传</option>
+                        <option value="1">上传失败</option>
+                        <option value="2">未上传</option>
+                    </select>
+                </td>
+                <th class="formTitle" style="width:70px;padding-right:12px;">交易类型：</th>
+                <td class="formValue" style="width:140px">
+                    <select id="trad" name="trad" class="form-control">
+                        <option value="">==请选择==</option>
+                        @*<option value="4101A" selected="selected">【4101A】医疗保障基金结算清单信息上传</option>
+                        <option value="4401">【4401】病案首页上传</option>
+                        <option value="4402">【4402】住院医嘱上传</option>
+                        <option value="4501">【4501】临床检查上传</option>
+                        <option value="4502">【4502】临床检验上传</option>
+                        <option value="4505">【4505】病理检查报告上传</option>
+                        <option value="4701">【4701】电子病历上传</option>*@
+                        <option value="3501">【3501】商品盘存上传</option>
+                        <option value="3502">【3502】商品库存变更上传</option>
+                        <option value="3503">【3503】商品采购上传</option>
+                        <option value="3504">【3504】商品采购退货上传</option>
+                        <option value="3505">【3505】商品销售上传</option>
+                        <option value="3506">【3506】商品销售退货上传</option>
+                        @*<option value="3101">【3101】事前审核</option>
+                        <option value="3102">【3102】事中审核</option>*@
+                    </select>
+                </td>
+                @*<th class="formTitle">住院号：</th>
+                <td class="formValue">
+                    <input id="zyh" name="zyh" type="text" autocomplete="off" class="form-control" />
+                </td>*@
+                <td class="formValue">
+                    <input type="button" id="btn_search" class="btn btn-md btn-primary form-an" style="width: 50px; margin-left: 40px;" value="查询" />
+
+                </td>
+                <th class="formTitle" colspan="2">
+                        <input type="button" id="btn_upload" class="btn btn-md btn-primary form-an" style="width: 50px; margin-left: 40px;" value="上传" />
+
+                    </th>
+
+                <th class="formTitle"></th>
+                <td class="formValue"></td>
+            </tr>
+        </table>
+    </div>
+    <div id="gridqt" class="gridPanel">
+        <table id="gridList"></table>
+        <div id="gridPager"></div>
+    </div>
+    <div id="gridyp" class="gridPanel">
+        <table id="gridListYp"></table>
+        <div id="gridPagerYp"></div>
+    </div>
+    <div id="gridsqsz" class="gridPanel">
+        <table id="gridListsqsz"></table>
+        <div id="gridPagersqsz"></div>
+    </div>
+</form>
+<script>
+    $(function () {
+       // gridList();
+        gridListYp();
+        //gridListsqsz();
+        var $gridList = $("#gridList");
+        var $gridListYp = $("#gridListYp");
+        var $gridListsqsz = $("#gridListsqsz");
+        $("#gridyp").css('display', 'none');
+        $("#gridsqsz").css('display', 'none');
+        $("#btn_search").click(function () {
+            if ($('#trad').val() == "3501" || $('#trad').val() == "3502" || $('#trad').val() == "3503" || $('#trad').val() == "3504" || $('#trad').val() == "3505" || $('#trad').val() == "3506") {
+                $("#gridqt").css("display", "none");
+                $("#gridsqsz").css("display", "none");
+                $("#gridyp").css("display", "block");
+                $gridListYp.jqGrid('setGridParam', {
+                    postData: getSearchPostDataYp(),
+                    page: 1,
+                }).trigger('reloadGrid');
+            }
+            else if ($('#trad').val() == "3101" || $('#trad').val() == "3102") {
+                $("#gridyp").css("display", "none");
+                $("#gridsqsz").css("display", "block");
+                $("#gridqt").css("display", "none");
+                $gridListsqsz.jqGrid('setGridParam', {
+                    postData: getSearchPostDatasqsz(),
+                    page: 1,
+                }).trigger('reloadGrid');
+            }
+            else {
+                $("#gridyp").css("display", "none");
+                $("#gridsqsz").css("display", "none");
+                $("#gridqt").css("display", "block");
+                $gridList.jqGrid('setGridParam', {
+                    postData: getSearchPostData(),
+                    page: 1,
+                }).trigger('reloadGrid');
+            }
+
+        });
+        //$("#zyh").keyupEnterEvent(function () {
+        //    $("#btn_search").trigger("click");
+        //});
+    });
+
+    function gridList() {
+        var $gridList = $("#gridList");
+        $gridList.dataGrid({
+            url: "/DRGManage/DRGTradUpload/GetGridJson",
+            postData: getSearchPostData(),
+            height: $(window).height() - 128,
+            colModel: [
+                { label: 'patId', name: 'patId', width: 100, align: 'left', hidden: true },
+                //{ label: '选择', name: 'patId', width: 160, align: 'left' },
+                { label: '上传情况', name: 'scqk', width: 160, align: 'left' },
+                { label: '上传日期', name: 'scrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                { label: '错误信息', name: 'errorMsg', width: 160, align: 'left' },
+                { label: '住院号', name: 'zyh', width: 160, align: 'left' },
+                { label: '姓名', name: 'xm', width: 160, align: 'left' },
+                { label: '身份证号', name: 'sfzh', width: 160, align: 'left' },
+                { label: '医保就诊ID', name: 'mdtrt_id', width: 160, align: 'left' },
+                { label: '医保结算ID', name: 'setl_id', width: 160, align: 'left' },
+                { label: '入院日期', name: 'ryrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                { label: '出院日期', name: 'cyrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                { label: '病案首页日期', name: 'basyrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' }},
+                { label: '结算日期', name: 'jsrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '科室', name: 'ksmc', width: 160, align: 'left' },
+                { label: '医生姓名', name: 'ysmc', width: 160, align: 'left' },
+
+            ],
+            viewrecords: true,
+            multiselect: true,
+			ondblClickRow: function (rowid) {
+				//$.modalAlert(rowid, 'warning');
+				SelGetrow(rowid);
+            },
+        });
+    }
+    function gridListYp() {
+        var $gridListYp = $("#gridListYp");
+        $gridListYp.dataGrid({
+            url: "/DRGManage/DRGTradUpload/GetGridJsonYp",
+            postData: getSearchPostData(),
+            height: $(window).height() - 128,
+            colModel: [
+                { label: '医保交易', name: 'mlbm_id', hidden:true},
+                { label: '药品名称', name: 'ypmc', width: 160, align: 'left' },
+                { label: '批次号', name: 'pch', width: 160, align: 'left' },
+                { label: '上传情况', name: 'scqk', width: 60, align: 'left' },
+                { label: '上传日期', name: 'scrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '错误信息', name: 'errorMsg', width: 160, align: 'left' },
+            ],
+            viewrecords: true,
+            multiselect: true,
+            //onSelectRow: function (rowid) {
+            //    $("#" + $.jgrid.jqID(rowid) + "_mdtrt_id").focus();
+            //},
+        });
+    }
+    function gridListsqsz() {
+        var $gridListsqsz = $("#gridListsqsz");
+        $gridListsqsz.dataGrid({
+            url: "/DRGManage/DRGTradUpload/GetGridJsonsqsz",
+            postData: getSearchPostData(),
+            height: $(window).height() - 128,
+            colModel: [
+                { label: '住院号', name: 'zyh', width: 50, align: 'left' },
+                { label: '病人姓名', name: 'xm', width: 50, align: 'left' },
+                { label: '医嘱类型', name: 'yzlx', width: 50, align: 'left' },
+                { label: '医嘱号', name: 'yzh', width: 160, align: 'left' },
+                { label: '项目名称', name: 'xmmc', width: 200, align: 'left' },
+                { label: '数量', name: 'sl', width: 60, align: 'left' },
+                { label: '诊断信息', name: 'zdmc', width: 100, align: 'left' },
+                { label: '科室', name: 'ks', width: 60, align: 'left' },
+                { label: '上传日期', name: 'scrq', width: 160, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d H:i:s', newformat: 'Y-m-d H:i:s' } },
+                { label: '错误信息', name: 'errorMsg', width: 160, align: 'left' },
+            ],
+            viewrecords: true,
+            multiselect: true,
+            //onSelectRow: function (rowid) {
+            //    $("#" + $.jgrid.jqID(rowid) + "_mdtrt_id").focus();
+            //},
+        });
+    }
+    //查询条件
+    function getSearchPostData() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val()+" 23:59:59";
+        var scqk = $("#scqk option:selected").text();
+        var zyh = $("#zyh").val();
+        var tradiNumber = $("#trad").val();
+        return { kssj: kssj, jssj: jssj, scqk: scqk, zyh: zyh, tradiNumber: tradiNumber };
+
+    }
+    //查询条件 3501-3506
+    function getSearchPostDataYp() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val() + " 23:59:59";
+        var scqk = $("#scqk option:selected").text();
+        var tradiNumber = $("#trad").val();
+        return { kssj: kssj, jssj: jssj, scqk: scqk, tradiNumber: tradiNumber };
+
+    }
+    //查询条件 3101 3102
+    function getSearchPostDatasqsz() {
+        var kssj = $("#kssj").val();
+        var jssj = $("#jssj").val() + " 23:59:59";
+        var zyh = $("#zyh").val();
+        var scqk = $("#scqk option:selected").text();
+        var tradiNumber = $("#trad").val();
+        return { kssj: kssj, jssj: jssj, scqk: scqk, zyh: zyh, tradiNumber: tradiNumber };
+
+    }
+    //上传
+    $('#btn_upload').click(function () {
+        var seleRow = check();
+        if ($("#scqk").val() === '0' ) {
+            $.modalAlert("请勿选择已上传数据", 'error')
+            return;
+        }
+        if (!!!seleRow ) {
+            return;
+        }
+        // 获取上传需要的数据
+        var orgId = '@(opr.OrganizeId)';
+        var operatorId = '@(opr.rygh)';
+        var operatorName = '@(opr.UserName)';
+        var crkId = seleRow.length > 1 ? "" : seleRow[0].mlbm_id;
+        if (seleRow.length > 1) {
+            // 弹出确认框，确认上传
+            $.modalConfirm("选择非单条数据将全部上传！", function(flag) {
+                if (flag){
+                    uploadData(orgId, operatorId, operatorName, crkId);
+                }
+            });
+        } else {
+            // 选择一条数据，直接上传
+            uploadData(orgId, operatorId, operatorName, crkId);
+        }
+        function uploadData(orgId, operatorId, operatorName, crkId) {
+            var tradiNumber = $("#trad").val();
+            var data;
+            var upUrl;
+            // 根据tradiNumber来选择不同的接口
+            switch (tradiNumber) {
+                case '3501':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3501";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
+                    break;
+                case '3502':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3502";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
+                    break;
+                case '3503':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3503";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
+                    break;
+                case '3504':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3504";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
+                    break;
+                case '3505':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3505";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName
+                    };
+                    break;
+                case '3506':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3506";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName
+                    };
+                    break;
+            }
+
+            // 发起上传请求
+            $.najax({
+                url: upUrl,
+                dataType: "json",
+                data: data,
+                type: "POST",
+                success: function (response) {
+                    $.modalAlert("上传成功", 'success');
+                    $.modalClose();
+                },
+                error: function (error) {
+                    $.modalAlert("上传失败，请重试", 'error');
+                }
+            });
+        }
+    });
+
+    function check() {
+        //获取所选行
+        var seleRow = $("#gridListYp").jqGridRowValue();
+        var setl_id = seleRow.setl_id;
+        if (seleRow.length==0) {
+            $.modalAlert("尚未选择一条记录", "error");
+            return;
+        }
+        return seleRow;
+
+        //var selRowIds = $("#gridList").jqGrid('getGridParam', 'selarrrow');
+        //if (selRowIds.length == 0) {
+        //    $.modalAlert("请先选中需上传的信息", 'warning');
+        //    return;
+        //}
+
+        ////获取所有行Id，遍历使编辑框处于保存状态
+        //var rowIds = $("#gridList").jqGrid('getDataIDs');
+        //return selRowIds;
+    }
+
+	function SelGetrow(rowid) {
+		//获取所选行
+		var rowData = $("#gridList").jqGrid('getRowData', rowid);
+		console.log("选中行", rowData)
+		//var setl_id = rowData.setl_id;
+		if (rowData.patId == null) {
+			$.modalAlert("尚未选择一条记录", "error");
+			return;
+		}
+		if ($('#trad').val() == "4402" || $('#trad').val() == "4501" || $('#trad').val() == "4502") {
+			$.modalOpen({
+				id: "Deliitem",
+				async: false,
+				title: "明细页面",
+				url: "/DRGManage/DRGTradUpload/From?zyh=" + rowData.zyh + "&types=" + $('#trad').val(),
+				width: "1000px",
+				height: "550px",
+				callBack: function (iframeId) {
+					$.modalClose("From");
+				}
+			});
+		}
+
+	}
+
+    //住院号选择浮层绑定
+    $('#zyh').newtouchBatchFloatingSelector({
+        width: 500,
+        height: 200,
+        caption: "选择患者",
+        clickautotrigger: true,
+        url: "/ReportManage/Report/GetInpatientcryrq",
+        ajaxparameters: function ($thisinput) {
+            var keyword = $thisinput.val().trim();
+            var zyh = $("#zyh").val();
+            return "zyh=" + zyh;
+        },
+        itemdbclickhandler: function ($thistr, $thisinput) {
+            if (!!$thistr.attr('data-zyh')) {
+                //if ($thistr.attr('data-ryrq') !== "" && $thistr.attr('data-ryrq') !== undefined && $thistr.attr('data-ryrq') !== null) {
+                //    $('#ksrq').val($.getDate({ date: $thistr.attr('data-ryrq') }));
+                //}
+                //if ($thistr.attr('data-cyrq') !== "" && $thistr.attr('data-cyrq') !== undefined && $thistr.attr('data-cyrq') !== null) {
+                //    $('#jsrq').val($.getDate({ date: $thistr.attr('data-cyrq') }));
+                //} else {
+                //    $('#jsrq').val($.getDate());
+                //}
+                $('#zyh').val($thistr.attr('data-zyh'));
+                //submit();
+            }
+        },
+        colModel: [
+            { label: '住院号', name: 'zyh', width: 100 },
+            { label: 'cyrq', name: 'cyrq', hidden: true },
+            { label: 'ryrq', name: 'ryrq', hidden: true },
+            { label: '在院标志', name: 'zybz', width: 100, align: 'left' },
+            { label: '姓名', name: 'xm', width: 120, align: 'left' },
+            { label: '出生年月', name: 'csny', hidden: true, width: 100, align: 'left' },
+            {
+                label: '性别', name: 'xb', width: 50, align: 'left', formatter: function (cellvalue) {
+                    return $.getGender(cellvalue);
+                }
+            },
+            {
+                label: '年龄', name: 'nlshow', width: 50, align: 'left', formatter: function (cellvalue, a, b) {
+                    return getAgeFromBirthTime({ begin: b.csny }).text;
+                }
+            }
+        ]
+    });
+</script>
+
