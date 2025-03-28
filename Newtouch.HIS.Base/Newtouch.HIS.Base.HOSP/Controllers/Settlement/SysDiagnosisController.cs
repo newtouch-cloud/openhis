@@ -140,7 +140,7 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
             {
                 throw new FailedException("请选择组织机构");
             }
-            else if (!_sysOrganizeDmnService.IsMedicalOrganize(entity.OrganizeId))
+            else if (!_sysOrganizeDmnService.IsMedicalOrganize(entity.OrganizeId)&& entity.OrganizeId!="*")
             {
                 throw new FailedException("请选择医疗机构（医院或诊所）");
             }

@@ -19,6 +19,7 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         
         private readonly ISysOrganizeDmnService _sysOrganizeDmnService;
         private readonly ISysMedicineRepo _SysMedicineRepository;
+        private readonly ISysMedicinePropertyRepo _sysMedicinePropertyRepo;
         private readonly ISysMedicineDmnService _sysMedicineDmnService;
         private readonly ISysMedicalOrderFrequencyRepo _sysMedicalOrderFrequencyRepo;
         private readonly ISysMedicineAntibioticInfoRepo _sysMedicineAntibioticInfoRepo;
@@ -32,6 +33,8 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         private readonly ISysChargeCategoryBaseRepo _sysChargeCategoryBaseRepo;
         private readonly ISysChargeItemRepo _sysChargeItemRepo;
         private readonly ISysChargeItemBaseRepo _sysChargeItemBaseRepo;
+        private readonly ISysMedicalOrderFrequencyRepo _sysMedicalOrderFrequencyApp;
+        private readonly ISysChargeCategoryTypeRelationRepo _sysChargeCategoryTypeRelationRepo;
         
         
 
@@ -45,7 +48,10 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
              ISysMedicineBaseRepo SysMedicineBaseRepo, ISysMedicinePropertyBaseRepo SysMedicinePropertyBaseRepo,ISysChargeCategoryRepo SysChargeCategoryRepo
              ,ISysChargeCategoryBaseRepo SysChargeCategoryBaseRepo,
              ISysChargeItemRepo SysChargeItemRepo,
-             ISysChargeItemBaseRepo SysChargeItemBaseRepo
+             ISysChargeItemBaseRepo SysChargeItemBaseRepo,
+             ISysMedicalOrderFrequencyRepo sysMedicalOrderFrequencyApp,
+             ISysChargeCategoryTypeRelationRepo sysChargeCategoryTypeRelationRepo,
+             ISysMedicinePropertyRepo sysMedicinePropertyRepo
              )
          {
              _sysOrganizeDmnService = sysOrganizeDmnService;
@@ -62,6 +68,9 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
              _sysChargeCategoryBaseRepo = SysChargeCategoryBaseRepo;
              _sysChargeItemRepo = SysChargeItemRepo;
              _sysChargeItemBaseRepo = SysChargeItemBaseRepo;
+             _sysMedicalOrderFrequencyApp = sysMedicalOrderFrequencyApp;
+             _sysChargeCategoryTypeRelationRepo = sysChargeCategoryTypeRelationRepo;
+             _sysMedicinePropertyRepo = sysMedicinePropertyRepo;
          }
         
         
@@ -69,10 +78,14 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         //grid json 数据源
         [HttpGet]
         [HandlerAjaxOnly]
-        public ActionResult GetGridJson(Pagination pagination, string keyword, string organizeId,string zt,string ypflCode,string ypgg ,string ycmc,string dlCode)
+        public ActionResult GetGridJson(Pagination pagination, string keyword, string organizeId,string zxyfl, string zt,string ypflCode,string ypgg ,string ycmc,string dlCode)
         {
             pagination.sidx = "CreateTime desc";
             pagination.sord = "asc";
+            if (!string.IsNullOrEmpty(zxyfl))
+            {
+                dlCode = zxyfl;
+            }
             var data = new
             {
                 rows = _iCommonLibraryDmnService.GetPaginationList(organizeId, pagination, zt, ypflCode, keyword,ypgg, ycmc, dlCode),
@@ -130,9 +143,11 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                     {   
                         //获取药品信息
                         var s = _sysMedicineBaseRepo.FindEntity(p=>p.ypId == id);
+                        var s1 = _sysMedicinePropertyBaseRepo.FindEntity(p => p.ypId == id);
                         //查看是否同步过
                         var sysMedicineEntity = _SysMedicineRepository.FindEntity(p => p.ycmc == s.ycmc && p.OrganizeId == organizeId && p.ypmc == s.ypmc);
-                        if (sysMedicineEntity == null)
+                        var sysMedicineEntityProperty = _sysMedicinePropertyRepo.FindEntity(p =>p.OrganizeId == organizeId && p.gjybdm == s1.gjybdm);
+                        if (sysMedicineEntity == null && sysMedicineEntityProperty == null)
                         {
                             _iCommonLibraryDmnService.SyncCommonDrug(s,organizeId);
                         }
@@ -147,7 +162,19 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                         if (sysChargeCategoryEntity == null)
                         {
                             _iCommonLibraryDmnService.SyncCommonSfdl(s,organizeId);
-                            
+                            try
+                            {
+                                //同步该项目下的收费大类类型
+                                var sysChargeCategoryTypeRelationEntity = _sysChargeCategoryTypeRelationRepo.FindEntity(p =>
+                                    p.dlCode == s.dlCode && p.OrganizeId == "*");
+                                sysChargeCategoryTypeRelationEntity.OrganizeId = organizeId;
+                                sysChargeCategoryTypeRelationEntity.Id = Guid.NewGuid().ToString();
+                                _sysChargeCategoryTypeRelationRepo.Insert(sysChargeCategoryTypeRelationEntity);
+                            }
+                            catch (Exception e)
+                            {
+                               continue;
+                            }
                         }else
                         {
                             return Error("["+s.dlmc+"]已经同步过！请勿勾选");
@@ -185,6 +212,22 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
                             return Error("["+s.sfxmmc+"]已经同步过！请勿勾选");
                         }  
                     }
+                    else if ("yzpc".Equals(Type))
+                    {
+                        //yzpc
+                        var s = _sysMedicalOrderFrequencyApp.FindEntity(p => p.yzpcId == id);
+                        //查看是否同步过
+                        var sysChargeItem = _sysMedicalOrderFrequencyApp.FindEntity(p => p.yzpcCode == s.yzpcCode && p.OrganizeId == organizeId && p.yzpcmc == s.yzpcmc);
+                        if (sysChargeItem == null)
+                        {
+                            s.OrganizeId = organizeId;
+                            _sysMedicalOrderFrequencyApp.Insert(s);
+                        }
+                        else
+                        {
+                            return Error("["+s.yzpcmc+"]已经同步过！请勿勾选");
+                        }  
+                    }
                     
                 }
             
@@ -214,6 +257,16 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         }
         
         public ActionResult ChargeItemForm()
+        {
+            return View();
+        }
+        
+        public ActionResult SysCommonChargeCategoryForm()
+        {
+            return View();
+        }
+        
+        public ActionResult SysMedicalOrderFrequencyForm()
         {
             return View();
         }

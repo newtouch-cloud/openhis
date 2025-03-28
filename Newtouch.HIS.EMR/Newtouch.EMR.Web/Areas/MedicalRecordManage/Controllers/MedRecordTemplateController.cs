@@ -18,6 +18,7 @@ using DCSoft.Writer.Controls;
 using DCSoft.Writer;
 using System.IO;
 using Newtouch.EMR.Domain.ValueObjects;
+using System.Text;
 
 namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 {
@@ -49,6 +50,10 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             return View();
         }
         public ActionResult BlTemplate()
+        {
+            return View();
+        }
+        public ActionResult testbl()
         {
             return View();
         }
@@ -316,12 +321,12 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 
         public ActionResult MedicalTemplate()
         {
-            DCwriterServer dcControl = new DCwriterServer();
-            dcControl.MedicalTemplate();
-            WebWriterControlEngine eng = dcControl.DCWControl;//这是上一步创建的引擎 
-            eng.Options.ClientContextMenuType = WebClientContextMenuType.Custom;
-            ViewBag.WriterControlHtml = eng.GetAllContentHtml();
-            eng.Dispose();
+            //DCwriterServer dcControl = new DCwriterServer();
+            //dcControl.MedicalTemplate();
+            //WebWriterControlEngine eng = dcControl.DCWControl;//这是上一步创建的引擎 
+            //eng.Options.ClientContextMenuType = WebClientContextMenuType.Custom;
+            //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+            //eng.Dispose();
             return View();
         }
         private class MoreActionResult : ActionResult
@@ -404,29 +409,85 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
 
         }
 
-        public ActionResult GetTemplateXml(string templateType, string templateName)
+        public ActionResult GetTemplateXml(string templateUrl)
         {
-            string filename = templateName+".xml";
+            string[] arr = templateUrl.Split('\\');
+            string filename = arr.LastOrDefault();
             string ml = AppDomain.CurrentDomain.BaseDirectory;
+            var tempaleUrl = "";
+            for (var item = 1; item < arr.Length; item++)
+            {
+                if (arr[item].Contains(".xml"))
+                {
+                    var xmlfile = ml + tempaleUrl + arr[item];
+                    var t = System.IO.File.Exists((xmlfile));
+                    if (!System.IO.File.Exists((xmlfile)))
+                    {
+                        //var defalutxml = "<XTextDocumentxmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"EditorVersionString=\"1.2023.2.14\"></XTextDocument>";
+                        //System.IO.Directory.CreateDirectory(ml + tempaleUrl);
+                        var d = $"{ml}{tempaleUrl}{filename}";
+                        System.IO.File.WriteAllText($"{ml}{tempaleUrl}{filename}", "");
+                        //args.Handled = true;
+                        //return;
+                    }
+                    tempaleUrl += arr[item];
+                }
+                else
+                {
+                    var d = arr[item];
+                    var dd = ml + tempaleUrl + arr[item];
+                    if (!System.IO.Directory.Exists(ml + tempaleUrl + arr[item]))
+                    {
+                        System.IO.Directory.CreateDirectory(ml + tempaleUrl + arr[item]);
+                    }
+                    tempaleUrl += arr[item] + "\\";
+
+                }
+            }
+            //string filename = args.FileName + ".xml";
+            string xml = System.IO.File.ReadAllText($"{ml}{tempaleUrl}");
+            BlTemplateVo vo = new BlTemplateVo();
+            vo.xmldata = xml;
+            return Content(vo.ToJson());
+            #region
+            //string filename = templateName+".xml";
+            //string ml = AppDomain.CurrentDomain.BaseDirectory;
+            //if (!System.IO.Directory.Exists(ml + "File"))
+            //{
+            //    System.IO.Directory.CreateDirectory(ml + "File");
+            //}
+            //if (!System.IO.Directory.Exists(ml + "File\\YzContinueTem"))
+            //{
+            //    System.IO.Directory.CreateDirectory(ml + "File\\YzContinueTem");
+            //}
+            ////var d = ml + "File\\YzContinueTem\\" + filename;
+            ////var dd = System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(d));
+            //if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(ml + "File\\YzContinueTem\\"+ filename)))
+            //{
+            //    System.IO.Directory.CreateDirectory(ml + "File\\YzContinueTem\\" + filename);
+            //    return null;
+            //}
+            //BlTemplateVo vo = new BlTemplateVo();
+            //string xml = System.IO.File.ReadAllText($"{ml}File\\YzContinueTem\\{filename}");
+            //vo.xmldata = xml;
+            //return  Content(vo.ToJson()); 
+            #endregion
+        }
+
+        public ActionResult SaveTemplateXml(string templateUrl,string templateData)
+        {
+            string filename = templateUrl;
+            byte[] decodedBytes = Convert.FromBase64String(templateData);
+            string xmlString = Encoding.UTF8.GetString(decodedBytes);
+            string ml = AppDomain.CurrentDomain.BaseDirectory;
+            ml = ml.Substring(0, ml.Length - 1);
             if (!System.IO.Directory.Exists(ml + "File"))
             {
                 System.IO.Directory.CreateDirectory(ml + "File");
             }
-            if (!System.IO.Directory.Exists(ml + "File\\YzContinueTem"))
-            {
-                System.IO.Directory.CreateDirectory(ml + "File\\YzContinueTem");
-            }
-            //var d = ml + "File\\YzContinueTem\\" + filename;
-            //var dd = System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(d));
-            if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(ml + "File\\YzContinueTem\\"+ filename)))
-            {
-                System.IO.Directory.CreateDirectory(ml + "File\\YzContinueTem\\" + filename);
-                return null;
-            }
-            BlTemplateVo vo = new BlTemplateVo();
-            string xml = System.IO.File.ReadAllText($"{ml}File\\YzContinueTem\\{filename}");
-            vo.xmldata = xml;
-            return  Content(vo.ToJson()); 
+            var d = $"{ml}{filename}";
+            System.IO.File.WriteAllText($"{ml}{filename}", xmlString);
+            return Success();
         }
 
         #endregion

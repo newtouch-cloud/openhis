@@ -420,13 +420,18 @@ namespace Newtouch.HIS.Web.Areas.ReportManage.Controllers
 			ReportingServiceCom();
 			return View();
 		}
-		#endregion
+        #endregion
 
-		/// <summary>
-		/// 服务代码盈利
-		/// </summary>
-		/// <returns></returns>
-		public ActionResult RevenueDetailesReport()
+        public ActionResult HosOutpatientFees()
+        {
+            return View();
+        }
+
+        /// <summary>
+        /// 服务代码盈利
+        /// </summary>
+        /// <returns></returns>
+        public ActionResult RevenueDetailesReport()
         {
             ReportingServiceCom();
 

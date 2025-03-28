@@ -274,9 +274,14 @@ left join  xt_mldz mldz on xm.sfxmCode=mldz.code
         /// <param name="gjybdm"></param>
         /// <param name="pzwh"></param>
         /// <returns></returns>
-        public IList<G_yb_ypxxVO> GetYpypxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh)
-		{
-			string sql = @"select top 200 * from (
+        public IList<G_yb_ypxxVO> GetYpypxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh,string dataSource)
+        {
+	        string sql = "";
+	        var pars = new List<SqlParameter>();
+	        switch (dataSource)
+	        {
+		        case "1":
+			    sql =  @"select top 200 * from (
 select 
 药品代码 ypdm
 ,数据来源 sjly
@@ -311,22 +316,78 @@ select
 from dbo.gb_ypxx 
 )a where 1=1 
 ";
-			var pars = new List<SqlParameter>();
-			if (!string.IsNullOrEmpty(gjybdm))
-			{
-				sql += "  and (ypdm like  '%'+@gjybdm+'%' or zcmc like '%'+@gjybdm+'%' or pzwh like '%'+@gjybdm+'%' or  ybypmc like '%'+@gjybdm+'%' or ypqy like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
-				pars.Add(new SqlParameter("@gjybdm", gjybdm));
-			}
-			if (!string.IsNullOrEmpty(pzwh))
-			{
-				sql += "  and pzwh like '%'+@pzwh+'%'";
-				pars.Add(new SqlParameter("@pzwh", pzwh));
-			}
-			if (!string.IsNullOrEmpty(ypmc))
-			{
-				sql += "  and scqy like '%'+@ypmc+'%'";
-				pars.Add(new SqlParameter("@ypmc", ypmc));
-			}
+			    if (!string.IsNullOrEmpty(gjybdm))
+			    {
+				    sql += "  and (ypdm like  '%'+@gjybdm+'%' or zcmc like '%'+@gjybdm+'%' or pzwh like '%'+@gjybdm+'%' or  ybypmc like '%'+@gjybdm+'%' or ypqy like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
+				    pars.Add(new SqlParameter("@gjybdm", gjybdm));
+			    }
+			    if (!string.IsNullOrEmpty(pzwh))
+			    {
+				    sql += "  and pzwh like '%'+@pzwh+'%'";
+				    pars.Add(new SqlParameter("@pzwh", pzwh));
+			    }
+			    if (!string.IsNullOrEmpty(ypmc))
+			    {
+				    sql += "  and scqy like '%'+@ypmc+'%'";
+				    pars.Add(new SqlParameter("@ypmc", ypmc));
+			    }   
+		        break;
+		        case "2":
+			        sql =  @"select top 200 * from (
+select 
+MED_LIST_CODG ypdm
+,null sjly
+,REG_NAME zcmc
+,DRUG_PRODNAME spmc
+,REG_DOSFORM zcjx
+,DRUG_DOSFORM sjjx
+,REG_SPEC zcgg
+,DRUG_SPEC sjgg
+,PACMATL bzcz
+, CONVERT(VARCHAR(255), MIN_PAC_CNT) AS zxbzsl
+,MIN_PREPUNT zxzjdw
+,MIN_PACUNT zxbzdw
+,PRODENTP_NAME ypqy
+,'' shypcyr
+,APRVNO pzwh
+,'' ypzwh
+,DRUGSTDCODE ypbwm
+,SUBPCK_FCTY fbzqymc
+,PRODENTP_NAME scqy
+,MKT_STAS sczt
+,REG_NAME ybypmc
+,'' ybjyl
+,REG_DOSFORM ybjx
+,'' bh
+,MEMO bz
+,'' jyl
+,null bz1
+,null bztssxbs
+,null  ybzfbz
+,null pym
+from G_yb_wm_tcmpat_info_b
+)a where 1=1 
+";
+			        if (!string.IsNullOrEmpty(gjybdm))
+			        {
+				        sql += "  and (ypdm like  '%'+@gjybdm+'%' or zcmc like '%'+@gjybdm+'%' or pzwh like '%'+@gjybdm+'%' or  ybypmc like '%'+@gjybdm+'%' or ypqy like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
+				        pars.Add(new SqlParameter("@gjybdm", gjybdm));
+			        }
+			        if (!string.IsNullOrEmpty(pzwh))
+			        {
+				        sql += "  and pzwh like '%'+@pzwh+'%'";
+				        pars.Add(new SqlParameter("@pzwh", pzwh));
+			        }
+			        if (!string.IsNullOrEmpty(ypmc))
+			        {
+				        sql += "  and scqy like '%'+@ypmc+'%'";
+				        pars.Add(new SqlParameter("@ypmc", ypmc));
+			        }   
+			        break;
+	        }
+	        
+				
+				
 			//if (!string.IsNullOrEmpty(py))
 			//{
 			//	sql += "  and 注册名称 like @ypmc";
@@ -381,24 +442,26 @@ from dbo.gb_ypxx
 		/// <param name="type"></param>
 		/// <param name="keyword"></param>
 		/// <returns></returns>
-		public IList<SysChargeItemEntity> GetclxxList(string organizeId, Pagination pagination, string type, string keyword = null)
+		public IList<SysMedicineVO> GetclxxList(string organizeId, Pagination pagination, string type, string keyword = null)
 		{
 			if (string.IsNullOrWhiteSpace(organizeId))
 			{
 				return null;
 			}
-			var sql = @" select * from dbo.xt_sfxm where sfdlcode='126' and zt='1'  and organizeid=@organizeId  ";
+			var sql = @" select x.*,d.gjybdm,d.gjybmc, d.ypgg,d.ypzsm from dbo.xt_yp x
+          left join xt_ypsx as d on x.ypId=d.ypId
+          where x.dlcode='18' and x.zt='1'  and x.organizeid=@organizeId  ";
 			DbParameter[] par;
 			if (!string.IsNullOrEmpty(keyword))
 			{
-				sql += " and sfxmmc like @keyword ";
+				sql += " and x.ypmc like @keyword ";
 				if (type != "qb" && type == "yd")
 				{
-					sql += "  and gjybdm is not null";
+					sql += "  and d.gjybdm is not null";
 				}
 				else if (type != "qb" && type == "wd")
 				{
-					sql += " and gjybdm is  null";
+					sql += " and d.gjybdm is  null";
 				}
 				par = new DbParameter[]
 				{
@@ -422,7 +485,7 @@ from dbo.gb_ypxx
 				};
 			}
 
-			return this.QueryWithPage<SysChargeItemEntity>(sql, pagination, par);
+			return this.QueryWithPage<SysMedicineVO>(sql, pagination, par);
 		}
 
 		/// <summary>
@@ -434,15 +497,20 @@ from dbo.gb_ypxx
 		/// <param name="gjybdm"></param>
 		/// <param name="pzwh"></param>
 		/// <returns></returns>
-		public IList<G_yb_clxxVO> GetYbclxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh)
+		public IList<G_yb_clxxVO> GetYbclxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh,string dataSource)
 		{
-			string sql = @"select top 200 * from(
+			var sql = "";
+			var pars = new List<SqlParameter>();
+			switch (dataSource)
+			{
+				case "1":
+					sql = @"select top 200 * from(
 select 
 耗材代码 hcdm
 ,一级分类 yjfl
 ,二级分类 ejfl
 ,三级分类 sjfl
-,医保通用名 ybtym
+,单件产品名称 ybtym
 ,材质 cz
 ,特征 tz
 ,注册备案号 zcbah
@@ -453,22 +521,67 @@ select
 ,ybxz
 ,pym
 from gb_clxx )a where 1=1 ";
-			var pars = new List<SqlParameter>();
-			if (!string.IsNullOrEmpty(gjybdm))
-			{
-				sql += "  and (hcdm like  '%'+@gjybdm+'%' or djcpmc like '%'+@gjybdm+'%' or zcbah like '%'+@gjybdm+'%' or  hcqy like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
-				pars.Add(new SqlParameter("@gjybdm", gjybdm));
+					if (!string.IsNullOrEmpty(gjybdm))
+					{
+						sql +=
+							"  and (hcdm like  '%'+@gjybdm+'%' or djcpmc like '%'+@gjybdm+'%' or zcbah like '%'+@gjybdm+'%' or  hcqy like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
+						pars.Add(new SqlParameter("@gjybdm", gjybdm));
+					}
+
+					if (!string.IsNullOrEmpty(pzwh))
+					{
+						sql += "  and zcbah like '%'+@pzwh+'%'";
+						pars.Add(new SqlParameter("@pzwh", pzwh));
+					}
+
+					if (!string.IsNullOrEmpty(ypmc))
+					{
+						sql += "  and hcqy like '%'+@ypmc+'%'";
+						pars.Add(new SqlParameter("@ypmc", ypmc));
+					}
+					
+					break;
+				case "2":
+					//医保下载目录
+					sql = @"select top 200 * from(
+select 
+MED_LIST_CODG hcdm
+,'1' yjfl
+,'1' ejfl
+,'1'sjfl
+,MCS_NAME ybtym
+,MCS_MATL cz
+,'' tz
+,REG_FIL_NO zcbah
+,MCS_NAME djcpmc
+,PRODENTP_NAME hcqy
+, CONVERT(int, PAC_CNT) AS zxbzsl
+,REGER_NAME zcbar
+,null ybxz
+,'' pym
+from G_yb_mcs_info_b )a where 1=1 ";
+					if (!string.IsNullOrEmpty(gjybdm))
+					{
+						sql +=
+							"  and (hcdm like  '%'+@gjybdm+'%' or djcpmc like '%'+@gjybdm+'%' or zcbah like '%'+@gjybdm+'%' or  hcqy like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
+						pars.Add(new SqlParameter("@gjybdm", gjybdm));
+					}
+
+					if (!string.IsNullOrEmpty(pzwh))
+					{
+						sql += "  and zcbah like '%'+@pzwh+'%'";
+						pars.Add(new SqlParameter("@pzwh", pzwh));
+					}
+
+					if (!string.IsNullOrEmpty(ypmc))
+					{
+						sql += "  and hcqy like '%'+@ypmc+'%'";
+						pars.Add(new SqlParameter("@ypmc", ypmc));
+					}
+					
+					break;
 			}
-			if (!string.IsNullOrEmpty(pzwh))
-			{
-				sql += "  and zcbah like '%'+@pzwh+'%'";
-				pars.Add(new SqlParameter("@pzwh", pzwh));
-			}
-			if (!string.IsNullOrEmpty(ypmc))
-			{
-				sql += "  and hcqy like '%'+@ypmc+'%'";
-				pars.Add(new SqlParameter("@ypmc", ypmc));
-			}
+			
 			return this.FindList<G_yb_clxxVO>(sql, pars.ToArray());
 		}
 		/// <summary>
@@ -528,7 +641,8 @@ from gb_clxx )a where 1=1 ";
 			{
 				return null;
 			}
-			var sql = @" select * from dbo.xt_sfxm where sfdlcode!='126' and zt='1'  and organizeid=@organizeId  ";
+			var sql = @" select * from dbo.xt_sfxm 
+             where sfdlcode!='126' and zt='1'  and organizeid=@organizeId  ";
 			DbParameter[] par;
 			if (!string.IsNullOrEmpty(keyword))
 			{
@@ -574,9 +688,14 @@ from gb_clxx )a where 1=1 ";
 		/// <param name="gjybdm"></param>
 		/// <param name="pzwh"></param>
 		/// <returns></returns>
-		public IList<G_yb_xmxxVO> GetYbxmxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh)
+		public IList<G_yb_xmxxVO> GetYbxmxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh,string dataSource)
 		{
-			string sql = @"select top 200 * from(
+			string sql = "";
+			var pars = new List<SqlParameter>();
+			switch (dataSource)
+			{
+				case "1":
+					sql = @"select top 200 * from(
 select
 结算传输编码 jscsbm
 ,国家项目代码 gjxmdm
@@ -590,12 +709,41 @@ select
 ,ybxz
 ,pym
 from gb_sfxm)a where 1=1 ";
-			var pars = new List<SqlParameter>();
-			if (!string.IsNullOrEmpty(gjybdm))
-			{
-				sql += " and(jscsbm like '%'+@gjybdm+'%' or gjxmdm like '%'+@gjybdm+'%' or bm like '%'+@gjybdm+'%' or gjxmmc like '%'+@gjybdm+'%' or xmmc like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
-				pars.Add(new SqlParameter("@gjybdm", gjybdm));
+					// 原视图
+					if (!string.IsNullOrEmpty(gjybdm))
+					{
+						sql +=
+							" and(jscsbm like '%'+@gjybdm+'%' or gjxmdm like '%'+@gjybdm+'%' or bm like '%'+@gjybdm+'%' or gjxmmc like '%'+@gjybdm+'%' or xmmc like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
+						pars.Add(new SqlParameter("@gjybdm", gjybdm));
+					}
+
+					break;
+
+				case "2":
+					// 医保目录
+					sql = @"select top 200 * from(
+select
+YLML_CODE jscsbm
+,'' gjxmdm
+,YLFWXM_NAME gjxmmc
+,YLML_CODE bm
+,YLFWXM_NAME xmmc
+,'' xmnh
+,'' cwnr
+,JJDW jjdw
+,JJSM sm
+,null ybxz
+,'' pym
+from G_yb_ylfuxm_new_list_b)a where 1=1 ";
+					if (!string.IsNullOrEmpty(gjybdm))
+					{
+						sql +=
+							" and(jscsbm like '%'+@gjybdm+'%' or gjxmdm like '%'+@gjybdm+'%' or bm like '%'+@gjybdm+'%' or gjxmmc like '%'+@gjybdm+'%' or xmmc like '%'+@gjybdm+'%' or pym like '%'+@gjybdm+'%')";
+						pars.Add(new SqlParameter("@gjybdm", gjybdm));
+					}
+					break;
 			}
+
 			return this.FindList<G_yb_xmxxVO>(sql, pars.ToArray());
 		}
 

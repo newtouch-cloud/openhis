@@ -1,0 +1,153 @@
+﻿@using Newtouch.Common.Operator;
+@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+    <div class="container" style="margin-top: 10px; margin-left: -4%; ">
+        <ul class="nav nav-tabs" role="tablist" id="myTab" style="margin-left: 4%;">
+            <li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息</a></li>
+        </ul>
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 58px; margin-left:33px;" id="basicInfo">
+                <table class="form">
+                    @* <tr> *@
+                    @*     <th class="formTitle"><span class="required">*</span>组织机构：</th> *@
+                    @*     <td class="formValue formDdlSelectorTd"> *@
+                    @*         <select id="OrganizeId" name="OrganizeId" class="form-control required"> *@
+                    @*             <option value="">==请选择==</option> *@
+                    @*         </select> *@
+                    @*     </td> *@
+                    @* </tr> *@
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="yzpcmc" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>名称说明：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="yzpcmcsm" placeholder="例：每日三次" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>编码：</th>
+                        <td class="formValue">
+                            <input type="text" class="form-control required" id="yzpcCode"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>执行次数：</th>
+                        <th class="formValue">
+                            <input type="text" class="form-control required" id="zxcs"  />
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>执行周期：</th>
+                        <th class="formValue">
+                            <input type="text" class="form-control required" id="zxzq"  />
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>执行周期时间单位：</th>
+                        <th class="formValue">
+                            <input type="text" class="form-control required" id="zxzqdw"  />
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">周标志：</th>
+                        <td class="formValue">
+                            <input class="form-control" id="zbz" value="" type="text" required />
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="formTitle"><span class="required">*</span>执行时间：</th>
+                        <th class="formValue">
+                            <input class="form-control" id="zxsj" value="" type="text" required />
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="formTitle">有效：</th>
+                        <td class="formValue">
+                            <div class="ckbox">
+                                <input id="zt" type="checkbox" checked="checked" required><label for="zt"></label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    var keyValue = $.request("yzpcId");
+    var orgId = $.request("orgId");
+    $(function () {
+        initControl();
+
+        if (!!keyValue) {
+            $.najax({
+                url: "/SysMedicalOrderFrequency/GetFormJson?r=" + Math.random(),
+                data: { yzpcId: keyValue, orgId: orgId },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    })
+
+    $(document).ready(function () {
+        // 设置组织机构不可编辑
+        if (keyValue && orgId) {
+            $("#OrganizeId").prop("disabled", true); // 设置下拉框不可编辑
+            $("#OrganizeId").css("background-color", "#e9ecef"); // 使其变灰色
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+    }
+
+    var anPrevOrg = null;
+    $('#yzpcCode').focus(function () {
+        var organizeId = "*";
+        if (!!!keyValue && ($.trim($(this).val()) === '' || organizeId != anPrevOrg)) {
+            anPrevOrg = organizeId;
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?topOrgIdIsStar=false&initFieldLength=8&fieldName=xt_yzpc.yzpcCode&orgId=" + organizeId + "&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#yzpcCode').val(data.data);
+                }
+            });
+        }
+    });
+
+    //提交
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+        }
+        var params = $("#form1").formSerialize();
+        params.organizeId = '*';
+        $.submitForm({
+            url: "/SysMedicalOrderFrequency/SubmitForm?yzpcId=" + keyValue,
+            param: params,
+            success: function () {
+                $.currentWindow().$("#gridList5").resetSelection();
+                $.currentWindow().$("#gridList5").trigger("reloadGrid");
+            }
+        })
+    }
+
+</script>

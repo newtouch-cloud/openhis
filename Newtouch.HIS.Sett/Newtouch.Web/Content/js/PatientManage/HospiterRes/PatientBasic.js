@@ -451,7 +451,7 @@ function brxzinit()
 }
 
 function submitForm(callback) {
-    
+    debugger
     var result = checkNotNull();
     if (result) {
         var data = $("#form1").formSerialize();

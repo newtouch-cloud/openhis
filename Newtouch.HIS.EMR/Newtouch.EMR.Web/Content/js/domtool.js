@@ -724,6 +724,11 @@ function MyInsertMedicalExpression(index, ExpressionStyle, Values) { //通用公
     //                ctl.FocusAdjacent("afterEnd", field); //这里的第一个参数可以是beforeBegin,afterBegin,beforeEnd,afterEnd
     //            }
 }
+//5.0版本
+function MedicalExpressionMenuV5() {
+    var ctl = document.getElementById("myWriterControl");
+    ctl.DCExecuteCommand('InsertMedicalExpression', true, {})
+}
 
 // OCX加载
 function MyOCX() {

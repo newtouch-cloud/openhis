@@ -35,11 +35,11 @@ namespace Newtouch.EMR.Repository
         public List<BlysEntity> GetYsTreeV2(string orgId,string keyword)
         {
             string sql = @"select * from [dbo].[bl_ys] a 
-where  a.zt='1' and a.OrganizeId=@orgId
+where  a.zt='1' and (a.OrganizeId=@orgId or a.OrganizeId='*')
  and a.ysmc like @keyword and a.yssjid!='-1'
  union all
  select * from [dbo].[bl_ys] b
-where  b.zt='1' and b.OrganizeId=@orgId
+where  b.zt='1' and (b.OrganizeId=@orgId or b.OrganizeId='*')
   and b.yssjid='-1'";
             var para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));
@@ -48,7 +48,7 @@ where  b.zt='1' and b.OrganizeId=@orgId
         }
         public List<BlysMXEntity> GetYsMX(string orgId, string YsId)
         {
-            string sql = @"select * from bl_ysmx where zt='1' and YsId=@YsId and OrganizeId=@orgId";
+            string sql = @"select * from bl_ysmx where zt='1' and YsId=@YsId and (OrganizeId=@orgId or OrganizeId='*') ";
             var para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));
             para.Add(new SqlParameter("@YsId", YsId ));

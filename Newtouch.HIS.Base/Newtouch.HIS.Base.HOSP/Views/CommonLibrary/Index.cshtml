@@ -8,6 +8,7 @@
     <li><a href="#sfdltab" data-toggle="tab">基础收费大类</a></li>
     <li><a href="#hc" data-toggle="tab">基础耗材</a></li>
     <li><a href="#sfxm" data-toggle="tab">基础收费项目</a></li>
+    <li><a href="#yzpc" data-toggle="tab">医嘱频次</a></li>
 </ul>
 
 <div id="myTabContent" class="tab-content">
@@ -31,6 +32,14 @@
             <div class="search">
                 <table>
                     <tr>
+                        <td class="formTitle">中西药：</td>
+                        <td class="input-group" id="zxy" style="margin-top:8px;">
+                            <select id="zxyfl" name="zt" class="form-control"  style="width: 44px">
+                                <option value="" selected="selected">全部</option>
+                                <option value="01">西药</option>
+                                <option value="03">中药</option>
+                            </select>
+                        </td>
                         <td class="formTitle">有效状态：</td>
                         <td class="input-group" id="zttd" style="margin-top:13px;">
                             <select id="zt" name="zt" class="form-control">
@@ -208,7 +217,43 @@
             <div id="gridPager4"></div>
         </div>
     </div>
-
+    @* 医嘱频次 *@
+    <div class="tab-pane fade" id="yzpc">
+        <div class="topPanel">
+            <div class="toolbar">
+                <div class="btn-group">
+                    <a id="NF-add5" class="btn btn-primary" onclick="btn_add5()"><i class="fa fa-plus"></i>新建</a>
+                </div>
+                <div class="btn-group">
+                    <a id="NF-edit5" class="btn btn-primary" onclick="btn_edit5()"><i class="fa fa-pencil-square-o"></i>修改</a>
+                </div>
+            </div>
+            <div class="search">
+                <table>
+                    <tr>
+                        <td>
+                            <div class="input-group">
+                                <input id="txt_keyword_yzpc" type="text" class="form-control" placeholder="编码/名称" style="width: 180px;">
+                                <span class="input-group-btn">
+                                    <button id="btn_search5" type="button" class="btn  btn-primary"><i class="fa fa-search"></i></button>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="toolbar">
+                <div class="btn-group">
+                    <a id="NF-Sync5" class="btn btn-primary" onclick="btn_Sync5()"><i class="fa fa-plus"></i>同步</a>
+                </div>
+            </div>
+        </div>
+        <div class="gridPanel">
+            <table id="gridList5"></table>
+            <div id="gridPager5"></div>
+        </div>
+    </div>
+    
 </div>
 
 <script>
@@ -222,6 +267,7 @@
         gridList2();
         gridList3();
         gridList4();
+        gridList5();
     });
     //药品tab
     function gridList1() {
@@ -229,7 +275,7 @@
         $gridList.dataGrid({
             url: "/CommonLibrary/GetGridJson",
             height: $(window).height() - 130,
-            postData: { keyword: $("#txt_keyword_yp1").val(),ypgg: $("#txt_keyword_yp2").val() ,ycmc: $("#txt_keyword_yp3").val(), organizeId: "*", zt: $("#zt").val(), ypflCode: $("#ypflMc").val() === "" ? "" : $("#ypflCode").val(),dlCode:''},
+            postData: { keyword: $("#txt_keyword_yp1").val(),ypgg: $("#txt_keyword_yp2").val() ,ycmc: $("#txt_keyword_yp3").val(), organizeId: "*",zxyfl:$("#zxyfl").val(), zt: $("#zt").val(), ypflCode: $("#ypflMc").val() === "" ? "" : $("#ypflCode").val(),dlCode:''},
             colModel: [
                 { label: "主键", name: "ypId", hidden: true, key: true },
                 {
@@ -314,7 +360,7 @@
         });
         $("#btn_search1").click(function () {
             $gridList.jqGrid('setGridParam', {
-                postData: { keyword: $("#txt_keyword_yp1").val(),ypgg: $("#txt_keyword_yp2").val() ,ycmc: $("#txt_keyword_yp3").val(), organizeId: "*", zt: $("#zt").val(), ypflCode: $("#ypflMc").val() == "" ? "" : $("#ypflCode").val() },
+                postData: { keyword: $("#txt_keyword_yp1").val(),ypgg: $("#txt_keyword_yp2").val() ,ycmc: $("#txt_keyword_yp3").val(), organizeId: "*",zxyfl:$("#zxyfl").val(), zt: $("#zt").val(), ypflCode: $("#ypflMc").val() == "" ? "" : $("#ypflCode").val() },
                 page: 1,
             }).trigger('reloadGrid');
         });
@@ -360,15 +406,15 @@
         });
     }
     function btn_edit1() {
-        let selectedRows = $("#gridList1").jqGrid('getGridParam', 'selarrrow');
-        if (!selectedRows.length === 1 ) {
+        let selectedIdList = $("#gridList1").jqGrid('getGridParam', 'selarrrow');
+        if (!selectedIdList.length === 1 ) {
             $.modalAlert("请选中一条信息进行修改", 'warning');
             return;
         }
         $.modalOpen({
             id: "SysMedicineAdd",
             title: "修改系统药品",
-            url: "/CommonLibrary/SysCommonMedicineAdd?keyValue=" + selectedRows[0]+"&orgId=*",
+            url: "/CommonLibrary/SysCommonMedicineAdd?keyValue=" + selectedIdList[0]+"&orgId=*",
             width: "1300px",
             height: "800px",
             callBack: function (iframeId) {
@@ -401,15 +447,15 @@
     }
     function btn_Sync1() {
         @*let keyValue = $("#gridList").jqGridRowValue().ypId;*@
-        let selectedRows = $("#gridList1").jqGrid('getGridParam', 'selarrrow');
-        if (selectedRows.length <=  0) {
+        let selectedIdList = $("#gridList1").jqGrid('getGridParam', 'selarrrow');
+        if (selectedIdList.length <=  0) {
             $.modalAlert("请至少选中一条信息", 'warning');
             return;
         }
         $.najax({
             url: "/CommonLibrary/Sync",
             type: "POST",
-            data: {Type:"yp",idList :selectedRows,organizeId: $("#OrganizeId").val()},
+            data: {Type:"yp",idList :selectedIdList,organizeId: $("#OrganizeId").val()},
             dataType: "json",
             async: false,
             success: function (data) {
@@ -563,7 +609,7 @@
         $.modalOpen({
             id: "Form",
             title: "新增大类",
-            url: "CommonLibrary/ChargeCategoryBase/Form?orgId=*",
+            url: "/CommonLibrary/SysCommonMedicineAdd?orgId=*",
             width: "550px",
             height: "700px",
             callBack: function (iframeId) {
@@ -573,16 +619,16 @@
     }
 
     function btn_edit2() {
-        var selectedRows = jQuery("#gridList2").jqGrid("getGridParam", "selrow");
-        if (!selectedRows.length === 1 ) {
+        let selectedIdList = $("#gridList2").jqGrid('getGridParam', 'selarrrow');
+        if (!(selectedIdList.length === 1 )) {
             $.modalAlert("请选中一条信息进行修改", 'warning');
             return;
         }
-        var keyValue = selectedRows[0];
+        var keyValue = selectedIdList;
         $.modalOpen({
             id: "Form",
             title: "修改大类",
-            url: "CommonLibrary/ChargeCategoryBase/Form?keyValue=" + keyValue,
+            url: "/CommonLibrary/SysCommonChargeCategoryForm?keyValue=" + keyValue,
             width: "550px",
             height: "700px",
             callBack: function (iframeId) {
@@ -592,15 +638,15 @@
     }
     function btn_Sync2() {
         @*let keyValue = $("#gridList").jqGridRowValue().ypId;*@
-        let selectedRows = $("#gridList2").jqGrid('getGridParam', 'selarrrow');
-        if (selectedRows.length <  0) {
+        let selectedIdList = $("#gridList2").jqGrid('getGridParam', 'selarrrow');
+        if (selectedIdList.length <  0) {
             $.modalAlert("请至少选中一条信息", 'warning');
             return;
         }
         $.najax({
             url: "/CommonLibrary/Sync",
             type: "POST",
-            data: {Type:"sfdl",idList :selectedRows,organizeId: $("#OrganizeId").val()},
+            data: {Type:"sfdl",idList :selectedIdList,organizeId: $("#OrganizeId").val()},
             dataType: "json",
             async: false,
             success: function (data) {
@@ -725,15 +771,15 @@
         });
     }
     function btn_edit3() {
-        let selectedRows = $("#gridList3").jqGrid('getGridParam', 'selarrrow');
-        if (!selectedRows.length === 1 ) {
+        let selectedIdList = $("#gridList3").jqGrid('getGridParam', 'selarrrow');
+        if (!selectedIdList.length === 1 ) {
             $.modalAlert("请选中一条信息进行修改", 'warning');
             return;
         }
         $.modalOpen({
             id: "SysMedicineAdd",
             title: "修改系统药品",
-            url: "/CommonLibrary/SysCommonStuffAdd?keyValue=" + selectedRows[0]+"&orgId=*",
+            url: "/CommonLibrary/SysCommonStuffAdd?keyValue=" + selectedIdList[0]+"&orgId=*",
             width: "1300px",
             height: "800px",
             callBack: function (iframeId) {
@@ -743,15 +789,15 @@
     }
     function btn_Sync3() {
         @*let keyValue = $("#gridList").jqGridRowValue().ypId;*@
-        let selectedRows = $("#gridList3").jqGrid('getGridParam', 'selarrrow');
-        if (selectedRows.length <=  0) {
+        let selectedIdList = $("#gridList3").jqGrid('getGridParam', 'selarrrow');
+        if (selectedIdList.length <=  0) {
             $.modalAlert("请至少选中一条信息", 'warning');
             return;
         }
         $.najax({
             url: "/CommonLibrary/Sync",
             type: "POST",
-            data: {Type:"hc",idList :selectedRows,organizeId: $("#OrganizeId").val()},
+            data: {Type:"hc",idList :selectedIdList,organizeId: $("#OrganizeId").val()},
             dataType: "json",
             async: false,
             success: function (data) {
@@ -872,15 +918,15 @@
     }
     function btn_Sync4() {
         @*let keyValue = $("#gridList").jqGridRowValue().ypId;*@
-        let selectedRows = $("#gridList4").jqGrid('getGridParam', 'selarrrow');
-        if (selectedRows.length <=  0) {
+        let selectedIdList = $("#gridList4").jqGrid('getGridParam', 'selarrrow');
+        if (selectedIdList.length <=  0) {
             $.modalAlert("请至少选中一条信息", 'warning');
             return;
         }
         $.najax({
             url: "/CommonLibrary/Sync",
             type: "POST",
-            data: {Type:"sfxm",idList :selectedRows,organizeId: $("#OrganizeId").val()},
+            data: {Type:"sfxm",idList :selectedIdList,organizeId: $("#OrganizeId").val()},
             dataType: "json",
             async: false,
             success: function (data) {
@@ -890,7 +936,103 @@
         });
 
     }
-    
+
+    function gridList5() {
+        var $gridList = $("#gridList5");
+        $gridList.dataGrid({
+            url: "/SysMedicalOrderFrequency/GetGridJson",
+            postData: getSearchPostData(),
+            height: 400,
+            colModel: [
+                { label: "主键", name: "yzpcId", width: 100, align: "left", hidden: true,key :true },
+                { label: "编码", name: "yzpcCode", width: 100, align: "left" },
+                { label: "频次名称", name: "yzpcmc", width: 100, align: "left" },
+                { label: "名称说明", name: "yzpcmcsm", width: 100, align: "left" },
+                { label: "执行次数", name: "zxcs", width: 100, align: "left" },
+                { label: "执行周期", name: "zxzq", width: 100, align: "left" },
+                { label: "执行周期时间单位", name: "zxzqdw", width: 100, align: "left" },
+                { label: "周标志", name: "zbz", width: 100, align: "left" },
+                { label: "执行时间", name: "zxsj", width: 100, align: "left" },
+                { label: "有效", name: "zt", width: 60, align: "center", formatter: function (cellvalue) { return cellvalue == "1" ? "<i class=\"fa fa-toggle-on\"></i>" : "<i class=\"fa fa-toggle-off\"></i>"; } },
+                { label: '创建人', name: 'CreatorCode', width: 60, align: 'left' },
+                { label: '创建时间', name: 'CreateTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } },
+                { label: '最后修改', name: 'LastModifierCode', width: 60, align: 'left' },
+                { label: '最后修改时间', name: 'LastModifyTime', width: 80, align: 'left', formatter: "date", formatoptions: { srcformat: 'Y-m-d', newformat: 'Y-m-d' } }
+            ],
+            viewrecords: true,
+            multiselect: true, // 启用多选
+        });
+        $("#btn_search5").click(function () {
+            $gridList.jqGrid('setGridParam', {
+                postData: getSearchPostData()
+            }).trigger('reloadGrid');
+        })
+        $("#btn_search5").trigger('click');
+    }
+
+    //查询条件
+    function getSearchPostData() {
+        var keyword = $("#txt_keyword_yzpc").val();
+        return { keyword: keyword, orgId:'*' };
+    };
+
+    //回车事件
+    $('#txt_keyword_yzpc').keydownEnterEvent(function () {
+        $('#btn_search5').trigger('click');
+    })
+
+    //新增
+    function btn_add5() {
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "医嘱频次维护",
+            url: "/CommonLibrary/SysMedicalOrderFrequencyForm?orgId=*",
+            width: "500px",
+            height: "620px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    //修改
+    function btn_edit5() {
+        let selectedIdList = $("#gridList5").jqGrid('getGridParam', 'selarrrow');
+        if (!(selectedIdList.length === 1 )) {
+            $.modalAlert("请选中一条信息", 'warning');
+            return;
+        }
+        var OrganizeId = '*';
+        $.modalOpen({
+            id: "FormFIEdit",
+            title: "修改信息",
+            url: "/CommonLibrary/SysMedicalOrderFrequencyForm?yzpcId=" + selectedIdList + "&orgId=" + OrganizeId,
+            width: "500px",
+            height: "620px",
+            callBack: function (iframeId) {
+                top.frames[iframeId].submitForm();
+            }
+        });
+    }
+    function btn_Sync5() {
+        @*let keyValue = $("#gridList").jqGridRowValue().ypId;*@
+        let selectedIdList = $("#gridList5").jqGrid('getGridParam', 'selarrrow');
+        if (selectedIdList.length <=  0) {
+            $.modalAlert("请至少选中一条信息", 'warning');
+            return;
+        }
+        $.najax({
+            url: "/CommonLibrary/Sync",
+            type: "POST",
+            data: {Type:"yzpc",idList :selectedIdList,organizeId: $("#OrganizeId").val()},
+            dataType: "json",
+            async: false,
+            success: function (data) {
+                $.modalAlert(data.message, data.state);
+                $('#btn_search5').trigger('click');
+            }
+        });
+
+    }
     
     
 </script>

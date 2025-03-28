@@ -27,7 +27,7 @@ namespace Newtouch.HIS.Domain.IRepository
         /// </summary>
         /// <param name="keyValue"></param>
         /// <returns></returns>
-        SysChargeCategoryEntity GetForm(int keyValue);
+        SysChargeCategoryEntity GetForm(int keyValue,string orgId = null);
 
         /// <summary>
         /// 提交保存

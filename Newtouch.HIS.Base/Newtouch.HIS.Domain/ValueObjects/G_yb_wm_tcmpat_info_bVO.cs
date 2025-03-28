@@ -266,6 +266,10 @@ namespace Newtouch.HIS.Domain.ValueObjects
         public string DIAG_CODE { get; set; }
         public string DIAG_NAME { get; set; }
         public string USED_STD { get; set; }
+        public string NATSTD_DIAG_CODE { get; set; }
+        public string NATSTD_DIAG_NAME { get; set; }
+        public string CLNC_DIAG_CODE { get; set; }
+        public string CLNC_DIAG_NAME { get; set; }
         #endregion
 
         #region 1308

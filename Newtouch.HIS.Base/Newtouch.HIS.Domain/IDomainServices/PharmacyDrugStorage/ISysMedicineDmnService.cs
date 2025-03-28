@@ -76,7 +76,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
         /// <param name="gjybdm"></param>
         /// <param name="pzwh"></param>
         /// <returns></returns>
-        IList<G_yb_ypxxVO> GetYpypxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh);
+        IList<G_yb_ypxxVO> GetYpypxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh,string dataSource);
 
 		/// <summary>
 		/// 保存医保对码信息
@@ -96,7 +96,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
 		/// <param name="type"></param>
 		/// <param name="keyword"></param>
 		/// <returns></returns>
-		IList<SysChargeItemEntity> GetclxxList(string organizeId, Pagination pagination, string type, string keyword = null);
+		IList<SysMedicineVO> GetclxxList(string organizeId, Pagination pagination, string type, string keyword = null);
 
 		/// <summary>
 		/// 查询医保材料信息 根据系统材料信息
@@ -107,7 +107,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
 		/// <param name="gjybdm"></param>
 		/// <param name="pzwh"></param>
 		/// <returns></returns>
-		IList<G_yb_clxxVO> GetYbclxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh);
+		IList<G_yb_clxxVO> GetYbclxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh,string dataSource);
 
 		/// <summary>
 		/// 保存材料对码
@@ -140,7 +140,7 @@ namespace Newtouch.HIS.Domain.IDomainServices
 		/// <param name="gjybdm"></param>
 		/// <param name="pzwh"></param>
 		/// <returns></returns>
-		IList<G_yb_xmxxVO> GetYbxmxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh);
+		IList<G_yb_xmxxVO> GetYbxmxxlist(string organizeId, string ypmc, string py, string gjybdm, string pzwh,string dataSource);
 
 		int SaveYpxm(G_yb_xmxxVO ybxx, int? ypid, string organizeId);
 

@@ -86,7 +86,7 @@ case VALI_FLAG when '1' then '是' when '0' then '否' else '' end VALI_FLAG,VER
                 case "1307":
                     sqlstr = @"select 
 DIAG_LIST_ID,CPR,CPR_CODE_SCP,CPR_NAME,SEC_CODE_SCP,SEC_NAME,CGY_CODE,CGY_NAME,SOR_CODE,SOR_NAME,
-DIAG_CODE,DIAG_NAME,USED_STD,VER,case VALI_FLAG when '1' then '是' when '0' then '否' else '' end VALI_FLAG,VER_NAME
+DIAG_CODE,DIAG_NAME,USED_STD,NATSTD_DIAG_CODE,NATSTD_DIAG_NAME,CLNC_DIAG_CODE,CLNC_DIAG_NAME,VER,case VALI_FLAG when '1' then '是' when '0' then '否' else '' end VALI_FLAG,VER_NAME
                     from [dbo].G_yb_diag_list_b with(nolock)  
                     where (@key like '' or DIAG_CODE like @key) or  (@key  like '' or DIAG_NAME like @key)";
                     break;

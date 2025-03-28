@@ -51,7 +51,7 @@ namespace Newtouch.EMR.Domain.IDomainServices
         List<AdviceListGridVO> AdviceGridView(Pagination pagination, AdviceListRequestVO req);//医嘱查询
         blzybrjbxxVO GetBlZybrjbxx(string OrgId, string zyh,string user);//获取病历元素值
         int updateLock(string OrgId, string blid,string user);//修改锁定状态
-        string BLJG_Save(bl_ysjgnrEntity bljgnr);
+        void BLJG_Save(List<bl_ysjgnrEntity> bljgnr);
         string BLJG_Delete(string blid, string orgId);
     }
 }

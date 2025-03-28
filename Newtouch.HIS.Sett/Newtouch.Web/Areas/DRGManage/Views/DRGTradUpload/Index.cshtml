@@ -81,10 +81,10 @@
                     <input type="button" id="btn_search" class="btn btn-md btn-primary form-an" style="width: 50px; margin-left: 40px;" value="查询" />
 
                 </td>
-                @*<th class="formTitle" colspan="2">
+                <th class="formTitle" colspan="2">
                         <input type="button" id="btn_upload" class="btn btn-md btn-primary form-an" style="width: 50px; margin-left: 40px;" value="上传" />
 
-                    </th>*@
+                    </th>
 
                 <th class="formTitle"></th>
                 <td class="formValue"></td>
@@ -189,6 +189,7 @@
             postData: getSearchPostData(),
             height: $(window).height() - 128,
             colModel: [
+                { label: '医保交易', name: 'mlbm_id', hidden:true},
                 { label: '药品名称', name: 'ypmc', width: 160, align: 'left' },
                 { label: '批次号', name: 'pch', width: 160, align: 'left' },
                 { label: '上传情况', name: 'scqk', width: 60, align: 'left' },
@@ -259,50 +260,109 @@
     //上传
     $('#btn_upload').click(function () {
         var seleRow = check();
-        if (!!!seleRow) {
+        if ($("#scqk").val() === '0' ) {
+            $.modalAlert("请勿选择已上传数据", 'error')
             return;
         }
-
-        var tradiNumber = $("#trad").val();
-        @*var dbscobj = { mdtrt_id: "23013", psn_no: "ZG1001722205", hisId: zyh, operatorId: '@(opr.rygh)', operatorName: '@(opr.UserName)', insuplc_admdvs: cbdbm };
+        if (!!!seleRow ) {
+            return;
+        }
+        // 获取上传需要的数据
+        var orgId = '@(opr.OrganizeId)';
+        var operatorId = '@(opr.rygh)';
+        var operatorName = '@(opr.UserName)';
+        var crkId = seleRow.length > 1 ? "" : seleRow[0].mlbm_id;
+        if (seleRow.length > 1) {
+            // 弹出确认框，确认上传
+            $.modalConfirm("选择非单条数据将全部上传！", function(flag) {
+                if (flag){
+                    uploadData(orgId, operatorId, operatorName, crkId);
+                }
+            });
+        } else {
+            // 选择一条数据，直接上传
+            uploadData(orgId, operatorId, operatorName, crkId);
+        }
+        function uploadData(orgId, operatorId, operatorName, crkId) {
+            var tradiNumber = $("#trad").val();
+            var data;
             var upUrl;
-            switch (upobj) {
-                case '4101':
-                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalSettlement_4101";
+            // 根据tradiNumber来选择不同的接口
+            switch (tradiNumber) {
+                case '3501':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3501";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
                     break;
-                case '4401':
-                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalRcord_4401";
+                case '3502':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3502";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
                     break;
-                case '3':
-                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostDoctorAdvice_4402";
+                case '3503':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3503";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
                     break;
-                case '4':
-                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostClinicalExamination_4501";
+                case '3504':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3504";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName,
+                        "crkId": crkId
+                    };
                     break;
-                case '5':
-                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostPathologyCheck_4505";
+                case '3505':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3505";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName
+                    };
                     break;
-                case '6':
-                    upUrl = "http://127.0.0.1:33333/api/YiBao/PostMedicalRecords_4701";
+                case '3506':
+                    upUrl = "http://127.0.0.1:33333/api/YiBao/InventoryUpload_3506";
+                    data = {
+                        "orgId": orgId,
+                        "operatorId": operatorId,
+                        "operatorName": operatorName
+                    };
                     break;
-            }*@
-        //console.log(seleRow);
-        //$.najax({
-        //    url: "/DRGManage/DRGTradUpload/DRGUpload",
-        //    dataType: "json",
-        //    data: { list: seleRow,tradiNumber:tradiNumber },
-        //    type: "POST",
-        //    success: function (data) {
-        //        //callBack();
-        //        $.modalAlert("上传成功", 'success');
-        //        $.modalClose();
-        //    }
-        //});
+            }
+
+            // 发起上传请求
+            $.najax({
+                url: upUrl,
+                dataType: "json",
+                data: data,
+                type: "POST",
+                success: function (response) {
+                    $.modalAlert("上传成功", 'success');
+                    $.modalClose();
+                },
+                error: function (error) {
+                    $.modalAlert("上传失败，请重试", 'error');
+                }
+            });
+        }
     });
 
     function check() {
         //获取所选行
-        var seleRow = $("#gridList").jqGridRowValue();
+        var seleRow = $("#gridListYp").jqGridRowValue();
         var setl_id = seleRow.setl_id;
         if (seleRow.length==0) {
             $.modalAlert("尚未选择一条记录", "error");

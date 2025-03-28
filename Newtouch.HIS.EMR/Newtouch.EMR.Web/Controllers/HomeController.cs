@@ -1,7 +1,11 @@
-﻿using Newtouch.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtouch.Common;
 using Newtouch.Infrastructure;
 using Newtouch.Tools;
 using System.Web.Mvc;
+using FrameworkBase.MultiOrg.Domain.IRepository;
 using Newtouch.Common.Operator;
 using Newtouch.EMR.Domain.IDomainServices;
 
@@ -13,6 +17,7 @@ namespace Newtouch.EMR.Web.Controllers
     public class HomeController : FrameworkBase.MultiOrg.Web.Controllers.HomeController
     {
         private readonly IMRHomePageDmnService _sysUserDmnService;
+        private readonly ISysConfigRepo _sysConfigRepo;
         /// <summary>
         /// Index
         /// </summary>
@@ -58,6 +63,28 @@ namespace Newtouch.EMR.Web.Controllers
                 value = EFDBBaseFuncHelper.Instance.GetNewFieldUniqueValue(fieldName, orgId, initFormat);
             }
             return Content(new AjaxResult { state = ResultType.success.ToString(), message = null, data = value }.ToJson());
+        }
+        /**
+        * 同步系统参数配置
+        */ 
+        public ActionResult SyncSysConfigParams(string orgId)
+        {
+            //基础数据
+            var sysConfigBaseEntities = _sysConfigRepo.GetList("", "*").ToList();
+            //组织机构自带数据
+            var sysConfigEntities = _sysConfigRepo.GetList("", orgId).ToList();
+            //根据code 去重
+            var sysConfigCodes = new HashSet<string>(sysConfigEntities.Select(entity => entity.Code));
+            var filteredEntities = sysConfigBaseEntities
+                .Where(baseEntity => !sysConfigCodes.Contains(baseEntity.Code))
+                .ToList();
+            foreach (var item in filteredEntities)
+            {
+                item.Id = Guid.NewGuid().ToString();
+                item.OrganizeId = orgId;
+            }
+            var insert = _sysConfigRepo.Insert(filteredEntities);
+            return Success("",insert);
         }
     }
 }

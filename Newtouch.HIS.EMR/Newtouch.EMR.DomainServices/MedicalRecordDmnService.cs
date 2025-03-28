@@ -751,23 +751,18 @@ select CONVERT(varchar(10),'临') yzlb,yz.yzlx,yz.yzzt, yz.kssj kssj ,ry.Name ys
 
             return this.ExecuteSqlCommand(sql, para.ToArray());
         }
-        public string BLJG_Save(bl_ysjgnrEntity bl_ysjgnr)
+        public void BLJG_Save(List<bl_ysjgnrEntity> bl_ysjgnr)
         {
-            try
+            using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
             {
-                using (var db = new EFDbTransaction(this._databaseFactory).BeginTrans())
+                foreach (var Item in bl_ysjgnr)
                 {
-                    bl_ysjgnr.Create(true);
-                    bl_ysjgnr.zt = "1";
-                    db.Insert(bl_ysjgnr);
-                    db.Commit();
+                    Item.Create(true);
+                    Item.zt = "1";
+                    db.Insert(Item);
                 }
+                db.Commit();
             }
-            catch (Exception ex)
-            {
-                return ex.Message;
-            }
-            return "";
         }
         public string BLJG_Delete(string blid,string orgId)
         {
