@@ -124,20 +124,20 @@ namespace Newtouch.HIS.DomainServices
             SysxtbrjbxxlogEntity xtbrjbxxlog = null;
             //修改病人信息
             //根据身份证号判断病人基本信息
-            var validatepat = _SysPatBasicInfoRepository.IQueryable().Where(p => p.zjlx == ((int)EnumZJLX.sfz).ToString() && p.zjh == vo.zjh && p.OrganizeId == orgId && p.zt == "1" && p.zjh!=null);
+            var validatepat = _SysPatBasicInfoRepository.IQueryable().Where(p => p.zjlx == vo.zjlx && p.zjh == vo.zjh && p.OrganizeId == orgId && p.zt == "1" && p.zjh != null);
             if ((vo.patid ?? 0) > 0 && vo.yktbz!= "yktcardregister")
             {
                 if (!string.IsNullOrWhiteSpace(vo.zjh))
                 {
                     if (validatepat.Count() > 1)
                     {
-                        throw new FailedException("身份证号为：" + vo.zjh + "的病人已存在");
+                        throw new FailedException("证件号为：" + vo.zjh + "的病人已存在");
                     }
                     if (validatepat.Count()==1)
                     {
                         if (validatepat.FirstOrDefault().patid != vo.patid)
                         {
-                            throw new FailedException("身份证号为：" + vo.zjh + "的病人一卡通信息已存在");
+                            throw new FailedException("证件号为：" + vo.zjh + "的病人一卡通信息已存在");
                         }
                     }
                     
@@ -174,7 +174,7 @@ namespace Newtouch.HIS.DomainServices
                 }
                 if (validatepat.Count() > 1)
                 {
-                    throw new FailedException("身份证号为：" + vo.zjh + "的一卡通信息存在多条");
+                    throw new FailedException("证件号为：" + vo.zjh + "的一卡通信息存在多条");
                 }
                 if (validatepat.Count() == 1)
                 {
@@ -184,7 +184,7 @@ namespace Newtouch.HIS.DomainServices
                     var isexitCard = _SysCardRepository.GetCardEntity(patiententity.patid, vo.cardtype, orgId);
                     if (isexitCard != null&&isexitCard.brxz!=((int)EnumBrxz.zf).ToString())
                     {
-                        throw new FailedException("身份证号为：" + vo.zjh + "的" + isexitCard.CardTypeName + "信息已经存在");
+                        throw new FailedException("证件号为：" + vo.zjh + "的" + isexitCard.CardTypeName + "信息已经存在");
                     }
                 }
                 newCardEntity = _SysCardRepository.GetCardEntity(vo.cardtype, vo.kh, orgId);
@@ -230,7 +230,7 @@ namespace Newtouch.HIS.DomainServices
                 }
             }
             //通过身份证获取真实出生日期和性别 
-            var BirthdayAdnSix = CommmHelper.GetBirthdayAdnSix(vo.zjh);
+            var BirthdayAdnSix = vo.zjlx == ((int)EnumZJLX.sfz).ToString() ? CommmHelper.GetBirthdayAdnSix(vo.zjh) : null;
             //修改病人基本信息
             patiententity.xm = vo.xm;
             patiententity.zjlx = vo.zjlx;

@@ -517,7 +517,7 @@ function valiPatZjh()
         var $gridList = $("#patGridList");
         $gridList.jqGrid('setGridParam', {
             url: "/OutpatientManage/OutpatientAccounting/PatSearchInfo",
-            postData: { zjh: $("#zjh").val(), },
+            postData: { zjh: $("#zjh").val(), zjlx:'1'},
         }).trigger('reloadGrid');
     }
 }
