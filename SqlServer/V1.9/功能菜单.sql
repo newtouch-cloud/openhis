@@ -1,3 +1,5 @@
+select top 100 * from NewtouchHIS_Sett.[dbo].[Sys_Module] where name in ('医保进销存查询','监管平台信息查询')
+select top 100 * from NewtouchHIS_Base.[dbo].[Sys_Module] where name in ('基础信息公共库')
 
 
 --insert into NewtouchHIS_Base.[dbo].[Sys_Module](Id,ParentId,name,UrlAddress,Target,px,CreateTime,CreatorCode,zt)
