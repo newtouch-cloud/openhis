@@ -1,3 +1,5 @@
+USE [NewtouchHIS_PDS]
+
 alter table xt_yp_pdxxmx add zsm varchar(1000)
 alter table xt_yp_pdxxmx add sfcl int
 
