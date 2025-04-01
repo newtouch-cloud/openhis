@@ -6,6 +6,9 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+$host.UI.RawUI.OutputEncoding = [System.Text.Encoding]::UTF8
+
+
 
 Write-Host "开始编译并发布Static"
 MSBuild.exe .\Newtouch.HIS.Static/Newtouch.HIS.Static/Newtouch.HIS.Static.csproj /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=PublishProfile

@@ -1,1 +1,0 @@
-update [NewtouchHIS_Base].[dbo].[xt_yzpc] set zxzq = 1 where yzpcmc = 'TID' and yzpcId = '1181'

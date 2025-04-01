@@ -1,0 +1,320 @@
+﻿<Project>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <!-- This serves as a workaround to ensure that UpToDateCheck fails during the initial scaffolding of .NET Framework projects -->
+    <UpToDateCheckOutput Include="0BF51CDE-3F92-4658-A23E-B9790F86C1BB" />
+  </ItemGroup>
+  <PropertyGroup>
+    <DockerDefaultDockerfile Condition="'$(DockerDefaultDockerfile)' == ''">Dockerfile</DockerDefaultDockerfile>
+    <!-- Start with the assembly name. -->
+    <DockerDefaultTag Condition="'$(DockerDefaultTag)' == ''">$(AssemblyName)</DockerDefaultTag>
+    <!-- Strip non-alphanumeric characters (including whitespace). -->
+    <DockerDefaultTag>$([System.Text.RegularExpressions.Regex]::Replace('$(DockerDefaultTag)', '[^a-zA-Z0-9]', '').ToLowerInvariant())</DockerDefaultTag>
+    <!-- If only numeric characters remain, add an arbitrary prefix. -->
+    <DockerDefaultTag Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(DockerDefaultTag)', '^[0-9]+'))">image$(DockerDefaultTag)</DockerDefaultTag>
+    <!-- If the default tag ends up empty, use an arbitrary fixed value. -->
+    <DockerDefaultTag Condition="$(DockerDefaultTag) == ''">image</DockerDefaultTag>
+    <DockerDefaultContext Condition="'$(DockerDefaultContext)' == '' And '$(TargetFrameworkIdentifier)' != '.NETFramework'">..</DockerDefaultContext>
+    <DockerDefaultContext Condition="'$(DockerDefaultContext)' == '' And '$(TargetFrameworkIdentifier)' == '.NETFramework'">.</DockerDefaultContext>
+    <DockerDefaultTargetOS Condition="'$(DockerDefaultTargetOS)' == ''">Linux</DockerDefaultTargetOS>
+    <DockerDefaultTargetOS Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">Windows</DockerDefaultTargetOS>
+
+    <!-- Support for labeling images automatically when they are created by VS -->
+    <DockerLabelBuiltImages Condition="'$(DockerLabelBuiltImages)' == '' And '$(BuildingInsideVisualStudio)' == 'true'">true</DockerLabelBuiltImages>
+    <DockerIncludeDefaultImageLabels Condition="'$(DockerIncludeDefaultImageLabels)' == ''">true</DockerIncludeDefaultImageLabels>
+    <DockerDefaultImageLabels Condition="'$(DockerDefaultImageLabels)' == ''">com.microsoft.created-by=visual-studio;com.microsoft.visual-studio.project-name=$(MSBuildProjectName)</DockerDefaultImageLabels>
+
+    <!-- Previous targets versions used DockerTargetOS; if set, pull it into the current DockerfileTargetOS property. -->
+    <DockerfileTargetOS Condition="'$(DockerfileTargetOS)' == ''">$(DockerTargetOS)</DockerfileTargetOS>
+
+    <!-- Support for custom path for VSDBG -->
+    <ContainerVsDbgPath Condition="'$(ContainerVsDbgPath)' == ''">$(VsDbgPath)</ContainerVsDbgPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ContainerDevelopmentMode)' == ''">
+    <ContainerDevelopmentMode Condition="'$(Configuration)' == 'Debug'">Fast</ContainerDevelopmentMode>
+    <ContainerDevelopmentMode Condition="'$(ContainerDevelopmentMode)' == ''">Regular</ContainerDevelopmentMode>
+  </PropertyGroup>
+
+  <!-- Describes the rules files used by CPS to represent the project -->
+  <PropertyGroup>
+    <RulesDirectory>$(MSBuildThisFileDirectory)Rules\$(LangName)</RulesDirectory>
+    <RulesDirectory Condition=" '$(LangName)' == '' OR '$(LangName)' == 'en-US' OR !Exists($(RulesDirectory)) ">$(MSBuildThisFileDirectory)Rules</RulesDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <PropertyPageSchema Include="$(RulesDirectory)\GeneralBrowseObject.xaml;">
+      <Context>BrowseObject</Context>
+    </PropertyPageSchema>
+  </ItemGroup>
+
+  <!-- Show the .dockerignore file when practical for .NET Core (.NET Framework has it scaffolded in by default) -->
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <None Include="$(DockerDefaultContext)\.dockerignore" Condition="'$(DockerfileFile)' == '' And Exists('$(DockerDefaultContext)\.dockerignore') And Exists('$(DockerDefaultDockerfile)')">
+      <DependentUpon>$(DockerDefaultDockerfile)</DependentUpon>
+    </None>
+    <None Include="$(DockerDefaultContext)\.dockerignore" Condition="'$(DockerfileFile)' != '' And Exists('$(DockerDefaultContext)\.dockerignore') And Exists('$(DockerfileFile)')">
+      <DependentUpon>$(DockerfileFile)</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ContainerIntermediateOutputPath Condition="'$(ContainerIntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)\Container</ContainerIntermediateOutputPath>
+    <ContainerSemaphoreFilePath Condition="$(ErrorLogFilePath) == ''">$(ContainerIntermediateOutputPath)\launch.sem</ContainerSemaphoreFilePath>
+    <ContainerPublishDirectory>obj\Docker\publish</ContainerPublishDirectory>
+    <ContainerVerifyPrerequisitesDependsOn>ContainerVerifyDockerInstallation</ContainerVerifyPrerequisitesDependsOn>
+    <ContainerBuildDependsOn>ContainerVerifyPrerequisites;ContainerPrepareForDotNetFrameworkBuild;ContainerBuildAndLaunch</ContainerBuildDependsOn>
+    <ContainerPublishDependsOn>ContainerBuild;ContainerPushImage</ContainerPublishDependsOn>
+    <ContainerLaunchDependsOn>ContainerPrepareForDotNetFrameworkBuild;ContainerBuildAndLaunch</ContainerLaunchDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ContainersTasksAssemblyFile Condition="'$(ContainersTasksAssemblyFile)' == ''">$(MSBuildThisFileDirectory)..\tools\Microsoft.VisualStudio.Containers.Tools.Tasks.dll</ContainersTasksAssemblyFile>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Clean" AssemblyFile="$(ContainersTasksAssemblyFile)" />
+  <UsingTask TaskName="ContainerError" AssemblyFile="$(ContainersTasksAssemblyFile)" />
+  <UsingTask TaskName="KillAppInsideContainer" AssemblyFile="$(ContainersTasksAssemblyFile)" />
+  <UsingTask TaskName="KillContainer" AssemblyFile="$(ContainersTasksAssemblyFile)" />
+  <UsingTask TaskName="ContainerBuildAndLaunch" AssemblyFile="$(ContainersTasksAssemblyFile)" />
+  <UsingTask TaskName="WaitForWarmupCompletion" AssemblyFile="$(ContainersTasksAssemblyFile)" />
+
+  <!--
+    ContainerVerifyPrerequisites
+
+    Ensures that everything needed to build containers is available on the machine.
+  -->
+  <Target Name="ContainerVerifyPrerequisites" DependsOnTargets="$(ContainerVerifyPrerequisitesDependsOn)">
+  </Target>
+
+  <!--
+    ContainerVerifyDockerInstallation
+
+    Ensures that Docker is installed and is in the current PATH.
+  -->
+  <Target Name="ContainerVerifyDockerInstallation">
+    <Exec Command="docker --version" EchoOff="true" IgnoreExitCode="true">
+      <Output PropertyName="_ExitCode" TaskParameter="ExitCode" />
+    </Exec>
+    <ContainerError Condition="$(_ExitCode) != 0" ErrorName="ErrorDockerNotInstalled" />
+  </Target>
+
+  <Target Name="ContainerBuild" DependsOnTargets="$(ContainerBuildDependsOn)">
+  </Target>
+
+  <Target Name="ContainerPublish" DependsOnTargets="$(ContainerPublishDependsOn)">
+  </Target>
+
+  <Target Name="ContainerPushImage" Inputs="@(_Dockerfile)" Outputs="%(Identity).output">
+    <Message Text="Pushing Container image..." />
+
+    <Exec Command='docker push "%(_Dockerfile.Repository):%(_Dockerfile.Tag)"' />
+  </Target>
+
+
+  <!--
+  ***********************************************************************************************
+
+  Docker Container Tools Build Targets
+
+  ***********************************************************************************************
+  -->
+
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <BuildDependsOn>
+      ContainerWaitForWarmupCompletion;
+      ContainerPrepareForBuild;
+      $(BuildDependsOn);
+      ContainerLaunch;
+    </BuildDependsOn>
+    <CleanDependsOn>
+      ContainerClean;
+      $(CleanDependsOn);
+    </CleanDependsOn>
+  </PropertyGroup>
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerPrepareForBuild
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerPrepareForBuild">
+    <KillAppInsideContainer Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"
+                            IntermediateOutputPath="$(ContainerIntermediateOutputPath)"
+                            ProjectFilePath="$(MSBuildProjectFullPath)"
+                            ErrorLogFilePath="$(ContainerSemaphoreFilePath)"
+                            ProjectCapability="@(ProjectCapability)"
+                            ProjectTypeGuids="$(ProjectTypeGuids)"
+                            OutputType="$(OutputType)"
+                            PublishAot="$(PublishAot)"
+                            Configuration="$(Configuration)"
+                            FunctionsExecutionModel="$(FunctionsExecutionModel)"
+                            />
+  </Target>
+
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerPrepareForDotNetFrameworkBuild
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerPrepareForDotNetFrameworkBuild" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <!-- NOTE: This target assumes a .NET Framework ASP.NET project (i.e. not a console project which is, as yet, unsupported). -->
+
+    <!-- TODO: Is there a way to do this without a separate MSBuild invocation? -->
+    <MSBuild Condition="'$(ContainerDevelopmentMode)' == 'Regular'"
+             Projects="$(MSBuildProjectFullPath)"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);
+                         Platform=$(Platform);
+                         BuildingInsideVisualStudio=False;
+                         WebPublishMethod=FileSystem;
+                         DeployTarget=WebPublish;
+                         DeployOnBuild=True;
+                         PublishUrl=$(ContainerPublishDirectory)" />
+
+    <MakeDir Condition="'$(ContainerDevelopmentMode)' == 'Fast'"
+             Directories="$(ContainerIntermediateOutputPath)\empty" />
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerLaunch
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerLaunch" Condition="Exists('$(ContainerSemaphoreFilePath)')" DependsOnTargets="$(ContainerLaunchDependsOn)">
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerBuildAndLaunch
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerBuildAndLaunch">
+    <PropertyGroup>
+      <LaunchContainer>false</LaunchContainer>
+      <LaunchContainer Condition="Exists('$(ContainerSemaphoreFilePath)') and '$(ContainersToolsLaunchingInVS)' != 'true'">true</LaunchContainer>
+      <ContainerDevelopmentMode Condition="'$(LaunchContainer)' != 'true' and '$(ContainersToolsLaunchingInVS)' != 'true'">Regular</ContainerDevelopmentMode> <!-- If we aren't building with intent to launch, always do full build -->
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_ContainerStaticWebAssetsManifestPath>$(_GeneratedStaticWebAssetsDevelopmentManifest)</_ContainerStaticWebAssetsManifestPath>
+      <_ContainerStaticWebAssetsManifestPath Condition=" '$(_ContainerStaticWebAssetsManifestPath)' == '' ">$(IntermediateOutputPath)$(TargetName).StaticWebAssets.xml</_ContainerStaticWebAssetsManifestPath>
+    </PropertyGroup>
+
+    <ContainerBuildAndLaunch LaunchContainer="$(LaunchContainer)"
+                             Dockerfiles="@(Dockerfile)"
+                             ContainerDevelopmentMode="$(ContainerDevelopmentMode)"
+                             IntermediateOutputPath="$(ContainerIntermediateOutputPath)"
+                             ProjectCapability="@(ProjectCapability)"
+                             ProjectFilePath="$(MSBuildProjectFullPath)"
+                             NuGetPackageFolders="$(NuGetPackageFolders)"
+                             NuGetPackageRoot="$(NuGetPackageRoot)"
+                             TargetFramework="$(TargetFramework)"
+                             TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
+                             TargetFrameworkVersion="$(TargetFrameworkVersion)"
+                             TargetPath="$(TargetPath)"
+                             OutDir="$(OutDir)"
+                             Configuration="$(Configuration)"
+                             PublishAot="$(PublishAot)"
+                             ErrorLogFilePath="$(ContainerSemaphoreFilePath)"
+                             DockerLabelBuiltImages="$(DockerLabelBuiltImages)"
+                             ProjectTypeGuids="$(ProjectTypeGuids)"
+                             OutputType="$(OutputType)"
+                             NoWarn="$(NoWarn)"
+
+                             DevEnvDir="$(DevEnvDir)"
+                             VisualStudioVersion="$(VisualStudioVersion)"
+                             ContainersToolsVersion="$(ContainersToolsVersion)"
+                             AzureFunctionsVersion="$(AzureFunctionsVersion)"
+                             FunctionsExecutionModel="$(FunctionsExecutionModel)"
+                             ActiveDebugProfile="$(ActiveDebugProfile)"
+
+                             DockerfileFile="$(DockerfileFile)"
+                             DockerDefaultDockerfile="$(DockerDefaultDockerfile)"
+                             DockerfileBuildArguments="$(DockerfileBuildArguments)"
+                             DockerfileContext="$(DockerfileContext)"
+                             DockerDefaultContext="$(DockerDefaultContext)"
+                             DockerfileRepository="$(DockerfileRepository)"
+                             DockerfileRunArguments="$(DockerfileRunArguments)"
+                             ContainerVsDbgPath="$(ContainerVsDbgPath)"
+                             DockerImageLabel="$(DockerImageLabel)"
+                             DockerImageLabels="$(DockerImageLabels)"
+                             DockerIncludeDefaultImageLabels="$(DockerIncludeDefaultImageLabels)"
+                             DockerDefaultImageLabels="$(DockerDefaultImageLabels)"
+                             DockerfileRunEnvironmentFiles="$(DockerfileRunEnvironmentFiles)"
+                             DockerfileStage="$(DockerfileStage)"
+                             DockerfileFastModeStage="$(DockerfileFastModeStage)"
+                             DockerfileTag="$(DockerfileTag)"
+                             DockerDefaultTag="$(DockerDefaultTag)"
+                             DockerfileTargetOS="$(DockerfileTargetOS)"
+                             DockerDefaultTargetOS="$(DockerDefaultTargetOS)"
+                             UserSecretsId="$(UserSecretsId)"
+                             DockerDebuggeeArguments="$(DockerDebuggeeArguments)"
+                             DockerDebuggeeKillProgram="$(DockerDebuggeeKillProgram)"
+                             DockerDebuggeeProgram="$(DockerDebuggeeProgram)"
+                             DockerDebuggeeWorkingDirectory="$(DockerDebuggeeWorkingDirectory)"
+                             DockerFastModeProjectMountDirectory="$(DockerFastModeProjectMountDirectory)"
+                             BlazorStaticWebAssetsManifest="$(_ContainerStaticWebAssetsManifestPath)"
+                             DockerProfilerHostPort="$(DockerProfilerHostPort)"
+                             DockerProfilerContainerPort="$(DockerProfilerContainerPort)">
+      <Output TaskParameter="DockerfilesOut" ItemName="_Dockerfile" />
+    </ContainerBuildAndLaunch>
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerClean
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerClean">
+    <Clean IntermediateOutputPath="$(ContainerIntermediateOutputPath)"
+           ProjectFilePath="$(MSBuildProjectFullPath)"
+           Configuration="$(Configuration)"
+           ErrorLogFilePath="$(ContainerSemaphoreFilePath)" />
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerShutdown
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerShutdown">
+    <KillContainer IntermediateOutputPath="$(ContainerIntermediateOutputPath)"
+                   ProjectFilePath="$(MSBuildProjectFullPath)"
+                   Configuration="$(Configuration)"
+                   ErrorLogFilePath="$(ContainerSemaphoreFilePath)" />
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+
+  TARGET : ContainerWaitForWarmupCompletion
+
+  ***********************************************************************************************
+  -->
+
+  <Target Name="ContainerWaitForWarmupCompletion">
+    <WaitForWarmupCompletion IntermediateOutputPath="$(ContainerIntermediateOutputPath)"
+                             ProjectFilePath="$(MSBuildProjectFullPath)"
+                             Configuration="$(Configuration)"
+                             ErrorLogFilePath="$(ContainerSemaphoreFilePath)" />
+  </Target>
+
+</Project>
