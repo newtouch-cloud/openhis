@@ -25,7 +25,7 @@ namespace Newtouch.HIS.Repository
         /// </summary>
         /// <param name="keyValue"></param>
         /// <returns></returns>
-        public SysChargeCategoryEntity GetForm(int keyValue)
+        public SysChargeCategoryEntity GetForm(int keyValue,string orgId = null)
         {
             return this.FindEntity(keyValue);
         }

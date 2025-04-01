@@ -82,13 +82,13 @@ namespace Newtouch.HIS.Application.Implementation.HospitalizationManage
                 if (!string.IsNullOrWhiteSpace(kh) && !string.IsNullOrWhiteSpace(cardType))
                 {
                     //根据卡号和卡类型 换取住院号
-                    zyh = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.kh == kh && p.CardType == cardType && p.zybz!=((int)EnumZYBZ.Wry).ToString()).OrderByDescending(p => p.CreateTime).Select(p => p.zyh).FirstOrDefault();
+                    zyh = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.kh == kh && p.CardType == cardType &&p.zt=="1" && p.OrganizeId==this.OrganizeId && p.zybz!=((int)EnumZYBZ.Wry).ToString()).OrderByDescending(p => p.CreateTime).Select(p => p.zyh).FirstOrDefault();
                 }
                 else if (!string.IsNullOrWhiteSpace(sfz) && !string.IsNullOrWhiteSpace(cardType))
                 {
                     //根据身份证和卡类型 换取住院号
                     var zjlx = ((int)EnumZJLX.sfz).ToString();
-                    zyh = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.zjlx == zjlx && p.zjh == sfz && p.CardType == cardType).OrderByDescending(p => p.CreateTime).Select(p => p.zyh).FirstOrDefault();
+                    zyh = _hospPatientBasicInfoRepo.IQueryable().Where(p => p.zjlx == zjlx && p.zjh == sfz && p.CardType == cardType && p.zt=="1" && p.OrganizeId==this.OrganizeId && p.zybz!= ((int)EnumZYBZ.Wry).ToString()).OrderByDescending(p => p.CreateTime).Select(p => p.zyh).FirstOrDefault();
                 }
             }
 

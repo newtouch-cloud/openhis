@@ -3,6 +3,7 @@
 @{
     Layout = "~/Views/Shared/_Index.cshtml";
     var opeator = OperatorProvider.GetCurrent();
+    var EmrEdiForUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("EmrEdiForUrl");
 }
 <script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.js")"></script>
 <link href="@SiteUrl.GetStaticResourceScriptUrl("~/js/wdtree/tree.css")" rel="stylesheet" />
@@ -18,6 +19,8 @@
 <link href="~/Content/css/style.css" rel="stylesheet" />
 @*<script src="~/Scripts/dc_main.js"></script>
     <script src="~/Scripts/jquery.min.js"></script>*@
+<script src="@Html.Raw(EmrEdiForUrl)ServicePage.aspx?wasmres=dcwriter5.js"></script>
+<script src="@Html.Raw(EmrEdiForUrl)jquery/jquery-1.7.2.min.js"></script>
 <script src="~/Scripts/jquery.min.js"></script>
 <script src="~/Content/js/domtool.js"></script>
 @*<div class="toolbar" style="float:left">
@@ -66,6 +69,8 @@
                    data-options="plain:true">直接打印</a><br />
                 <a href="#" title="打印预览" class="easyui-linkbutton" onclick="OpenPreview();"
                    data-options="plain:true">打印预览</a><br />
+                <a href="#" title="取消预览" class="easyui-linkbutton" onclick="ClosePrintPreview();"
+                   data-options="plain:true">取消预览</a><br />
             </div>
         </div>
         <div class="ribbon-group-sep"></div>
@@ -129,13 +134,13 @@
             <div class="ribbon-toolbar">
                 <a href="#" class="easyui-linkbutton" title="居左对齐"
                    data-options=" iconCls:'icon-align-left',plain:true"
-                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('justifyleft', false, null);">居左</a><br />
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('AlignMiddleLeft', false, null);">居左</a><br />
                 <a href="#" class="easyui-linkbutton" title="居右对齐"
                    data-options=" iconCls:'icon-align-right',plain:true"
-                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('justifyright', false, null);">居右</a><br />
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('AlignMiddleRight', false, null);">居右</a><br />
                 <a href="#" class="easyui-linkbutton" title="居中对齐"
                    data-options=" iconCls:'icon-align-center',plain:true"
-                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('justifycenter', false, null);">居中</a><br />
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('AlignMiddleCenter', false, null);">居中</a><br />
             </div>
             <div class="ribbon-toolbar">
                 <a href="#" class="easyui-linkbutton" title="图片居左对齐"
@@ -293,17 +298,19 @@
                 <a href="#" class="easyui-linkbutton" title="插入页码" data-options="plain:true"
                    onclick="dcInsertPageInfo();">插入页码</a><br />
                 <!--<a href="#" class="easyui-linkbutton" title="插入自定义下拉菜单"
-    data-options="plain:true"
-    onclick="insertCustomDropdownList();">插入自定义下拉菜单</a><br />-->
+                data-options="plain:true"
+                onclick="insertCustomDropdownList();">插入自定义下拉菜单</a><br />-->
             </div>
         </div>
         <div class="ribbon-group-sep"></div>
         <div class="ribbon-group">
-            <div class="ribbon-toolbar">
+            <a href="#" title="插入的医学表达式" class="easyui-linkbutton" data-options="plain:true"
+               onclick="MedicalExpressionMenuV5()">插入的医学表达式</a>
+            @*<div class="ribbon-toolbar">
                 <select id="MedicalExpressionMenu">
                     <option>选择插入的医学表达式</option>
                 </select>
-            </div>
+            </div>*@
         </div>
         <div class="ribbon-group-sep"></div>
     </div>
@@ -376,10 +383,10 @@
             <div class="ribbon-toolbar">
                 <a href="#" title="右合并单元格" class="easyui-linkbutton"
                    data-options=" iconCls:'icon-hebing',plain:true"
-                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('mergeright', true, null);">右合并单元格</a><br />
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_MergeCell', false, null);">合并单元格</a><br />
                 <a href="#" title="下合并单元格" class="easyui-linkbutton"
                    data-options=" iconCls:'icon-hebing',plain:true"
-                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('mergedown', true, null);">下合并单元格</a><br />
+                   onclick="document.getElementById('myWriterControl').DCExecuteCommand('Table_SplitCellExt', true, null);">拆分单元格</a><br />
             </div>
         </div>
         <div class="ribbon-group-sep"></div>
@@ -1207,8 +1214,11 @@
     @*<div id="myWriterControl" style="width:99%; border:2px solid black; height:99%; border-radius:5px" ContentRenderMode="NormalHtmlEditable" ServicePageURL="http://localhost:7027/EMR/MoreHandleDCWriterServicePage"></div>*@
     @*@Html.Raw(ViewBag.WriterControlHtml)*@
     <form method="post" action="#">
-        <div style="width:100%;height:900px">
-            @Html.Raw(ViewBag.WriterControlHtml)
+        @*<div style="width:100%;height:900px">
+                @Html.Raw(ViewBag.WriterControlHtml)
+        </div>*@
+        <div id="myWriterControl" dctype="WriterControlForWASM" RuleVisible="false" ContentRenderMode="NormalHtmlEditable"  ClientContextMenuType="Custom"  style="width:100%; background-color: #7cb9e8;">
+           
         </div>
     </form>
 </div>
@@ -1220,14 +1230,15 @@
         if (e.data.Turl != null && e.data.Turl != undefined) {
             var d = e.data.Turl;
             mburl = d.replace(/\\/g, "\\");
-            FileOpen();
+            //FileOpen();
+            FileOpenV5(); //5.0编辑器
         }
         if (e.data.ysdata != null && e.data.ysdata != undefined) {
             if (e.data.mxlist != null && e.data.mxlist.length > 0) {
                 if ((e.data.ysdata.yslx == "2")) {
                     InsertDropDowmListInputFieldCd(e.data.ysdata, e.data.mxlist);
                 } else { InsertDropDowmListInputField(e.data.ysdata, e.data.mxlist);}
-            } else { 
+            } else {
             if (e.data.ysdata.yslx == "5") {
                 InsertDateTimeInputField(e.data.ysdata);
             } else if (e.data.ysdata.yslx == "3") {
@@ -1436,7 +1447,7 @@
         debugger;
         var ctl = document.getElementById("myWriterControl");
         var options = {
-            bindingpath: data.BindingPath, //数据源路径 
+            bindingpath: data.BindingPath, //数据源路径
         }
         ctl.SetTableCellAttribute(null, options) //第一个参数为指定的元素，若为null则表示光标所在位置的单元格
     }
@@ -1444,32 +1455,55 @@
     {
         var ctl = document.getElementById("myWriterControl");
         var options = {
-            datasource: "peopledatasource",//data.DataSource, //数据源 
+            datasource: "peopledatasource",//data.DataSource, //数据源
         }
         ctl.SetTableRowAttribute(null, options) //第一个参数为指定的元素，若为null则表示光标所在位置的表格行
     }
     function dcInsertPageInfo() {
-        var ctl = document.getElementById("myWriterControl");
-        var doc = ctl.GetContentDocument();
-        var footer = doc.querySelector("[dctype='XTextDocumentFooterElement']");
-        var p = footer.querySelector("p");
-        p.style.textAlign = "center";
-        p.setAttribute("align", "center");
-        ctl.FocusAdjacent("afterBegin", p);
-        var options = {
-            ID: "pageinfo1",
-            Height: "65",
-            Width: "400",
-            ValueType: "PageIndex",
-            FormatString: "第[%PageIndex%]页 共[%NumOfPages%]页",
-            Caption: "页码"
-        };
-        ctl.DCExecuteCommand('InsertPageInfoElement', false, options)
+        //var ctl = document.getElementById("myWriterControl");
+        //var doc = ctl.GetContentDocument();
+        //var footer = doc.querySelector("[dctype='XTextDocumentFooterElement']");
+        //var p = footer.querySelector("p");
+        //p.style.textAlign = "center";
+        //p.setAttribute("align", "center");
+        //ctl.FocusAdjacent("afterBegin", p);
+        //var options = {
+        //    ID: "pageinfo1",
+        //    Height: "65",
+        //    Width: "400",
+        //    ValueType: "PageIndex",
+        //    FormatString: "第[%PageIndex%]页 共[%NumOfPages%]页",
+        //    Caption: "页码"
+        //};
+        //ctl.DCExecuteCommand('InsertPageInfoElement', false, options)
+        var ctl = document.getElementById('myWriterControl');
+        var options =
+              [
+                {
+                    'pageinfo': {
+                        ID: "pageinfo1",
+                        Height: "65",
+                        Width: "400",
+                        ValueType: "PageIndex",
+                        FormatString: "第[%PageIndex%]页 共[%NumOfPages%]页",
+                    },
+                }
+              ];
+        var footer = ctl.DocumentFooter;
+        ctl.SetChildElements(footer, options, "beforebegin", true, false);
+        var newStyle =
+            {
+                "Align": "Center"
+            };
+        ctl.SetParagraphStyleByElement("pageinfo1", newStyle);
     }
 
     $(function () {
-        MySetContextMenu()
-        document.getElementById("myWriterControl").style.height = "800px";
+        //var ctl = document.getElementById("myWriterControl");//获取当前编辑器对象
+        //ctl.DCExecuteCommand('FileNew', false, false);
+
+        //MySetContextMenu();
+        //document.getElementById("myWriterControl").style.height = "800px";
         MedicalExpressionMenu();
         init();
         ymsz();
@@ -1686,9 +1720,10 @@
         }
         var ctl = document.getElementById("myWriterControl");
 
-        ctl.DCExecuteCommand('FileSave', true, mburl);
+        //ctl.DCExecuteCommand('FileSave', true, mburl);
+        //alert("保存成功");
+        FileSavev5(); //5.0编辑器
 
-        alert("保存成功");
     }
     function init() {
 
@@ -1705,19 +1740,16 @@
         //            if (page) {
         //                page.appendChild(styleDom);
         //            }
-
         //        }
         //    }
         //    FileOpen();
         //}
         //Build();
-
-
         //var ctl = document.getElementById("myWriterControl");
         //// 绑定控件
         //BindingDCWriterClientControl(ctl);
         //var data = "";
-        //// 创建编辑器框架
+        // 创建编辑器框架
         //ctl.BuildFrame(function () {
         //    debugger;
         //    $.ajax({
@@ -1728,7 +1760,6 @@
         //        async: false,
         //        success: function (respdata) {
         //            debugger;
-
         //            var jsonData = JSON.stringify(respdata);
         //            data = JSON.parse(jsonData);
         //            ctl.LoadDocumentFromString(data.xmldata, "xml");
@@ -2123,6 +2154,836 @@
         compare();
         $(".select-button").val("自定义");
     }
+
+  
+    //******************都昌5.0编辑器版**************//
+    //编辑器渲染完成事件
+    function WriterControl_OnLoad(rootElement) {
+
+        //右键菜单
+        rootElement.EventShowContextMenu = function (eventSender, args) {
+            var typename = args.ElementType;
+            var ele = rootElement.CurrentElement()
+            var eleement = rootElement.GetElementProperties(ele)
+            // console.log(eleement,"元素属性")
+            if (eleement.TypeName == "XTextParagraphFlagElement") {
+                var previouselement = rootElement.GetElementProperties(eleement.PreviousElement);
+                if (previouselement.TypeName != "XTextParagraphFlagElement") {
+                    console.log(previouselement.TypeName, "元素类型")
+                }
+            }
+            // console.log(typename,"元素属性11")
+            if (typename != null && typename != "") {
+                typename = typename.toLowerCase();
+                var options = [
+                   {
+                       label: '撤销',
+                       exec: () => {
+                           console.log('撤销')
+                           eventSender.DCExecuteCommand('Undo', false, null);
+                       },
+                   },
+                   {
+                       label: '重做',
+                       exec: () => {
+                           console.log('重做')
+                           eventSender.DCExecuteCommand('Redo', false, null);
+                       },
+                   },
+                   '-',
+                   {
+                       label: '复制(Ctrl+C)',
+                       exec: () => {
+                           console.log('复制(Ctrl+C)')
+                           eventSender.DCExecuteCommand('Copy', false, null);
+                       },
+                   },
+                   {
+                       label: '粘贴(Ctrl+V)',
+                       exec: () => {
+                           eventSender.DCExecuteCommand('Paste', false, null);
+                       },
+                   },
+                   {
+                       label: '剪切(Ctrl+X)',
+                       exec: () => {
+                           eventSender.DCExecuteCommand('Cut', false, null);
+                       },
+                   },
+                   {
+                       label: '纯文本复制',
+                       exec: () => {
+                           eventSender.DCExecuteCommand('CopyAsText', false, null);
+                       },
+                   },
+                   {
+                       label: '纯文本粘贴',
+                       exec: () => {
+                           console.log('纯文本粘贴')
+                           eventSender.DCExecuteCommand('PasteAsText', false, null);
+                       },
+                   },
+                   '-',
+                   {
+                       label: '元素属性',
+                       exec: () => {
+                           // console.log(previouselement,"前一个元素")
+                           if (eleement.TypeName == "XTextParagraphFlagElement") {
+                               ElementDialog(previouselement, previouselement.TypeName)
+                               return;
+                           }
+                           var e = eventSender.DCExecuteCommand('ElementProperties', true, null);
+                           // eventSender.FocusAdjacent("afterEnd", e)
+                       },
+                   },
+                   '-',
+                   {
+                       label: '单元格属性',
+                       exec: () => {
+                           var CurrentTable = eventSender.CurrentTable()
+                           if (CurrentTable != null) {
+                               eventSender.TableCellPopUpWindow();
+                           }
+                       }
+                   },
+                    {
+                        label: '表格属性',
+                        exec: () => {
+                            var CurrentTable = eventSender.CurrentTable()
+                            if (CurrentTable != null) {
+                                eventSender.TablePopUpWindow();
+                            }
+                        }
+                    },
+                    {
+                        label: '表格行属性',
+                        exec: () => {
+                            var CurrentTable = eventSender.CurrentTable()
+                            if (CurrentTable != null) {
+                                eventSender.TableRowPopUpWindow();
+                            }
+                        }
+                    },
+                   '-',
+                   {
+                       label: '表格行列',
+                       exec: () => {
+
+                       },
+                       subMenu: [
+                          {
+                              label: '删除表格',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_DeleteTable", false, null);
+                              },
+                          },
+                          {
+                              label: '删除表格行',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_DeleteRow", false, null);
+                              },
+                          },
+                          {
+                              label: '删除表格列',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_DeleteColumn", false, null);
+                              },
+                          },
+                          {
+                              label: '在上面插入行',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_InsertRowUp", false, null);
+                              },
+                          },
+                          {
+                              label: '在下面插入行',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_InsertRowDown", false, null);
+                              },
+                          },
+                          {
+                              label: '在左侧插入列',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_InsertColumnLeft", false, null);
+                              },
+                          },
+                          {
+                              label: '在右侧插入列',
+                              exec: () => {
+                                  eventSender.DCExecuteCommand("Table_InsertColumnRight", false, null);
+                              },
+                          },
+                       ]
+                   },
+                ];
+                ContextMenu(options, args, eventSender);
+            }
+
+        }
+
+        var options = {
+            "BehaviorOptions": {
+                "AcceptDataFormats": "Text",
+                "ActiveCheckInstallWindowsMediaPlayer": false,
+                "AllowDeleteJumpOutOfField": true,
+                "AllowDragContent": false,
+                "AppErrorHandleMode": "ThrowException",
+                "AutoActiveSystemTaskbarBeforeShowDialog": false,
+                "AutoAssistInsertString": false,
+                "AutoAssistInsertStringDetectTextLength": 0,
+                "AutoClearInvalidateCharacter": true,
+                "AutoClearTextFormatWhenPasteOrInsertContent": false,
+                "AutoCreateInstanceInProperty": false,
+                "AutoDocumentValueValidate": false,
+                "AutoFixElementIDWhenInsertElements": true,
+                "AutoFocusWhenOpenDocument": true,
+                "AutoIgnoreLastEmptyPage": true,
+                "AutoRefreshUserTrackInfos": false,
+                "AutoSaveIntervalInSecond": 0,
+                "AutoSaveScriptAssemblyToTempFile": true,
+                "AutoScrollToCaretWhenGotFocus": false,
+                "AutoShowScriptErrorMessage": false,
+                "AutoTranslateDescString": null,
+                "AutoTranslateSourceString": null,
+                "AutoUpdateButtonVisible": false,
+                "AutoUppercaseFirstCharInFirstLine": false,
+                "CheckedValueBindingHandledForTableRow": true,
+                "CloneSerialize": true,
+                "CommentEditableWhenReadonly": false,
+                "CommentVisibility": "Auto",
+                "CompressLayoutForFieldBorder": true,
+                "CompressXMLContent": false,
+                "ContinueHeaderParagrahStyle": false,
+                "CreationDataFormats": "All",
+                "CustomPromptForbitCheckMRID": null,
+                "CustomWarringCheckMRID": null,
+                "DataObjectRange": "OS",
+                "DebugMode": false,
+                "DefaultEditorActiveMode": "None",
+                "DesignMode": false,
+                "DisableCheckMRIDWhenMRIDIsEmptyForOuterDataObject": false,
+                "DisplayFormatToInnerValue": true,
+                "DocumentTextOutputMode": "Normal",
+                "DoubleClickToEditComment": true,
+                "DoubleClickToSelectWord": true,
+                "EnableAIForSuspiciousContent": false,
+                "EnableCalculateControl": true,
+                "EnableCheckControlLoaded": false,
+                "EnableChineseFontSizeName": true,
+                "EnableCollapseSection": false,
+                "EnableCompressUserHistories": true,
+                "EnableContentChangedEventWhenLoadDocument": false,
+                "EnableContentLock": true,
+                "EnableControlHostAtDesignTime": true,
+                "EnableCopySource": true,
+                "EnableDataBinding": true,
+                "EnabledCache100KBImageData": true,
+                "EnabledElementEvent": true,
+                "EnableDeleteReadonlyEmptyContainer": true,
+                "EnabledShowWinTaskBarProgress": false,
+                "EnableEditElementValue": true,
+                "EnableElementEvents": true,
+                "EnableExpression": true,
+                "EnableHyperLink": true,
+                "EnableKBEntryRangeMask": true,
+                "EnableLogUndo": true,
+                "EnableScript": true,
+                "EnableSetJumpPrintPositionWhenPreview": true,
+                "EncodingCodePageForWriteRTF": 936,
+                "ExcludeKeywords": null,
+                "ExtendingPrintDialog": true,
+                "FastInputMode": false,
+                "FillCommentToUserTrackList": false,
+                "ForceCollateWhenPrint": false,
+                "ForcePopupFormTopMost": false,
+                "ForceRaiseEventAfterFieldContentEdit": false,
+                "FormView": "Normal",
+                "GeneratePageContentVersion": false,
+                "GlobalSpecifyDebugModeValue": false,
+                "HandleCommandException": true,
+                "IgnoreDataBindingWhenMissValue": true,
+                "IgnorePrintableAreaOffset": false,
+                "IgnoreTopBottomPaddingWhenGridLineLayout": false,
+                "ImageCompressSaveMode": "Prompt",
+                "ImageShapeEditorBackgroundMenuItemConfig": null,
+                "InsertCommentBindingUserTrack": false,
+                "InsertDocumentWithCheckMRID": "None",
+                "LicenseServicePageUrl": null,
+                "LocalAutoSaveWorkDirectory": null,
+                "LockScrollPositionWhenStrictFormViewMode": false,
+                "MaximizedPrintPreviewDialog": false,
+                "MaxTextLengthForPaste": 0,
+                "MaxZoomRate": 5,
+                "MinCountForDropdownListSpellCodeArea": 4,
+                "MinImageFileSizeForConfirmCompressSaveMode": 51200,
+                "MinZoomRate": 0.2,
+                "MoveCaretWhenDeleteFail": true,
+                "MoveFieldWhenDragWholeContent": true,
+                "MoveFocusHotKey": "Tab",
+                "NewExpressionExecuteMode": true,
+                "NotificationWorkingTimeout": 2000,
+                "OutputBackgroundTextToRTF": true,
+                "OutputFieldBorderTextToContentText": true,
+                "OutputFormatedXMLSource": true,
+                "PageLineUnderPageBreak": false,
+                "ParagraphFlagFollowTableOrSection": true,
+                "ParseCrLfAsLineBreakElement": false,
+                "PowerfulCommentCommand": true,
+                "PreserveClipbardDataWhenExit": false,
+                "Printable": true,
+                "PromptForExcludeSystemClipboardRange": true,
+                "PromptForRejectFormat": true,
+                "PromptJumpBackForSearch": true,
+                "PromptProtectedContent": "None",
+                "RaiseQueryListItemsWhenUserEditText": false,
+                "RemoveLastParagraphFlagWhenInsertDocument": false,
+                "ResetTextFormatWhenCreateNewLine": false,
+                "SaveBodyTextToXml": true,
+                "SelectionTextIncludeBackgroundText": true,
+                "SetParagraphFlagHeightUsePreElement": true,
+                "ShowDebugMessage": false,
+                "ShowNoLicenseFunctionRisk": true,
+                "ShowTooltip": true,
+                "SimpleElementProperties": false,
+                "SmoothScrollView": true,
+                "SpecifyDebugMode": false,
+                "SpeedupByMultiThread": true,
+                "StdLablesForImageEditor": null,
+                "TableCellOperationDetectDistance": 3,
+                "ThreeClickToSelectParagraph": true,
+                "TitleForToolTip": null,
+                "UseNewValueExpressionEngine": true,
+                "ValidateIDRepeatMode": "None",
+                "ValidateUserIDWhenEditDeleteComment": false,
+                "WeakMode": false,
+                "WidelyRaiseFocusEvent": false,
+                "WordBreak": "Normal",
+                "XMLContentEncodingName": null
+            },
+            "EditOptions": {
+                "AutoInsertTableRowWhenMoveToNextCell": true,
+                "ClearFieldValueWhenCopy": false,
+                "CloneWithoutElementBorderStyle": true,
+                "CloneWithoutLogicDeletedContent": false,
+                "CopyInTextFormatOnly": false,
+                "CopyWithoutInputFieldStructure": false,
+                "FixSizeWhenInsertImage": true,
+                "FixWidthWhenInsertTable": true,
+                "GridLinePreviewText": "DCWriter   Ͼ       Ϣ Ƽ    ޹ ˾     з   רҵ ĵ  Ӳ    ĵ  ༭    ",
+                "KeepTableWidthWhenInsertDeleteColumn": true,
+                "TabKeyToFirstLineIndent": true,
+                "TabKeyToInsertTableRow": true,
+                "ValueValidateMode": "LostFocus"
+            },
+            "SecurityOptions": {
+                "AutoEnablePermissionWhenUserLogin": true,
+                "CAMode": "Software",
+                "CanModifyDeleteSameLevelContent": true,
+                "CAServerIP": null,
+                "CAServerPort": 0,
+                "CreatorTipFormatString": null,
+                "DeleterTipFormatString": null,
+                "EnableLogicDelete": true,
+                "EnablePermission": true,
+                "PowerfulSignDocument": true,
+                "RealDeleteOwnerContent": false,
+                "ShowFlagForOnlySoftwareSign": true,
+                "ShowLogicDeletedContent": true,
+                "ShowNewContentMarkForFirstHistory": true,
+                "ShowPermissionMark": true,
+                "ShowPermissionTip": true,
+                "TrackVisibleLevel0": {
+                    "BackgroundColor": "#00FFFFFF",
+                    "DeleteLineColor": "#FF7F50",
+                    "DeleteLineNum": 1,
+                    "Enabled": true,
+                    "UnderLineColor": "#ADD8E6",
+                    "UnderLineColorNum": 1,
+                    "UnderLineStyle": "Single"
+                },
+                "TrackVisibleLevel1": {
+                    "BackgroundColor": "#00FFFFFF",
+                    "DeleteLineColor": "#FF0000",
+                    "DeleteLineNum": 1,
+                    "Enabled": true,
+                    "UnderLineColor": "#0000FF",
+                    "UnderLineColorNum": 1,
+                    "UnderLineStyle": "Single"
+                },
+                "TrackVisibleLevel2": {
+                    "BackgroundColor": "#FFFFE0",
+                    "DeleteLineColor": "#FF0000",
+                    "DeleteLineNum": 2,
+                    "Enabled": true,
+                    "UnderLineColor": "#0000FF",
+                    "UnderLineColorNum": 2,
+                    "UnderLineStyle": "Single"
+                },
+                "TrackVisibleLevel3": {
+                    "BackgroundColor": "#FFFFE0",
+                    "DeleteLineColor": "#FF0000",
+                    "DeleteLineNum": 2,
+                    "Enabled": true,
+                    "UnderLineColor": "#0000FF",
+                    "UnderLineColorNum": 2,
+                    "UnderLineStyle": "Single"
+                }
+            },
+            "ViewOptions": {
+                "AdornTextBackColor": "#64808080",
+                "AdornTextVisibility": "Hidden",
+                "AutoZoomDropdownListFontSize": true,
+                "BackgroundTextColor": "#808080",
+                "BothBlackWhenPrint": false,
+                "CommentDateFormatString": "yyyy-MM-dd HH:mm:ss",
+                "CommentFontName": null,
+                "CommentFontSize": 10,
+                "DefaultAdornTextType": "DataSource",
+                "DefaultInputFieldHighlight": "Enabled",
+                "DefaultInputFieldTextColor": "#00FFFFFF",
+                "DefaultLineColorForImageEditor": "#00000000",
+                "DropdownListFontName": null,
+                "DropdownListFontSize": 0,
+                "EmphasisMarkSize": 10,
+                "EnableEncryptView": true,
+                "EnableFieldTextColor": false,
+                "EnableRightToLeft": true,
+                "FieldBackColor": "#00FFFFFF",
+                "FieldBorderColor": "#00000000",
+                "FieldBorderElementPixelWidth": 1,
+                "FieldBorderPrintVisibility": "Default",
+                "FieldFocusedBackColor": "#00FFFFFF",
+                "FieldHoverBackColor": "#00FFFFFF",
+                "FieldInvalidateValueBackColor": "#FFFF00",
+                "FieldInvalidateValueForeColor": "#F08080",
+                "FieldTextColor": "#000000",
+                "FieldTextPrintColor": "#00FFFFFF",
+                "GraphicsSmoothingMode": "None",
+                "GridLineStyle": "Solid",
+                "HeaderBottomLineWidth": 1,
+                "HiddenFieldBorderWhenLostFocus": true,
+                "HiddenTableBorderJumpPrintPage": false,
+                "HighlightProtectedContent": false,
+                "IgnoreFieldBorderWhenPrint": true,
+                "ImageInterpolationMode": "High",
+                "LayoutDirection": "LeftToRight",
+                "MaskColorForJumpPrint": "#640000FF",
+                "MinTableColumnWidth": 50,
+                "NewInputContentUnderlineColor": "#00FFFFFF",
+                "NoneBorderColor": "#D3D3D3",
+                "NormalFieldBorderColor": "#0000FF",
+                "OldWhitespaceWidth": false,
+                "PageMarginLineLength": 30,
+                "PreserveBackgroundTextWhenPrint": true,
+                "PrintBackgroundText": false,
+                "PrintGridLine": false,
+                "PrintImageAltText": false,
+                "ProtectedContentBackColor": "#00000000",
+                "ReadonlyFieldBackColor": "#D3D3D3",
+                "ReadonlyFieldBorderColor": "#808080",
+                "SectionBorderVisibility": "All",
+                "SelectionHightlightMaskColor": "#320000FF",
+                "ShowBackgroundCellID": false,
+                "ShowCellNoneBorder": true,
+                "ShowExpressionFlag": true,
+                "ShowFieldBorderElement": true,
+                "ShowFormButton": false,
+                "ShowGlobalGridLineInTableAndSection": true,
+                "ShowGrayMaskOverDisableContentParty": true,
+                "ShowGridLine": false,
+                "ShowHeaderBottomLine": true,
+                "ShowInputFieldStateTag": true,
+                "ShowLineNumber": false,
+                "ShowPageBreak": false,
+                "ShowParagraphFlag": false,
+                "ShowRedErrorMessageForPaint": true,
+                "SpecifyExtenGridLineStep": 0,
+                "SupportUG": false,
+                "TableCellBorderVisibility": "All",
+                "TagColorForModifiedField": "#0000FF",
+                "TagColorForNormalField": "#FF0000",
+                "TagColorForReadonlyField": "#808080",
+                "TagColorForValueInvalidateField": "#FF0000",
+                "TextRenderStyle": "ClearTypeGridFit",
+                "UnEditableFieldBorderColor": "#FF0000",
+                "UseLanguage2": false,
+                "ShowFieldBorderTextInTheMiddle": false
+            }
+        }
+
+        //var result = rootElement.LoadDocumentFromString(xx, 'xml');
+        var ctl = document.getElementById("myWriterControl");
+        //ctl.LoadDocumentFromString(xx, 'xml');
+        ctl.DCExecuteCommand('FileNew', false, false);
+    }
+    function ContextMenu(options, menuObj, rootElement) {
+        if (options != null && Array.isArray(options)) {
+            if (menuObj) {
+                //获取到包裹元素
+                var pageContainer = rootElement.querySelector('[dctype=page-container]');
+                //判断是否为打印预览
+                if (rootElement.IsPrintPreview()) {
+                    pageContainer = rootElement.querySelector('[dctype=page-printpreview]');
+                }
+                //判断是否存在dcContextMenu的元素
+                var hasContextMenu = pageContainer.querySelector('#dcContextMenu');
+                if (!hasContextMenu) {
+                    var meunDiv = document.createElement('div');
+                    meunDiv.setAttribute('id', 'dcContextMenu')
+                    pageContainer.appendChild(meunDiv);
+                    meunDiv.innerHTML = `<div class="dcMenu-line"></div>`;
+                    hasContextMenu = meunDiv;
+                    //判断是否有css
+                    var dcHead = document.head;
+                    //判断是否存在对应的css
+                    var hasContextMenuCss = dcHead.querySelector('#ContextMenuCss');
+                    if (!hasContextMenuCss) {
+                        var newCssString = `
+                    #dcContextMenu{
+                        position: absolute;
+                        margin: 0;
+                        padding: 2px;
+                        border-width: 1px;
+                        border-style: solid;
+                        background-color: #fafafa;
+                        border-color: #ddd;
+                        color: #444;
+                        box-shadow: rgb(204, 204, 204) 2px 2px 3px;
+                        min-width: 144px;
+                        /* left: 8px;
+                        top: 481.672px;
+                        overflow: hidden;*/
+                        z-index: 110008;
+                        display: none;
+                    }
+                    #dcContextMenu div.dcMenu-item:hover{
+                        color: rgb(0, 0, 0);
+                        border-color: rgb(183,210,255);
+                        background: rgb(234,242,255);
+                    }
+                    #dcContextMenu .dcMenu-line{
+                        position: absolute;
+                        left: 26px;
+                        top: 0;
+                        height: 100%;
+                        font-size: 1px;
+                        border-left: 1px solid #ccc;
+                        border-right: 1px solid #fff;
+                    }
+                    #dcContextMenu .dcMenu-item{
+                        position: relative;
+                        white-space: nowrap;
+                        cursor: pointer;
+                        margin: 0px;
+                        padding: 0px;
+                        font-size: 12px;
+                        overflow: hidden;
+                        border-width: 1px;
+                        border-style: solid;
+                        border-color: transparent;
+                        box-sizing: content-box;
+                    }
+                    #dcContextMenu .dcMenu-item .dcMenu-text{
+                        float: left;
+                        padding-left: 28px;
+                        padding-right: 20px;
+                        font-size: 12px;
+                    }
+
+                    #dcContextMenu .dcMenu-icon{
+                        position: absolute;
+                        width: 16px;
+                        height: 16px;
+                        left: 2px;
+                        top: 50%;
+                        margin-top: -8px;
+                    }
+                    #dcContextMenu .dcMenu-sep{
+                        margin: 3px 0px 3px 25px;
+                        font-size: 1px;
+                        border-top: 1px solid #ccc;
+                        border-bottom: 1px solid #fff;
+                    }
+                    #dcContextMenu .secondaryMenu{
+                        position: absolute;
+                        z-index: 110011;
+                        margin: 0;
+                        padding: 2px;
+                        border-width: 1px;
+                        border-style: solid;
+                        border-color: #ddd;
+                        min-width: 144px;
+                        overflow: hidden;
+                        display: none;
+                        background-color: #fafafa;
+                    }
+                    #dcContextMenu .dcMenu-rightarrow {
+                        position: absolute;
+                        width: 16px;
+                        height: 16px;
+                        right: 0;
+                        top: 50%;
+                        margin-top: -8px;
+                        background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAAAQCAYAAACm53kpAAAAZ0lEQVR42u2VMQ7AMAgD+f9XeYBHd+mA2IqrJFJ8EkMGrNiCJMIYY86Eh2otDYA7dNgq2/kLEEzwhxDGGrURQxGlN97gUUrxQCU9DM33ALjYQA0vlRGCcPEUjGxdgasfQX+DxphreAA2tk8BzQnbmgAAAABJRU5ErkJggg==) no-repeat -32px center;
+                    }`
+                        var ContextMenuCss = document.createElement('style');
+                        ContextMenuCss.setAttribute('id', 'ContextMenuCss');
+                        dcHead.appendChild(ContextMenuCss);
+                        ContextMenuCss.innerHTML = newCssString;
+
+                        //页面滚动
+                        pageContainer.addEventListener('scroll', function () {
+                            var hasContextMenu = rootElement.querySelector('#dcContextMenu');
+                            if (hasContextMenu) {
+                                hasContextMenu.remove();
+                            }
+                        })
+                        //丢失焦点
+                        window.addEventListener('blur', function () {
+                            var hasContextMenu = rootElement.querySelector('#dcContextMenu');
+                            if (hasContextMenu) {
+                                hasContextMenu.remove();
+                            }
+                        })
+                    }
+
+                } else {
+                    //存在时，清空所有item和sep的元素
+                    var allItem = hasContextMenu.querySelectorAll('.dcMenu-item, .dcMenu-sep');
+                    for (var i = 0; i < allItem.length; i++) {
+                        allItem[i].remove();
+                    }
+                }
+                var containerHeight = 0;
+                if (Array.isArray(options) && options.length > 0) {
+                    //根据options显示元素
+                    for (var option = 0; option < options.length; option++) {
+                        if (typeof options[option] == 'object') {
+                            var thisItem = insertItem(options[option], hasContextMenu, true);
+                            //判断是否存在subMenu，如果需要更多可以使用递归调用
+                            if (options[option].subMenu && Array.isArray(options[option].subMenu)) {
+                                var secondaryMenu = document.createElement('div');
+                                secondaryMenu.setAttribute('class', 'secondaryMenu');
+                                secondaryMenu.innerHTML = `<div class="dcMenu-line"></div>`;
+                                hasContextMenu.appendChild(secondaryMenu);
+                                for (var meun = 0; meun < options[option].subMenu.length; meun++) {
+                                    insertItem(options[option].subMenu[meun], secondaryMenu, false)
+                                }
+                                var rightItem = document.createElement('div');
+                                rightItem.setAttribute('class', 'dcMenu-rightarrow');
+                                thisItem.appendChild(rightItem);
+                                //添加事件
+                                thisItem.addEventListener('mouseenter', function (e) {
+                                    //console.log(e)
+                                    //console.log($(e.target))
+                                    //找到下一个子元素
+                                    var targetEle = e.target.nextElementSibling;
+                                    targetEle.style.top = e.target.offsetTop + 'px';
+                                    targetEle.style.left = e.target.offsetLeft + e.target.offsetWidth + 'px';
+                                    targetEle.style.display = 'block';
+                                })
+                                thisItem.addEventListener('mouseleave', function (e) {
+                                    var targetEle = e.target.nextElementSibling;
+                                    targetEle.style.display = 'none';
+                                })
+                                secondaryMenu.addEventListener('mouseenter', function (e) {
+                                    var targetEle = e.target.previousElementSibling;
+                                    e.target.style.top = targetEle.offsetTop + 'px';
+                                    e.target.style.left = targetEle.offsetLeft + targetEle.offsetWidth + 'px';
+                                    e.target.style.display = 'block';
+                                })
+                                secondaryMenu.addEventListener('mouseleave', function (e) {
+                                    e.target.style.display = 'none';
+                                })
+
+                            }
+                        } else if (typeof options[option] == 'string' && options[option] == '-') {
+                            var sepEle = document.createElement('div');
+                            sepEle.setAttribute('class', 'dcMenu-sep');
+                            hasContextMenu.appendChild(sepEle);
+                            containerHeight += 8;
+                        }
+                    }
+                    var pageElement = menuObj.PageElement;
+                    //计算展示的高度
+                    var minHeight = pageContainer.scrollTop;
+                    var maxHeight = minHeight + pageContainer.clientHeight;
+                    containerHeight = containerHeight ? containerHeight + 6 : 0
+                    hasContextMenu.style.height = containerHeight + 'px';
+                    hasContextMenu.style.left = pageElement.offsetLeft + menuObj.X + 'px';
+                    var cursorTop = pageElement.offsetTop + menuObj.Y;
+                    var menuLastHeight = cursorTop + containerHeight;
+                    //计算最下方的距离是否够显示全
+                    if (menuLastHeight > maxHeight) {
+                        //显示不全
+                        var topHasSpacing = -minHeight;
+                        //判断上边是否存在足够的距离
+                        if (topHasSpacing > containerHeight) {
+                            //距离足够
+                            hasContextMenu.style.top = cursorTop - containerHeight + 'px'
+                        } else {
+                            //距离不够
+                            if ((maxHeight - cursorTop) > (cursorTop - minHeight)) {
+                                //下方的距离大于上方
+                                hasContextMenu.style.top = cursorTop + 'px';
+                            } else {
+                                //上方的距离大于下方
+                                hasContextMenu.style.top = cursorTop - containerHeight + 'px'
+                            }
+                        }
+                    } else {
+                        //显示全
+                        hasContextMenu.style.top = cursorTop + 'px';
+                    }
+                    hasContextMenu.style.display = 'block';
+                }
+            }
+        }
+
+        //插入内部的item项
+        function insertItem(options, hasContextMenu, needHeight) {
+            if (typeof options == 'object') {
+                var itemEle = document.createElement('div');
+                itemEle.setAttribute('class', 'dcMenu-item');
+                itemEle.style.cssText = 'height: 22px;line-height: 22px';
+                hasContextMenu.appendChild(itemEle);
+                itemEle.innerHTML = `
+                <div class="dcMenu-text" style="height: 22px; line-height: 22px;">${options.label}</div>
+                <div class="dcMenu-icon"></div>
+            `;
+                itemEle.addEventListener('mousedown', function (e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                })
+                itemEle.onclick
+                itemEle.addEventListener('click', function () {
+                    options.exec();
+                    hasContextMenu.remove();
+                })
+                if (needHeight) {
+                    containerHeight += 24;
+                }
+                return itemEle;
+            } else if (typeof options == 'string' && options == '-') {
+                var sepEle = document.createElement('div');
+                sepEle.setAttribute('class', 'dcMenu-sep');
+                hasContextMenu.appendChild(sepEle);
+                if (needHeight) {
+                    containerHeight += 24;
+                }
+                return sepEle;
+            }
+        }
+    }
+
+    function ElementDialog(element, typename) {
+        var ctl = document.getElementById("myWriterControl");
+        console.log(typename)
+        typename = typename.toLowerCase();
+        if (typename == "xtextinputfieldelement") {
+            ctl.InputFieldDialog(element, false);
+            return true;
+        }
+        if (typename == "xtextradioboxelement") {
+            ctl.CheckboxAndRadioDialog(element, false);
+            return true;
+        }
+        if (typename == "xtextcheckboxelement") {
+            ctl.CheckboxAndRadioDialog(element, false);
+            return true;
+        }
+        if (typename == "xtextnewbarcodeelement") {
+            ctl.BarCodeDialog(element, false);
+
+        }
+        if (typename == "xtexttdbarcodeelement") {
+            ctl.QRCodeDialog(element, false);
+
+        }
+        if (typename == "xtextlabelelement") {
+            ctl.LabelDialog(element, false);
+
+        }
+        if (typename == "xtexthorizontallineelement") {
+            ctl.HorizontalLineDialog(element, false);
+
+        }
+        if (typename == "xtextimageelement") {
+            ctl.ImageDialog(element, false);
+
+        }
+        if (typename == "xtextpageinfoelement") {
+            ctl.PageNumberDialog(element, false);
+
+        }
+        if (typename == "xtextbuttonelement") {
+            ctl.ButtonDialog(element, false);
+
+        }
+        if (typename == "xtextnewmedicalexpressionelement") {
+            ctl.MedicalExpressionDialog(element, false);
+
+        }
+        if (typename == "xtextmediaelement") {
+            ctl.MediaDialog(element, false);
+
+        }
+        if (typename == "xtextcontrolhostelement") {
+            ctl.InsertControlHostDialog(element, false);
+
+        }
+    }
+    //加载病历模板
+    function FileOpenV5()
+    {
+        var ctl = document.getElementById("myWriterControl");
+        ctl.ClearDocumentBody();
+        ctl.preserveScrollPosition = true;
+        var fileName = mburl;
+        $.ajax({
+            type: "POST",
+            url: "/MedRecordTemplate/GetTemplateXml",
+            data: {templateUrl: fileName },
+            dataType: "json",
+            async: false,
+            success: function (respdata) {
+                debugger;
+                var jsonData = JSON.stringify(respdata);
+                data = JSON.parse(jsonData);
+                ctl.LoadDocumentFromString(data.xmldata, "xml");
+                //ctl.DCExecuteCommand('NormalViewMode', false, null);
+            },
+            error: function (request, error, ex) {
+                $.modalAlert('病历加载失败:' + ex, 'error');
+            }
+        });
+
+      
+    }
+    //保存病历模板
+    function FileSavev5()
+    {
+        var ctl = document.getElementById("myWriterControl");
+        var xmldata = ctl.SaveDocumentToBase64String("xml");
+        $.ajax({
+            type: "POST",
+            url: "/MedRecordTemplate/SaveTemplateXml",
+            data: {templateUrl:mburl, templateData: xmldata },
+            dataType: "json",
+            async: false,
+            success: function (respdata) {
+                debugger
+                if (respdata.state == "error")
+                    alert("病历模板保存失败:" + respdata.message);
+                else
+                    alert("病历模板保存成功");
+            },
+            error: function (request, error, ex) {
+                $.modalAlert('保存失败:' + ex, 'error');
+            }
+        });
+    }
+
 </script>
 
 <script src="@SiteUrl.GetStaticResourceScriptUrl("~/js/framework-ui.js")"></script>

@@ -171,6 +171,10 @@ WHERE x.ypId =@ypId
 			sysChargeCategoryBaseEntity.OrganizeId = organizeId;
 			sysChargeCategoryBaseEntity.Create();
 			_sysChargeCategoryRepository.SubmitForm(sysChargeCategoryBaseEntity.ToJson().ToObject<SysChargeCategoryEntity>(), 0);
+			//同步收费大类类型
+			
+			
+			
 		}
 		
 		public void SyncCommonSfxm(SysChargeItemBaseEntity sysChargeItemBaseEntity, string organizeId)

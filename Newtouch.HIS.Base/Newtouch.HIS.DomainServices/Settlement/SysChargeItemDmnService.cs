@@ -31,15 +31,28 @@ namespace Newtouch.HIS.DomainServices
         /// <returns></returns>
         public IList<SysChargeItemVO> GetPagintionList(string orgId, Pagination pagination,string sfdl, string keyword = null)
         {
-            var sql = @"
-select a.*, b.dlmc sfdlmc, case when a.ybdm IS NULL then '2' when a.ybdm IS NOT NULL AND a.LastYBUploadTime IS NOT NULL AND a.LastYBUploadTime >= a.LastModifyTime then '1' else '0' end isSynch from xt_sfxm a
+            var tableName = "";
+            if (orgId.Equals("*"))
+            {
+                tableName = "xt_sfxm_base";
+            }
+            else
+            {
+                tableName = "xt_sfxm";
+            }
+            var sql = $@"
+select a.*, b.dlmc sfdlmc, case when a.ybdm IS NULL then '2' when a.ybdm IS NOT NULL AND a.LastYBUploadTime IS NOT NULL AND a.LastYBUploadTime >= a.LastModifyTime then '1' else '0' end isSynch 
+from 
+    {tableName} a
 left join xt_sfdl b
 on a.sfdlCode = b.dlCode and a.OrganizeId = b.OrganizeId
 where a.OrganizeId = @orgId";
-
-                var pars = new List<SqlParameter>() {
-                new SqlParameter("@orgId", orgId)
+          
+            var pars = new List<SqlParameter>() {
+                new SqlParameter("@orgId", orgId),
             };
+           
+                
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 sql += " and (a.sfxmmc like @searchKeyword or a.sfxmCode like @searchKeyword or a.ybdm like @searchKeyword or a.gjybdm like @searchKeyword or a.py like @searchKeyword or a.sccj like @searchKeyword)";

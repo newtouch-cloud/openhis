@@ -102,8 +102,15 @@
     var ybkCardType = "@((int)EnumCardType.YBJYK)";
     //var klx = $.request('klx');
     var mzh = $.request('mzh');
-    var dkfs = $.request('dkfs');
-    var pzm = $.request('pzm');
+    //var dkfs = $.request('dkfs');
+    //var pzm = $.request('pzm');
+    var ryfs = $.request('ryfs');
+    var ydsfz = $.request('ydsfz');
+    var newzyh = $.request('newzyh');
+    var zffs = $.request('zffs');
+    var khxx = $.request('khxx');
+    var patName = $.request('patName');
+    var patsfz = $.request('patsfz');
 	//医保卡信息
 	var cardInfo;
 	//系统病人主键
@@ -121,6 +128,7 @@
 	var cardInfo2;
 	var cardInfo3;
 	var yibaoCardInfo;
+	var brxzobj = { brxz: "1", brxzmc: "普通医保" };
 	var cqPatInfo = {};//患者读卡信息
 	//入院办理信息（医保接口返回）
 	var ryblInfo;
@@ -299,7 +307,7 @@
 		    kh: yibaoCardInfo.kh,//cqPatInfo.sbkh,
 		    cblb: cqPatInfo.cblb,
 		    jzid: jzid,
-		    jzpzlx: dkfs,
+		    jzpzlx: cqPatInfo.jzlx,//dkfs,
 		    xzlx: cqPatInfo.xzlx,
 		    grbh: cqPatInfo.grbh,
 		    cbdbm: cqPatInfo.xzqh,
@@ -438,13 +446,39 @@
 	    }
 	    return res;
 	}
-	function gjyb() {
+    function gjyb() {
+        debugger;
 	    var res = { "success": "true", "msg": "" };
-	    setTimeout(function () {
+	   // setTimeout(function () {
 	        //var payoptype = { "cardtype": "1", "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
-	        var payoptype = { "mdtrt_cert_type": "02", "mdtrt_cert_no": cqPatInfo.sfzh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "口腔科" };
-			var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
-			if ('@YB_Jzpzl' != 'ON') {
+	        //var payoptype = { "mdtrt_cert_type": "02", "mdtrt_cert_no": cqPatInfo.sfzh, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "口腔科" };
+        var url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1161";
+        var payoptype = { "mdtrt_cert_type": "03", "mdtrt_cert_no": patsfz, "operatorId": '@(opr.rygh)', "operatorName": '@(opr.UserName)', "businessType": "01101", "officeId": "0201", "officeName": "内科" };
+        if (zffs === "sm")//电子凭证
+        {
+            payoptype.mdtrt_cert_type = "01";
+            if (newzyh == "Y")
+                url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
+            else
+                url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162A";
+        }
+        if (zffs === "sfz") {//身份证
+            payoptype.mdtrt_cert_type = "02";
+            payoptype.mdtrt_cert_no = patsfz;
+            payoptype.psn_name = patName;
+            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1163";
+        }
+        if (zffs === "ck") {//医保磁卡
+            payoptype.mdtrt_cert_type = "00";
+            payoptype.mdtrt_cert_no = patsfz;
+            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1101";
+        }
+        if (zffs === "sl") {//刷脸
+            payoptype.mdtrt_cert_type = "02";
+            url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1164";
+        }
+        
+        @*if ('@YB_Jzpzl' != 'ON') {
                 if (dkfs == "3") {//电子凭证
                     url = "http://127.0.0.1:33333/api/YiBao/CardecInfo_1162";
                     payoptype.mdtrt_cert_type = "01";
@@ -459,7 +493,7 @@
                     payoptype.mdtrt_cert_type = "00";
                     payoptype.mdtrt_cert_no = pzm;
                 }
-			}
+			}*@
 
 	        $.ajax({
 	            type: "POST",
@@ -471,56 +505,76 @@
 	                yibaoCardInfo = eval('(' + data + ')');
 	            }
 	        });
-	        $.loading(false);
+	        $.loading(false); debugger;
 	        if (yibaoCardInfo) {
-	            if (yibaoCardInfo.infcode == "0") {
+	            if (yibaoCardInfo.infcode == "0" || yibaoCardInfo.infcode == 0) {
 					//var ybklx = "03";
 					if ('@YB_Jzpzl' === 'ON') {
 						var cardecinfo = yibaoCardInfo.output.cardecinfo;
 						switch (cardecinfo.mdtrt_cert_type) {
-							case "01"://电子凭证
-                                dkfs = '3';
-								payoptype.mdtrt_cert_type = "01";
-								payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
-								break;
-							case "02"://身份证
-                                dkfs = '4';
-								break;
-							case "03"://社保卡
-                                dkfs = '2';
-/*								sbkobj.sbkh = cardecinfo.mdtrt_cert_no;*/
-								payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
-								break;
+						    case "01"://电子凭证
+						        zffs = '3';
+						        payoptype.mdtrt_cert_type = "01";
+						        payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
+						        break;
+						    case "02"://身份证
+						        zffs = '4';
+						        break;
+						    case "03"://社保卡
+						        zffs = '2';
+						        /* sbkobj.sbkh = cardecinfo.mdtrt_cert_no;*/
+						        payoptype.mdtrt_cert_type = cardecinfo.mdtrt_cert_type;
+						        break;
 						}
 					}
 	                cardInfo1 = yibaoCardInfo.output.baseinfo; //医保基本信息
-	                cardInfo2 = yibaoCardInfo.output.insuinfo[0];//参保信息
-	                if (dkfs !== "3") {
+	                if (yibaoCardInfo.output.insuinfo.length > 1) {
+	                    for (var i = 0; i < yibaoCardInfo.output.insuinfo.length; i++) {
+	                        if (yibaoCardInfo.output.insuinfo[i].paus_insu_date)
+	                            continue;
+	                        else {
+	                            cardInfo2 = yibaoCardInfo.output.insuinfo[i];
+	                            break;
+	                        }
+	                    }
+	                } else
+	                    cardInfo2 = yibaoCardInfo.output.insuinfo[0];//参保信息
+	                if (zffs !== "3") {
 	                    cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
-	                    cqPatInfo.sbkh = cqPatInfo.sbkh;
+	                    cqPatInfo.sbkh = zffs == "2" ? cardecinfo.mdtrt_cert_no : cardInfo3.cardno;
 	                }
-	                if (dkfs == "3") {
+	                if (zffs == "3") {
+	                    cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
 	                    cqPatInfo.ecToken = cardInfo3.ecToken;
 	                }
+	                getbrxz(cardInfo2.insutype);
+	                yibaoCardInfo.brxzdm = brxzobj.brxz;
+	                yibaoCardInfo.brxzmc = brxzobj.brxzmc;
+
 	                cqPatInfo.xm = cardInfo1.psn_name;
 	                cqPatInfo.sfzh = cardInfo1.certno;
 	                cqPatInfo.xzqh = cardInfo2.insuplc_admdvs;
 	                cqPatInfo.cblb = cardInfo2.psn_type;
 	                cqPatInfo.xzlx = cardInfo2.insutype;
 	                cqPatInfo.grbh = cardInfo1.psn_no;
-	                cqPatInfo.jzlx = dkfs;
+	                cqPatInfo.jzlx = zffs;
 	                cqPatInfo.ybVer = "gjyb";
+	                cqPatInfo.mdtrt_cert_type = payoptype.mdtrt_cert_type;
+	                cqPatInfo.mdtrt_cert_no = cqPatInfo.ecToken;
 
-	                if (dkfs !== "4") {
-	                    cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
-	                    cardInfo1.ecToken = cardInfo3.ecToken;
-	                    cardInfo1.sbkh = cardInfo3.cardno;
-	                    cqPatInfo.ecToken = cardInfo3.ecToken;
-	                    cqPatInfo.sbkh = cardInfo3.cardno;
-	                }
+	                //if (dkfs !== "4") {
+	                //    cardInfo3 = yibaoCardInfo.output.cardecinfo;//卡信息
+	                //    cardInfo1.ecToken = cardInfo3.ecToken;
+	                //    cardInfo1.sbkh = cardInfo3.cardno;
+	                //    cqPatInfo.ecToken = cardInfo3.ecToken;
+	                //    cqPatInfo.sbkh = cardInfo3.cardno;
+	                //}
 	                yibaoCardInfo.readCardCardType = payoptype.mdtrt_cert_type;//ybkCardType;
-	                yibaoCardInfo.kh = payoptype.mdtrt_cert_type == "01" ? cardInfo3.ecToken : (payoptype.mdtrt_cert_type == "02" ? cardInfo1.certno : cardInfo3.cardno);
-
+	                yibaoCardInfo.kh = payoptype.mdtrt_cert_type == "01" ? cardInfo3.ecToken : (payoptype.mdtrt_cert_type == "02" ? cardInfo1.certno : cardecinfo.mdtrt_cert_no);
+	                yibaoCardInfo.qtjz = zffs != "2" ? cardInfo1.certno : null;
+	                yibaoCardInfo.ybVer = "gjyb";
+	                yibaoCardInfo.jzlx = zffs;
+	                return res;
 	                //cqPatInfo.xm = cardInfo1.psn_name;
 	                //cqPatInfo.sfzh = cardInfo1.certno;
 	                //cqPatInfo.xzqh = cardInfo2.insuplc_admdvs;
@@ -531,14 +585,40 @@
 	                //nextStepCallback(true);
 	            } else {
 	                res.success = false;
-	                res.msg = "刷卡失败:" + yibaoCardInfo.err_ms;
+	                res.msg = "医保服务【1101】(获取医保病人信息失败):" + yibaoCardInfo.err_msg;
+	                return res;
 
 	            }
 	        } else {
 	            res.success = false;
 	            res.msg = "刷卡获取医保信息失败！失败原因：医保中心无信息返回，请重试！";
+	            return res;
 	        }
-	    }, 50);
-	    return res;
-	}
+	   // }, 50);
+	    //return res;
+    }
+    function getbrxz(brlx) {
+        $.ajax({
+            url: "/PatientManage/HospiterRes/GetBrxzbyxzlx",
+            data: { xzlx: brlx },
+            dataType: "json",
+            async: false,
+            cache: false,
+            success: function (data) {
+                if (!!data) {
+                    $.each(data, function (idx, val) {
+                        if (val.insutype && val.insutype == brlx) {
+                            brxzobj.brxz = val.brxz;
+                            brxzobj.brxzmc = val.brxzmc;
+                        }
+                    });
+                }
+                return brxzobj;
+            },
+            error: function (request, error, ex) {
+                return brxzobj;
+            }
+        });
+
+    }
 </script>

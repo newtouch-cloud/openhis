@@ -1,4 +1,4 @@
-﻿using FrameworkBase.MultiOrg.DmnService;
+using FrameworkBase.MultiOrg.DmnService;
 using FrameworkBase.MultiOrg.Infrastructure;
 using Newtouch.Core.Common;
 using Newtouch.HIS.Domain.DTO.OutputDto.DRGManage;
@@ -156,5 +156,6 @@ order by kssj ";
 					};
 			return FindList<mxlist>(sql, para);
 		}
-    }
+        
+    }     
 }

@@ -119,6 +119,10 @@
                 { label: '诊断代码', name: 'DIAG_CODE', width: 80, align: 'left' },
                 { label: '诊断名称', name: 'DIAG_NAME', width: 100, align: 'left' },
                 { label: '使用标记', name: 'USED_STD', width: 40, align: 'left' },
+                { label: '国标版诊断代码', name: 'NATSTD_DIAG_CODE', width: 80, align: 'left' },
+                { label: '国标版诊断名称', name: 'NATSTD_DIAG_NAME', width: 100, align: 'left' },
+                { label: '临床版诊断代码', name: 'CLNC_DIAG_CODE', width: 80, align: 'left' },
+                { label: '临床版诊断名称', name: 'CLNC_DIAG_NAME', width: 100, align: 'left' },
                 { label: '版本号', name: 'VER', width: 60, align: 'left' },
                 { label: '版本名称', name: 'VER_NAME', width: 120, align: 'left' },
             ];

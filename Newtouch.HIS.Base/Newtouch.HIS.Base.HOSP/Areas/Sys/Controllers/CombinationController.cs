@@ -95,17 +95,17 @@ namespace Newtouch.HIS.Base.HOSP.Areas.Sys.Controllers
             return Content(data.ToJson());
         }
         /// <summary>
-        /// 根据系统药品信息查询医保对应药品信息
+        /// 根据系统药品信息查询医保对应药品信息 
         /// </summary>
         /// <param name="ypmc"></param>
         /// <param name="py"></param>
         /// <param name="gjybdm"></param>
         /// <param name="pzwh"></param>
         /// <returns></returns>
-        public ActionResult GetYpypxxlist( string ypmc, string py,string gjybdm,string pzwh)
+        public ActionResult GetYpypxxlist( string ypmc, string py,string gjybdm,string pzwh,string dataSource)
 		{
 
-			var data = _sysMedicineDmnService.GetYpypxxlist(this.OrganizeId, ypmc, py, gjybdm, pzwh);
+			var data = _sysMedicineDmnService.GetYpypxxlist(this.OrganizeId, ypmc, py, gjybdm, pzwh,dataSource);
 			
 			return Content(data.ToJson());
 		}
@@ -153,9 +153,9 @@ namespace Newtouch.HIS.Base.HOSP.Areas.Sys.Controllers
 		/// <param name="gjybdm"></param>
 		/// <param name="pzwh"></param>
 		/// <returns></returns>
-		public ActionResult GetYbclxxlist(string ypmc, string py, string gjybdm, string pzwh)
+		public ActionResult GetYbclxxlist(string ypmc, string py, string gjybdm, string pzwh,string dataSource)
 		{
-			var data = _sysMedicineDmnService.GetYbclxxlist(this.OrganizeId, ypmc, py, gjybdm, pzwh);
+			var data = _sysMedicineDmnService.GetYbclxxlist(this.OrganizeId, ypmc, py, gjybdm, pzwh, dataSource);
 
 			return Content(data.ToJson());
 		}
@@ -203,9 +203,9 @@ namespace Newtouch.HIS.Base.HOSP.Areas.Sys.Controllers
 		/// <param name="gjybdm"></param>
 		/// <param name="pzwh"></param>
 		/// <returns></returns>
-		public ActionResult GetYbxmxxlist(string ypmc, string py, string gjybdm, string pzwh)
+		public ActionResult GetYbxmxxlist(string ypmc, string py, string gjybdm, string pzwh,string dataSource)
 		{
-			var data = _sysMedicineDmnService.GetYbxmxxlist(this.OrganizeId, ypmc, py, gjybdm, pzwh);
+			var data = _sysMedicineDmnService.GetYbxmxxlist(this.OrganizeId, ypmc, py, gjybdm, pzwh, dataSource);
 
 			return Content(data.ToJson());
 		}

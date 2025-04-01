@@ -10,7 +10,7 @@
         var fieldid = document.getElementById('myWriterControl').CurrentInputField();
         if (fieldid != null && fieldid != undefined) {
             signInput = fieldid.id;
-            if (String(fieldid.id).indexOf("zyzd_") != -1 && String(fieldid.id).indexOf("_zyzd_") == -1) {                
+            if (String(fieldid.id).indexOf("zyzd_") != -1 && String(fieldid.id).indexOf("_zyzd_") == -1) {
                 $.modalOpen({
                     id: "Form",
                     title: "诊断列表",
@@ -61,7 +61,7 @@
                         dcWriter.SetElementTextByID(idname + "_yscode", user);
                         dcWriter.SetElementTextByID(idname + "_ysname", name);
                         Signaturedefault(idname, data.imgbase64, user, name);
-	
+
                     }
                 });
             }
@@ -69,7 +69,7 @@
                 var attrs = fieldid.attributes;
                 var nameval = fieldid.getAttributeNode("name");
                 var relcode = fieldid.getAttributeNode("dc_defaulteventexpression");
-                //$.each(attrs, function () {                
+                //$.each(attrs, function () {
                 //    if (String(this.name).indexOf("relcode") != -1) {
                 //        var st = this.name.indexOf(",");
                 //        var ed = this.name.indexOf("]");
@@ -96,13 +96,12 @@
                         }
                     });
                 }
-            }            
+            }
         }
     };
     dcWriter.ondocumentkeydown = function (eventObject) {
-       
-    };
 
+    };
     //签名-双击文本域
     function Signaturedefault(id, imgbase64, rygh, name) {
         id = id + Math.random();
@@ -163,13 +162,14 @@
         }
         else {
             $.modalMsg("请选中待签名文本域", 'warning');
-        }       
+        }
     }
 
     $(function () {
-        var ctl = document.getElementById("myWriterControl");
-        ctl.Options.CurrentUserID = $("#userid").val();
-        ctl.Options.CurrentUserName = $("#username").val();
+        debugger;
+        @*var ctl = document.getElementById("myWriterControl");
+        ctl.Options.CurrentUserID = '@ViewBag.userId';//$("#userid").val();
+        ctl.Options.CurrentUserName = '@ViewBag.userName'//$("#username").val();*@
         $("#toolShow").click(function () {
             $("#toolDiv").toggle();
         });
@@ -511,18 +511,22 @@
             $("#lineheight1").attr("style", "display:block");
         }).mouseout(function () {
             $("#lineheight1").attr("style", "display:none");
-            })
+        })
+        //痕迹查看
         $("#lhyl").click(function () {
+            debugger;
+            var ctl = document.getElementById("myWriterControl");
+            ctl.UserLoginByParameter('@ViewBag.user', '@ViewBag.userName', 2);
             $("#toolShow").click();
             $("#lhyl").css("display", "none");  //痕迹查看
             $("#blyl").css("display", "none");   //病历预览
             $("#returnblbj").css("display", "block");  //返回修改
             $("#lhlb").css("display", "block"); //痕迹列表
             $("#toolShow").css("display", "none"); //工具栏
-            var ctl = document.getElementById("myWriterControl");
-            ctl.LoadPrintPreviewWithPermissionMark();
+            //ctl.LoadPrintPreviewWithPermissionMark();
 
         });
+        //病历预览
         $("#blyl").click(function () {
             $("#toolShow").click();
             $("#lhyl").css("display", "none");
@@ -532,6 +536,7 @@
                 var ctl = document.getElementById("myWriterControl");
                 ctl.LoadPrintPreview();
         });
+        //返回修改
         $("#returnblbj").click(function () {
             $("#toolShow").click();
             $("#lhyl").css("display", "block");
@@ -542,34 +547,41 @@
             $("#toolShow").css("display", "block");
             var ctl = document.getElementById("myWriterControl");
             ctl.ClosePrintPreview();
-        });
+            ctl.CleanViewMode();
 
+        });
+        //痕迹列表
         $("#lhlb").click(function () {
             setPopUp();
         })
     })
- 
+
     function setPopUp(bool) {
+        debugger;
         $("#list").toggle();
         var ctl = document.getElementById("myWriterControl");
-        if (ctl.IsPrintPreview()) {
-            var contentHtml = document.getElementById('myWriterControl_PreviewFrame').contentDocument;
-        } else {
-            var contentHtml = document.getElementById('myWriterControl_Frame').contentDocument;
-        }
-        debugger;
+        var contentHtml = "";
+        ////if (ctl.IsPrintPreview()) {
+        ////    var contentHtml = document.getElementById('myWriterControl_PreviewFrame').contentDocument;
+        ////} else {
+        ////    var contentHtml = document.getElementById('myWriterControl_Frame').contentDocument;
+        ////}
+        //var res = ctl.InComplexViewMode()
         var modifyRecord = [] //修改记录
         //在文件刚加载时调用获取修改记录(异步)
         if (bool) {
             modifyRecord = ctl.GetDocumentUserTrackInfos(bool);
         } else {
             modifyRecord = ctl.GetDocumentUserTrackInfos();
-        }       
-        if (modifyRecord)
+        }
+        if (modifyRecord.length>0)
         {
             debugger;
-            var currentTime = new Date().Format("yyyy-MM-dd hh:mm");
-            modifyRecord = modifyRecord.filter((item) => item.Text.replace("​​", "") != "");//|| item.SaveTime.substring(0, 16) != currentTime
+            //var currentTime = new Date().Format("yyyy-MM-dd hh:mm");
+            modifyRecord = modifyRecord.filter((item) => item.Text.replace("", "")!="");//|| item.SaveTime.substring(0, 16) != currentTime
+        }
+        else {
+            return;
         }
         modifyRecord = modifyRecord.slice().sort(m=>m.SaveTime);
         $('#list dl>div').remove()
@@ -577,11 +589,15 @@
             var div = document.createElement('div');
             div.setAttribute('class', modifyRecord[i].InnerID);
             var dt = document.createElement('dt');
-            dt.innerHTML = modifyRecord[i].StdTitle;
+            if (modifyRecord[i].CommentText)
+                dt.innerHTML = "标题：" + modifyRecord[i].CommentText;
+            else
+                dt.innerHTML ="标题："+ modifyRecord[i].SaveTime.replace('T',' ') + " 由" + modifyRecord[i].UserName + (modifyRecord[i].InfoType=="Create"?"创建":"删除");
+            //dt.innerHTML = modifyRecord[i].StdTitle;
             var dd1 = document.createElement('dd');
-            dd1.innerHTML = modifyRecord[i].UserName;
+            dd1.innerHTML = "修改人："+modifyRecord[i].UserName;
             var dd2 = document.createElement('dd');
-            dd2.innerHTML = modifyRecord[i].SaveTime;
+            dd2.innerHTML = "时间：" + modifyRecord[i].SaveTime.replace('T', ' ');
             var dd3 = document.createElement('dd');
             switch (modifyRecord[i].InfoType) {
                 case "Create":
@@ -591,7 +607,7 @@
                     modifyRecord[i].InfoType = '删除'
                     break;
             }
-            dd3.innerHTML = modifyRecord[i].InfoType + modifyRecord[i].Text;
+            dd3.innerHTML = "内容："+modifyRecord[i].InfoType + modifyRecord[i].Text;
             document.querySelector('#list dl').append(div);
             document.querySelectorAll('#list dl>div')[i].append(dt);
             document.querySelectorAll('#list dl>div')[i].append(dd1);
@@ -968,6 +984,14 @@
     //    Sys.WebForms.PageRequestManager.getInstance().add_endRequest(WebWriterControl_51_Init);
     //}
 
+
+    //-------------病历编辑器5.0------------------//
+    function WriterControl_OnLoad(rootElement) {
+        var ctl = document.getElementById("myWriterControl");
+        ctl.LoadDocumentFromBase64String('@ViewBag.WriterControlXmlData', 'xml');
+        ctl.DCExecuteCommand('NormalViewMode', false, null);
+    }
+
 </script>
 
 
@@ -994,10 +1018,11 @@
 
     //纯文本复制
     function EventBeforePaste() {
+        debugger;
          // 获得控件容器元素
         var ctl = document.getElementById("myWriterControl");
         // 绑定控件
-        BindingDCWriterClientControl(ctl);
+        //BindingDCWriterClientControl(ctl);
         // 创建编辑器框架
         //ctl.BuildFrame(function () {
         //    ctl.LoadDocumentFromString(xmlstr, "xml");

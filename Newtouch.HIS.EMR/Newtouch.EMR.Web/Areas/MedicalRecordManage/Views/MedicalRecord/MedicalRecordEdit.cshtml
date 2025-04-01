@@ -1,5 +1,6 @@
 ﻿@{
     Layout = "~/Views/Shared/_Index.cshtml";
+    var EmrEdiForUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("EmrEdiForUrl");
 }
 <link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui/easyui.css" />
 <link rel="stylesheet" type="text/css" href="~/Content/jquery-easyui/icon.css" />
@@ -8,13 +9,14 @@
 <script type="text/javascript" src="~/Content/jquery-easyui/jquery.easyui.min.js"></script>
 <script type="text/javascript" src="~/Content/jquery-easyui-ribbon/jquery.ribbon.js"></script>
 <link href="~/Content/jquery-easyui-ribbon/MedicalRecordEdit.css" rel="stylesheet" />
-
+<script src="@Html.Raw(EmrEdiForUrl)ServicePage.aspx?wasmres=dcwriter5.js"></script>
+<script src="@Html.Raw(EmrEdiForUrl)jquery/jquery-1.7.2.min.js"></script>
 <style>
     .btfloatRight {
         float: right
     }
 </style>
-<form method="post" style="background-color:#ffffff">
+<form method="post" id="addBlForm" style="background-color:#ffffff">
     <span id="toolDiv" style="background-color:white;">
         <input type="submit" name="saveDocument" id="saveXml" value="保存文档" class="edtBtn" style="background-image: url(/Content/img/tupian/-_保存.ico);background-repeat: no-repeat;background-size: 25%;padding-left: 30px;height: 22px;" />
         @Html.Partial("_DCSW.ToolList")
@@ -33,7 +35,12 @@
     <input type="submit" name="saveDocument" id="history" value="history" class="edtBtn" style="display:none;" />
 
     <div style="clear:both;"> </div>
-    @Html.Raw(ViewBag.WriterControlHtml)
+    @*@Html.Raw(ViewBag.WriterControlHtml)*@
+    <div class="blbj" style="width:99%;float:left;overflow-y: auto;border-radius: 4px;background: white;">
+        <div id="myWriterControl" dctype="WriterControlForWASM" RuleVisible="false" ContentRenderMode="NormalHtmlEditable" ClientContextMenuType="Custom" style="width:100%; background-color: #7cb9e8;">
+
+        </div>
+    </div>
     <input type="hidden" name="blid" id="blid" value="@ViewBag.blid " />
     <input type="hidden" name="zyh" id="zyh" value="@ViewBag.zyh" />
     <input type="hidden" name="mzh" id="mzh" value="@ViewBag.mzh" />
@@ -43,6 +50,7 @@
     <input type="hidden" name="blxtmc_yj" id="blxtmc_yj" value="@ViewBag.blxtmc_yj " />
     <input type="hidden" name="userid" id="userid" value="@ViewBag.userid " />
     <input type="hidden" name="username" id="username" value="@ViewBag.username " />
+    <input type="hidden" name="submitXml" id="submitXml" value="" />
     @Html.Partial("_DCSW.JS")
 </form>
 
@@ -59,7 +67,7 @@
         <span style="font-size: 16px; color: #000; padding-top: 10px;" class="formTitle">病历修改记录</span>
         <span style="position: absolute; right: 20px; top: 10px; cursor: pointer;" onclick="document.querySelector('#list').style.display = 'none'">X</span>
     </div>
-    <div class="tabbody" style="height: 300px;width: 200px; overflow-y: auto;">
+    <div class="tabbody" style="height: 500px;width: 300px; overflow-y: auto;">
         <dl></dl>
     </div>
 </div>
@@ -149,7 +157,7 @@
             type: "POST",
             async: true,
             success: function (ajaxdata) {
-                
+
                 if (!!ajaxdata) {
                     var resp = JSON.parse(ajaxdata);
                     if (resp.code == "-1") {
@@ -169,4 +177,20 @@
         return 0;
     }
 
+    //-------------病历编辑器5.0------------------//
+    function WriterControl_OnLoad(rootElement) {
+        var ctl = document.getElementById("myWriterControl");
+        ctl.LoadDocumentFromBase64String('@ViewBag.WriterControlXmlData', 'xml');
+        ctl.UserLoginByParameter('@ViewBag.user', '@ViewBag.userName', 2);
+        ctl.CleanViewMode();
+        ctl.DCExecuteCommand('NormalViewMode', false, null);
+    }
+    $("#saveXml").click(function () {
+        debugger
+        var ctl = document.getElementById("myWriterControl");
+        var xmldata = ctl.SaveDocumentToBase64String("xml");
+        $("#submitXml").val(xmldata);
+        $.loading(true, "病历保存中...");
+        $("#addBlForm").submit();
+    })
 </script>

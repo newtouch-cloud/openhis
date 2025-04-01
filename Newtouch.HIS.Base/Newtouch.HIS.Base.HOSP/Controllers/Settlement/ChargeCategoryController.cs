@@ -157,10 +157,20 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
         /// </summary>
         /// <param name="keyValue"></param>
         /// <returns></returns>
-        public ActionResult GetFormJson(int keyValue)
+        public ActionResult GetFormJson(int keyValue, string orgId = null)
         {
-            var entity = _SysChargeCategoryRepo.GetForm(keyValue);
-            return Content(entity.ToJson());
+
+            if ("*".Equals(orgId))
+            {
+                var entity = _SysChargeCategoryBaseRepo.GetForm(keyValue);
+                return Content(entity.ToJson());
+            }
+            else
+            {
+                var entity = _SysChargeCategoryRepo.GetForm(keyValue);
+                return Content(entity.ToJson());
+
+            }
         }
 
         /// <summary>
@@ -192,11 +202,19 @@ namespace Newtouch.HIS.Base.HOSP.Controllers
             {
                 throw new FailedException("请选择组织机构");
             }
-            else if (!_SysOrganizeDmnService.IsMedicalOrganize(entity.OrganizeId))
+            else if (!_SysOrganizeDmnService.IsMedicalOrganize(entity.OrganizeId) && !"*".Equals(entity.OrganizeId) )
             {
                 throw new FailedException("请选择医疗机构（医院或诊所）");
             }
-            _SysChargeCategoryRepo.SubmitForm(entity, keyValue);
+
+            if ("*".Equals(entity.OrganizeId))
+            {
+                _SysChargeCategoryBaseRepo.SubmitForm(entity.ToJson().ToObject<SysChargeCategoryBaseEntity>(), keyValue);
+            }
+            else
+            {
+                _SysChargeCategoryRepo.SubmitForm(entity, keyValue);
+            }
             return Success("操作成功。");
         }
 

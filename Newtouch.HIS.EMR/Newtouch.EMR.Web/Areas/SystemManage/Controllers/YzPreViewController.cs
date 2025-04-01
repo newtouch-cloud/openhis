@@ -4,6 +4,7 @@ using DCSoft.Writer.Dom;
 using FrameworkBase.MultiOrg.Web;
 using Newtouch.EMR.Domain.IDomainServices;
 using Newtouch.EMR.Domain.IRepository;
+using Newtouch.EMR.Domain.ValueObjects;
 using Newtouch.EMR.DomainServices;
 using Newtouch.EMR.Infrastructure;
 using Newtouch.EMR.Repository;
@@ -31,11 +32,11 @@ namespace Newtouch.EMR.Web.Areas.SystemManage.Controllers
 
         public ActionResult YzPreView()
         {
-            DCwriterServer dcControl = new DCwriterServer();
-            dcControl.Init();
-            WebWriterControlEngine eng = dcControl.DCWControl;//这是上一步创建的引擎 
-            ViewBag.WriterControlHtml = eng.GetAllContentHtml();
-            eng.Dispose();
+            //DCwriterServer dcControl = new DCwriterServer();
+            //dcControl.Init();
+            //WebWriterControlEngine eng = dcControl.DCWControl;//这是上一步创建的引擎 
+            //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+            //eng.Dispose();
             return View();
         }
         private class MoreActionResult : ActionResult
@@ -126,8 +127,16 @@ namespace Newtouch.EMR.Web.Areas.SystemManage.Controllers
 
         public ActionResult GetPrintTempleate(string templateName)
         {
-            var data = _blmbRepo.FindEntity(p=>p.mbmc== templateName && p.OrganizeId==this.OrganizeId &&p.zt=="1");
-            return Content(data.ToJson()); ;
+            var data = _blmbRepo.FindEntity(p => p.mbmc == templateName && p.OrganizeId == this.OrganizeId && p.zt == "1");
+            string filename = data.mblj;
+            string ml = AppDomain.CurrentDomain.BaseDirectory;
+
+            ml = ml.Substring(0, ml.Length - 1);
+            string xml = System.IO.File.ReadAllText($"{ml}{filename}");
+            BlTemplateVo vo = new BlTemplateVo();
+            vo.xmldata = xml;
+            return Content(vo.ToJson());
+            //return Content(data.ToJson()); ;
         }
         #endregion
     }

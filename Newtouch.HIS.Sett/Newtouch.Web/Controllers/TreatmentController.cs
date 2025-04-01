@@ -128,13 +128,11 @@ namespace Newtouch.HIS.Web.Controllers
                 }
                 else
                 {
-                    int ordValue = 10; // 默认值
-                    int.TryParse(jobjar["ord"]?.ToString(), out ordValue);
                     TreatmentportfolioEntity addrow = new TreatmentportfolioEntity
                     {
                         zhmc = jobjar["zhmc"].ToString(),
                         zhcode = jobjar["zhcode"].ToString(),
-                        ord = ordValue,
+                        ord = int.Parse(jobjar["ord"].ToString()),
                         zlxm = jobjar["zlxm"].ToString(),
                         zlxmmc = jobjar["zlxmmc"].ToString(),
                         price = decimal.Parse(jobjar["price"].ToString()),

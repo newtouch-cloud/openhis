@@ -54,8 +54,8 @@ namespace Newtouch.EMR.Repository
         public List<BlysListVo> GetBlys(string keyword, string orgId)
         {
             string sql = @"select top 20 b.ysmc ysdl,a.Id ysId,a.yscode ysdm,a.ysmc,a.yslx,a.BindingPath from bl_ys a
- join bl_ys b on a.yssjid = b.Id
- where a.OrganizeId = @orgId and a.zt = 1 and (a.ysmc like @keyword or a.py like @keyword)
+ join bl_ys b on a.yssjid = b.Id and a.OrganizeId=b.OrganizeId 
+ where  a.zt = 1 and (a.OrganizeId = @orgId or a.OrganizeId='*')  and (a.ysmc like @keyword or a.py like @keyword)
  and b.zt = 1 --and b.yslx is null
 ";
             var para = new List<SqlParameter>();
@@ -80,7 +80,7 @@ namespace Newtouch.EMR.Repository
         }
         public List<BlysDeatilVo> GetBlysmx(string keyword, string orgId)
         {
-            string sql = @" select ysId,ysmxcode,ysmxName from bl_ysmx where ysId=@ysId and sybz=1 and OrganizeId= @orgId and zt = 1
+            string sql = @" select ysId,ysmxcode,ysmxName from bl_ysmx where ysId=@ysId and sybz=1 and (OrganizeId= @orgId or OrganizeId='*' ) and zt = 1
 ";
             var para = new List<SqlParameter>();
             para.Add(new SqlParameter("@orgId", orgId));

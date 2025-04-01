@@ -1,44 +1,65 @@
-﻿@{
-    ViewBag.Title = "打印";
+﻿@using Newtouch.Infrastructure;
+@{
     Layout = "~/Views/Shared/_Index.cshtml";
+    var EmrEdiForUrl = Newtouch.Core.Common.Utils.ConfigurationHelper.GetAppConfigValue("EmrEdiForUrl");
 }
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <script src="~/Scripts/jquery.min.js"></script>
-    @*<script src="https://libs.baidu.com/jquery/1.7.2/jquery.min.js"></script>*@
-</head>
-<body>
-    <div class="topPanel">
-        <div class="toolbar">
-            <div class="btn btn-default">
-                <a authorize="yes" onclick="print()"><i class="glyphicon glyphicon-print"></i>打印</a>
-            </div>
-            <div class="btn">
-                <input type="checkbox" id="idJumpPrint" name="idJumpPrint" onclick="JumpPrint();" />
-                <label for="idJumpPrint">续打</label>
-            </div>
-            <div class="btn">
-                <input type="checkbox" id="AreaPrint" name="AreaPrint" onclick="AreaPrint();" />
-                <label for="AreaPrint">区域选择打印</label>
+<script src="@Html.Raw(EmrEdiForUrl)ServicePage.aspx?wasmres=dcwriter5.js"></script>
+<script src="@Html.Raw(EmrEdiForUrl)jquery/jquery-1.7.2.min.js"></script>
+
+<form method="post" action="#">
+    <div>
+        <div class="topPanel">
+            <div class="toolbar " style="float:right;">
+                <div class="btn btn-default">
+                    <a authorize="yes" onclick="PrintDoc()"><i class="glyphicon glyphicon-print"></i>打印</a>
+                    <script language=javascript>
+                        function PrintDoc() {
+                            var ctl = document.getElementById("myWriterControl");
+                            var flag = document.getElementById("idJumpPrint").checked;
+                            ctl.PrintDocument();
+                        }
+                    </script>
+                </div>
+                <div class="btn">
+                    <input type="checkbox" id="idJumpPrint" name="idJumpPrint" onclick="JumpPrint();" />
+                    <label for="idJumpPrint">续打</label>
+                    <script language=javascript>
+						function JumpPrint() {
+							var flag = document.getElementById("idJumpPrint").checked;
+							var ctl = document.getElementById("myWriterControl");
+							ctl.SetJumpPrintMode(flag);
+						}
+
+                    </script>
+                </div>
+                <div class="btn">
+                    <input type="checkbox" id="AreaPrint" name="AreaPrint" onclick="AreaPrints();" />
+                    <label for="AreaPrint">区域选择打印</label>
+                    <script language=javascript>
+                        function AreaPrints() {
+							var flag = document.getElementById("AreaPrint").checked;
+							var ctl = document.getElementById("myWriterControl");
+							ctl.SetBoundsSelectionViewMode(flag);
+						}
+
+                    </script>
+                </div>
             </div>
         </div>
-
-    </div>
-    <div>
-        <form method="post" action="#">
-            <div style="width:100%;height:100%">
-                @Html.Raw(ViewBag.WriterControlHtml)
-            </div>
-        </form>
     </div>
 
-</body>
-</html>
+    @*@Html.Raw(ViewBag.WriterControlHtml)*@
+    <div class="blbj" style="width:99%;float:left;overflow-y: auto;border-radius: 4px;background: white;">
+        <div id="myWriterControl" dctype="WriterControlForWASM" RuleVisible="false" ContentRenderMode="NormalHtmlEditable" ClientContextMenuType="Custom" style="width:100%; background-color: #7cb9e8;">
 
-<script>
+        </div>
+    </div>
+</form>
+
+<script language=javascript>
     debugger;
         var brjbxx;
-        var zyh = "03192", orgId = "6d5752a7-234a-403e-aa1c-df8b45d3469f", isSign = "1", yzlx = "长期医嘱test";
+        var zyh = "03296", orgId = "6d5752a7-234a-403e-aa1c-df8b45d3469f", isSign = "1", yzlx = "长期医嘱";
         var hljldmblj = "";
         var query = window.location.search.substring(1).split('&');
         for (var i = 0; i < query.length; i++) {
@@ -49,9 +70,9 @@
             if (arr[0] == "yzlx") { yzlx = decodeURIComponent(arr[1]) };
         }
 
-        var ctl = document.getElementById("myWriterControl");
-        ctl.style.height = "800px";
-        ctl.Options.workspacebackcolorstring = "#66CCCC"
+        //var ctl = document.getElementById("myWriterControl");
+        //ctl.style.height = "800px";
+        //ctl.Options.workspacebackcolorstring = "#66CCCC"
         //打开文档
         function FileOpen() {
             debugger;
@@ -86,48 +107,19 @@
                         debugger;
                         var jsonData = JSON.stringify(respdata);
                         var data = JSON.parse(jsonData);
-                        hljldmblj = data.mblj;
+                        ctl.LoadDocumentFromString(data.xmldata, "xml");
+                        //ctl.DCExecuteCommand('NormalViewMode', false, null);
                     }
                 });
             }
             debugger;
-            var ctl = document.getElementById("myWriterControl");
-            ctl.preserveScrollPosition = true;
-            var fileName = hljldmblj;
+            //var ctl = document.getElementById("myWriterControl");
+            //ctl.preserveScrollPosition = true;
+            //var fileName = hljldmblj;
             //在服务器端响应控件的EventReadFileContent事件，即可使用AJAX模式加载文档。
-            ctl.LoadDocumentFromFile(fileName, null);
+            //ctl.LoadDocumentFromFile(fileName, null);
             //dcdatabinding();
             setTimeout(function () { dcdatabinding(); }, 200)
-        }
-        //打印
-        function print() {
-            debugger;
-            var ctl = document.getElementById("myWriterControl");
-            ctl.PrintDocument();
-
-        }
-        //打印预览
-        function PrintPreview() {
-            debugger;
-            var ctl = document.getElementById("myWriterControl");
-            ctl.LoadPrintPreview();
-        }
-
-        // 设置续打
-        function JumpPrint() {
-            debugger;
-            var flag = document.getElementById("idJumpPrint").checked;
-            var ctl = document.getElementById("myWriterControl");
-            ctl.DCExecuteCommand("JumpPrintMode", true, flag);
-        }
-
-        //区域选择打印
-        function AreaPrint()
-        {
-            debugger;
-            var flag = document.getElementById("AreaPrint").checked;
-            var ctl = document.getElementById("myWriterControl");
-            ctl.SetBoundsSelectionViewMode(flag);
         }
 
         //初始加载
@@ -153,7 +145,7 @@
                     url = "/YzPreView/GetHljldData";
                     param = { zyh: zyh, hljb: yzlx.split("|")[1] };
                 }
-                
+
                 $.ajax({
                     url: url,
                     data: param,
@@ -164,8 +156,7 @@
                         var data = JSON.parse(jsonData);
                         ctl.SetDocumentParameterValue("peopledatasource", data);
                         ctl.WriteDataFromDataSourceToDocument();
-                        PrintPreview();
-
+                        ctl.LoadPrintPreview();
                     }
                 });
 
@@ -174,22 +165,60 @@
 
         var ctl = document.getElementById("myWriterControl");
         function Build() {
-            if (ctl) {
-                BindingDCWriterClientControl(ctl);
-                ctl.EventAfterPrintPreview = function (PrintPreviewDoc) {
-                    var styleDom = document.createElement("style");
-                    // 解决宋体打印问题
-                    var cssStr = "@@font-face {font-family: 宋体;src: local('宋体');}";
-                    styleDom.innerHTML = cssStr;
-                    var page = PrintPreviewDoc.querySelector("div[pageindex]");
-                    if (page) {
-                        page.appendChild(styleDom);
-                    }
-
-                }
-            }
+            debugger;
+            //if (ctl) {
+            //    //BindingDCWriterClientControl(ctl);
+            //    ctl.EventAfterPrintPreview = function (PrintPreviewDoc) {
+            //        var styleDom = document.createElement("style");
+            //        // 解决宋体打印问题
+            //        var cssStr = "@@font-face {font-family: 宋体;src: local('宋体');}";
+            //        styleDom.innerHTML = cssStr;
+            //        var page = PrintPreviewDoc.querySelector("div[pageindex]");
+            //        if (page) {
+            //            page.appendChild(styleDom);
+            //        }
+            //    }
+            //}
             FileOpen();
         }
-        Build();
+        //-------------病历编辑器5.0------------------//
+        function WriterControl_OnLoad(rootElement) {
+            debugger;
+            var ctl = document.getElementById("myWriterControl");
 
+            if (yzlx.split("|")[0] == "hljld" || yzlx.includes("长期医嘱") == true || yzlx.includes("临时医嘱") == true) {
+                var hljb = yzlx.split("|")[1];
+                var templeateName = "";
+                if (yzlx.split("|")[0] != "hljld") {
+                    templeateName = yzlx;
+                } else {
+                    switch (hljb) {
+                        case '0':
+                            templeateName = "护理记录单_一般";
+                            break;
+                        case "1":
+                            templeateName = "护理记录单_危重";
+                            break;
+                        case "2":
+                            templeateName = "护理记录单_手术";
+                            break;
+                        default:
+                            templeateName = "护理记录单_一般";
+                            break;
+                    }
+                }
+                $.ajax({
+                    url: "/YzPreView/GetPrintTempleate",
+                    data: { templateName: templeateName },
+                    dataType: "json",
+                    async: false,
+                    success: function (respdata) {
+                        var jsonData = JSON.stringify(respdata);
+                        var data = JSON.parse(jsonData);
+                        ctl.LoadDocumentFromString(data.xmldata, "xml");
+                    }
+                });
+            }
+            setTimeout(function () { dcdatabinding(); }, 200)
+        }
 </script>

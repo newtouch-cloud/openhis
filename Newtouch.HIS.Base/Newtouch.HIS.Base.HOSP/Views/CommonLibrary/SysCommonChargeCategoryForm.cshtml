@@ -1,0 +1,206 @@
+﻿@{
+    ViewBag.Title = "Form";
+    Layout = "~/Views/Shared/_Form.cshtml";
+}
+
+<form id="form1">
+	<div class="container" style="margin-top: 10px; margin-left: 10px; margin-right: 10px;">
+		<ul class="nav nav-tabs" role="tablist" id="myTab">
+			<li role="presentation"><a href="#basicInfo" role="tab" data-toggle="tab">基本信息<br>税率换算例如：30%需填入0.3</a></li>
+		</ul>
+	
+		<div class="tab-content">
+			<div role="tabpanel" class="tab-pane fade in active" style="padding-top: 20px; margin-right: 107px;" id="basicInfo">
+				<table class="form">
+					@* <tr> *@
+					@* 	<td class="formTitle"><span class="required">*</span>组织机构：</td> *@
+					@* 	<td class="formValue formDdlSelectorTd"> *@
+					@* 		<select id="OrganizeId" name="OrganizeId" class="form-control required"> *@
+					@* 			<option value="">==请选择==</option> *@
+					@* 		</select> *@
+					@* 	</td> *@
+					@* </tr> *@
+					<tr>
+						<td class="formTitle"><span class="required">*</span>名称：</td>
+						<td class="formValue">
+							<input id="dlmc" name="dlmc" type="text" class="form-control required" placeholder="请输入名称" />
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle"><span class="required">*</span>编码：</td>
+						<td class="formValue">
+							<input id="dlCode" name="dlCode" type="text" class="form-control required" placeholder="请输入编码" />
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle"><span class="required">*</span>首拼：</th>
+						<td class="formValue">
+							<input id="py" name="py" type="text" class="form-control required" placeholder="" />
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle"><span class="required">*</span>大类类别：</td>
+						<td class="formValue formDdlSelectorTd">
+							@Html.DropDownList("dllb", Newtouch.Infrastructure.EnumSfdlDllb.yp.ToDescSelectList(), "==请选择==", new { @class = "form-control required" })
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle">上级大类：</td>
+						<td class="formValue formDdlSelectorTd">
+							<select id="ParentId" name="ParentId" class="form-control">
+								<option value="">==请选择==</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle">所属分类：</td>
+						<td class="formValue formDdlSelectorTd">
+							@Html.DropDownList("fjCode", Newtouch.Infrastructure.EnumSffjdlCode.ypf.ToDescSelectList(), "==请选择==", new { @class = "form-control required" })
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle">门诊报表大类：</td>
+						<td class="formValue formDdlSelectorTd">
+							<select id="mzprintreportcode" name="mzprintreportcode" class="form-control">
+								<option value="">==请选择==</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle">门诊结算大类：</td>
+						<td class="formValue formDdlSelectorTd">
+							<select id="mzprintbillcode" name="mzprintbillcode" class="form-control">
+								<option value="">==请选择==</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle">通用报表大类：</td>
+						<td class="formValue formDdlSelectorTd">
+							<select id="reportdlcode" name="reportdlcode" class="form-control">
+								<option value="">==请选择==</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td class="formTitle"><span class="required">*</span>门诊住院标志：</td>
+						<td class="formValue formDdlSelectorTd">
+							<select id="mzzybz" name="mzzybz" class="form-control required">
+								<option value="">==请选择==</option>
+								<option value="0">通用</option>
+								<option value="1">门诊</option>
+								<option value="2">住院</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle">排序：</th>
+						<td class="formValue">
+							<input id="px" name="px" type="text" class="form-control" placeholder="" />
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle">税率：</th>
+						<td class="formValue">
+							<input id="sn" name="sn" type="text" class="form-control" onkeyup="value=value.replace(/^[1-9]{1}\d{0,9}(\.\d{1,4})?$/,'')" placeholder="最多保留四位小数" />
+						</td>
+					</tr>
+					<tr>
+						<th class="formTitle" style="height: 35px;">状态：</th>
+						<td class="formValue" style="padding-top: 1px;">
+							<div class="ckbox">
+								<input id="zt" name="zt" type="checkbox" checked="checked"><label for="zt">有效</label>
+							</div>
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+	</div>
+</form>
+
+<script>
+    var keyValue = $.request("keyValue");
+    $(function () {
+        initControl();
+        if (!!keyValue) {
+            $.najax({
+                url: "/ChargeCategory/GetFormJson",
+                data: { keyValue: keyValue , orgId: '*' },
+                dataType: "json",
+                async: false,
+                success: function (data) {
+                    $("#form1").formSerialize(data);
+                }
+            });
+        }
+    });
+
+    function initControl() {
+        //组织机构下拉框
+        $("#OrganizeId").bindSelect({
+            url: "/Organize/GetChildTreeSelectJson",
+            selectedValue: $.request('orgId'),
+        });
+        //组织对应的科室下拉框加载
+        $("#OrganizeId").bind("change", function () {
+            var organizeId = $(this).val();
+            //获取门诊报表大类
+            $("#mzprintreportcode").bindSelect({
+                url: "/ChargeCategory/GetTreeSelectJson?organizeId=" + organizeId,
+            });
+            //获取门诊结算大类
+            $("#mzprintbillcode").bindSelect({
+                url: "/ChargeCategory/GetTreeSelectJson?organizeId=" + organizeId,
+            });
+            //获取通用报表大类
+            $("#reportdlcode").bindSelect({
+                url: "/ChargeCategory/GetTreeSelectJson?organizeId=" + organizeId,
+            });
+            //上级收费大类
+            $("#ParentId").bindSelect({
+                url: "/ChargeCategory/GetTreeSelectJson?treeidFieldName=dlId&organizeId=" + organizeId,
+            });
+        });
+        //首拼
+        $('#dlmc').keyup(function () {
+            $('#py').val($(this).toShouPin());
+        })
+    }
+
+    var anPrevOrg = null;
+    $('#dlCode').focus(function () {
+        var organizeId = "*";
+        if (!!!keyValue && ($.trim($(this).val()) === '' || organizeId != anPrevOrg)) {
+            anPrevOrg = organizeId;
+            $.najax({
+                url: "/HOME/GetNewFieldUniqueValue?topOrgIdIsStar=false&initFieldLength=8&fieldName=xt_sfdl.dlCode&orgId=" + organizeId + "&r=" + Math.random(),
+                dataType: "json",
+                cache: false,
+                success: function (data) {
+                    $('#dlCode').val(data.data);
+                }
+            });
+        }
+    });
+
+    function submitForm() {
+        if (!$('#form1').formValid()) {
+            return false;
+		}
+		
+		var postData = $("#form1").formSerialize();
+	    postData.organizeId = '*';
+		if (postData.sn == "" || postData.sn == null) {
+			postData.sn = 0;
+		}
+        $.submitForm({
+            url: "/ChargeCategory/SubmitForm?orgId=*&&keyValue=" + keyValue,
+            param: postData,
+            success: function () {
+                $.currentWindow().$("#gridList2").resetSelection();
+                $.currentWindow().$("#gridList2").trigger("reloadGrid");
+            }
+        })
+    }
+</script>

@@ -112,46 +112,51 @@ namespace Newtouch.HIS.DomainServices.SystemManage
 						var topOrgCode = entity.OrganizeId != Constants.TopOrganizeId
 								  ? db.IQueryable<SysOrganizeEntity>().Where(p => p.Id == Constants.TopOrganizeId).Select(p => p.Code).FirstOrDefault()    //顶级组织机构编码
 								  : orgCode;
-						if (!string.IsNullOrWhiteSpace(orgCode) && !string.IsNullOrWhiteSpace(entity.gh))
-						{
-							var accont =  entity.gh;
+                        if (!string.IsNullOrWhiteSpace(orgCode) && !string.IsNullOrWhiteSpace(entity.gh))
+                        {
+                            var accont = entity.gh;
 
-							//创建系统账户
+                            //创建系统账户
 
-							if (!_sysUserRepo.IQueryable().Any(p => p.TopOrganizeId == entity.TopOrganizeId
-	&& p.Account == accont))    //同一顶级机构内不能有Account一样的
-							{
-								var userEntity = new SysUserEntity()    //
-								{
-									TopOrganizeId = entity.TopOrganizeId,
-									Account = accont,
-								};
-								userEntity.Create(true);
-								var userLogOnEntity = new SysUserLogOnEntity()  //用户登录
-								{
-									UserPassword = Constants.LogonDefaultPassword,
-								};
-								userLogOnEntity.UserId = userEntity.Id;
-								userLogOnEntity.UserSecretkey = Md5.md5(Comm.CreateNo(), 16).ToLower();
-								//topOrgCode + orgCode + default
-								//先为明文密码赋值在加密处理
-								userLogOnEntity.UserPassword =  userLogOnEntity.UserPassword;
-								userLogOnEntity.UserPwdPlaintext = userLogOnEntity.UserPassword;
-								userLogOnEntity.UserPassword = Md5.md5(DESEncrypt.Encrypt(Md5.md5(userLogOnEntity.UserPassword, 32).ToLower(), userLogOnEntity.UserSecretkey).ToLower(), 32).ToLower();
-								userLogOnEntity.Create(true);
-								var userStaffEntity = new SysUserStaffEntity()  //人员用户 关联关系
-								{
-									UserId = userEntity.Id,
-									StaffId = entity.Id
-								};
-								staff = userEntity.Id;
-								userStaffEntity.Create(true);
-								db.Insert(userEntity);
-								db.Insert(userLogOnEntity);
-								db.Insert(userStaffEntity);
+                            if (!_sysUserRepo.IQueryable().Any(p => p.TopOrganizeId == entity.TopOrganizeId
+    && p.Account == accont))    //同一顶级机构内不能有Account一样的
+                            {
+                                var userEntity = new SysUserEntity()    //
+                                {
+                                    TopOrganizeId = entity.TopOrganizeId,
+                                    Account = accont,
+                                };
+                                userEntity.Create(true);
+                                var userLogOnEntity = new SysUserLogOnEntity()  //用户登录
+                                {
+                                    UserPassword = Constants.LogonDefaultPassword,
+                                };
+                                userLogOnEntity.UserId = userEntity.Id;
+                                userLogOnEntity.UserSecretkey = Md5.md5(Comm.CreateNo(), 16).ToLower();
+                                //topOrgCode + orgCode + default
+                                //先为明文密码赋值在加密处理
+                                userLogOnEntity.UserPassword = userLogOnEntity.UserPassword;
+                                userLogOnEntity.UserPwdPlaintext = userLogOnEntity.UserPassword;
+                                userLogOnEntity.UserPassword = Md5.md5(DESEncrypt.Encrypt(Md5.md5(userLogOnEntity.UserPassword, 32).ToLower(), userLogOnEntity.UserSecretkey).ToLower(), 32).ToLower();
+                                userLogOnEntity.Create(true);
+                                var userStaffEntity = new SysUserStaffEntity()  //人员用户 关联关系
+                                {
+                                    UserId = userEntity.Id,
+                                    StaffId = entity.Id
+                                };
+                                staff = userEntity.Id;
+                                userStaffEntity.Create(true);
+                                db.Insert(userEntity);
+                                db.Insert(userLogOnEntity);
+                                db.Insert(userStaffEntity);
 
-							}
-						}
+                            }
+                            else
+                            {
+                                throw new FailedException("工号不可使用或已存在,请修改工号");
+                            }
+                        }
+                        
 					}
 
 					db.Commit();

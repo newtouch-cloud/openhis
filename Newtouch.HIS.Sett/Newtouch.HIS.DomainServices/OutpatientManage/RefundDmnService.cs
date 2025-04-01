@@ -959,7 +959,7 @@ GROUP BY A.patid, a.blh, A.xm, A.xb, A.csny, A.zjlx, A.zjh, A.dh, A.dybh, gh.mzh
         /// <param name="xm"></param>
         /// <param name="orgId"></param>
         /// <returns></returns>
-        public List<OutpatAccInfoDto> GetBasicInfoSearchListInRegister(Pagination pagination, string blh, string xm, string orgId, string zjh)
+        public List<OutpatAccInfoDto> GetBasicInfoSearchListInRegister(Pagination pagination, string blh, string xm, string orgId, string zjh, string zjlx)
         {
             var strSql = new StringBuilder();
             strSql.Append(@" SELECT  A.patid ,
@@ -1003,7 +1003,7 @@ GROUP BY A.patid, a.blh, A.xm, A.xb, A.csny, A.zjlx, A.zjh, A.dh, A.dybh, gh.mzh
             {
                 new SqlParameter("@xm","%"+(xm??"")+"%"),
                  new SqlParameter("@blh","%"+(blh??"")+"%"),
-                 new SqlParameter("@zjh","%"+(zjh??"")+"%"),
+                 new SqlParameter("@zjh", string.IsNullOrWhiteSpace(zjlx)? "%"+(zjh??"")+"%":zjh),
                 new SqlParameter("@OrganizeId",orgId)
             };
             return QueryWithPage<OutpatAccInfoDto>(strSql.ToString(), pagination, param).ToList();

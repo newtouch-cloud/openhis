@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +8,7 @@ namespace Newtouch.HIS.Domain.DTO.OutputDto.DRGManage
 {
     public class YPUploadDto
     {
+        public string   mlbm_id { get; set; }
         public string scqk { get; set; }
         public DateTime? scrq { get; set; }
         public string errorMsg { get; set; }

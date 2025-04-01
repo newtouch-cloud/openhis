@@ -29,6 +29,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Web.Mvc;
 using System.Xml;
@@ -176,7 +177,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
         /// <param name="mbbh"></param>
         /// <param name="zyh"></param>
         /// <returns></returns>
-        public ActionResult MedicalRecordEdiForAdd(string mbbh, string zyh, string mzh = null)
+        public ActionResult MedicalRecordEdiForAdd(string mbbh, string zyh, string mzh = null,string submitXml=null)
         {
             //根据id获取模板
             //如果找不到加载的xml就默认为空白的xml
@@ -256,7 +257,10 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                     {
                         // 用户点击了“保存文档”按钮，
                         // 则试图从WEB请求中加载文档然后保存
-                        loaded = eng.LoadDocumentFromRequestFormData();
+                        //loaded = eng.LoadDocumentFromRequestFormData();
+                        //病历编辑器5.0方式
+                        loaded = string.IsNullOrWhiteSpace(submitXml) ? false : true;
+
                         if (loaded)
                         {
                             string DataSource = "";
@@ -270,9 +274,12 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                             IsExistDir(path);
                             string BLMC = DateTime.Now.ToString("ddHHmm") + mb.mbmc.Replace("模板", "");
                             BLMC = BLMC.Trim();
-                            var xmlConten = eng.Document.InnerText;
+                            byte[] decodedBytes = Convert.FromBase64String(submitXml);
+                            string xmlConten = Encoding.UTF8.GetString(decodedBytes);
+                            //var xmlConten1 = eng.Document.InnerText;
                             currentFileName = Server.MapPath(path);
-                            eng.SaveDocument(currentFileName + BLMC + ".xml", null);
+                            System.IO.File.WriteAllText(currentFileName + BLMC + ".xml", xmlConten);
+                            //eng.SaveDocument(currentFileName + BLMC + ".xml", null);
                             //eng.LoadDocument(currentFileName + BLMC + ".xml", null);
                             string BLID = "";
                             if (!string.IsNullOrWhiteSpace(mzh))
@@ -282,6 +289,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                             else
                             {
                                 BLID = BL_Save(mb.bllx, mbbh, zyh, path, BLMC, DataSource, xmlConten);
+                                eng.LoadDocument(currentFileName + BLMC + ".xml", null);
                                 XTextElementList xTextElements = eng.Document.GetAllElements();
                                 List<XTextElement> xTextElements_input = xTextElements.FindAll(n => n.GetType() == typeof(XTextInputFieldElement));
                                 _medicalRecordDmnService.BLJG_Delete(BLID, OrganizeId);
@@ -310,6 +318,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                                         ss.Add(distinct);
                                     }
                                 }
+                                List<bl_ysjgnrEntity> bljgnrEntity = new List<bl_ysjgnrEntity>();
                                 foreach (var res in ss)
                                 {
                                     if (res.Name == null)
@@ -326,8 +335,10 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                                     jget.ysmc = res.BackgroundText;
                                     jget.ysid = res.DisplayName;
                                     jget.OrganizeId = this.OrganizeId;
-                                    _medicalRecordDmnService.BLJG_Save(jget);
+                                    bljgnrEntity.Add(jget);
                                 }
+                                if(bljgnrEntity.Count>0)
+                                    _medicalRecordDmnService.BLJG_Save(bljgnrEntity);
                                 if (mb.bllx == "5")
                                 {
                                     BabasyVO basy = GetBasyInfo(eng);//(BabasyVO)eng.Document.GetParameterValue("ba_basy");
@@ -410,8 +421,12 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             //string oldstr = "span style=&quot;color:black;font-size:9pt;background-color:white";
             //string htmlstr = eng.GetAllContentHtml();
             //string tip = "style=\"position:relative;left:4px;top:1px";
-            ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+            //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+            byte[] bytes = Encoding.UTF8.GetBytes(eng.Document.InnerXML);
+            ViewBag.WriterControlXmlData = Convert.ToBase64String(bytes);
             ViewBag.message = errormsg;
+            ViewBag.userId = this.UserIdentity.UserCode;
+            ViewBag.userName = this.UserIdentity.UserName;
             eng.Dispose();
             return View();
         }
@@ -423,7 +438,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
         /// <param name="blid"></param>
         /// <param name="zyh"></param>
         /// <returns></returns>
-        public ActionResult MedicalRecordEdit(string blid, string bllx, string zyh, string message = null, string mzh = null)
+        public ActionResult MedicalRecordEdit(string blid, string bllx, string zyh, string message = null, string mzh = null,string submitXml=null)
         {
             //如果找不到加载的xml就默认为空白的xml
             string currentFileName = Server.MapPath(BlTemplatePath + "newFile.xml");
@@ -527,13 +542,19 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                     // 用户点击了“保存文档”按钮，
                     // 则试图从WEB请求中加载文档然后保存
                     try {
-                        loaded = eng.LoadDocumentFromRequestFormData();
+                        //loaded = eng.LoadDocumentFromRequestFormData();
+                        //病历编辑器5.0方式
+                        loaded = string.IsNullOrWhiteSpace(submitXml) ? false : true;
                     }
                     catch (Exception er) {
                     }
                     if (loaded)
                     {
-                        eng.SaveDocument(currentFileName + blxtmc_hj.Trim() + ".xml", null);
+                        byte[] decodedBytes = Convert.FromBase64String(submitXml);
+                        string xmldata = Encoding.UTF8.GetString(decodedBytes);
+                        System.IO.File.WriteAllText(currentFileName + blxtmc_hj.Trim() + ".xml", xmldata);
+
+                        //eng.SaveDocument(currentFileName + blxtmc_hj.Trim() + ".xml", null);
                         //eng.LoadDocument(currentFileName + blxtmc_hj.Trim() + ".xml", null);
                         var medicalRecord = new medicalRecordVO();
                         medicalRecord.ID = blid;
@@ -557,12 +578,13 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                                     _BabasyRepo.SubmitForm(basy, blid);
                                 }
                             }
-                            var xmlConten = eng.Document.InnerText;
+                            var xmlConten = xmldata;//eng.Document.InnerText;
                             var relEty = _ZymeddocsrelationRepo.FindEntity(p => p.blId == blid && p.OrganizeId == this.OrganizeId && p.zyh == zyh);
                             relEty.LastModifyTime = DateTime.Now;
                             relEty.LastModifierCode = this.UserIdentity.rygh;
                             relEty.OldXmlConten = relEty.XmlConten;
                             relEty.XmlConten = xmlConten;
+                            eng.LoadDocument(currentFileName + blxtmc_hj.Trim() + ".xml", null);
                             XTextElementList xTextElements = eng.Document.GetAllElements();
                             List<XTextElement> xTextElements_input = xTextElements.FindAll(n => n.GetType() == typeof(XTextInputFieldElement));
                             _medicalRecordDmnService.BLJG_Delete(blid, OrganizeId);
@@ -591,6 +613,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                                     ss.Add(distinct);
                                 }
                             }
+                            List<bl_ysjgnrEntity> bljgnrEntity = new List<bl_ysjgnrEntity>();
                             foreach (var res in ss)
                             {
                                 if (res.Name == null)
@@ -607,8 +630,10 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                                 jget.ysmc = res.BackgroundText;
                                 jget.ysid = res.DisplayName;
                                 jget.OrganizeId = this.OrganizeId;
-                                _medicalRecordDmnService.BLJG_Save(jget);
+                                bljgnrEntity.Add(jget);
                             }
+                            if(bljgnrEntity.Count>0)
+                                _medicalRecordDmnService.BLJG_Save(bljgnrEntity);
                             _ZymeddocsrelationRepo.Update(relEty);
                             mbId = relEty.mbId;
 
@@ -623,7 +648,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                             _bljsRepo.BljghDataDealwith(bljshentity);
                             #region 上传医保
                             //if (sd == "上传医保")
-                            {
+                            //{
                                 string jydm = "";
                                 if (sd == "上传医保")
                                 {
@@ -644,7 +669,7 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                                 {
                                     return RedirectToAction("PreView", new { blid = blid, bllx = bllx, zyh = zyh, message = errormsg, isupload = isupload, jydm = jydm });
                                 }
-                            }
+                           // }
                             #endregion
                         }
                     }
@@ -726,8 +751,11 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorString = "Yellow";
             eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorNum = 2;
             eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.BackgroundColorString = "LightGrey";
-            ViewBag.WriterControlHtml = eng.GetAllContentHtml();
-
+            //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+            byte[] bytes = Encoding.UTF8.GetBytes(eng.Document.InnerXML);
+            ViewBag.WriterControlXmlData = Convert.ToBase64String(bytes);
+            ViewBag.user = this.UserIdentity.UserCode;
+            ViewBag.userName = this.UserIdentity.UserName;
             if (!string.IsNullOrWhiteSpace(nameblxtmc.Trim()))
             {
                 //判断路径是否存在，创建目录
@@ -817,7 +845,9 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                 string Getaddress = Server.MapPath("~/File/BackupsBL/" + zyh + "/" + blid + ".xml");
                 eng.LoadDocument(Getaddress, null);
                 eng.Options.ContentRenderMode = WebWriterControlRenderMode.PagePreviewHtml;
-                ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                byte[] bytes = Encoding.UTF8.GetBytes(eng.Document.InnerXML);
+                ViewBag.WriterControlXmlData = Convert.ToBase64String(bytes);
                 eng.Dispose();
                 ViewBag.message = message;
                 ViewBag.blid = blid2;
@@ -829,17 +859,12 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
             }
             else
             {
-
-
-
                 //如果找不到加载的xml就默认为空白的xml
                 ViewBag.blid = blid;
                 ViewBag.bllx = bllx;
                 ViewBag.zyh = zyh;
                 ViewBag.mzh = mzh;
                 ViewBag.mbqx = (int)EnummbqxFp.non;
-
-
                 string currentFileName = Server.MapPath(BlTemplatePath + "newFile.xml");
                 string bllj = "";
                 blxtmc_yj = "";
@@ -920,8 +945,9 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                 eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorString = "Yellow";
                 eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorNum = 2;
                 eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.BackgroundColorString = "LightGrey";
-                ViewBag.WriterControlHtml = eng.GetAllContentHtml();
-
+                //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                byte[] bytes = Encoding.UTF8.GetBytes(eng.Document.InnerXML);
+                ViewBag.WriterControlXmlData = Convert.ToBase64String(bytes);
                 eng.Dispose();
                 ViewBag.isLock = isLock;
                 ViewBag.message = message;
@@ -2528,7 +2554,9 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                 string Getaddress = Server.MapPath("~/File/BackupsBL/" + zyh + "/" + blid + ".xml");
                 eng.LoadDocument(Getaddress, null);
                 eng.Options.ContentRenderMode = WebWriterControlRenderMode.PagePreviewHtml;
-                ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                byte[] bytes = Encoding.UTF8.GetBytes(eng.Document.InnerXML);
+                ViewBag.WriterControlXmlData = Convert.ToBase64String(bytes);
                 eng.Dispose();
                 ViewBag.message = message;
                 ViewBag.blid = blid2;
@@ -2631,8 +2659,9 @@ namespace Newtouch.EMR.Web.Areas.MedicalRecordManage
                 eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorString = "Yellow";
                 eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.UnderLineColorNum = 2;
                 eng.DocumentOptions.SecurityOptions.TrackVisibleLevel0.BackgroundColorString = "LightGrey";
-                ViewBag.WriterControlHtml = eng.GetAllContentHtml();
-
+                //ViewBag.WriterControlHtml = eng.GetAllContentHtml();
+                byte[] bytes = Encoding.UTF8.GetBytes(eng.Document.InnerXML);
+                ViewBag.WriterControlXmlData = Convert.ToBase64String(bytes);
                 eng.Dispose();
                 ViewBag.isLock = isLock;
                 ViewBag.message = message;
