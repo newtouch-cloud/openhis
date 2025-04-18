@@ -1388,8 +1388,9 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                     {
                         //i = int.Parse(datacount.ToString());
                         var zdlx = datacount + i;
-                        var sql = "insert into [Newtouch_CIS]..zy_PatDxInfo  " +
-                            "values(@Id, @OrganizeId, @zyh, @zddl,@zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk,@px)";
+                        var sql = "INSERT INTO [Newtouch_CIS].[dbo].[zy_PatDxInfo] " +
+                                   "([Id], [OrganizeId], [zyh], [zddl], [zdlb], [zdlx], [zddm], [zdmc], [zdyzdmc],[CreateTime], [CreatorCode], [LastModifyTime], [LastModifierCode], [zt], [cyqk], [px]) " +
+                            "VALUES (@Id, @OrganizeId, @zyh, @zddl, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk, @px)";
 
                         this.ExecuteSqlCommand(sql, new SqlParameter[] {
                             new SqlParameter("@Id", data2[i].Id),
@@ -1415,8 +1416,9 @@ where a.organizeid=@orgId and a.zyh=@zyh";
                     {
                         //i = int.Parse(datacount.ToString());
                         var zdlx = datacount + i;
-                        var sql = "insert into [Newtouch_CIS]..zy_PatDxInfo  " +
-                            "values(@Id, @OrganizeId, @zyh,@zddl, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk,@px)";
+                        var sql = "INSERT INTO [Newtouch_CIS].[dbo].[zy_PatDxInfo] " +
+                                   "([Id], [OrganizeId], [zyh], [zddl], [zdlb], [zdlx], [zddm], [zdmc], [zdyzdmc],[CreateTime], [CreatorCode], [LastModifyTime], [LastModifierCode], [zt], [cyqk], [px]) " +
+                            "VALUES (@Id, @OrganizeId, @zyh, @zddl, @zdlb, @zdlx, @zddm, @zdmc, NULL, @CreateTime, @CreatorCode, NULL, NULL, @zt, @cyqk, @px)";
 
                         this.ExecuteSqlCommand(sql, new SqlParameter[] {
                             new SqlParameter("@Id", data2[i].Id),

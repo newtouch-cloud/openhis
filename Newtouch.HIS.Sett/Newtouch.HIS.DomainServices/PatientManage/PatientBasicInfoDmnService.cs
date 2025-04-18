@@ -1690,7 +1690,7 @@ left join Newtouch_CIS..zy_PatDxInfo(nolock) cyzd
 	ON cyzd.zyh = zyxx.zyh AND cyzd.OrganizeId = zyxx.OrganizeId and cyzd.zdlb=2 and cyzd.zdlx=0 AND cyzd.zt = '1'
 left join [NewtouchHIS_Base]..V_S_xt_bq(nolock) bq
     ON bq.bqCode = zyxx.bq AND bq.OrganizeId = zyxx.OrganizeId  AND bq.zt = '1'
-left join [NewtouchHIS_Base].[dbo].[xt_cw] cw with(nolock) ON xx.OrganizeId=cw.OrganizeId and xx.BedCode=cw.bfCode  and cw.zt='1'
+left join [NewtouchHIS_Base].[dbo].[xt_cw] cw with(nolock) ON xx.OrganizeId=cw.OrganizeId and xx.BedCode=cw.cwCode  and cw.zt='1'
 LEFT JOIN NewtouchHIS_Base..V_C_Sys_ItemsDetail lxrItem 
     ON ( lxrItem.OrganizeId = zyxx.OrganizeId OR lxrItem.OrganizeId = '*')
     AND lxrItem.Code = zyxx.lxrgx
